@@ -12,8 +12,8 @@ repo=$(cd "$here/.." && pwd)
 . "$here/wine-env.sh"
 game_src="$repo/<install>"
 
-[ -x "$WINE_APP/Contents/Resources/wine/bin/wine" ] || {
-    echo "setup_prefix.sh: Wine not found at $WINE_APP; see README.md (Install Wine)" >&2
+[ -x "$WINE_BIN/wine" ] || {
+    echo "setup_prefix.sh: Wine not found in $WINE_BIN; see README.md (Install Wine)" >&2
     exit 2
 }
 
