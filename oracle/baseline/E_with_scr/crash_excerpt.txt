@@ -1,0 +1,20 @@
+0160:trace:seh:dispatch_exception code=c0000005 (EXCEPTION_ACCESS_VIOLATION) flags=0 addr=000000007BF2123D
+0160:trace:seh:dispatch_exception  info[0]=0000000000000000
+0160:trace:seh:dispatch_exception  info[1]=0000000000004DC9
+0160:trace:seh:dispatch_exception rip=000000007bf21110 rsp=00000001019ff5c0 rbp=0000000005effed8 eflags=00000286
+0160:trace:seh:dispatch_exception rax=000000001d199150 rbx=0000000000001000 rcx=00000000dc909056 rdx=00000000f24e5c05
+0160:trace:seh:dispatch_exception rsi=0000000005effe87 rdi=000000000114269c  r8=0000000005effeb8  r9=00000001018ffa90
+0160:trace:seh:dispatch_exception r10=000000021d199150 r11=0000000000000202 r12=000000007ff10000 r13=00000001019ffd24
+0160:trace:seh:dispatch_exception r14=00000001019ff5c0 r15=0000000000000000 mxcsr=00001fa0 cs=002b ss=0000
+0160:trace:seh:call_seh_handlers calling handler 00006FFFFEA61564 (rec=00000001019FF4F0, frame=1019ff610 context=00000001019FF000, dispatch=00000001019FE900)
+0160:trace:seh:RtlGetExtendedContextLength2 context_flags 0x1003f, length 00000001019FE484, compaction_mask ffffffffffffffff.
+0160:trace:seh:RtlInitializeExtendedContext2 context 0000000001142308, context_flags 0x1003f, context_ex 00000001019FE488, compaction_mask ffffffffffffffff.
+0160:trace:seh:RtlUnwindEx code=c0000005 flags=2 end_frame=00000001019FF610 target_ip=00006FFFFEA6155C
+0160:trace:seh:RtlUnwindEx  info[0]=0000000000000000
+0160:trace:seh:RtlUnwindEx  info[1]=0000000000004dc9
+0160:trace:seh:RtlUnwindEx rip=00006ffffff684d2 rsp=00000001019fdc90 rbp=0000000000000000 eflags=00000206
+0160:trace:seh:RtlUnwindEx rax=000000007ff10000 rbx=00000001019ff4f0 rcx=00000001019fe340 rdx=00006ffffea6155c
+0160:trace:seh:RtlUnwindEx rsi=00000001019fe340 rdi=00000001019ff610  r8=00000001019ff4f0  r9=3130313030303030
+0160:trace:seh:RtlUnwindEx r10=fffffffffffffffe r11=0000000000000202 r12=00000001019fdde0 r13=0000000000000000
+0160:trace:seh:RtlUnwindEx r14=00006ffffffa88c0 r15=0000000000000000 mxcsr=00001fa0 cs=002b ss=0023
+0160:trace:seh:RtlRestoreContext returning to 00006FFFFEA6155C stack 00000001019FF610

@@ -1,0 +1,62 @@
+{
+ "cxx_handler_stubs": 5524,
+ "cxx_funcinfo_tables": 5523,
+ "cxx_frame_handler_targets": {
+  "0x00735F0C": 5523,
+  "0x005B802C": 1
+ },
+ "cxx_unwind_states_total": 16979,
+ "cxx_try_blocks": 148,
+ "cxx_catch_handlers": 167,
+ "cxx_catch_funclets_unique": 167,
+ "cxx_catch_types": {
+  "...": 63,
+  ".?AVexception@@": 35,
+  ".?AVtDirectPlayError@direct_play@@": 15,
+  ".?AVtPartBindingException@tPart@@": 8,
+  ".E": 6,
+  ".?AVtErrInfo@@": 6,
+  ".?AVtQ3EngineErr@@": 6,
+  ".?AVReadBufferException@WONAPI@@": 6,
+  ".J": 4,
+  ".PAD": 3,
+  ".?AVArithmeticException@WONAPI@@": 3,
+  ".?AVtInitFailed@nException@@": 2,
+  ".?AVtApplication_QuitException@@": 2,
+  ".?AVtBaseException@nException@@": 2,
+  ".?AVtPartStartupException@tPart@@": 1,
+  ".?AVtGameStateMgr_QuitException@@": 1,
+  ".?AVtThreadFinishedException@tAICalculation@@": 1,
+  ".?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@": 1,
+  ".?AVTLogicError@ExpandedExceptions@@": 1,
+  ".?AVThreadException@tThreadPart@@": 1
+ },
+ "fs_accesses": {
+  "mov dword ptr fs:[0], ecx": 5942,
+  "mov eax, dword ptr fs:[0]": 1122,
+  "mov dword ptr fs:[0], esp": 1119,
+  "mov dword ptr fs:[0], eax": 5,
+  "mov ecx, dword ptr fs:[0x2c]": 2,
+  "mov ebx, dword ptr fs:[0]": 2,
+  "mov dword ptr fs:[0], ebx": 2,
+  "mov eax, dword ptr fs:[0x2c]": 1,
+  "push dword ptr fs:[0]": 1,
+  "pop dword ptr fs:[0]": 1,
+  "mov ecx, dword ptr fs:[0]": 1
+ },
+ "seh_frames_by_handler": {
+  "0x0073B018": 24
+ },
+ "push_E06D7363_sites": [],
+ "raiseexception_callers": {
+  "0x00737479": {
+   "raise_sites": 1,
+   "direct_calls_to_it": 1174
+  },
+  "0x0073EEF6": {
+   "raise_sites": 1,
+   "direct_calls_to_it": 2
+  }
+ },
+ "e06d7363_dwords_outside_text": 1
+}

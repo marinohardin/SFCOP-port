@@ -1,0 +1,5 @@
+label D_no3d
+wine wine-11.0
+renderer no3d windowed 0 desktop 800x600
+seconds 90
+alive_at_end no

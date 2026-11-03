@@ -1,0 +1,16 @@
+guid	va	section
+IID_IDirectDraw2	0x007BB1D8	.rdata
+IID_IDirectDraw4	0x007BB1C8	.rdata
+IID_IDirectDrawSurface3	0x007BB1B8	.rdata
+IID_IDirectDrawSurface4	0x007BB1A8	.rdata
+IID_IDirect3D3	0x007BB198	.rdata
+IID_IDirect3DRGBDevice	0x007BB188	.rdata
+IID_IDirect3DRefDevice	0x007BB178	.rdata
+IID_IDirect3DNullDevice	0x007BB168	.rdata
+IID_IDirectSound3DListener	0x007BB048	.rdata
+IID_IDirectSound3DBuffer	0x007BB038	.rdata
+GUID_SysKeyboard	0x007BB138	.rdata
+IID_IDirectPlay4A	0x007BB128	.rdata
+IID_IDirectPlayLobby3A	0x007BB0C8	.rdata
+CLSID_DirectPlay	0x007BB118	.rdata
+CLSID_DirectPlayLobby	0x007BB0B8	.rdata

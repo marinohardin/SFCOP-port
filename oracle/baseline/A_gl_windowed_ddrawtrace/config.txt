@@ -1,0 +1,5 @@
+label A_gl_windowed_ddrawtrace
+wine wine-11.0
+renderer default windowed 1 desktop 800x600
+seconds 45
+alive_at_end yes
