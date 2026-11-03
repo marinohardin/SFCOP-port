@@ -1,8 +1,11 @@
 # Source this file: sets up the Wine environment used by every oracle script.
 # Wine: Gcenx macOS_Wine_builds 11.0_1 (wine-stable, wow64), unpacked on the external drive.
+# Another Wine: set WINE_APP to its .app (Gcenx layout), or WINE_BIN to the directory holding its
+# wine and wineserver (e.g. CrossOver), and WINEPREFIX to a fresh prefix.
 SFCOP_ROOT="${SFCOP_ROOT:-$SFCOP_ROOT}"
-export WINE_APP="$SFCOP_ROOT/tools/wine/stable-11.0_1/Wine Stable.app"
-export PATH="$WINE_APP/Contents/Resources/wine/bin:$PATH"
+export WINE_APP="${WINE_APP:-$SFCOP_ROOT/tools/wine/stable-11.0_1/Wine Stable.app}"
+export WINE_BIN="${WINE_BIN:-$WINE_APP/Contents/Resources/wine/bin}"
+export PATH="$WINE_BIN:$PATH"
 export WINEPREFIX="${WINEPREFIX:-$SFCOP_ROOT/work/wine/prefix}"
 export WINEDEBUG="${WINEDEBUG:--all}"
 # Game folder inside the prefix: a copy of reference/installed game/..., never the reference itself.

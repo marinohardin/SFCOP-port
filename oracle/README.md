@@ -11,9 +11,11 @@ at a CD-key prompt that a human must answer once. The mission script builds with
 toolchain (`toolchain/build_scr.sh`): all sources compile without warnings, and the link gives
 `OracleSkirmish.scr` (339,968 bytes) exporting `MissionSpecEntry` and `ScriptEntry` like every
 shipped script. The input driver builds and runs inside the prefix and finds the game's window.
-The hashing/compare path is dry-run tested (`tests/selftest.sh`). **No trace recorded yet**: the
-script has never been loaded by the game, because the main menu is behind the CD key, and the
-click path in `driver/skirmish.steps` cannot be calibrated before the menu has been seen.
+The hashing/compare path is dry-run tested (`tests/selftest.sh`). **No trace recorded yet.** The CD key
+has been entered and is saved privately ("CD key" below); the game then reached its main menu once,
+and since then crashes in Wine's OpenGL set-up a few seconds after launch (`BASELINE.md`, "After
+the CD key"). The click path is calibrated up to SINGLE PLAYER. `BASELINE.md`, "How to record the
+oracle elsewhere", covers CrossOver, another Wine build, or a Windows PC.
 
 ## Files
 
@@ -24,6 +26,7 @@ click path in `driver/skirmish.steps` cannot be calibrated before the menu has b
 | `launch_game.sh` | Start the game for a human (first-run CD key, calibration); afterwards saves a newly stored key with `export_cdkey.sh` |
 | `export_cdkey.sh`, `import_cdkey.sh` | Save the CD key from the prefix's registry to `work/private/`, and put it back into a fresh prefix (see "CD key") |
 | `baseline/boot_test.sh` | Boot with one graphics configuration, screenshot the game window, kill. Results in `baseline/<label>/` |
+| `baseline/survive.sh <label>` | Start-up crash test: how long each of N launches stays alive; appends to `baseline/survive.tsv` |
 | `shot.sh out.png` | Screenshot of the game's own macOS window only (never a screen region) |
 | `scr/OracleSkirmish/` | Mission script source (VC6, SDK `OP API - R2.1`), plus `OracleSkirmish.dsp` mirroring the SDK template |
 | `scr/build.sh` | Build `OracleSkirmish.scr` with `toolchain/build_scr.sh`; output `work/oracle/build/out/` |

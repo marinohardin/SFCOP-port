@@ -1,0 +1,13 @@
+2026-11-03T08:59:29Z	plain	14 2 4
+2026-11-03T08:59:44Z	cpu_topology_1	4 2 2
+2026-11-03T08:59:51Z	start_affinity_1	2 2 2
+2026-11-03T09:00:21Z	winver_win2k	2 12 2
+2026-11-03T09:01:05Z	winver_win98	2 2 30+
+2026-11-03T09:01:18Z	winver_winxp	2 2 2
+2026-11-03T09:02:17Z	no_virtual_desktop	30+ 2 4
+2026-11-03T09:02:31Z	renderer_vulkan	2 2 2
+2026-11-03T09:03:26Z	ini_mouse_async0	2 30+ 2
+2026-11-03T09:03:42Z	ini_testpatch0	2 10 2
+2026-11-03T09:08:12Z	hkcc_current_deleted	2 12 10
+2026-11-03T09:08:37Z	no_above8bit_txt	2 2 4
+2026-11-03T09:10:17Z	stale_adapter_removed	2 12 30+
