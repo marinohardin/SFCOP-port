@@ -8,30 +8,100 @@ The standard every change is held to. `DESIGN.md` says what the system does; thi
 
 | Tool | Convention |
 | --- | --- |
-| Language and version | C and C++ for the port, Python 3 for tooling |
-| Package manager | none (a pip venv under work/ for Python tooling; CMake for the port once it exists) |
-| Build | none |
-| Tests | python3 -m pytest tests |
-| Lint and format | none |
-| CI | GitHub Actions on a self-hosted runner |
+| Languages | `game/`: C++ that compiles with VC6 SP4 (the byte check and the 32-bit build) and with clang in C++17 mode (the native build, §4.1); `src/`, `server/`, `tools/`: C++17; tooling: Python 3.11 or later, standard library only unless `third_party/` says otherwise |
+| Compilers | VC6 SP4 in the `sfcop-msvc6` container (`toolchain/`); Apple clang on macOS; clang or MSVC on Windows; clang on Linux. Versions in `toolchain/VERSIONS.md` |
+| Build | CMake 3.28 or later with Ninja for the native build, the tools and the tests (`cmake --preset <platform>`); `toolchain/` scripts for the VC6 side; `-j4` on the owner's machine |
+| Package manager | None. `third_party/` holds pinned copies or pinned FetchContent declarations; Python tooling uses a venv under `work/` with `PIP_CACHE_DIR` there |
+| Tests | `python3 -m pytest tests` for tooling; CTest with doctest for C++ (§6); the harness and the oracle through `sh scripts/check.sh` |
+| Format | clang-format with the repository's `.clang-format` for `src/`, `server/` and `tools/` only; `game/` keeps the original's style and is never reformatted |
+| Lint | None beyond the compiler at `-Wall -Wextra -Werror` for `src/`; `game/` builds with warnings allowed |
+| CI | GitHub Actions on the self-hosted runner `sfcop-mac`; the same `scripts/check.sh` as locally |
 
 Versions are pinned in a file in the repository, never "latest".
 
 ## 2. Repository layout
 
-<!-- A tree of the top-level folders with one line each. Say where shared code goes and what may import what. -->
+```
+game/                 the decompiled original, one file per original translation unit at its original path
+  Source/...          SFC2_5\Source: the game proper
+  Meta/...            the Dynaverse client
+  Common/...          Taldren's utility layer (SharedR)
+  Switch/...          nSwitch
+  dmp3d/, Tiger/      the inherited engine and platform libraries
+  unsorted/           units whose original file is not known yet (harness/SRC_LAYOUT.md)
+  port/               types.h and the few headers the two compile modes need; nothing else
+src/
+  hle/                the Win32 surface (surface.tsv) implemented on the components: ddraw4/, d3d3/, dinput/, miles/, ds3d/, dplay/, winsock/, kernel/, registry/
+  platform/           Window, Gpu, Input, Audio, Transport, Store, Clock, Threads; one directory each, interface in <Name>.h
+  net/                PROTOCOL.md, envelope, rendezvous, relay client
+  fixes/              fixes.h and one file per fix
+  app/                main(), command line, install discovery, the guest runtime glue
+server/               sfcop-lobby, sfcop-relay, directory and auth stand-ins; one directory each with its own tests
+tools/                scr2native, the lifter driver, build helpers
+third_party/          pinned dependencies and INVENTORY.md; integrator only
+harness/, oracle/, toolchain/, analysis/, ghidra/   the decompilation's judges and evidence (hotspots where marked)
+scripts/              check.sh, progress.py, the small scripts the documents name
+tests/                Python tests for the tooling
+docs/                 DESIGN.md, CONVENTIONS.md, PLAN.md, FIXES.md
+spike/                Phase 0 and 1 spikes, frozen; read, never extended
+```
+
+What may include what: `game/` includes only `game/`; `src/hle/` includes `src/platform/` headers and the `game/` headers a layout needs; `src/platform/` includes `third_party/` and the C++ standard library, never Win32; `src/app/` includes anything in `src/`; `server/` includes `src/net/` and `third_party/`; `tools/` includes `src/` where it must. Generated files (lifted code, objects, traces under test, build directories) live under `work/` or `build/`, never in git.
 
 ## 3. Naming
 
-<!-- Files, directories, identifiers, branches. One table per kind. -->
+Files
+
+| Kind | Convention | Example |
+| --- | --- | --- |
+| Decompiled unit | The original path and file name, drive and project root dropped | `game/Common/DynamicAllocator.cpp` |
+| Unknown-origin unit | `game/unsorted/<Class>.cpp`, or `fn_<page>.cpp` for free functions by 4 KB page | `game/unsorted/tShipYard.cpp` |
+| New C++ source | One class or component per file, named after it, UpperCamelCase | `src/platform/Audio/Audio.h`, `src/hle/miles/Miles.cpp` |
+| Tests | `<Unit>Test.cpp` beside the code for C++; `tests/test_<topic>.py` for Python | `src/net/EnvelopeTest.cpp` |
+| Documents and data | `UPPER.md` for the documents the workflow names, lowercase for data | `docs/FIXES.md`, `src/hle/surface.tsv` |
+
+Identifiers
+
+| Kind | Convention | Example |
+| --- | --- | --- |
+| Original classes, functions, members | The original identifier, exactly, once evidence gives it (a symbol, RTTI, an assertion string, an SDK match); `fn_<address>` until then | `tDynamicAllocator::Instance`, `fn_006FC690` |
+| Names that exist only in a leaked or unlicensed source | Never used; a descriptive name of this project's own instead | |
+| New classes and types in `src/`, `server/`, `tools/` | UpperCamelCase, no prefix | `Transport`, `Envelope` |
+| New functions and methods | UpperCamelCase for methods, lowerCamelCase for free functions and locals | `Audio::playVoice`, `openInstall()` |
+| Constants and enumerators | `k` prefix UpperCamelCase, as the original does | `kMaxPlayers` |
+| Namespaces | `sfcop::<component>` for new code; the original's `n*` namespaces untouched | `sfcop::hle` |
+| Fix switches | lower_snake_case, verb first | `fix_shield_overflow` |
+| Macros | `SFCOP_` prefix | `SFCOP_FIX(fix_shield_overflow)` |
+
+Branches follow §7.1. Commit scopes are the top-level directory or the component: `feat(hle/dinput): ...`, `fix(game/Switch): ...`, `docs(design): ...`.
 
 ## 4. Code style
 
-<!-- What the formatter does not decide: comments, error handling, logging, when a function is too long. -->
+### 4.1 Decompiled code (`game/`)
+
+- The goal is the original's source, so the style is the original's: its spacing, its idioms, its member order. The matched SDK sources (`Common/`, the scripting library) show that style; follow it.
+- Every function carries its `// FUNCTION: STARFLEETOP 0x...` or `// STUB:` line (DESIGN §6.3). Functions appear in address order inside a unit.
+- Only what VC6 SP4 compiles: no C++11 or later, no `long long`, no anonymous namespaces where the original had none. The native build compiles the same file with clang in C++17 mode with `-fms-extensions` and `game/port/types.h` first; a construct clang rejects is fixed with a `PORT:` line, never by forking the file.
+- A `PORT:` line is one line, tagged on the line itself: `// PORT: <reason>`. The reasons allowed: 64-bit or pointer-size hygiene, undefined behavior the original relied on, a platform difference the HLE surface cannot absorb. Everything else belongs in `src/` or behind a fix switch.
+- A fix is `#if SFCOP_FIX(name)` around the smallest possible region, with the original code in the `#else` branch. No fix changes a function's `FUNCTION:` status: the byte check compiles with every fix off.
+- Pointer-typed members and `long` use the aliases from `game/port/types.h` (`ptr32<T>`, `int32`, ...) once the guest-mode spike (DESIGN §12.4) settles their form; until then the VC6 types.
+- No comment restates the code. A comment records evidence (`// matches SharedR.lib DynamicAllocator.obj`), a judgement (`// the original reads one past the end here; kept, see fix_...`) or a `PORT:` reason.
+
+### 4.2 New code (`src/`, `server/`, `tools/`)
+
+- C++17, `-Wall -Wextra -Werror`, clang-format. RAII everywhere; no raw `new` outside the HLE objects that mirror COM lifetimes, and those are commented as such.
+- No C++ exception crosses the Win32 surface in either direction: HLE entry points catch, log and return the Win32 error the game expects. Exceptions inside `src/` are for programming errors only; expected failures return a value.
+- Logging through one facility (`sfcop::log`), with a component tag and a level; nothing identifying is logged (DESIGN §9). A log line is a sentence, not a dump.
+- A function longer than about 60 lines, or a file longer than about 600, is a sign to split; say so in review rather than enforce a number.
+- Every HLE entry point states its calling convention and purges its stack as the original import did; `surface.tsv` is updated in the same commit.
+- Platform-specific code lives in a file named for the platform (`Window_macos.mm`, `Store_windows.cpp`) behind the component's one header; no `#ifdef` forests in shared files.
 
 ## 5. Dependencies
 
-<!-- Where they are declared, who may add one (the integrator), how versions are chosen. -->
+- Declared in `third_party/INVENTORY.md` (name, version, licence, where used, why) and pinned there and in the build (`FetchContent` with a commit hash, or a vendored copy). Only the integrator adds, removes or bumps one, in its own pull request labelled `contract-change`.
+- Permissive licences only until DESIGN §12.1 is decided: zlib, MIT, BSD, public domain. Nothing derived from the WONAPI or GameSpy sources, ever.
+- Current set: SDL3, miniaudio, doctest (tests), one NAT traversal library chosen in Phase 3 (DESIGN §12.8). Python tooling uses the standard library; a package it needs is recorded in the venv's requirements file under `tools/` and in the inventory.
+- A dependency is taken for a capability the project cannot reasonably write (a GPU abstraction, an audio engine, ICE), never for convenience.
 
 ## 6. Testing
 
@@ -42,6 +112,10 @@ Versions are pinned in a file in the repository, never "latest".
 - No network, no real external services, no real clock in unit tests. Pass time in or fake it.
 - No real personal or confidential data in fixtures. Fixtures are plainly invented.
 - Expected values are written out, not computed by calling the code under test.
+- C++ tests use doctest through CTest: one `<Unit>Test.cpp` beside the unit, run by `ctest --preset <platform>`; `scripts/check.sh` runs them when the native build is configured on the machine.
+- Decompiled code is tested by the harness (byte exact) and the oracle (behavior), not by unit tests; a unit test for `game/` code is written only for a fix switch, in both positions.
+- A test that needs the retail install is marked (`pytest.mark.retail`, `TEST_CASE("..." * doctest::skip(!haveInstall()))`) and is skipped, not failed, where the install is absent; CI has it.
+- Fixtures are invented: addresses in the game's range, names like `TestCaptain`, addresses from the RFC 5737 ranges, keys in the game's format but made up.
 
 ## 7. Git and pull requests
 
@@ -78,4 +152,36 @@ Versions are pinned in a file in the repository, never "latest".
 
 ## 8. Checklists
 
-<!-- One per recurring task ("Adding a module", "Adding a command"): the files to touch, the tests to add, the document to update. -->
+**Decompiling a function**
+1. Find it in `ghidra/exports/functions.csv`; take the unit path from its evidence, or `game/unsorted/`.
+2. Write it at its address position in the unit with its `// FUNCTION:` line and the original identifiers.
+3. `harness/build-and-verify.sh 0x<address>` until exact, or stop at the attempt cap and record it in `difficult_functions.tsv` through the harness.
+4. `harness/update-matched-set.sh 0x<address>`; `python3 scripts/progress.py --gate`.
+5. Commit: `feat(game/<dir>): decompile <Class>::<Method>`; the matched set change in the same commit.
+
+**Adding an HLE entry (a Win32 function or COM method the game calls)**
+1. Row in `src/hle/surface.tsv`: module, name, convention, status.
+2. Implementation in the module's directory, on the component interface only; calling convention and stack purge stated.
+3. A doctest that calls it as the game would (arguments, return, out-parameters) and one for its error path.
+4. Commit: `feat(hle/<module>): implement <Name>`.
+
+**Adding a platform component or backend**
+1. Interface in `src/platform/<Name>/<Name>.h` first, with a mock in `<Name>Mock.h`; this is a contract change if the header exists already.
+2. One backend file per platform; a doctest per method through the interface.
+3. `third_party/INVENTORY.md` if it brings a dependency (integrator).
+
+**Adding a fix**
+1. Row in `docs/FIXES.md`: name, default, origin, behaviors, tests.
+2. `#if SFCOP_FIX(name)` around the smallest region in `game/`, original code in `#else`; the switch declared in `src/fixes/fixes.h`.
+3. A test in each position; the byte check still passes with the fix off.
+4. Commit: `fix(game/<dir>): <what> (fix_<name>)`.
+
+**Adding a message to the network protocol**
+1. The message in `src/net/PROTOCOL.md` with its fields, version and the behavior it carries (DESIGN §5.11).
+2. Encode and decode with bounds checks; a doctest with a hand-written byte sequence each way and one malformed case.
+3. A contract change: the integrator merges the document first.
+
+**Recording an oracle trace**
+1. On the recording machine, `oracle/README.md`; the mission and input script committed under `oracle/scr/` first.
+2. The trace to `oracle/expected/<mission>/<input>.trace` with its header; `sh scripts/check.sh` must pass against it on the delinked build.
+3. Commit: `test(oracle): record <mission>/<input>`. A re-recording says why in the body.
