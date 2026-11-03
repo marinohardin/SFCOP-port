@@ -15,4 +15,17 @@
 /toolchain/  @marinohardin
 /oracle/expected/  @marinohardin
 /harness/  @marinohardin
+/src/hle/surface.tsv  @marinohardin
+/src/hle/com/  @marinohardin
+/src/platform/*/*.h  @marinohardin
+/game/port/  @marinohardin
+/game/UNITS.tsv  @marinohardin
+/src/fixes/fixes.h  @marinohardin
+/src/app/scripts/*.h  @marinohardin
+/src/net/PROTOCOL.md  @marinohardin
+/oracle/trace/  @marinohardin
+/third_party/  @marinohardin
+/CMakeLists.txt  @marinohardin
+/CMakePresets.json  @marinohardin
+/cmake/  @marinohardin
 /.worktreeinclude  @marinohardin

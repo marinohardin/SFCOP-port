@@ -25,8 +25,20 @@ toolchain/**
 oracle/expected/**
 harness/**
 
-# Every module's public surface and dependencies
-# (added by the plan phase: src/platform/**/*.h and the game-to-platform interface)
+# Every module's public surface and dependencies (frozen at gate G0, docs/PLAN.md §6.2)
+src/hle/surface.tsv
+src/hle/com/**
+src/platform/*/*.h
+game/port/**
+game/UNITS.tsv
+src/fixes/fixes.h
+src/app/scripts/*.h
+src/net/PROTOCOL.md
+oracle/trace/**
+third_party/**
+CMakeLists.txt
+CMakePresets.json
+cmake/**
 
 # Documents and automation not listed above
 .worktreeinclude
