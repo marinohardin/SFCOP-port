@@ -1,0 +1,6 @@
+#!/bin/sh
+# Refuses a merge commit made directly on the protected branches. Git runs this hook, not
+# pre-commit, when a merge creates a commit. A fast-forward creates none and is allowed,
+# which is how a local main or develop is brought up to date.
+
+exec "$(dirname "$0")/pre-commit"

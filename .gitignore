@@ -16,3 +16,26 @@ venv/
 *.pdb
 *.ilk
 !analysis/results/*.tsv
+CLAUDE.local.md
+.agent/
+
+# Owner-specific configuration and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.reg
+
+# Agent and tool working files
+.worktrees/
+.claude/settings.local.json
+.claude/worktrees/
+.pytest_cache/
+*.pyc
+*.log
+
+# Build outputs of the game's own formats
+*.scr
+*.map
+*.res
