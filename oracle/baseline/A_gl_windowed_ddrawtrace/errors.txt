@@ -1,0 +1,1 @@
+   6 err:d3d:wined3d_check_gl_call >>>>>>> GL_INVALID_FRAMEBUFFER_OPERATION (0x506) from glClear @ /Users/gcenx/Documents/GitHub/wine/dlls/wined3d/context_gl.c / 2245.

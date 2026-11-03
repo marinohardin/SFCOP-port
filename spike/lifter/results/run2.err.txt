@@ -1,0 +1,36 @@
+[pe] $SFCOP_ROOT/work/lifter/gameroot/StarFleetOP.exe mapped at 0x00400000, span 0x886000
+[pe] bound 353 imports, 0 unresolved
+[module] GetProcAddress(kernel32.dll, SetCriticalSectionSpinCount): not answered
+
+=== fault: signal 10, address 0x100000000000 at 0.670 s ===
+  in lifted sub_006FFA70, last import GetCurrentThreadId
+  eax=005D80E0 ecx=00000000 edx=00000000 ebx=00000000 esp=10B9FF84 ebp=10B9FFB4 esi=105200AC edi=00000000
+last indirect calls (newest first):
+  0x006FFA70  from 0x0073AEBD  
+  0x005D80E0  from 0x0073AEBD  
+  0x7F0004B0  from 0x0073B191  LeaveCriticalSection
+  0x7F000100  from 0x0073AEBD  GetCurrentThreadId
+  0x7F0004A0  from 0x0073B130  EnterCriticalSection
+  0x0047DD4C  from 0x0047DD38  
+  0x00730370  from 0x0072FFF0  
+  0x7F000610  from 0x0073AEBD  TlsSetValue
+  0x7F000100  from 0x00733660  GetCurrentThreadId
+  0x00730370  from 0x0072FFF0  
+  0x7F000100  from 0x00733660  GetCurrentThreadId
+  0x00730370  from 0x0072FFF0  
+  0x7F000100  from 0x00733660  GetCurrentThreadId
+  0x00730370  from 0x0072FFF0  
+  0x7F000100  from 0x00733660  GetCurrentThreadId
+  0x00730370  from 0x0072FFF0  
+  0x7F000100  from 0x00733660  GetCurrentThreadId
+  0x00730370  from 0x0072FFF0  
+  0x7F000100  from 0x00733660  GetCurrentThreadId
+  0x00730370  from 0x0072FFF0  
+  0x7F000100  from 0x00733660  GetCurrentThreadId
+  0x00730370  from 0x0072FFF0  
+  0x7F000100  from 0x00733660  GetCurrentThreadId
+  0x00730370  from 0x0072FFF0  
+StarFleetOP spike host (win32hle, arm64)
+  lifted functions in dispatch: 55623
+  mapped $SFCOP_ROOT/work/lifter/gameroot/StarFleetOP.exe: 0x00400000-0x00C86000, 0 imports bound to not-implemented stubs
+  entering 0x0073A2A0

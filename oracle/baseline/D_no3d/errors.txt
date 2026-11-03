@@ -1,0 +1,1 @@
+   1 err:winediag:wined3d_dll_init Disabling 3D support.

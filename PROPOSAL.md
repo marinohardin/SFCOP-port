@@ -15,8 +15,10 @@ zero reverse engineering, and a further ~3,000 identical template instantiations
 as a group. The exe also carries 1,983 RTTI class names and 229 source-file paths from assertion
 strings, so the translation-unit layout is recoverable.
 
-Two of the four goals are also cheaper than thought. The game uses raw Winsock (no DirectPlay),
-so there is no dead middleware to replace, only Taldren's own "Switch" network layer to modify.
+Two of the four goals are also cheaper than thought. Dynaverse and lobby traffic use raw Winsock
+through Taldren's own "Switch" network layer; DirectPlay 4 is present but only through COM
+(`CoCreateInstance`, not the import table) in one 14 KB region, so its replacement is a bounded
+transport swap rather than a rewrite.
 Dynaverse II login goes through Sierra's WON directory servers whose addresses live in a plain
 text file (`WONServerSetup.gf`), so re-pointing needs no patching, and both the WON protocol
 headers (Homeworld source release) and an open-source WON server (2026) exist. The official
@@ -64,11 +66,12 @@ libraries, so a script is also a ready-made test of the compiler setup.
 
 | DLL | Used for | Porting implication |
 |---|---|---|
-| `WSOCK32` (28 fns) | All networking: TCP and UDP sockets, `select`, `gethostbyname` | **No DirectPlay.** Transport is Taldren's own `nSwitch` layer over BSD sockets; portable almost as-is. |
-| `DDRAW` (3 fns) + D3D7 via QueryInterface | Rendering through Quicksilver's `dmp3d` engine (`d3dViewMgr`, `tDDSurfMgr`, `drawPoly`) | The one subsystem that must be rewritten for the port (SDL3 GPU or a DX7-to-modern shim). |
+| `WSOCK32` (28 fns) | WON, GameSpy and Dynaverse traffic: TCP and UDP sockets, `select`, `gethostbyname` | Taldren's own `nSwitch` layer over BSD sockets; portable almost as-is. |
+| DirectPlay 4 via COM (`CLSID_DirectPlay`, `IID_IDirectPlay4A`, Lobby3A; code at 0x616700-0x619DC0, 15 `tDirectPlayError` catch handlers) | Session transport for LAN and direct-IP games (corrected 2026-11-02 by the lifter spike; it is not in the import table) | Bounded: one region behind a `tDirectPlay*` class; replace with a UDP transport (OpenCMR2 did exactly this). |
+| `DDRAW` (3 fns) + **DirectX 6 interfaces** (`IDirectDraw4`, `IDirectDrawSurface4`, `IDirect3D3`, `IDirect3DDevice3`; no DX7 IIDs) | Rendering through Quicksilver's `dmp3d` engine (`d3dViewMgr`, `tDDSurfMgr`, `drawPoly`) | Corrected from "D3D7": the game uses the DX6 interface set, which pcrecomp's `win32hle` already implements in software. Native path later: SDL3 GPU behind dmp3d's interfaces. |
 | `mss32.dll` (Miles Sound System, 26 fns) + `DSOUND` | Audio through QSI's "Tiger" sound layer (`tSndMgr`, `tAudioChannel`) | Tiger is 1,852 functions matched from the SDK lib; swap Miles for miniaudio behind it. |
 | `DINPUT` | Input | Trivial to replace. |
-| `SHW32.DLL`, `HA312W32.DLL` | MicroQuill SmartHeap 6.0 allocator | Drop; use the system allocator. |
+| SmartHeap 6.02 (**statically linked**; the shipped `SHW32.DLL`/`HA312W32.DLL` are not imported) | MicroQuill allocator and `operator new` overrides | Identify as library code; map to the system allocator. |
 | `DBGHELP`, `BugslayerUtil.dll` | Crash call-stack reporting (`ErrorReport.exe`) | Drop or keep. |
 | `KERNEL32/USER32/GDI32/ADVAPI32/ole32/WINMM/comdlg32` | Window, registry, timers, file dialogs | Standard SDL/portability layer work. |
 
@@ -94,7 +97,7 @@ section, masks relocation slots, and searches the exe's `.text` for the exact by
 | `sfcTiger_MSVCR.lib` (QSI Tiger) | 3,391 | **1,852** | 532 | Platform/sound layer essentially free. |
 | `ScriptInterfaceR.lib` | 4,908 | 904 | 878 | Mission-script interface, ship/team/mission structs. |
 | `SharedR.lib` (Taldren Common + Scripting + Network structs) | 4,005 | 843 | 723 | Database, DataStore, Thread, Log, `NetMsgClass`, `MapObject`, `MissionSpec`. |
-| `cryptlibR.lib` (Crypto++) | 4,482 | 139 | 834 | Open-source library; recompile from source instead of matching. |
+| `cryptlibR.lib` (Crypto++ 3.1) | 4,482 | 139 | 834 | **Correction (P0-6, 2026-11-02): Crypto++ is not in the exe at all** (no `CryptoPP` RTTI or strings in any shipped binary); these hits are relocation-masked STL template bodies and are false positives. The lib exists only for SDK scripts. |
 | `dmp3D_MSVCR.lib` | 86 (archive truncated) | 20 | 7 | File is damaged; only 9 objects parse. |
 | **Total** | 16,872 | **3,758** (12.6% of .text bytes) | 2,974 | Plus "nomatch" functions that changed between 2001 and 2003 or were inlined; a relocation-aware fuzzy pass will recover many. |
 
@@ -130,12 +133,17 @@ of these and still reached a playable build.
 
 ### 2.7 Size estimate
 
-Heuristics on 2.5.5.2: 14,174 distinct `call` targets, 2,961 `push ebp; mov ebp,esp` prologues
-(most functions are frame-pointer-omitted), 4,217 `int3` padding runs. A realistic total is
-15,000 to 25,000 functions, of which roughly a third are CRT, Dinkumware STL, Crypto++, WONAPI
-and GameSpy SDK code that has public source or is already named. The earlier plan's 3,000 to
-6,000 estimate was low by a factor of three to five; the compensating fact is that the share
-needing genuine reverse engineering is much smaller than in a typical stripped exe.
+Measured by Ghidra (P0-3, 2026-11-02): **27,479 ordinary functions** plus 16,544 C++ exception
+funclets and 209 thunks (44,232 function records in all); 2,104 RTTI classes, 2,149 vtables.
+The lifter's independent discovery found 27,623 starts. Of the ordinary functions, 2,401 carry a
+real symbol name after Phase 0 (1,859 from the exact SDK table, 307 CRT via Ghidra's VS FID, 217
+SDK FID), 3,942 are class-recovery constructors or destructors, 4,281 have a known class with a
+placeholder method name, and 16,855 are still unnamed; the fuzzy matcher (P0-7) adds about 1,169
+names on top. Roughly a quarter of the code is CRT, Dinkumware STL, WONAPI, GameSpy SDK and
+SmartHeap. The earlier plan's 3,000 to 6,000 estimate was low by a factor of five; the
+compensating fact is that the share needing genuine reverse engineering is much smaller than in a
+typical stripped exe. (Note: "3,758 matches" in 2.5 is a row count; it is 2,396 distinct names at
+1,934 distinct addresses after identical-code folding.)
 
 ## 3. What comparable projects teach (research, Nov 2026)
 

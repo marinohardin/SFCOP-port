@@ -1,0 +1,5 @@
+label E_with_scr
+wine wine-11.0
+renderer default windowed 0 desktop 800x600
+seconds 40
+alive_at_end no

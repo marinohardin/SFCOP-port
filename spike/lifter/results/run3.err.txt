@@ -1,0 +1,11 @@
+[pe] $SFCOP_ROOT/work/lifter/gameroot/StarFleetOP.exe mapped at 0x00400000, span 0x886000
+[pe] bound 353 imports, 0 unresolved
+[host] static TLS: template 0x00C83000, 8 bytes + 0 zero, index at 0x00C7FF0C, callbacks at 0x0083A294
+[module] GetProcAddress(kernel32.dll, SetCriticalSectionSpinCount): not answered
+ICALL: unresolved VA 0x0059644A from 0x0073B74B
+[mark] reached 0x0069A840 (WinMain) at 0.626 s (last import GetModuleHandleA)
+[win32hle] FATAL: unimplemented import DirectInputCreateA (0x7F002E40) called from guest 0x006F3860
+StarFleetOP spike host (win32hle, arm64)
+  lifted functions in dispatch: 55623
+  mapped $SFCOP_ROOT/work/lifter/gameroot/StarFleetOP.exe: 0x00400000-0x00C86000, 0 imports bound to not-implemented stubs
+  entering 0x0073A2A0
