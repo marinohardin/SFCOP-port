@@ -1,0 +1,6 @@
+# Git-ignored files that Claude Code copies from the main checkout into each worktree it
+# creates. Same syntax as .gitignore. Only files that are also git-ignored are copied.
+# Keep this to small files: it is a copy, not a link. Large private material lives outside
+# the checkout and is reached by its absolute path.
+CLAUDE.local.md
+

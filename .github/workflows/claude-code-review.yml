@@ -1,0 +1,51 @@
+name: Claude Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review, reopened]
+
+# A new push to a pull request replaces the review of the previous one.
+concurrency:
+  group: claude-code-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  claude-review:
+    # Draft pull requests are not reviewed. Marking one ready starts the review.
+    if: github.event.pull_request.draft == false
+    runs-on: [self-hosted, sfcop-mac]
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude Code Review
+        id: claude-review
+        uses: anthropics/claude-code-action@v1
+        env:
+          # On a self-hosted runner the reviewer must not pick up the owner's own Claude settings,
+          # memory or plugins. It gets a configuration folder of its own, in the runner's
+          # temporary folder, which the runner empties after the job.
+          CLAUDE_CONFIG_DIR: ${{ runner.temp }}/claude-review-config
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
+          plugins: 'code-review@claude-code-plugins'
+          prompt: |
+            Review pull request ${{ github.repository }}/pull/${{ github.event.pull_request.number }}.
+
+            Read the "When reviewing a pull request" section of AGENTS.md and follow it, then review the change in depth:
+            - Read the whole diff with `gh pr diff`. Do not filter it with grep and do not truncate it with head; test files are part of the review.
+            - Open the changed files and the code they call, and check the change against docs/DESIGN.md and docs/CONVENTIONS.md where they apply.
+            - Post the whole review as one comment with `gh pr comment`, and post nothing else: no inline comments and no second comment. Every comment is an email to the owner.
+            - In that comment, list what you read and checked, then the findings by severity (high, medium, low). Give each finding its place as `path:line` and say what is wrong and why. If there are none, say plainly that you found no blocking issues. Never post a bare "No issues found".
+          # --max-turns caps what a single review can spend.
+          claude_args: '--allowedTools "Read,Grep,Glob,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*)" --max-turns 40'

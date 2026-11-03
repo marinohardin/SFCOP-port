@@ -1,0 +1,18 @@
+# The integrator owns the hotspot files (docs/PLAN.md, "Hotspot files"), so a change to one
+# is visibly a contract change. Keep this list in step with .github/hotspots.txt.
+
+/CLAUDE.md  @marinohardin
+/AGENTS.md  @marinohardin
+/.gitignore  @marinohardin
+/.claude/settings.json  @marinohardin
+/.github/  @marinohardin
+/.githooks/  @marinohardin
+/scripts/check.sh  @marinohardin
+/scripts/progress.py  @marinohardin
+/docs/  @marinohardin
+/PROPOSAL.md  @marinohardin
+/analysis/results/retail_hashes.sha256  @marinohardin
+/toolchain/  @marinohardin
+/oracle/expected/  @marinohardin
+/harness/  @marinohardin
+/.worktreeinclude  @marinohardin

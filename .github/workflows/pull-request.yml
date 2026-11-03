@@ -1,0 +1,31 @@
+name: Pull request
+
+on:
+  pull_request:
+    branches: [main, develop, "feature/**"]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+# A new push to a pull request replaces the run of the previous one.
+concurrency:
+  group: pull-request-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  # One job, because every job is billed in whole minutes and pays for its own install.
+  check:
+    runs-on: [self-hosted, sfcop-mac]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The checkout is the merge of the pull request into its base. Its first parent is
+          # the base, so two commits are enough to list what the pull request changes.
+          fetch-depth: 2
+
+      - uses: ./.github/actions/setup
+
+      - name: The definition of done
+        run: sh scripts/check.sh
