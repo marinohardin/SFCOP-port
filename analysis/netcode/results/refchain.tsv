@@ -1,0 +1,70 @@
+seed	hop	to	from	from_function	ref_type
+CLSID_DirectPlay	0	007bb118	00616a18	006169e0 FUN_006169e0	DATA
+CLSID_DirectPlay	0	007bb118	0061677b	00616700 FUN_00616700	DATA
+CLSID_DirectPlay	0	007bb118	00619e09	-	DATA
+IID_IDirectPlay4A	0	007bb128	00616a0f	006169e0 FUN_006169e0	DATA
+IID_IDirectPlay4A	0	007bb128	00616cde	00616c80 FUN_00616c80	DATA
+IID_IDirectPlay4A	0	007bb128	00616772	00616700 FUN_00616700	DATA
+IID_IDirectPlay4A	0	007bb128	00619e01	-	DATA
+CLSID_DirectPlayLobby	0	007bb0b8	00616af8	00616ac0 FUN_00616ac0	DATA
+IID_IDirectPlayLobby3A	0	007bb0c8	00616aef	00616ac0 FUN_00616ac0	DATA
+direct_play::tDirectPlayError type descriptor	0	0087c590	008234e4	-	DATA
+direct_play::tDirectPlayError type descriptor	1	008234e0	008234d8	-	DATA
+direct_play::tDirectPlayError type descriptor	2	008234c8	00823490	-	DATA
+direct_play::tDirectPlayError type descriptor	3	00823480	007861d1	-	DATA
+direct_play::tDirectPlayError type descriptor	0	0087c590	00823964	-	DATA
+direct_play::tDirectPlayError type descriptor	1	00823960	00823958	-	DATA
+direct_play::tDirectPlayError type descriptor	2	00823948	00823928	-	DATA
+direct_play::tDirectPlayError type descriptor	3	00823918	007863f0	-	DATA
+direct_play::tDirectPlayError type descriptor	0	0087c590	008239cc	-	DATA
+direct_play::tDirectPlayError type descriptor	1	008239c8	008239c0	-	DATA
+direct_play::tDirectPlayError type descriptor	2	008239b0	00823990	-	DATA
+direct_play::tDirectPlayError type descriptor	3	00823980	00786400	-	DATA
+direct_play::tDirectPlayError type descriptor	0	0087c590	00823a3c	-	DATA
+direct_play::tDirectPlayError type descriptor	1	00823a38	00823a30	-	DATA
+direct_play::tDirectPlayError type descriptor	2	00823a20	008239f8	-	DATA
+direct_play::tDirectPlayError type descriptor	3	008239e8	0078641b	-	DATA
+direct_play::tDirectPlayError type descriptor	0	0087c590	00823aac	-	DATA
+direct_play::tDirectPlayError type descriptor	1	00823aa8	00823aa0	-	DATA
+direct_play::tDirectPlayError type descriptor	2	00823a90	00823a68	-	DATA
+direct_play::tDirectPlayError type descriptor	3	00823a58	00786438	-	DATA
+direct_play::tDirectPlayError type descriptor	0	0087c590	00823b14	-	DATA
+direct_play::tDirectPlayError type descriptor	1	00823b10	00823b08	-	DATA
+direct_play::tDirectPlayError type descriptor	2	00823af8	00823ad8	-	DATA
+direct_play::tDirectPlayError type descriptor	3	00823ac8	00786450	-	DATA
+direct_play::tDirectPlayError type descriptor	0	0087c590	00823b6c	-	DATA
+direct_play::tDirectPlayError type descriptor	1	00823b68	00823b60	-	DATA
+direct_play::tDirectPlayError type descriptor	2	00823b50	00823b30	-	DATA
+direct_play::tDirectPlayError type descriptor	3	00823b20	00786460	-	DATA
+direct_play::tDirectPlayError type descriptor	0	0087c590	00823bd4	-	DATA
+direct_play::tDirectPlayError type descriptor	1	00823bd0	00823bc8	-	DATA
+direct_play::tDirectPlayError type descriptor	2	00823bb8	00823b88	-	DATA
+direct_play::tDirectPlayError type descriptor	3	00823b78	00786480	-	DATA
+direct_play::tDirectPlayError type descriptor	0	0087c590	00823cb4	-	DATA
+direct_play::tDirectPlayError type descriptor	1	00823cb0	00823ca8	-	DATA
+direct_play::tDirectPlayError type descriptor	2	00823c98	00823c38	-	DATA
+direct_play::tDirectPlayError type descriptor	3	00823c28	0078650c	-	DATA
+direct_play::tDirectPlayError type descriptor	0	0087c590	00823d1c	-	DATA
+direct_play::tDirectPlayError type descriptor	1	00823d18	00823d10	-	DATA
+direct_play::tDirectPlayError type descriptor	2	00823d00	00823ce0	-	DATA
+direct_play::tDirectPlayError type descriptor	3	00823cd0	00786520	-	DATA
+direct_play::tDirectPlayError type descriptor	0	0087c590	00823d84	-	DATA
+direct_play::tDirectPlayError type descriptor	1	00823d80	00823d78	-	DATA
+direct_play::tDirectPlayError type descriptor	2	00823d68	00823d48	-	DATA
+direct_play::tDirectPlayError type descriptor	3	00823d38	00786530	-	DATA
+direct_play::tDirectPlayError type descriptor	0	0087c590	00823dfc	-	DATA
+direct_play::tDirectPlayError type descriptor	1	00823df8	00823df0	-	DATA
+direct_play::tDirectPlayError type descriptor	2	00823de0	00823db0	-	DATA
+direct_play::tDirectPlayError type descriptor	3	00823da0	00786550	-	DATA
+direct_play::tDirectPlayError type descriptor	0	0087c590	00823ec4	-	DATA
+direct_play::tDirectPlayError type descriptor	1	00823ec0	00823eb8	-	DATA
+direct_play::tDirectPlayError type descriptor	2	00823ea8	00823e80	-	DATA
+direct_play::tDirectPlayError type descriptor	3	00823e70	00786578	-	DATA
+direct_play::tDirectPlayError type descriptor	0	0087c590	00824034	-	DATA
+direct_play::tDirectPlayError type descriptor	1	00824030	00824028	-	DATA
+direct_play::tDirectPlayError type descriptor	2	00824018	00823ff8	-	DATA
+direct_play::tDirectPlayError type descriptor	3	00823fe8	007865c0	-	DATA
+direct_play::tDirectPlayError type descriptor	0	0087c590	008241a4	-	DATA
+direct_play::tDirectPlayError type descriptor	1	008241a0	00824198	-	DATA
+direct_play::tDirectPlayError type descriptor	2	00824188	00824168	-	DATA
+direct_play::tDirectPlayError type descriptor	3	00824158	00786600	-	DATA
