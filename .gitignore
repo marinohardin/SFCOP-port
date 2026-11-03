@@ -1,0 +1,18 @@
+# retail game files, disc images, server kit: never committed
+reference/
+# large generated data lives in $SFCOP_ROOT/work (outside the repo)
+work/
+*.gpr
+*.rep/
+.DS_Store
+__pycache__/
+venv/
+.venv/
+*.o
+*.obj
+*.exe
+*.dll
+*.lib
+*.pdb
+*.ilk
+!analysis/results/*.tsv
