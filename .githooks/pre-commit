@@ -1,0 +1,21 @@
+#!/bin/sh
+# Refuses a commit made directly on main or develop.
+#
+# Both branches take changes only through pull requests. The hosting service may not enforce
+# that for this repository, so this hook does. `sh .githooks/install.sh` activates it.
+
+branch=$(git symbolic-ref --quiet --short HEAD) || exit 0
+
+case "$branch" in
+  main | develop)
+    cat >&2 <<MESSAGE
+Refused: commits are not made directly on '$branch'.
+
+Do the work on its own branch, in its own worktree, and open a pull request.
+Start Claude Code with its worktree option, or run: claude --worktree <name>
+See "Branches, worktrees and pull requests" in AGENTS.md.
+
+MESSAGE
+    exit 1
+    ;;
+esac

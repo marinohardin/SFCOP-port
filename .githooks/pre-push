@@ -1,0 +1,21 @@
+#!/bin/sh
+# Refuses a push that would update, create or delete main or develop on the remote.
+#
+# Both branches change only when a pull request is merged. The hosting service may not
+# enforce that for this repository, so this hook does. `sh .githooks/install.sh` activates it.
+
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
+  case "$remote_ref" in
+    refs/heads/main | refs/heads/develop)
+      cat >&2 <<MESSAGE
+Refused: '${remote_ref#refs/heads/}' is not pushed to directly.
+
+Push your own branch and open a pull request instead.
+
+MESSAGE
+      exit 1
+      ;;
+  esac
+done
+
+exit 0

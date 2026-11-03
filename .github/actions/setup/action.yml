@@ -1,0 +1,21 @@
+name: Set up
+description: Checks that the self-hosted runner has the tools the jobs need. Nothing is installed.
+
+# This project runs its jobs on the owner's Mac (runs-on: [self-hosted, sfcop-mac]). The
+# toolchain is not installed by CI: Python 3 comes from the machine, the VC6 SP4 compiler lives
+# in a Docker image built from toolchain/, and Ghidra is installed by Homebrew. Keep two rules
+# whatever is added later:
+# - pin versions from a file in the repository, never "latest";
+# - on a self-hosted runner, keep caches and stores under $RUNNER_TOOL_CACHE or $RUNNER_TEMP,
+#   never in the home directory, because several runners on one machine share a home directory.
+runs:
+  using: composite
+  steps:
+    - name: Check the runner's tools
+      shell: bash
+      run: |
+        set -eu
+        python3 --version
+        python3 -c "import pytest" 2>/dev/null || python3 -m pip install --quiet --user pytest
+        docker version --format '{{.Server.Version}}' >/dev/null || { echo "docker is not available on this runner"; exit 1; }
+        echo "PIP_CACHE_DIR=$RUNNER_TOOL_CACHE/pip-cache" >> "$GITHUB_ENV"

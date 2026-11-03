@@ -1,0 +1,37 @@
+name: Hotspots
+
+on:
+  pull_request:
+    branches: [main, develop, "feature/**"]
+    # Label changes are included because the job depends on the contract-change label. This is
+    # its own workflow so that a label change re-runs this check alone, not the tests.
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hotspots-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  hotspots:
+    # Only work package and feature branches are held to the ownership rule, and a pull
+    # request that is itself a contract change says so with a label. When this job is
+    # skipped the check counts as passed.
+    if: >-
+      (startsWith(github.head_ref, 'wp/') || startsWith(github.head_ref, 'feature/')) &&
+      !contains(github.event.pull_request.labels.*.name, 'contract-change')
+    runs-on: [self-hosted, sfcop-mac]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The comparison needs the commit where the branch left its base.
+          fetch-depth: 0
+
+      - name: Check for changes to hotspot files
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: sh .github/scripts/checkHotspots.sh "$BASE_SHA" "$HEAD_SHA"
