@@ -1,0 +1,34 @@
+# Menu path from launch to the oracle mission, for oracle_input.exe.
+#
+# PARTLY CALIBRATED. Seen so far (oracle/baseline/C_after_key, 2026-11-03): the main menu
+# ("Select Game") is up 15 s after launch; it is a 640x480 screen centred in the 800x600 window.
+# SINGLE PLAYER is at (237,232). The screens after it have not been seen: the game has crashed at
+# start-up in every boot since (oracle/BASELINE.md, "After the CD key").
+# Known: the game's window is class "SFC", title "Starfleet Command", 800x600 client area at the
+# top-left of the Wine desktop (oracle_input "list", 2026-11-02). Coordinates are client pixels.
+# The driver's "shot" is black under Wine (GDI cannot read the DirectDraw/GL surface): calibrate
+# with ORACLE_SHOTS=10 oracle/run_oracle.sh <label>, which saves oracle/shot.sh captures of the Mac
+# window, while that window is on the visible Space.
+#
+# Intended path (from the menu state names in StarFleetOP.exe: tState_Skirmish, SETUP_SKIRMISH):
+#   main menu -> Skirmish -> mission list: "!Oracle Skirmish" (sorts first) -> Start/Launch
+# The script fixes ships, sides, map and positions, so nothing on the setup screen matters.
+
+window 120 Starfleet Command
+sleep 15000
+
+# --- main menu: SINGLE PLAYER
+click 237 232
+sleep 5000
+
+# --- single player screen: Skirmish button
+# click X Y
+# sleep 5000
+
+# --- skirmish screen: pick the first mission in the list, then start
+# click X Y
+# sleep 2000
+# click X Y
+
+# The game writes OracleTrace.txt once the mission has started.
+waitfile 300 C:\Games\SFCOP\OracleTrace.txt

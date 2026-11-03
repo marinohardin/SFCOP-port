@@ -1,0 +1,5 @@
+# Calibration probe: no input. Prints every top-level window (class, title, rect) once the game's
+# window is up. Run inside the prefix: wine oracle_input.exe probe.steps > probe.log
+window 120 Starfleet Command
+sleep 30000
+list

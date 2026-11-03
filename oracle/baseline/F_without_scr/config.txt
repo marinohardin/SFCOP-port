@@ -1,0 +1,5 @@
+label F_without_scr
+wine wine-11.0
+renderer default windowed 0 desktop 800x600
+seconds 45
+alive_at_end no

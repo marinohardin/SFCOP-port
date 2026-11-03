@@ -1,0 +1,13 @@
+== a vs b (metadata differs only): expect identical
+A 6befb9166ade730787b3741f3cf33862d1c46d22f4677da91c1cf7057878d6e9        3 lines
+B 6befb9166ade730787b3741f3cf33862d1c46d22f4677da91c1cf7057878d6e9        3 lines
+identical
+== a vs c (speed differs at sample 1): expect difference
+A 6befb9166ade730787b3741f3cf33862d1c46d22f4677da91c1cf7057878d6e9        3 lines
+B a49972f34b95036bbdd4f74dad3a2e5b08a177ce19d40a55dd813ae4cc5de945        3 lines
+first difference at line 2 (sample 1)
+A: S 1 c101 grid 6 20 raw 5 19 0 0 0 0 0 0 0 0 0 0 spd 4 dmg 0 tgt c201 dist 64.25 st 2
+B: S 1 c101 grid 6 20 raw 5 19 0 0 0 0 0 0 0 0 0 0 spd 5 dmg 0 tgt c201 dist 64.25 st 2
+  field 21: 4 -> 5
+differing lines: 2
+selftest passed
