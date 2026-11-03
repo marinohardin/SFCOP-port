@@ -1,0 +1,1 @@
+link rc=0 in 20 s -> work/delink/out/exe/sfcop_samebase.exe 8937472 bytes

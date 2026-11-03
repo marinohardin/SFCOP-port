@@ -1,0 +1,2 @@
+run-original-2: 1205 distinct keys/values, last first-use: NtOpenKeyEx L"SOFTWARE\\GameSpy\\CDKeys"
+run-relinked-3: 1205 distinct keys/values, last first-use: NtOpenKeyEx L"SOFTWARE\\GameSpy\\CDKeys"

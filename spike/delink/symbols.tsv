@@ -1,0 +1,4 @@
+# Names given to addresses in the delinked object, so that freshly compiled code can link to
+# them. The name is the one the compiler emits for the original declaration.
+# address	name	evidence
+00c7f790	?fInfo@tOSVersion@@0U_OSVERSIONINFOA@@A	OSVersion.h declares "static OSVERSIONINFO fInfo"; IsWindows95/98 at 0x6f5580/0x6f55a0 read fInfo.dwMinorVersion (+8) at 0xc7f798 and fInfo.dwPlatformId (+0x10) at 0xc7f7a0

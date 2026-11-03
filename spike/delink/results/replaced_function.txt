@@ -1,0 +1,4 @@
+original 006f55a0-006f55bc (28 bytes), replacement ?IsWindows98@tOSVersion@@QAE_NXZ at 10394ff0
+  +02: 00c7f7a0 -> 108807a0 = ?fInfo@tOSVersion@@0U_OSVERSIONINFOA@@A+16
+  +11: 00c7f798 -> 10880798 = ?fInfo@tOSVersion@@0U_OSVERSIONINFOA@@A+8
+bytes equal: 22 of 28; differing: 6, all in the dwords above: yes

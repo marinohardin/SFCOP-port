@@ -1,0 +1,14 @@
+code gaps: {disassemble-after-call=38, disassemble-fallthrough=39, disassemble-fallthrough-failed=20, disassemble-function-start=1, jump-table-entries=27, jump-table-entries-after-padding=1, jump-table-entries-continued=18, leave-after-pointer=48, leave-after-terminal=1027, leave-callee-has-no-ret=8, leave-not-after-instruction=2}
+scalar references: 44919 kept, 80 added, 13 dropped; 374 of 374 functions created at undisassembled code addresses
+orphan runs: 7417 at start; joined 81, created 8010, created with run body 14, failed 0; 0 runs left
+scalar references: 44999 kept, 4 added, 0 dropped; 0 of 0 functions created at undisassembled code addresses
+displacement references: 166 added, 27 made primary
+data in .text retyped: c_dfDIKeyboard objects at 006f2860
+string pointers untyped: 80
+data pointers typed: 1883, left as values: 385
+references outside the image dropped: 73
+thunks made ordinary functions: 770
+import slots named: 353
+names from symbols.tsv: 1
+labels added at targets: 83
+duplicate names renamed: 2056
