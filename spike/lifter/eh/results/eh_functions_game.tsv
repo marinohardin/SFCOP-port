@@ -1,0 +1,152 @@
+function	kind	prologue	frame	catches	continuations
+0x00402A26	c++	eh_prolog	0x007E71E8	...	0x00402AE6
+0x00402BB6	c++	eh_prolog	0x007E7248	...	0x00402C74
+0x00403EDA	c++	eh_prolog	0x007E73E0	...	0x00403FB0
+0x004042C3	c++	eh_prolog	0x007E74D8	...	0x00404321
+0x00404F00	c++	eh_prolog	0x007E7648	...	0x00404FEE
+0x0040849B	c++	eh_prolog	0x007E7C38	.E	0x004085AF
+0x0040AB74	c++	eh_prolog	0x007E7DD0	...,...,...,...,...,...,...,...,...,...,...,...,...	0x0040AB97,0x0040AC19,0x0040AC2B,0x0040AC4A,0x0040AC6A,0x0040AC84,0x0040AC96,0x0040ACB6,0x0040ACC2,0x0040ACE2,0x0040ACF1,0x0040AD0B,0x0040AD20
+0x0040B6E7	c++	eh_prolog	0x007E8138	.?AVtErrInfo@@	0x0040BA6A
+0x0040C3BA	c++	eh_prolog	0x007E82D8	.?AVtPartBindingException@tPart@@,.?AVtPartStartupException@tPart@@,.PAD,.?AVtErrInfo@@	0x0040C5D5
+0x0040F15A	c++	eh_prolog	0x007E8498	.E	0x0040F86C
+0x0041A1C9	c++	eh_prolog	0x007E8B28	...	0x0041A2A9
+0x0041A2F0	c++	eh_prolog	0x007E8B90	...	0x0041A3BC
+0x0041A403	c++	eh_prolog	0x007E8BF8	...	0x0041A483
+0x0041A682	c++	eh_prolog	0x007E8CE0	...	0x0041A786
+0x0042FEF9	c++	eh_prolog	0x007EA618	.?AVtErrInfo@@,.PAD	0x004301AA
+0x00461164	c++	eh_prolog	0x007ED670	...	0x00461283
+0x0046A46A	c++	eh_prolog	0x007EE6E8	.?AVtGameStateMgr_QuitException@@	0x0046A493
+0x0046EC27	c++	eh_prolog	0x007EEE18	...	0x0046EC8C
+0x004D29C5	c++	eh_prolog	0x007F6D80	...	0x004D2A96
+0x0050A745	c++	eh_prolog	0x007F8900	.PAD,.?AVtErrInfo@@	0x0050AB99
+0x0051D9F8	c++	eh_prolog	0x007F92B8	.?AVtThreadFinishedException@tAICalculation@@	0x0051DA27
+0x00538E72	c++	eh_prolog	0x007FAB78	...	0x00538F3E
+0x0053BAAF	c++	eh_prolog	0x007FB170	...	0x0053BB80
+0x0053F34E	c++	eh_prolog	0x007FB900	...	0x0053F41A
+0x00568B2E	c++	eh_prolog	0x008034B8	...	0x00568DFB
+0x0057A4AB	c++	eh_prolog	0x00806BE0	...	0x0057A577
+0x00591EFE	c++	eh_prolog	0x0080A628	...(rethrows)	
+0x005ACF64	c++	eh_prolog	0x00810530	.?AVtInitFailed@nException@@,.?AVtInitFailed@nException@@	0x005AD16C,0x005AD1C8
+0x005B6086	c++	eh_prolog	0x00812090	...	0x005B60FE
+0x005B613A	c++	eh_prolog	0x008120E8	...	0x005B61B0
+0x005CA5DA	c++	eh_prolog	0x008160E0	...	0x005CA6A6
+0x005CFA62	c++	eh_prolog	0x008175F0	.?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@	0x005CFD75
+0x005DA242	c++	eh_prolog	0x00819D28	...	0x005DA2A0
+0x005E94EF	c++	eh_prolog	0x0081C3E8	...(rethrows)	
+0x005F77C6	c++	eh_prolog	0x0081F090	...(rethrows)	
+0x005F7961	c++	eh_prolog	0x0081F0F0	...(rethrows)	
+0x006104D0	c++	ebp	0x008232D0	.?AVexception@@	0x006107D0
+0x006111E0	c++	ebp	0x00823480	.?AVtDirectPlayError@direct_play@@,.?AVexception@@	0x006114FF
+0x00611770	c++	ebp	0x00823558	.?AVexception@@,...(rethrows)	0x00611841
+0x00611F90	c++	ebp	0x00823618	.?AVTLogicError@ExpandedExceptions@@	0x00612355
+0x00612420	c++	ebp	0x008236A8	.?AVexception@@	0x00612493
+0x006124C0	c++	ebp	0x00823700	.?AVexception@@	0x00612533
+0x00614460	c++	ebp	0x008238B0	...	0x006144F1
+0x00614520	c++	ebp	0x00823918	.?AVtDirectPlayError@direct_play@@,.?AVexception@@	0x0061460B
+0x00614630	c++	ebp	0x00823980	.?AVtDirectPlayError@direct_play@@,.?AVexception@@	0x00614969
+0x006149B0	c++	ebp	0x008239E8	.?AVtDirectPlayError@direct_play@@,.?AVexception@@	0x00614D3F
+0x00614D70	c++	ebp	0x00823A58	.?AVtDirectPlayError@direct_play@@,.?AVexception@@	0x00614EEE
+0x00614F10	c++	ebp	0x00823AC8	.?AVtDirectPlayError@direct_play@@	0x0061503A
+0x00615060	c++	ebp	0x00823B20	.?AVtDirectPlayError@direct_play@@	0x00615123
+0x00615140	c++	ebp	0x00823B78	.?AVtDirectPlayError@direct_play@@,.?AVexception@@	0x00615362
+0x00615520	c++	ebp	0x00823C28	.?AVtDirectPlayError@direct_play@@,.?AVexception@@	0x006159CE
+0x00615A00	c++	ebp	0x00823CD0	.?AVtDirectPlayError@direct_play@@,.?AVexception@@	0x00615BA8
+0x00615C10	c++	ebp	0x00823D38	.?AVtDirectPlayError@direct_play@@,.?AVexception@@	0x00615CBA
+0x00615D00	c++	ebp	0x00823DA0	.?AVtDirectPlayError@direct_play@@,.?AVexception@@	0x00615DB7
+0x00615E00	c++	ebp	0x00823E18	.?AVexception@@	0x00615E9F
+0x00615EC0	c++	ebp	0x00823E70	.?AVtDirectPlayError@direct_play@@,.?AVexception@@	0x00615FCD
+0x00615FF0	c++	ebp	0x00823EE0	.?AVexception@@	0x0061607B
+0x006160A0	c++	ebp	0x00823F38	.?AVexception@@	0x0061612B
+0x00616150	c++	ebp	0x00823F90	.?AVexception@@	0x006161D7
+0x006161F0	c++	ebp	0x00823FE8	.?AVtDirectPlayError@direct_play@@,.?AVexception@@	0x00616313
+0x00616330	c++	ebp	0x00824050	.?AVexception@@	0x00616451
+0x00616540	c++	ebp	0x008240A8	.?AVexception@@	0x006165F6
+0x00616620	c++	ebp	0x00824100	.?AVexception@@	0x006166A9
+0x00616700	c++	ebp	0x00824158	.?AVtDirectPlayError@direct_play@@	0x0061697A
+0x006169E0	c++	ebp	0x008241B0	.?AVexception@@	0x00616A85
+0x00616AC0	c++	ebp	0x00824208	.?AVexception@@	0x00616B56
+0x00616C80	c++	ebp	0x00824260	.?AVexception@@	0x00616D12
+0x00616D30	c++	ebp	0x008242B8	.?AVexception@@	0x00616E17
+0x00616E30	c++	ebp	0x00824310	.?AVexception@@	0x00616EBF
+0x00616EE0	c++	ebp	0x00824368	.?AVexception@@	0x00616F93
+0x00616FD0	c++	ebp	0x008243C0	.?AVexception@@	0x0061706C
+0x00617080	c++	ebp	0x00824418	.?AVexception@@	0x0061712C
+0x00617140	c++	ebp	0x00824470	.?AVexception@@	0x006171F6
+0x00617210	c++	ebp	0x008244C8	.?AVexception@@	0x006172AC
+0x006172C0	c++	ebp	0x00824520	.?AVexception@@	0x0061735C
+0x0061A550	c++	ebp	0x00824848	.?AVexception@@	0x0061A5F2
+0x00627FA0	c++	ebp	0x00825668	.E	0x00628467
+0x0062C130	c++	ebp	0x008257D0	.E	0x0062C446,0x0062C461
+0x0062C510	c++	ebp	0x00825828	.E	0x0062C651
+0x006340B0	c++	ebp	0x00826270	...	0x006343F0
+0x00634B50	c++	ebp	0x008263A8	...	0x00634D6E
+0x0063F5A0	c++	ebp	0x00826630	.?AVThreadException@tThreadPart@@	0x0063F6A3
+0x00640580	c++	ebp	0x00826688	.?AVtPartBindingException@tPart@@	0x00640622
+0x00640640	c++	ebp	0x008266E0	.?AVtPartBindingException@tPart@@	0x006406E2
+0x00640DB0	c++	ebp	0x008267C0	...	0x00640FA3
+0x0064F250	c++	ebp	0x00826AB0	...	0x0064F629
+0x0064FC00	c++	ebp	0x00826B48	.?AVtPartBindingException@tPart@@	0x0064FCA2
+0x00661160	c++	ebp	0x00826CA8	.?AVtPartBindingException@tPart@@	0x00661202
+0x00661220	c++	ebp	0x00826D00	.?AVtPartBindingException@tPart@@	0x006612C2
+0x0066BAE0	c++	ebp	0x00826DE8	.?AVtPartBindingException@tPart@@	0x0066BB82
+0x0066BC20	c++	ebp	0x00826E40	.?AVtPartBindingException@tPart@@	0x0066BCC2
+0x0066C9B0	c++	ebp	0x00826E98	.E	0x0066CEA2
+0x00672B60	c++	ebp	0x00827188	.?AVtQ3EngineErr@@,.?AVtQ3EngineErr@@,.?AVtQ3EngineErr@@,.?AVtQ3EngineErr@@,.?AVtQ3EngineErr@@,.?AVtQ3EngineErr@@	0x00672C1A
+0x00676250	c++	ebp	0x00827590	...(rethrows)	
+0x006997C0	c++	ebp	0x008299A0	...(rethrows),.?AVtApplication_QuitException@@	0x00699B1C
+0x00699B30	c++	ebp	0x00829A28	.?AVtApplication_QuitException@@	0x00699B81
+0x0069A4C0	c++	ebp	0x00829A80	...	0x0069A81B
+0x0069D3F0	c++	ebp	0x00829B70	.J	0x0069D6F8
+0x006A5A20	c++	ebp	0x00829E08	.?AVtErrInfo@@	0x006A5B77
+0x006A62F0	c++	ebp	0x00829E60	.?AVtErrInfo@@	0x006A64E4
+0x006A8930	c++	ebp	0x00829FC8	.J	0x006A8B01
+0x006B3E10	c++	ebp	0x0082A1F0	.J	0x006B3F67
+0x006B4540	c++	ebp	0x0082A270	.J	0x006B4A2C
+0x006D1310	c++	ebp	0x0082AA94	...	0x006D1348
+0x006D4340	c++	ebp	0x0082AD78	.?AVReadBufferException@WONAPI@@	0x006D43C8
+0x006D7C70	c++	ebp	0x0082B538	.?AVReadBufferException@WONAPI@@	0x006D7F31
+0x006DA6F0	c++	ebp	0x0082BAF4	.?AVReadBufferException@WONAPI@@	0x006DA80B
+0x006DEEF0	c++	ebp	0x0082BFF4	.?AVReadBufferException@WONAPI@@	0x006DEFCF
+0x006DF560	c++	ebp	0x0082C0A4	.?AVReadBufferException@WONAPI@@	0x006DF612
+0x006DF630	c++	ebp	0x0082C0F4	.?AVReadBufferException@WONAPI@@	0x006DF6B4
+0x006EFE20	c++	ebp	0x0082D53C	.?AVArithmeticException@WONAPI@@	0x006EFFD1
+0x006EFFF0	c++	ebp	0x0082D5A4	.?AVArithmeticException@WONAPI@@	0x006F00AE
+0x006F00D0	c++	ebp	0x0082D624	.?AVArithmeticException@WONAPI@@	0x006F0258
+0x006F8B00	c++	ebp	0x0082E030	...	0x006F8BFD
+0x006FD380	c++	ebp	0x0082E490	...	0x006FD56C
+0x006FD590	c++	ebp	0x0082E4E8	...	0x006FD5D7
+0x006FD810	c++	ebp	0x0082E540	...	0x006FD8A6
+0x006FF710	c++	ebp	0x0082E828	...,.?AVtBaseException@nException@@,...	0x006FF9C1,0x006FF9DC
+0x00702A10	c++	ebp	0x0082EE50	...	0x00702B2F
+0x00702B90	c++	ebp	0x0082EEA8	...	0x00702C6C
+0x00704720	c++	ebp	0x0082F188	...(rethrows)	
+0x0070C780	c++	ebp	0x0082FC88	...	0x0070C832
+0x0070E110	c++	ebp	0x0082FD10	...	0x0070E1C7
+0x0071AAA0	c++	ebp	0x00830F20	.?AVtBaseException@nException@@,...(rethrows)	0x0071AEE4
+0x0071FF00	c++	ebp	0x00831960	...(rethrows)	
+0x00720250	c++	ebp	0x008319F0	...(rethrows)	
+0x00757310	c++	ebp	0x00834E78	...(rethrows)	
+0x00732740	seh	ebp	0x007BBB68	1 __except, 0 __finally	0x007327E1
+0x00732830	seh	ebp	0x007BBB78	1 __except, 0 __finally	0x007328D9
+0x00733B80	seh	ebp	0x007BBBC0	0 __except, 1 __finally	
+0x00736273	seh	ebp	0x007BBBE8	0 __except, 1 __finally	
+0x007362F3	seh	ebp	0x007BBBF8	1 __except, 0 __finally	0x00736339
+0x00736367	seh	ebp	0x007BBC08	0 __except, 1 __finally	
+0x00737A93	seh	ebp	0x007BBCE0	1 __except, 0 __finally	0x00737B3B
+0x00737B72	seh	ebp	0x007BBD00	1 __except, 0 __finally	0x00737C6B
+0x0073A2A0	seh	ebp	0x007BBD40	1 __except, 0 __finally	0x0073A39D
+0x0073A861	seh	ebp	0x007BBD50	1 __except, 0 __finally	0x0073A8E9
+0x0073AEBD	seh	ebp	0x007BBD60	1 __except, 0 __finally	0x0073AF4E
+0x0073BABA	seh	ebp	0x007BBDC8	1 __except, 0 __finally	0x0073BB2B
+0x0073BBD3	seh	ebp	0x007BBDD8	2 __except, 1 __finally	0x0073BC82,0x0073BED4
+0x0073BD18	seh	ebp	0x007BBDF0	1 __except, 0 __finally	0x0073BED4
+0x0073BEDC	seh	ebp	0x007BBE00	1 __except, 0 __finally	0x0073BF3B
+0x0073C12A	seh	ebp	0x007BBE10	2 __except, 2 __finally	0x0073C176,0x0073C1CC
+0x0073C18B	seh	ebp	0x007BBE28	1 __except, 1 __finally	0x0073C1CC
+0x0073EBBB	seh	ebp	0x007BBF58	2 __except, 0 __finally	0x0073ECCF,0x0073ED83
+0x007403BC	seh	ebp	0x007BC028	2 __except, 0 __finally	0x007404C2,0x0074053F
+0x00745F7C	seh	ebp	0x007BCBA8	1 __except, 0 __finally	0x00746079
+0x00749BDD	seh	ebp	0x007BD240	2 __except, 0 __finally	0x00749CCD,0x00749D2A
+0x0074B69E	seh	ebp	0x007BD398	1 __except, 0 __finally	0x0074B75B
+0x0074B7B1	seh	ebp	0x007BD3A8	1 __except, 0 __finally	0x0074B874
+0x0074B8CF	seh	ebp	0x007BD3B8	2 __except, 0 __finally	0x0074BA8A,0x0074BAF9
