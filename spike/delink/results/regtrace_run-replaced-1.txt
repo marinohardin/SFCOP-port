@@ -1,0 +1,2 @@
+run-original-2: 1205 distinct keys/values, last first-use: NtOpenKeyEx L"SOFTWARE\\GameSpy\\CDKeys"
+run-replaced-1: 1205 distinct keys/values, last first-use: NtOpenKeyEx L"SOFTWARE\\GameSpy\\CDKeys"

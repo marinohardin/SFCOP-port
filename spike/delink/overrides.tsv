@@ -1,0 +1,3 @@
+# Decisions on immediate operands that SfcDelinkPrep's rules get wrong. Columns:
+# address (Ghidra form, 8 hex digits), operand index, keep|drop, why.
+address	operand	action	why

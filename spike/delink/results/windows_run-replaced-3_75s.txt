@@ -1,0 +1,12 @@
+         desktop "Default"
+       2   1 list
+         window 00030052 + pid 280 class "SFC" "Starfleet Command" 0,30 800x600
+         window 00020068 - pid 280 class "Wine IME" "" 0,0 1x1
+         window 00010062 - pid 280 class "IME" "Default IME" 0,0 1x1
+         window 0001004A - pid 112 class "WineDdeServerName" "" 0,0 0x0
+         window 00020046 - pid 112 class "WineDdeServerName" "" 0,0 0x0
+         window 00020048 - pid 112 class "WineDdeServerName" "" 0,0 0x0
+         window 00020044 - pid 112 class "WineDdeEventClass" "" 0,0 0x0
+         window 00030038 - pid 112 class "Shell_TrayWnd" "" 0,0 166x52
+         window 00010042 - pid 112 class "IME" "Default IME" 0,0 1x1
+      96 done
