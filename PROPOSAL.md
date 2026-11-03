@@ -15,10 +15,11 @@ zero reverse engineering, and a further ~3,000 identical template instantiations
 as a group. The exe also carries 1,983 RTTI class names and 229 source-file paths from assertion
 strings, so the translation-unit layout is recoverable.
 
-Two of the four goals are also cheaper than thought. Dynaverse and lobby traffic use raw Winsock
-through Taldren's own "Switch" network layer; DirectPlay 4 is present but only through COM
-(`CoCreateInstance`, not the import table) in one 14 KB region, so its replacement is a bounded
-transport swap rather than a rewrite.
+Two of the four goals are also cheaper than thought. Dynaverse and WON lobby traffic use raw
+Winsock through Taldren's own "Switch" network layer; skirmish, LAN and Direct-IP sessions and
+their lobby run on DirectPlay 4, reached through COM (`CoCreateInstance`, not the import table)
+in one wrapper of about 45 KB (0x006104D0 to 0x0061B7F0; `analysis/netcode/directplay.md`), so
+its replacement is a bounded transport swap rather than a rewrite.
 Dynaverse II login goes through Sierra's WON directory servers whose addresses live in a plain
 text file (`WONServerSetup.gf`), so re-pointing needs no patching, and both the WON protocol
 headers (Homeworld source release) and an open-source WON server (2026) exist. The official
@@ -113,9 +114,11 @@ of these and still reached a playable build.
 
 ### 2.6 Networking and Dynaverse facts
 
-- Skirmish/LAN/Direct-IP play and Dynaverse missions both use `nSwitch` over Winsock. NAT
-  problems are therefore about Taldren's connection set-up, not DirectPlay's; the fix is a
-  transport change inside one subsystem (relay or ICE), plus a lobby.
+- Skirmish, LAN and Direct-IP play go through `tNetControl` and the DirectPlay 4 wrapper;
+  Dynaverse and WON traffic use `nSwitch` over Winsock; which transport Dynaverse missions use
+  is still open (`analysis/netcode/directplay.md`, corrected 2026-11-03 by P1-7). NAT problems
+  in LAN and Direct-IP play come from DirectPlay's session model; the fix is still a transport
+  change inside one subsystem (relay or ICE), plus a lobby.
 - Dynaverse II login: `tWonLogon` uses `WONAPI` (AuthServer, DirServer, firewall detector;
   error table `WS_AuthServ_*`, `WS_PeerAuthServer_*`). Directory hosts are **config, not code**:
   `MetaAssets/ServerProfiles/Multiplayer/WONServerSetup.gf` lists
@@ -406,8 +409,10 @@ compile oracle. Ghidra and the arm64 builds run natively on the Mac.
 
 ## 8. Changes from the earlier plan
 
-- DirectPlay is not involved; networking is Winsock through Taldren's `nSwitch`. The transport
-  swap is smaller and the hostnames are in config files, not code.
+- DirectPlay 4 is the session transport outside Dynaverse (corrected 2026-11-03; an earlier
+  draft of this line said it was not involved); Dynaverse and WON traffic is Winsock through
+  Taldren's `nSwitch`. The transport swap is bounded to one wrapper and the hostnames are in
+  config files, not code.
 - The function count is 15,000 to 25,000, not 3,000 to 6,000, but the SDK libraries, RTTI,
   assertion paths and public-source libraries remove far more of it than any precedent enjoyed.
 - Symbol recovery and the compiler calibration test come before delinking.
