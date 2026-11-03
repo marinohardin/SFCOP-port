@@ -1,0 +1,85 @@
+[pe] $SFCOP_ROOT/work/lifter-hle/gameroot/StarFleetOP.exe mapped at 0x00400000, span 0x886000
+[pe] bound 353 imports, 0 unresolved
+[screen] cocoa, renderer metal, scaling sharp (F12), fullscreen F11
+[module] GetProcAddress(kernel32.dll, SetCriticalSectionSpinCount): not answered
+[mark] reached 0x0069A840 (WinMain) at 0.210 s (last import GetModuleHandleA)
+[ddraw] CreateSurface 640x480 16 bpp caps 0xA00 primary -> 0x1040B6E0
+[module] GetProcAddress(ddraw.dll, DirectDrawEnumerateExA): not answered
+[ddraw] SetDisplayMode(800x600x16)
+[ddraw] CreateSurface 800x600 16 bpp caps 0x2A18 primary -> 0x1040BAE0
+[d3d] CreateDevice 800x600 with a z-buffer
+[guest] (        )<    0> [guest] App could not find 'StarFleet.VersionStringShadow' to do connection
+[guest] (        )<    0> [guest] App could not find 'StarFleet.VersionString' to do connection
+[mss] samples silent (timing only)
+[fps] 1.2 s: 17 frames shown, 331 primary updates in the last second
+[fps] 2.2 s: 67 frames shown, 1354 primary updates in the last second
+[fps] 3.2 s: 65 frames shown, 1261 primary updates in the last second
+[fps] 4.2 s: 68 frames shown, 1326 primary updates in the last second
+[fps] 5.2 s: 66 frames shown, 1368 primary updates in the last second
+[shot] $SFCOP_ROOT/work/lifter-hle/shots/window/frame_0005.19s.bmp (800x600, 16 bpp, shown frame)
+[fps] 6.2 s: 68 frames shown, 1356 primary updates in the last second
+[fps] 7.2 s: 67 frames shown, 1326 primary updates in the last second
+[fps] 8.2 s: 66 frames shown, 1307 primary updates in the last second
+[fps] 9.2 s: 67 frames shown, 1360 primary updates in the last second
+[fps] 10.2 s: 68 frames shown, 1372 primary updates in the last second
+[shot] $SFCOP_ROOT/work/lifter-hle/shots/window/frame_0010.24s.bmp (800x600, 16 bpp, shown frame)
+[fps] 11.2 s: 66 frames shown, 1336 primary updates in the last second
+[fps] 12.2 s: 68 frames shown, 1378 primary updates in the last second
+[fps] 13.2 s: 67 frames shown, 1377 primary updates in the last second
+[fps] 14.3 s: 67 frames shown, 1367 primary updates in the last second
+[fps] 15.3 s: 67 frames shown, 1360 primary updates in the last second
+[shot] $SFCOP_ROOT/work/lifter-hle/shots/window/frame_0015.28s.bmp (800x600, 16 bpp, shown frame)
+[fps] 16.3 s: 66 frames shown, 1318 primary updates in the last second
+[fps] 17.3 s: 67 frames shown, 1334 primary updates in the last second
+[fps] 18.3 s: 67 frames shown, 1368 primary updates in the last second
+[fps] 19.3 s: 67 frames shown, 1353 primary updates in the last second
+[fps] 20.3 s: 67 frames shown, 1350 primary updates in the last second
+[shot] $SFCOP_ROOT/work/lifter-hle/shots/window/frame_0020.29s.bmp (800x600, 16 bpp, shown frame)
+[fps] 21.3 s: 67 frames shown, 1333 primary updates in the last second
+[fps] 22.3 s: 67 frames shown, 1354 primary updates in the last second
+[fps] 23.3 s: 67 frames shown, 1357 primary updates in the last second
+[fps] 24.3 s: 67 frames shown, 1356 primary updates in the last second
+[fps] 25.3 s: 67 frames shown, 1337 primary updates in the last second
+[shot] $SFCOP_ROOT/work/lifter-hle/shots/window/frame_0025.32s.bmp (800x600, 16 bpp, shown frame)
+[fps] 26.3 s: 67 frames shown, 1338 primary updates in the last second
+[fps] 27.3 s: 66 frames shown, 1341 primary updates in the last second
+[fps] 28.3 s: 67 frames shown, 1344 primary updates in the last second
+[fps] 29.3 s: 68 frames shown, 1336 primary updates in the last second
+[fps] 30.3 s: 66 frames shown, 1339 primary updates in the last second
+[shot] $SFCOP_ROOT/work/lifter-hle/shots/window/frame_0030.35s.bmp (800x600, 16 bpp, shown frame)
+[fps] 31.4 s: 67 frames shown, 1311 primary updates in the last second
+[fps] 32.4 s: 67 frames shown, 1364 primary updates in the last second
+[fps] 33.4 s: 67 frames shown, 1340 primary updates in the last second
+[fps] 34.4 s: 67 frames shown, 1317 primary updates in the last second
+[fps] 35.4 s: 67 frames shown, 1341 primary updates in the last second
+[shot] $SFCOP_ROOT/work/lifter-hle/shots/window/frame_0035.38s.bmp (800x600, 16 bpp, shown frame)
+[fps] 36.4 s: 67 frames shown, 1344 primary updates in the last second
+[fps] 37.4 s: 67 frames shown, 1345 primary updates in the last second
+[fps] 38.4 s: 67 frames shown, 1346 primary updates in the last second
+[fps] 39.4 s: 67 frames shown, 1364 primary updates in the last second
+[fps] 40.4 s: 68 frames shown, 1351 primary updates in the last second
+[shot] $SFCOP_ROOT/work/lifter-hle/shots/window/frame_0040.42s.bmp (800x600, 16 bpp, shown frame)
+[fps] 41.4 s: 67 frames shown, 1353 primary updates in the last second
+[fps] 42.4 s: 67 frames shown, 1347 primary updates in the last second
+[fps] 43.4 s: 67 frames shown, 1363 primary updates in the last second
+[fps] 44.4 s: 67 frames shown, 1364 primary updates in the last second
+[fps] 45.4 s: 67 frames shown, 1347 primary updates in the last second
+[shot] $SFCOP_ROOT/work/lifter-hle/shots/window/frame_0045.45s.bmp (800x600, 16 bpp, shown frame)
+[fps] 46.5 s: 67 frames shown, 1363 primary updates in the last second
+[fps] 47.5 s: 67 frames shown, 1346 primary updates in the last second
+[fps] 48.5 s: 67 frames shown, 1346 primary updates in the last second
+[fps] 49.5 s: 67 frames shown, 1362 primary updates in the last second
+[fps] 50.5 s: 67 frames shown, 1351 primary updates in the last second
+[shot] $SFCOP_ROOT/work/lifter-hle/shots/window/frame_0050.48s.bmp (800x600, 16 bpp, shown frame)
+[fps] 51.5 s: 67 frames shown, 1346 primary updates in the last second
+[fps] 52.5 s: 66 frames shown, 1348 primary updates in the last second
+[fps] 53.5 s: 67 frames shown, 1345 primary updates in the last second
+[fps] 54.5 s: 67 frames shown, 1345 primary updates in the last second
+[fps] 55.5 s: 68 frames shown, 1359 primary updates in the last second
+[shot] $SFCOP_ROOT/work/lifter-hle/shots/window/frame_0055.51s.bmp (800x600, 16 bpp, shown frame)
+[fps] 56.5 s: 67 frames shown, 1364 primary updates in the last second
+[fps] 57.5 s: 67 frames shown, 1335 primary updates in the last second
+[fps] 58.5 s: 67 frames shown, 1351 primary updates in the last second
+[fps] 59.5 s: 67 frames shown, 1365 primary updates in the last second
+[shot] $SFCOP_ROOT/work/lifter-hle/shots/window/watchdog_0060.18s.bmp (800x600, 16 bpp, shown frame)
+=== watchdog at 60.373 s ===

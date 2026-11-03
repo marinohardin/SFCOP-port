@@ -1,0 +1,187 @@
+743923 GetCurrentThreadId
+461521 QueryPerformanceCounter
+199928 IDirectDrawSurface::Unlock
+199928 IDirectDrawSurface::Lock
+197982 InterlockedDecrement
+197718 OS_InterlockedCompareExchange
+197714 WaitForSingleObject
+197709 ReleaseSemaphore
+140918 LeaveCriticalSection
+140918 EnterCriticalSection
+133976 ScreenToClient
+133976 GetCursorPos
+65904 PeekMessageA
+65903 timeGetTime
+65903 IDirect3DViewport3::Clear2
+65902 IsIconic
+65902 IDirectDrawSurface::Flip
+65902 IDirect3DDevice3::EndScene
+65902 IDirect3DDevice3::BeginScene
+65901 _AIL_set_digital_master_volume@8
+7464 GetLastError
+7398 SetLastError
+7392 TlsGetValue
+6062 SetFilePointer
+6003 ReadFile
+5045 Sleep
+3102 VirtualAlloc
+ 895 _AIL_serve@0
+ 352 VirtualQuery
+ 283 VirtualFree
+ 266 InterlockedIncrement
+ 255 CreateFileA
+ 179 CloseHandle
+ 177 GetFileType
+  57 RegOpenKeyExA
+  50 GlobalLock
+  48 GlobalAlloc
+  46 IDirect3DDevice3::SetTextureStageState
+  40 CreateEventA
+  36 GlobalUnlock
+  33 IDirectDrawSurface::QueryInterface
+  33 IDirectDraw4::CreateSurface
+  33 GlobalHandle
+  33 GlobalFree
+  32 _AIL_set_sample_user_data@12
+  32 FindFirstFileA
+  28 InitializeCriticalSection
+  19 WriteFile
+  16 _AIL_init_sample@4
+  16 _AIL_allocate_sample_handle@4
+  13 GetClientRect
+  12 IDirect3DDevice3::SetRenderState
+  12 DefWindowProcA
+  10 FindFirstFileW
+  10 FindClose
+   8 GetModuleHandleA
+   7 GetProcAddress
+   7 GetCurrentDirectoryA
+   6 SetErrorMode
+   6 GetPrivateProfileIntA
+   6 GetModuleFileNameA
+   6 FindNextFileW
+   6 CreateFileW
+   5 TlsSetValue
+   5 GetVersionExA
+   5 CreateThread
+   4 LoadLibraryA
+   4 IDirectDraw::Release
+   4 IDirect3DDevice3::ValidateDevice
+   4 DirectDrawCreate
+   3 ShowWindow
+   3 SetWindowPos
+   3 SetWindowLongA
+   3 SetRect
+   3 QueryPerformanceFrequency
+   3 LCMapStringA
+   3 IDirectDraw::QueryInterface
+   3 GetWindowLongA
+   3 GetSystemInfo
+   3 GetStdHandle
+   3 GetEnvironmentVariableA
+   3 GetCommandLineA
+   2 WideCharToMultiByte
+   2 TextOutA
+   2 SetTextColor
+   2 SetTextAlign
+   2 SetEvent
+   2 SetBkColor
+   2 ReleaseDC
+   2 OutputDebugStringA
+   2 IDirectDrawSurface::GetSurfaceDesc
+   2 IDirectDraw4::QueryInterface
+   2 IDirectDraw4::GetDisplayMode
+   2 IDirect3DViewport3::SetViewport2
+   2 GetWindowRect
+   2 GetVolumeInformationW
+   2 GetTimeZoneInformation
+   2 GetSystemTimeAsFileTime
+   2 GetSystemTime
+   2 GetStringTypeA
+   2 GetStockObject
+   2 GetStartupInfoA
+   2 GetLocalTime
+   2 GetFileSize
+   2 GetDC
+   2 GetCPInfo
+   2 FreeLibrary
+   2 FillRect
+   2 AdjustWindowRect
+   1 timeSetEvent
+   1 _AIL_waveOutOpen@16
+   1 _AIL_startup@0
+   1 _AIL_set_redist_directory@4
+   1 _AIL_set_DirectSound_HWND@8
+   1 _AIL_minimum_sample_buffer_size@12
+   1 _AIL_last_error@0
+   1 UpdateWindow
+   1 TranslateMessage
+   1 TlsAlloc
+   1 ShowCursor
+   1 SetWindowsHookExA
+   1 SetWindowTextA
+   1 SetUnhandledExceptionFilter
+   1 SetThreadPriority
+   1 SetHandleCount
+   1 SetFocus
+   1 SetCurrentDirectoryA
+   1 RegisterClassA
+   1 PostMessageA
+   1 LoadMenuA
+   1 LoadCursorA
+   1 LCMapStringW
+   1 IsWindow
+   1 IsProcessorFeaturePresent
+   1 InterlockedExchange
+   1 IDirectInputDeviceA::SetDataFormat
+   1 IDirectInputDeviceA::SetCooperativeLevel
+   1 IDirectInputDeviceA::Acquire
+   1 IDirectInputA::CreateDevice
+   1 IDirectDrawSurface::Release
+   1 IDirectDrawSurface::GetAttachedSurface
+   1 IDirectDrawSurface::AddRef
+   1 IDirectDrawSurface::AddAttachedSurface
+   1 IDirectDraw::SetCooperativeLevel
+   1 IDirectDraw::GetDisplayMode
+   1 IDirectDraw::CreateSurface
+   1 IDirectDraw4::SetDisplayMode
+   1 IDirectDraw4::SetCooperativeLevel
+   1 IDirectDraw4::Release
+   1 IDirectDraw4::GetCaps
+   1 IDirectDraw4::EnumDisplayModes
+   1 IDirectDraw2::Release
+   1 IDirect3DDevice3::SetCurrentViewport
+   1 IDirect3DDevice3::GetCaps
+   1 IDirect3DDevice3::EnumTextureFormats
+   1 IDirect3DDevice3::AddViewport
+   1 IDirect3D3::Release
+   1 IDirect3D3::FindDevice
+   1 IDirect3D3::EnumZBufferFormats
+   1 IDirect3D3::EnumDevices
+   1 IDirect3D3::CreateViewport
+   1 IDirect3D3::CreateDevice
+   1 HeapCreate
+   1 GetVersion
+   1 GetUpdateRect
+   1 GetTickCount
+   1 GetStringTypeW
+   1 GetPrivateProfileStringA
+   1 GetMenu
+   1 GetEnvironmentStringsW
+   1 GetEnvironmentStrings
+   1 GetDiskFreeSpaceA
+   1 GetCurrentThread
+   1 GetACP
+   1 FreeEnvironmentStringsA
+   1 FlushFileBuffers
+   1 FindWindowA
+   1 EndPaint
+   1 DispatchMessageA
+   1 DirectInputCreateA
+   1 DirectDrawEnumerateA
+   1 DeleteCriticalSection
+   1 CreateWindowExA
+   1 CreateSemaphoreA
+   1 CoInitialize
+   1 CallWindowProcA
+   1 BeginPaint
