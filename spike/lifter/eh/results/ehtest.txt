@@ -1,0 +1,25 @@
+# ehtest: lifted VC6 test program on win32hle + eh/runtime (run_eh.sh guest-test)
+PASS throw int caught by catch(int)
+PASS throw class caught by value
+PASS throw derived class caught by base reference
+PASS nested try: inner catch skipped, outer catch runs
+PASS rethrow from catch(...) reaches the outer catch
+PASS throw from inside a catch reaches the outer catch
+PASS unwind through two frames runs destructors in order
+PASS 100 throws in a loop each caught
+PASS every exception object destroyed
+PASS __try/__except catches RaiseException
+PASS static TLS per thread, and a throw caught on a second thread
+PASS access violation caught by catch(...), destructor run
+PASS access violation caught by __except
+PASS access violation records a read and a write
+ehtest: 0 failures
+[eh] 115 raise(s) (4 hardware fault(s)), 114 transfer(s) into a catch or __except, 116 unwind(s), 0 unhandled
+exit status: 0
+
+# ehtest uncaught
+ehtest: throwing an int nothing catches
+[eh] unhandled guest exception 0xE06D7363, C++ type .H raised in sub_00401FDC
+[eh]   frame 0x103FFFA8: handler 0x00402400
+[eh] 1 raise(s) (0 hardware fault(s)), 0 transfer(s) into a catch or __except, 0 unwind(s), 1 unhandled
+exit status: 7

@@ -1,0 +1,16 @@
+[pe] $SFCOP_ROOT/work/lifter-eh/gameroot/StarFleetOP.exe mapped at 0x00400000, span 0x886000
+[pe] bound 353 imports, 0 unresolved
+[host] static TLS: template 0x00C83000, 8 bytes + 0 zero, index at 0x00C7FF0C, callbacks at 0x0083A294
+[module] GetProcAddress(kernel32.dll, SetCriticalSectionSpinCount): not answered
+[module] LoadLibraryA("OSSpecific98"): not found
+[eh] raise 0xE06D7363 .?AVtInvalidAccess@nException@@ in sub_00737479
+[eh] unhandled guest exception 0xE06D7363, C++ type .?AVtInvalidAccess@nException@@ raised in sub_00737479
+[eh]   frame 0x103FFD40: C++, FuncInfo 0x0082E270, state 3, 0 try block(s), 0 cover it
+[eh]   frame 0x103FFD5C: C++, FuncInfo 0x007EA200, state -1, 0 try block(s), 0 cover it
+[eh]   frame 0x103FFF10: C++, FuncInfo 0x007ED130, state 8, 0 try block(s), 0 cover it
+[eh]   frame 0x103FFFA8: handler 0x0073B018
+[eh] 1 raise(s) (0 hardware fault(s)), 0 transfer(s) into a catch or __except, 0 unwind(s), 1 unhandled
+lifted-program host with guest EH (win32hle, arm64)
+  lifted functions in dispatch: 55629
+  mapped $SFCOP_ROOT/work/lifter-eh/gameroot/StarFleetOP.exe: 0x00400000-0x00C86000, 0 imports bound to not-implemented stubs
+  entering 0x0073A2A0
