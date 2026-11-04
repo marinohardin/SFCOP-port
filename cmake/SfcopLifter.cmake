@@ -143,3 +143,6 @@ add_custom_command(
     COMMENT "Copying the install to ${SFCOP_GAMEROOT} (the boot platform writes into it)"
     VERBATIM)
 add_custom_target(sfcop_gameroot DEPENDS "${SFCOP_GAMEROOT}/.sfcop-copy")
+
+# The claimed units' own VC6 objects, lifted, in place of their lifted-exe bodies.
+include("${CMAKE_SOURCE_DIR}/cmake/lifter/objlift.cmake")

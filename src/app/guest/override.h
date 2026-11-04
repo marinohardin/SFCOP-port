@@ -1,16 +1,27 @@
 // The override table: decompiled functions that run in place of their lifted bodies in the
 // native build (DESIGN §6.3, §7.2), and the guest runtime that game/port/guest.h declares.
 //
-// tools/manifest.py writes override.cpp from the FUNCTION annotations in game/. With
-// SFCOP_GUEST_SOURCES the build compiles each claimed unit in guest mode, drops the claimed
-// functions' lifted bodies, and links override.cpp's entry points under the lifted names
-// (sub_XXXXXXXX). The lift's direct calls, its dispatch table, and so every guest vtable slot
-// holding the address, then reach the decompiled code. Without it the table is empty.
+// Two builds fill the table:
 //
-// The C part of this header is the table, readable from C and C++. The C++ part, under
-// SFCOP_GUEST_SOURCES, is what override.cpp is built from: the guest calling conventions (an entry
-// point reads ecx and the guest stack, calls the decompiled function and pops what the original
-// popped) and the runtime game/ calls back into.
+// - The object lift (the native build's route, cmake/lifter/objlift.cmake): each claimed unit is
+//   compiled by VC6 as the harness compiles it, and tools/objlift/objlift.py lifts its object
+//   into objlift_table.c and objlift_code.c in the build directory. The lifted bodies carry the
+//   exe lift's names (sub_XXXXXXXX), the exe lift's own bodies for those addresses are weak, and
+//   the table here lists the claimed ones. The data image (sections the exe does not hold, in the
+//   reserved guest range) is loaded by sfcop_guest_load_objects(). The build then leaves
+//   override.cpp out.
+// - The guest-mode fallback (spike/guest-mode/REPORT.md): tools/manifest.py writes override.cpp
+//   from the FUNCTION annotations in game/. With SFCOP_GUEST_MODE the build compiles each
+//   claimed unit in guest mode and links override.cpp's entry points under the lifted names.
+//
+// Either way the lift's direct calls, its dispatch table, and so every guest vtable slot holding
+// the address, reach the decompiled code. With neither the table is empty.
+//
+// The C part of this header is the table, readable from C and C++, and the object lift's runtime.
+// The C++ part, under the macro SFCOP_GUEST_MODE_SOURCES (which the guest-mode build defines), is
+// what override.cpp is built from: the guest calling conventions (an entry point reads ecx and the
+// guest stack, calls the decompiled function and pops what the original popped) and the runtime
+// game/ calls back into.
 #pragma once
 
 #include <stdint.h>
@@ -39,11 +50,139 @@ sfcop_guest_entry sfcop_guest_override_lookup(uint32_t va);
 // How often an override has run so far (0 for an address that is not one).
 uint32_t sfcop_guest_override_calls(uint32_t va);
 
+// ---- The object lift's runtime (tools/objlift/README.md) ----------------------------------------
+
+// One section of the data image: placed at va in the reserved guest range; bytes is NULL for
+// uninitialised data, which the reservation leaves zero.
+typedef struct sfcop_guest_object_section {
+    uint32_t va;
+    uint32_t size;
+    const uint8_t *bytes;
+} sfcop_guest_object_section;
+
+extern const sfcop_guest_object_section sfcop_guest_object_sections[];
+extern const unsigned sfcop_guest_object_section_count;
+extern const uint32_t sfcop_guest_object_base;  // the reserved guest range
+extern const uint32_t sfcop_guest_object_size;  // what of it the image uses, in 64 KB units
+extern int sfcop_guest_objects_loaded;
+
+// Reserve the image's guest range and copy the data image in. A host calls it once, after it has
+// mapped the exe and before guest code runs; it is idempotent, and every lifted object body whose
+// unit has a data image calls it on entry too (SFCOP_GUEST_OBJECTS_LOAD), so a host that does not
+// call it still gets the image before the first use. Fatal if the range is taken.
+void sfcop_guest_load_objects(void);
+#define SFCOP_GUEST_OBJECTS_LOAD() \
+    do { \
+        if (!sfcop_guest_objects_loaded) sfcop_guest_load_objects(); \
+    } while (0)
+
+// Called by each lifted claimed body before it runs (index into sfcop_guest_overrides): counts,
+// and logs the first call with its caller.
+void sfcop_guest_entered(unsigned index);
+
 #ifdef __cplusplus
 }
 #endif
 
-#if defined(__cplusplus) && defined(SFCOP_GUEST_SOURCES)
+// ---- The object lift's runtime, compiled once: objlift_table.c defines
+// SFCOP_GUEST_OBJECTS_IMPLEMENTATION after including recomp_types.h and win32hle.h ----
+#if defined(SFCOP_GUEST_OBJECTS_IMPLEMENTATION) && !defined(__cplusplus)
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+extern uint32_t sfcop_guest_calls[];  // one counter per override, beside the table
+int sfcop_guest_objects_loaded;
+
+void sfcop_guest_load_objects(void) {
+    if (sfcop_guest_objects_loaded) {
+        return;
+    }
+    sfcop_guest_objects_loaded = 1;
+    if (sfcop_guest_object_section_count == 0) {
+        return;
+    }
+    if (hle_vm_reserve(sfcop_guest_object_base, sfcop_guest_object_size) != sfcop_guest_object_base) {
+        hle_fatal("[objlift] cannot reserve the data image at 0x%08X (0x%X bytes): the range is in use",
+                  sfcop_guest_object_base, sfcop_guest_object_size);
+    }
+    for (unsigned i = 0; i < sfcop_guest_object_section_count; i++) {
+        const sfcop_guest_object_section *s = &sfcop_guest_object_sections[i];
+        if (s->bytes) {
+            memcpy(hle_ptr(s->va), s->bytes, s->size);
+        }
+    }
+    fprintf(stderr, "[objlift] data image: %u sections at 0x%08X\n", sfcop_guest_object_section_count,
+            sfcop_guest_object_base);
+}
+
+static void (*sfcop_guest_prev_on_exit)(int code);
+
+static void sfcop_guest_report_calls(int code) {
+    for (unsigned i = 0; i < sfcop_guest_override_count; i++) {
+        fprintf(stderr, "[override] 0x%08X %s: %u calls\n", sfcop_guest_overrides[i].va,
+                sfcop_guest_overrides[i].symbol, sfcop_guest_calls[i]);
+    }
+    if (sfcop_guest_prev_on_exit) {
+        sfcop_guest_prev_on_exit(code);
+    }
+}
+
+// Silent unless SFCOP_GUEST_VERBOSE=1 is set in the environment.
+__attribute__((constructor)) static void sfcop_guest_announce(void) {
+    const char *verbose = getenv("SFCOP_GUEST_VERBOSE");
+    if (!verbose || strcmp(verbose, "1") != 0) {
+        return;
+    }
+    fprintf(stderr,
+            "[override] %u functions from game/ (their VC6 objects, lifted) run in place of their "
+            "lifted bodies\n",
+            sfcop_guest_override_count);
+}
+
+// Runs before the body's RECOMP_ENTER, so g_cur_func is still the caller.
+void sfcop_guest_entered(unsigned index) {
+    const sfcop_guest_override *o = &sfcop_guest_overrides[index];
+    if (sfcop_guest_calls[index]++ == 0) {
+        const uint32_t last = (g_icall_trace_idx - 1u) & (ICALL_TRACE_SIZE - 1);
+        const int indirect = g_icall_trace_idx != 0 && g_icall_trace[last] == o->va &&
+                             g_icall_from[last] == g_cur_func;
+        fprintf(stderr, "[override] 0x%08X %s (game/%s) first run from sub_%08X, %s\n", o->va, o->symbol,
+                o->source, g_cur_func, indirect ? "an indirect call (vtable or pointer)" : "a direct call");
+        if (hle_on_exit != sfcop_guest_report_calls) {
+            sfcop_guest_prev_on_exit = hle_on_exit;
+            hle_on_exit = sfcop_guest_report_calls;
+        }
+    }
+}
+
+sfcop_guest_entry sfcop_guest_override_lookup(uint32_t va) {
+    unsigned lo = 0, hi = sfcop_guest_override_count;
+    while (lo < hi) {
+        const unsigned mid = (lo + hi) / 2;
+        if (sfcop_guest_overrides[mid].va < va) {
+            lo = mid + 1;
+        } else {
+            hi = mid;
+        }
+    }
+    return lo < sfcop_guest_override_count && sfcop_guest_overrides[lo].va == va ? sfcop_guest_overrides[lo].entry
+                                                                                 : NULL;
+}
+
+uint32_t sfcop_guest_override_calls(uint32_t va) {
+    for (unsigned i = 0; i < sfcop_guest_override_count; i++) {
+        if (sfcop_guest_overrides[i].va == va) {
+            return sfcop_guest_calls[i];
+        }
+    }
+    return 0;
+}
+
+#endif  // SFCOP_GUEST_OBJECTS_IMPLEMENTATION
+
+#if defined(__cplusplus) && defined(SFCOP_GUEST_MODE_SOURCES)
 
 #include <cstddef>
 #include <type_traits>
