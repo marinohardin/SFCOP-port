@@ -1,0 +1,8 @@
+# An invented import list with two imports outside the scripting library and the C runtime.
+??0tShipInfo@@QAE@XZ
+?mAssessDamage@tShipInfo@@QAEJW4eRace@@@Z
+_atexit
+KERNEL32.DLL!CreateProcessA
+KERNEL32.DLL!HeapAlloc
+WSOCK32.DLL!connect
+USER32.DLL!wsprintfA
