@@ -1,0 +1,29 @@
+--- a/runtime/win32hle/host_lite.c
++++ b/runtime/win32hle/host_lite.c
+@@ -153,6 +153,13 @@
+         pthread_mutex_unlock(&g_mach);
+     }
+ }
++/* A host that moves control out of nested guest calls with a longjmp (guest
++ * exceptions: a catch further up the stack than a native -> guest call) skips
++ * the mach_leave of every hle_call_guest it jumps over. It reads the depth
++ * where it can land and puts it back when it lands; the thread holds the
++ * machine at both depths, so the mutex stays as it is. */
++int  hle_mach_depth(void) { return g_ms.depth; }
++void hle_mach_set_depth(int depth) { g_ms.depth = depth; }
+ 
+ /* Give the machine up around a wait (a Sleep, an event, a contended critical
+  * section). The registers go with it; nothing between begin and end may touch
+--- a/runtime/win32hle/win32hle.h
++++ b/runtime/win32hle/win32hle.h
+@@ -137,6 +137,10 @@
+  * code from its own thread must bracket that with these. Nests per thread. */
+ void  mach_enter(void);
+ void  mach_leave(void);
++/* This thread's nesting depth, and setting it back after a longjmp out of
++ * nested guest calls (host_lite.c). */
++int   hle_mach_depth(void);
++void  hle_mach_set_depth(int depth);
+ /* Inside a shim: give the machine up around a blocking wait, registers saved
+  * (begin), and take it back (end). Between them, touch no guest state. */
+ void  hle_block_begin(void);

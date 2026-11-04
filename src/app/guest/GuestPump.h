@@ -1,0 +1,36 @@
+// GuestPump: the platform's events, pumped on the game's main thread only (DESIGN §7.3).
+//
+// The guest calls PeekMessage and GetMessage from whichever of its threads asks; the window's
+// event queue may be read from the main thread only (SDL on macOS requires it, platform/Window).
+// The pump records the thread that bound it and does nothing on any other.
+//
+// No lifted code in this file: it is built into the tests too.
+#pragma once
+
+#include "platform/Window/Window.h"
+
+#include <functional>
+#include <thread>
+
+namespace sfcop::guest {
+
+class EventPump {
+public:
+    // `closeRequested` runs, on the bound thread, for each close request the window reports.
+    EventPump(platform::Window &window, std::function<void()> closeRequested);
+
+    // Makes the calling thread the one that pumps. Once, from Run().
+    void BindToCallingThread();
+
+    // Reads the window's pending events and handles them. Returns false, having done nothing,
+    // when the calling thread is not the bound one or none is bound.
+    bool Pump();
+
+private:
+    platform::Window &window_;
+    std::function<void()> closeRequested_;
+    std::thread::id mainThread_{};
+    bool bound_ = false;
+};
+
+} // namespace sfcop::guest
