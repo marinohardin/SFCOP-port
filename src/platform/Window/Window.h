@@ -154,4 +154,8 @@ public:
 // A Window whose every method fails with kUnsupported.
 std::unique_ptr<Window> makeWindowStub();
 
+// The build's real backend, on SDL3 (B1); declared here so that the client needs no
+// backend header, defined by the backend's own source file once it lands.
+std::unique_ptr<Window> makeWindow();
+
 } // namespace sfcop::platform

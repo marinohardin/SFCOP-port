@@ -4,6 +4,10 @@
 #   *_macos.*, *_windows.*, *_linux.*           -> only on that platform (CONVENTIONS §4.2)
 #   src/**/*Test.cpp, third_party/*Test.cpp     -> sfcop_tests, the doctest runner (CTest)
 #   *Mock.*                                     -> tests only
+#   src/hle/**/*Guest.c, *Guest.cpp             -> SFCOP_GUEST_SOURCES: the HLE modules' shims in
+#                                                  pcrecomp's win32hle form (src/hle/README.md), built
+#                                                  by the top-level CMakeLists.txt with the lift's
+#                                                  headers, never into sfcop_src or the tests
 # Left out of sfcop_src: src/app/main.cpp (the entry point) and src/app/boot/ (the temporary
 # boot platform, built by the top-level CMakeLists.txt).
 include_guard(GLOBAL)
@@ -19,6 +23,10 @@ endif()
 file(GLOB_RECURSE _sfcop_src CONFIGURE_DEPENDS
     "${CMAKE_SOURCE_DIR}/src/*.c" "${CMAKE_SOURCE_DIR}/src/*.cpp" "${CMAKE_SOURCE_DIR}/src/*.mm")
 set(_sfcop_tests ${_sfcop_src})
+set(SFCOP_GUEST_SOURCES ${_sfcop_src})
+list(FILTER SFCOP_GUEST_SOURCES INCLUDE REGEX "/src/hle/.*Guest\\.(c|cpp)$")
+list(FILTER _sfcop_src EXCLUDE REGEX "Guest\\.(c|cpp)$")
+list(FILTER _sfcop_tests EXCLUDE REGEX "Guest\\.(c|cpp)$")
 list(FILTER _sfcop_src EXCLUDE REGEX "/src/app/main\\.cpp$")
 list(FILTER _sfcop_src EXCLUDE REGEX "/src/app/boot/")
 list(FILTER _sfcop_src EXCLUDE REGEX "(Test|Mock)\\.(c|cpp|mm)$")
@@ -46,6 +54,11 @@ target_include_directories(sfcop_src INTERFACE "${CMAKE_SOURCE_DIR}/src")
 if(_sfcop_src)
     target_include_directories(sfcop_src PRIVATE "${CMAKE_SOURCE_DIR}/src")
     sfcop_strict_warnings(sfcop_src)
+endif()
+# The backends' libraries (third_party/CMakeLists.txt): SDL3 for Window, Gpu and Input, miniaudio
+# for Audio. PUBLIC so that the client and the tests see the same include paths.
+if(_sfcop_src)
+    target_link_libraries(sfcop_src PUBLIC SDL3::SDL3-static sfcop_miniaudio)
 endif()
 
 add_executable(sfcop_tests "${CMAKE_SOURCE_DIR}/cmake/TestMain.cpp" ${_sfcop_tests} ${_sfcop_third_party_tests})

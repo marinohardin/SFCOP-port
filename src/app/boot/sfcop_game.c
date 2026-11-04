@@ -115,7 +115,7 @@ void sfcop_game_init(void) {
     hle_manual_hook = manual;
 }
 
-const win32hle_shim sfcop_hle_game[] = {
+const win32hle_shim sfcop_spike_game[] = {
     { "OS_InterlockedCompareExchange", os_InterlockedCompareExchange },
     { "LoadLibraryA", k_LoadLibraryA }, { "GetProcAddress", k_GetProcAddress }, { "FreeLibrary", k_FreeLibrary },
     { "RaiseException", k_RaiseException },

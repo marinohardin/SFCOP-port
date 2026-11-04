@@ -62,4 +62,8 @@ public:
 // A clock whose every method fails with kUnsupported.
 std::unique_ptr<Clock> makeClockStub();
 
+// The build's real backend, on the host clock, one file per platform (B6); declared here so that the client needs no
+// backend header, defined by the backend's own source file once it lands.
+std::unique_ptr<Clock> makeClock();
+
 } // namespace sfcop::platform

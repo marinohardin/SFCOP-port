@@ -256,6 +256,15 @@ static void *watchdog(void *arg) {
     return NULL;
 }
 
+/* The Wave 1 HLE module tables in this build (src/hle/<module>/<Module>Guest.*), registered by a
+ * function CMake generates from the shim files it finds (cmake/sfcop_hle_modules.c.in). This
+ * temporary host registers them AFTER the spike's tables: hle_resolve returns the first
+ * registration, and the spike's shims are the ones this host feeds (SDL2 keyboard, SDL2 audio,
+ * software DirectDraw), while a module runs on platform components that only the guest runtime
+ * (B6) constructs. So here a module answers only the names the spike does not; B6's host
+ * registers the modules first. */
+void sfcop_register_hle_modules(void);
+
 int sfcop_boot_main(int argc, char **argv) {
     const char *game = NULL;
     int run = 0, headless = 0, silent = 0;
@@ -307,12 +316,13 @@ int sfcop_boot_main(int argc, char **argv) {
     }
 
     /* first: ours win where win32hle answers the same name */
-    win32hle_register(sfcop_hle_game);
-    win32hle_register(sfcop_hle_dinput);
-    win32hle_register(sfcop_hle_mss);
-    win32hle_register(sfcop_hle_ds3d);
-    win32hle_register(sfcop_hle_widefile);
-    win32hle_register(sfcop_hle_misc);
+    win32hle_register(sfcop_spike_game);
+    win32hle_register(sfcop_spike_dinput);
+    win32hle_register(sfcop_spike_mss);
+    win32hle_register(sfcop_spike_ds3d);
+    win32hle_register(sfcop_spike_widefile);
+    win32hle_register(sfcop_spike_misc);
+    sfcop_register_hle_modules();
     recomp_host_init();
     sfcop_game_init();
     sfcop_mss_silent = silent || headless;

@@ -142,4 +142,8 @@ public:
 // wants relative mode.
 std::unique_ptr<Input> makeInputStub();
 
+// The build's real backend, on SDL3 (B3); declared here so that the client needs no
+// backend header, defined by the backend's own source file once it lands.
+std::unique_ptr<Input> makeInput();
+
 } // namespace sfcop::platform
