@@ -280,7 +280,8 @@ struct ClearDesc {
     bool depth = false;
     std::uint32_t colorValue = 0xFF000000; // 0xAARRGGBB
     float depthValue = 1.0f;
-    Rect area; // Rect{} = the whole viewport
+    // In target pixels, clipped to the current viewport; Rect{} = the whole viewport.
+    Rect area;
 };
 
 struct RenderTargets {
@@ -405,8 +406,9 @@ public:
     // of 0-1 or out of order.
     virtual Status SetViewport(const Viewport &viewport) = 0;
 
-    // Clears colour and/or depth in an area of the viewport. Errors: kUnsupported; kWrongState
-    // outside a scene, or depth without a depth target.
+    // Clears colour and/or depth in an area given in target pixels and clipped to the current
+    // viewport (ClearDesc::area). Errors: kUnsupported; kWrongState outside a scene, or depth
+    // without a depth target.
     virtual Status Clear(const ClearDesc &clear) = 0;
 
     // Draws primitives from a buffer, indexed or not. Errors: kUnsupported; kWrongState outside
@@ -440,5 +442,9 @@ public:
 
 // A Gpu whose every method fails with kUnsupported.
 std::unique_ptr<Gpu> makeGpuStub();
+
+// The build's real backend, on SDL GPU (B1); declared here so that the client needs no
+// backend header, defined by the backend's own source file once it lands.
+std::unique_ptr<Gpu> makeGpu();
 
 } // namespace sfcop::platform

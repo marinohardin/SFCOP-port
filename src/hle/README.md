@@ -104,6 +104,47 @@ come from the public headers. The game's own calls confirm the order independent
 read: the method-name error strings next to every DirectPlay call, and the slots the spike's census
 found (`tests/test_surface.py` checks 65 of them).
 
+## Implementing a module (Wave 1)
+
+A module lives in `src/hle/<module>/` (`ddraw4`, `d3d3`, `dinput`, `miles`, `ds3d`, `kernel`,
+`registry`, `winsock`, `dplay`) and has two layers, so that its logic is tested without a guest:
+
+1. **The module itself**, plain C++ in `namespace sfcop::hle::<module>`: the Win32 or COM
+   semantics as functions and classes that take explicit arguments and work only through the
+   component interfaces of `src/platform/` (`Gpu`, `Window`, `Input`, `Audio`, `Store`,
+   `Transport`, `Clock`, `Threads`). Objects that mirror COM lifetimes keep a reference count and
+   say so (CONVENTIONS §4.2). Every entry has a doctest through a component mock: the call as the
+   game makes it (arguments, return, out-parameters) and its error path (CONVENTIONS §8).
+2. **The guest shims**, `<Module>Guest.c` or `<Module>Guest.cpp` in the same directory: one shim
+   per surface row, in pcrecomp's `win32hle_shim` form (`runtime/win32hle/win32hle.h`; the
+   temporary boot modules in `src/app/boot/` are worked examples). A shim reads its arguments from
+   the guest stack, converts guest addresses and strings, calls the module, writes out-parameters
+   back into guest memory and purges the stack it was given (`RET(value, argc)`, with `argc` from
+   the row's `stack_bytes` / 4). A COM object's guest vtable is built from its method shims with
+   `hle_com_vtable()`. The file exports one table, `extern const win32hle_shim
+   sfcop_hle_<module>[]`, NUL-terminated, where `<module>` is the file's stem before `Guest`,
+   lowercased (`Ddraw4Guest.c` exports `sfcop_hle_ddraw4[]`); it exports nothing else. The build
+   generates the registration of every such table it finds (`cmake/sfcop_hle_modules.c.in`). The
+   guest runtime (`src/app/guest/`, B6) calls it before anything else, so a module answers every
+   name it has. The temporary boot host calls it after the spike's tables, because the spike's
+   shims are the ones that host feeds (SDL2 keyboard and audio, software DirectDraw) while a module
+   runs on components only B6's host constructs; until B6, a module's proof against the running
+   game is through its own tests and harness, and the boot client keeps working. `*Guest.*` files are compiled only with the lift
+   (`cmake/SfcopSources.cmake`), never into `sfcop_src` or the tests. If the lift's headers do not
+   compile as C++, write the shim file in C and call the module through `extern "C"` functions it
+   declares for that purpose.
+
+**The surface rows.** When a package implements an entry it changes that row's `status`
+(`implemented` or `stub`), `evidence` and `notes` in `surface.tsv`, in the same commit; it never
+adds, removes or reorders rows, and it touches only rows whose `module` is one of its own. Because
+the TSV is a hotspot, a Wave 1 pull request that edits its rows carries the `contract-change`
+label, and `python3 src/hle/gen_surface.py --check` must still pass.
+
+**Handle types.** A module that gives the game handles through win32hle's handle table claims a
+type number here, so that two modules never share one: `kernel` 24 (files, find handles),
+`registry` 25 (keys). The next module takes the next free number and adds its line in the same
+pull request as its shims.
+
 ## Writing a COM layout
 
 `gen_surface.py` reads the headers, so their form is strict:

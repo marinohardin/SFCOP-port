@@ -72,6 +72,19 @@ configure_file(cmake/sfcop_build_config.h.in "${CMAKE_BINARY_DIR}/generated/sfco
 # TEMPORARY: the boot platform, the P1-2 spike's host and HLE modules, until Wave 1 (G1: "no
 # spike path linked").
 file(GLOB SFCOP_BOOT_SOURCES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/app/boot/*.c")
+# The registration of the Wave 1 HLE module tables, generated from the shim files the build found
+# (cmake/SfcopSources.cmake collects them as SFCOP_GUEST_SOURCES); empty when there are none.
+set(SFCOP_HLE_MODULE_DECLS "")
+set(SFCOP_HLE_MODULE_REGISTRATIONS "")
+foreach(_sfcop_guest IN LISTS SFCOP_GUEST_SOURCES)
+    get_filename_component(_sfcop_stem "${_sfcop_guest}" NAME_WE)
+    string(REGEX REPLACE "Guest$" "" _sfcop_module "${_sfcop_stem}")
+    string(TOLOWER "${_sfcop_module}" _sfcop_module)
+    string(APPEND SFCOP_HLE_MODULE_DECLS "extern const win32hle_shim sfcop_hle_${_sfcop_module}[];\n")
+    string(APPEND SFCOP_HLE_MODULE_REGISTRATIONS "    win32hle_register(sfcop_hle_${_sfcop_module});\n")
+endforeach()
+configure_file(cmake/sfcop_hle_modules.c.in "${CMAKE_BINARY_DIR}/generated/sfcop_hle_modules.c" @ONLY)
+list(APPEND SFCOP_BOOT_SOURCES "${CMAKE_BINARY_DIR}/generated/sfcop_hle_modules.c")
 add_library(sfcop_boot OBJECT ${SFCOP_BOOT_SOURCES})
 target_include_directories(sfcop_boot BEFORE PRIVATE "${CMAKE_SOURCE_DIR}/src/app/boot/include")
 target_include_directories(sfcop_boot PRIVATE "${CMAKE_SOURCE_DIR}/src/app/boot" ${SFCOP_RECOMP_INCLUDES})
@@ -83,6 +96,17 @@ target_link_libraries(sfcop_boot PRIVATE SDL2::SDL2)
 # The lifted code's headers come from the lift.
 add_dependencies(sfcop_boot sfcop_lifted)
 
+# The HLE modules' guest-facing shims (src/hle/<module>/*Guest.c|cpp, src/hle/README.md): they read
+# the guest stack through the lift's headers, so they are built only with the lift.
+if(SFCOP_GUEST_SOURCES)
+    add_library(sfcop_hle_guest OBJECT ${SFCOP_GUEST_SOURCES})
+    target_include_directories(sfcop_hle_guest PRIVATE "${CMAKE_SOURCE_DIR}/src" ${SFCOP_RECOMP_INCLUDES})
+    target_compile_definitions(sfcop_hle_guest PRIVATE ${SFCOP_RECOMP_DEFINITIONS})
+    target_compile_options(sfcop_hle_guest PRIVATE -fno-strict-aliasing -fwrapv)
+    sfcop_strict_warnings(sfcop_hle_guest)
+    add_dependencies(sfcop_hle_guest sfcop_lifted)
+endif()
+
 add_executable(sfcop src/app/main.cpp)
 target_include_directories(sfcop PRIVATE "${CMAKE_SOURCE_DIR}/src/app" "${CMAKE_BINARY_DIR}/generated")
 sfcop_strict_warnings(sfcop)
@@ -90,5 +114,8 @@ sfcop_strict_warnings(sfcop)
 # sfcop; both libraries are written there (third_party/CMakeLists.txt).
 target_link_libraries(sfcop PRIVATE sfcop_src sfcop_boot sfcop_win32hle sfcop_lifted
     SDL2::SDL2 pthread m)
+if(TARGET sfcop_hle_guest)
+    target_link_libraries(sfcop PRIVATE sfcop_hle_guest)
+endif()
 add_dependencies(sfcop SDL3-shared)
 add_dependencies(sfcop sfcop_gameroot)

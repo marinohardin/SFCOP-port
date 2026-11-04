@@ -2,10 +2,11 @@
 /*
  * sfcop_hle.h - the HLE modules P1-2 adds on top of pcrecomp's win32hle.
  *
- * Each module exports a shim table in win32hle's form. The host registers
- * them before recomp_host_init(), so where a name is already answered by
- * win32hle (IDirectSoundBuffer::QueryInterface, RaiseException, ...) ours
- * wins: hle_resolve returns the first registration.
+ * Each module exports a shim table in win32hle's form, named sfcop_spike_*
+ * so that it never collides with a Wave 1 module's sfcop_hle_<module>[]. The
+ * host registers them before recomp_host_init(), so where a name is already
+ * answered by win32hle (IDirectSoundBuffer::QueryInterface, RaiseException,
+ * ...) ours wins: hle_resolve returns the first registration.
  *
  * Upstreamable modules (generic Win32/DirectX behaviour, no game knowledge)
  * say so in their header comment; game-specific ones say they are not.
@@ -16,12 +17,12 @@
 #include <stdint.h>
 #include "win32hle.h"
 
-extern const win32hle_shim sfcop_hle_dinput[];     /* dinput.c */
-extern const win32hle_shim sfcop_hle_mss[];        /* mss_sample.c */
-extern const win32hle_shim sfcop_hle_ds3d[];       /* ds3d.c */
-extern const win32hle_shim sfcop_hle_widefile[];   /* kernel32_wide.c */
-extern const win32hle_shim sfcop_hle_misc[];       /* misc_stubs.c */
-extern const win32hle_shim sfcop_hle_game[];       /* sfcop_game.c */
+extern const win32hle_shim sfcop_spike_dinput[];     /* dinput.c */
+extern const win32hle_shim sfcop_spike_mss[];        /* mss_sample.c */
+extern const win32hle_shim sfcop_spike_ds3d[];       /* ds3d.c */
+extern const win32hle_shim sfcop_spike_widefile[];   /* kernel32_wide.c */
+extern const win32hle_shim sfcop_spike_misc[];       /* misc_stubs.c */
+extern const win32hle_shim sfcop_spike_game[];       /* sfcop_game.c */
 
 /* mss_sample.c: 1 makes every sample silent (handles, status and buffer
  * timing still behave); set before the first AIL_waveOutOpen. */

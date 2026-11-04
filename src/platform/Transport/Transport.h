@@ -177,4 +177,8 @@ public:
 // A Transport whose every method (and Rendezvous) fails with kUnsupported.
 std::unique_ptr<Transport> makeTransportStub();
 
+// The build's real backend, on the host sockets (B7); declared here so that the client needs no
+// backend header, defined by the backend's own source file once it lands.
+std::unique_ptr<Transport> makeTransport();
+
 } // namespace sfcop::platform

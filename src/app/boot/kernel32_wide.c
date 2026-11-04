@@ -110,7 +110,7 @@ static void w_FindNextFileW(void) {                      /* (handle, &data) */
     hle_scratch_release(mark);
 }
 
-const win32hle_shim sfcop_hle_widefile[] = {
+const win32hle_shim sfcop_spike_widefile[] = {
     { "CreateFileW", w_CreateFileW }, { "CreateDirectoryW", w_CreateDirectoryW },
     { "RemoveDirectoryW", w_RemoveDirectoryW }, { "DeleteFileW", w_DeleteFileW },
     { "GetFileAttributesW", w_GetFileAttributesW }, { "SetFileAttributesW", w_SetFileAttributesW },
