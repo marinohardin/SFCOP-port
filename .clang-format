@@ -1,0 +1,11 @@
+# Format for the new code: src/, server/ and tools/ only (CONVENTIONS §1). game/ keeps the
+# original's style and is never reformatted; spike/ is frozen; src/app/boot/ is the spike's code,
+# kept as it was until Wave 1 replaces it.
+BasedOnStyle: LLVM
+IndentWidth: 4
+ColumnLimit: 100
+AccessModifierOffset: -4
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+IncludeBlocks: Preserve
+PointerAlignment: Right

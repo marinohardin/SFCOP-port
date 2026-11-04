@@ -29,3 +29,40 @@ jobs:
 
       - name: The definition of done
         run: sh scripts/check.sh
+
+  # The native build (DESIGN §7.4): the three presets configure, macos-arm64 builds and its C++
+  # tests run. The build trees live outside the checkout, one set per runner, so that the lift
+  # (about 6 minutes) and the lifted objects carry over from run to run: the lift is keyed by its
+  # inputs and reruns only when they change. The runner needs the install and the pcrecomp clone
+  # where cmake/SfcopLifter.cmake looks for them, or SFCOP_INSTALL_DIR and SFCOP_PCRECOMP_DIR in
+  # its environment; SFCOP_CI_BUILD_ROOT moves the build trees (default: the tool cache).
+  build:
+    runs-on: [self-hosted, sfcop-mac]
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure the three presets
+        run: |
+          set -eu
+          root="${SFCOP_CI_BUILD_ROOT:-$RUNNER_TOOL_CACHE/sfcop-build}/$RUNNER_NAME"
+          echo "SFCOP_BUILD_ROOT=$root" >> "$GITHUB_ENV"
+          # The lift and sfcop need the install and the pcrecomp clone, which the runner's
+          # environment file names. Without them, build src/ and the tests only.
+          if [ -n "${SFCOP_INSTALL_DIR:-}" ] && [ -n "${SFCOP_PCRECOMP_DIR:-}" ]; then
+            set -- -DSFCOP_LIFT=ON "-DSFCOP_INSTALL_DIR=$SFCOP_INSTALL_DIR" "-DSFCOP_PCRECOMP_DIR=$SFCOP_PCRECOMP_DIR"
+          else
+            echo "skip: the lift and sfcop: SFCOP_INSTALL_DIR or SFCOP_PCRECOMP_DIR is not set on this runner"
+            set -- -DSFCOP_LIFT=OFF
+          fi
+          cmake --preset macos-arm64 -B "$root/macos-arm64" "$@"
+          # The cross presets configure only (stub toolchains until Wave 2 A5).
+          for preset in windows-x64 linux-x64; do
+            cmake --preset "$preset" -B "$root/$preset"
+          done
+
+      - name: Build macos-arm64
+        run: nice -n 19 cmake --build "$SFCOP_BUILD_ROOT/macos-arm64" -j4
+
+      - name: C++ tests
+        run: ctest --test-dir "$SFCOP_BUILD_ROOT/macos-arm64" --output-on-failure

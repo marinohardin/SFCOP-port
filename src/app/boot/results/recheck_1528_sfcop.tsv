@@ -1,0 +1,4 @@
+run	clock	outcome	at_s	exit	background	last_line
+1	15:28:00	prompt	5.980	0	space19.mod	[boot] watchdog after 15 s: the boot reached the CD-key prompt
+2	15:28:00	prompt	5.562	0	space19.mod	[boot] watchdog after 15 s: the boot reached the CD-key prompt
+3	15:28:00	prompt	5.539	0	space19.mod	[boot] watchdog after 15 s: the boot reached the CD-key prompt

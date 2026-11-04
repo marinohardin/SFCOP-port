@@ -1,0 +1,92 @@
+run	clock	outcome	at_s	exit	background	last_line
+1	15:00:00	prompt	5.901	0	space14.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+2	15:02:00	prompt	6.181	0	space14.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+3	15:04:00	prompt	5.781	0	space15.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+4	15:06:00	prompt	5.780	0	space15.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+5	15:08:00	prompt	5.793	0	space15.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+6	15:10:00	prompt	7.091	0	space16.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+7	15:12:00	prompt	5.763	0	space16.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+8	15:14:00	prompt	5.811	0	space16.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+9	15:16:00	prompt	6.068	0	space17.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+10	15:18:00	prompt	6.204	0	space17.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+11	15:20:00	prompt	5.759	0	space18.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+12	15:22:00	prompt	5.779	0	space18.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+13	15:24:00	prompt	5.763	0	space18.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+14	15:26:00	prompt	5.804	0	space19.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+15	15:28:00	alive	-	1	space19.mod	[boot] watchdog after 8 s: the boot did not reach the CD-key prompt
+16	15:30:00	throw	-	1	space20.mod	[throw] guest C++ exceptions are not handled yet (Wave 1 B6): stopping
+17	15:32:00	throw	-	1	space20.mod	[throw] guest C++ exceptions are not handled yet (Wave 1 B6): stopping
+18	15:34:00	throw	-	1	space20.mod	[throw] guest C++ exceptions are not handled yet (Wave 1 B6): stopping
+19	15:36:00	prompt	6.202	0	space21.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+20	15:38:00	prompt	5.792	0	space21.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+21	15:40:00	prompt	5.798	0	space21.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+22	15:42:00	prompt	6.040	0	space22.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+23	15:44:00	prompt	5.947	0	space22.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+24	15:46:00	fault	0.476	1	space23.mod	last indirect calls (newest first):
+25	15:48:00	fault	0.454	1	space23.mod	last indirect calls (newest first):
+26	15:50:00	fault	0.483	1	space23.mod	last indirect calls (newest first):
+27	15:52:00	throw	-	1	space24.mod	[throw] guest C++ exceptions are not handled yet (Wave 1 B6): stopping
+28	15:54:00	throw	-	1	space24.mod	[throw] guest C++ exceptions are not handled yet (Wave 1 B6): stopping
+29	15:56:00	prompt	6.130	0	space25.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+30	15:58:00	prompt	5.969	0	space25.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+31	16:00:00	prompt	5.886	0	space25.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+32	16:02:00	throw	-	1	space26.mod	[throw] guest C++ exceptions are not handled yet (Wave 1 B6): stopping
+33	16:04:00	throw	-	1	space26.mod	[throw] guest C++ exceptions are not handled yet (Wave 1 B6): stopping
+34	16:06:00	throw	-	1	space26.mod	[throw] guest C++ exceptions are not handled yet (Wave 1 B6): stopping
+35	16:08:00	prompt	6.945	0	space27.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+36	16:10:00	prompt	5.976	0	space27.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+37	16:12:00	prompt	6.229	0	space28.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+38	16:14:00	prompt	5.920	0	space28.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+39	16:16:00	prompt	5.902	0	space28.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+40	16:18:00	throw	-	1	space29.mod	[throw] guest C++ exceptions are not handled yet (Wave 1 B6): stopping
+41	16:20:00	throw	-	1	space29.mod	[throw] guest C++ exceptions are not handled yet (Wave 1 B6): stopping
+42	16:22:00	throw	-	1	space29.mod	[throw] guest C++ exceptions are not handled yet (Wave 1 B6): stopping
+43	16:24:00	prompt	5.902	0	space30.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+44	16:26:00	prompt	6.182	0	space30.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+45	16:28:00	throw	-	1	space31.mod	[throw] guest C++ exceptions are not handled yet (Wave 1 B6): stopping
+46	16:30:00	throw	-	1	space31.mod	[throw] guest C++ exceptions are not handled yet (Wave 1 B6): stopping
+47	16:32:00	throw	-	1	space31.mod	[throw] guest C++ exceptions are not handled yet (Wave 1 B6): stopping
+48	16:34:00	prompt	5.797	0	space00.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+49	16:36:00	prompt	5.773	0	space00.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+50	16:38:00	fault	0.435	1	space01.mod	last indirect calls (newest first):
+51	16:40:00	fault	0.455	1	space01.mod	last indirect calls (newest first):
+52	16:42:00	fault	0.459	1	space01.mod	last indirect calls (newest first):
+53	16:44:00	throw	-	1	space02.mod	[throw] guest C++ exceptions are not handled yet (Wave 1 B6): stopping
+54	16:46:00	throw	-	1	space02.mod	[throw] guest C++ exceptions are not handled yet (Wave 1 B6): stopping
+55	16:48:00	throw	-	1	space02.mod	[throw] guest C++ exceptions are not handled yet (Wave 1 B6): stopping
+56	16:50:00	throw	-	1	space03.mod	[throw] guest C++ exceptions are not handled yet (Wave 1 B6): stopping
+57	16:52:00	throw	-	1	space03.mod	[throw] guest C++ exceptions are not handled yet (Wave 1 B6): stopping
+58	16:54:00	prompt	5.783	0	space04.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+59	16:56:00	prompt	5.824	0	space04.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+60	16:58:00	prompt	5.807	0	space04.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+61	17:00:00	prompt	5.784	0	space05.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+62	17:02:00	prompt	5.823	0	space05.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+63	17:04:00	prompt	5.778	0	space06.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+64	17:06:00	prompt	5.875	0	space06.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+65	17:08:00	prompt	5.778	0	space06.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+66	17:10:00	prompt	5.811	0	space07.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+67	17:12:00	prompt	5.776	0	space07.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+68	17:14:00	prompt	5.757	0	space07.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+69	17:16:00	prompt	5.787	0	space08.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+70	17:18:00	prompt	5.824	0	space08.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+71	17:20:00	throw	-	1	space09.mod	[throw] guest C++ exceptions are not handled yet (Wave 1 B6): stopping
+72	17:22:00	throw	-	1	space09.mod	[throw] guest C++ exceptions are not handled yet (Wave 1 B6): stopping
+73	17:24:00	throw	-	1	space09.mod	[throw] guest C++ exceptions are not handled yet (Wave 1 B6): stopping
+74	17:26:00	throw	-	1	space10.mod	[throw] guest C++ exceptions are not handled yet (Wave 1 B6): stopping
+75	17:28:00	throw	-	1	space10.mod	[throw] guest C++ exceptions are not handled yet (Wave 1 B6): stopping
+76	17:30:00	throw	-	1	space11.mod	[throw] guest C++ exceptions are not handled yet (Wave 1 B6): stopping
+77	17:32:00	throw	-	1	space11.mod	[throw] guest C++ exceptions are not handled yet (Wave 1 B6): stopping
+78	17:34:00	throw	-	1	space11.mod	[throw] guest C++ exceptions are not handled yet (Wave 1 B6): stopping
+79	17:36:00	prompt	5.766	0	space12.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+80	17:38:00	prompt	5.870	0	space12.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+81	17:40:00	prompt	5.808	0	space12.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+82	17:42:00	prompt	5.781	0	space13.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+83	17:44:00	prompt	5.816	0	space13.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+84	17:46:00	prompt	5.794	0	space14.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+85	17:48:00	prompt	5.844	0	space14.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+86	17:50:00	prompt	5.884	0	space14.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+87	17:52:00	prompt	5.879	0	space15.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+88	17:54:00	prompt	5.826	0	space15.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+89	17:56:00	prompt	5.904	0	space15.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+90	17:58:00	prompt	5.822	0	space16.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
+91	18:00:00	prompt	5.977	0	space16.mod	[boot] watchdog after 8 s: the boot reached the CD-key prompt
