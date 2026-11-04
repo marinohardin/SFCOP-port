@@ -637,43 +637,43 @@ IDirectInputDeviceA	RunControlPanel	16	stdcall	12	stub	-	src/hle/dinput: fixed r
 IDirectInputDeviceA	Initialize	17	stdcall	16	implemented	-	src/hle/dinput: KeyboardDevice::Initialize; the version check, and GUID_SysKeyboard only
 IDirectPlay4A	QueryInterface	0	stdcall	12	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
 IDirectPlay4A	AddRef	1	stdcall	4	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
-IDirectPlay4A	Release	2	stdcall	4	todo	0x00616951	analysis/netcode/directplay.md
-IDirectPlay4A	AddPlayerToGroup	3	stdcall	12	todo	0x00615FF0	call inside the wrapper function at this address; analysis/netcode/directplay.md
-IDirectPlay4A	Close	4	stdcall	4	todo	0x006154A1	analysis/netcode/directplay.md
-IDirectPlay4A	CreateGroup	5	stdcall	24	todo	0x00615EC0	call inside the wrapper function at this address; analysis/netcode/directplay.md
-IDirectPlay4A	CreatePlayer	6	stdcall	28	todo	0x00615520	call inside the wrapper function at this address; analysis/netcode/directplay.md
-IDirectPlay4A	DeletePlayerFromGroup	7	stdcall	12	todo	0x006160A0	call inside the wrapper function at this address; analysis/netcode/directplay.md
-IDirectPlay4A	DestroyGroup	8	stdcall	8	todo	0x00616150	call inside the wrapper function at this address; analysis/netcode/directplay.md
-IDirectPlay4A	DestroyPlayer	9	stdcall	8	todo	0x00615A00	call inside the wrapper function at this address; analysis/netcode/directplay.md
+IDirectPlay4A	Release	2	stdcall	4	implemented	0x00616951	src/hle/dplay: LAN sessions on Transport; analysis/netcode/directplay.md
+IDirectPlay4A	AddPlayerToGroup	3	stdcall	12	implemented	0x00615FF0	src/hle/dplay: LAN sessions on Transport; call inside the wrapper function at this address; analysis/netcode/directplay.md
+IDirectPlay4A	Close	4	stdcall	4	implemented	0x006154A1	src/hle/dplay: LAN sessions on Transport; analysis/netcode/directplay.md
+IDirectPlay4A	CreateGroup	5	stdcall	24	implemented	0x00615EC0	src/hle/dplay: LAN sessions on Transport; call inside the wrapper function at this address; analysis/netcode/directplay.md
+IDirectPlay4A	CreatePlayer	6	stdcall	28	implemented	0x00615520	src/hle/dplay: LAN sessions on Transport; call inside the wrapper function at this address; analysis/netcode/directplay.md
+IDirectPlay4A	DeletePlayerFromGroup	7	stdcall	12	implemented	0x006160A0	src/hle/dplay: LAN sessions on Transport; call inside the wrapper function at this address; analysis/netcode/directplay.md
+IDirectPlay4A	DestroyGroup	8	stdcall	8	implemented	0x00616150	src/hle/dplay: LAN sessions on Transport; call inside the wrapper function at this address; analysis/netcode/directplay.md
+IDirectPlay4A	DestroyPlayer	9	stdcall	8	implemented	0x00615A00	src/hle/dplay: LAN sessions on Transport; call inside the wrapper function at this address; analysis/netcode/directplay.md
 IDirectPlay4A	EnumGroupPlayers	10	stdcall	24	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
-IDirectPlay4A	EnumGroups	11	stdcall	20	todo	0x00615E00	call inside the wrapper function at this address; analysis/netcode/directplay.md
-IDirectPlay4A	EnumPlayers	12	stdcall	20	todo	0x00615140	call inside the wrapper function at this address; analysis/netcode/directplay.md
-IDirectPlay4A	EnumSessions	13	stdcall	24	todo	0x00614B25	analysis/netcode/directplay.md
-IDirectPlay4A	GetCaps	14	stdcall	12	todo	0x00616F4C	analysis/netcode/directplay.md
+IDirectPlay4A	EnumGroups	11	stdcall	20	implemented	0x00615E00	src/hle/dplay: LAN sessions on Transport; call inside the wrapper function at this address; analysis/netcode/directplay.md
+IDirectPlay4A	EnumPlayers	12	stdcall	20	implemented	0x00615140	src/hle/dplay: LAN sessions on Transport; call inside the wrapper function at this address; analysis/netcode/directplay.md
+IDirectPlay4A	EnumSessions	13	stdcall	24	implemented	0x00614B25	src/hle/dplay: LAN sessions on Transport; analysis/netcode/directplay.md
+IDirectPlay4A	GetCaps	14	stdcall	12	implemented	0x00616F4C	src/hle/dplay: LAN sessions on Transport; analysis/netcode/directplay.md
 IDirectPlay4A	GetGroupData	15	stdcall	20	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
 IDirectPlay4A	GetGroupName	16	stdcall	16	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
 IDirectPlay4A	GetMessageCount	17	stdcall	12	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
-IDirectPlay4A	GetPlayerAddress	18	stdcall	16	todo	0x0061683B	analysis/netcode/directplay.md
+IDirectPlay4A	GetPlayerAddress	18	stdcall	16	implemented	0x0061683B	src/hle/dplay: LAN sessions on Transport; analysis/netcode/directplay.md
 IDirectPlay4A	GetPlayerCaps	19	stdcall	16	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
-IDirectPlay4A	GetPlayerData	20	stdcall	20	todo	0x00616DC3	analysis/netcode/directplay.md
-IDirectPlay4A	GetPlayerName	21	stdcall	16	todo	0x00615C9B	analysis/netcode/directplay.md
-IDirectPlay4A	GetSessionDesc	22	stdcall	12	todo	0x006165CC	analysis/netcode/directplay.md
+IDirectPlay4A	GetPlayerData	20	stdcall	20	implemented	0x00616DC3	src/hle/dplay: LAN sessions on Transport; analysis/netcode/directplay.md
+IDirectPlay4A	GetPlayerName	21	stdcall	16	implemented	0x00615C9B	src/hle/dplay: LAN sessions on Transport; analysis/netcode/directplay.md
+IDirectPlay4A	GetSessionDesc	22	stdcall	12	implemented	0x006165CC	src/hle/dplay: LAN sessions on Transport; analysis/netcode/directplay.md
 IDirectPlay4A	Initialize	23	stdcall	8	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
-IDirectPlay4A	Open	24	stdcall	12	todo	0x00614D70	call inside the wrapper function at this address; analysis/netcode/directplay.md
-IDirectPlay4A	Receive	25	stdcall	24	todo	0x0061A63E	analysis/netcode/directplay.md
-IDirectPlay4A	Send	26	stdcall	24	todo	0x006161F0	call inside the wrapper function at this address; analysis/netcode/directplay.md
+IDirectPlay4A	Open	24	stdcall	12	implemented	0x00614D70	src/hle/dplay: LAN sessions on Transport; call inside the wrapper function at this address; analysis/netcode/directplay.md
+IDirectPlay4A	Receive	25	stdcall	24	implemented	0x0061A63E	src/hle/dplay: LAN sessions on Transport; analysis/netcode/directplay.md
+IDirectPlay4A	Send	26	stdcall	24	implemented	0x006161F0	src/hle/dplay: LAN sessions on Transport; call inside the wrapper function at this address; analysis/netcode/directplay.md
 IDirectPlay4A	SetGroupData	27	stdcall	20	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
 IDirectPlay4A	SetGroupName	28	stdcall	16	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
-IDirectPlay4A	SetPlayerData	29	stdcall	20	todo	0x00616E30	call inside the wrapper function at this address; analysis/netcode/directplay.md
-IDirectPlay4A	SetPlayerName	30	stdcall	16	todo	0x00615D9D	analysis/netcode/directplay.md
-IDirectPlay4A	SetSessionDesc	31	stdcall	12	todo	0x00616620	call inside the wrapper function at this address; analysis/netcode/directplay.md
+IDirectPlay4A	SetPlayerData	29	stdcall	20	implemented	0x00616E30	src/hle/dplay: LAN sessions on Transport; call inside the wrapper function at this address; analysis/netcode/directplay.md
+IDirectPlay4A	SetPlayerName	30	stdcall	16	implemented	0x00615D9D	src/hle/dplay: LAN sessions on Transport; analysis/netcode/directplay.md
+IDirectPlay4A	SetSessionDesc	31	stdcall	12	implemented	0x00616620	src/hle/dplay: LAN sessions on Transport; call inside the wrapper function at this address; analysis/netcode/directplay.md
 IDirectPlay4A	AddGroupToGroup	32	stdcall	12	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
 IDirectPlay4A	CreateGroupInGroup	33	stdcall	28	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
 IDirectPlay4A	DeleteGroupFromGroup	34	stdcall	12	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
-IDirectPlay4A	EnumConnections	35	stdcall	20	todo	0x0061459B	analysis/netcode/directplay.md
+IDirectPlay4A	EnumConnections	35	stdcall	20	implemented	0x0061459B	src/hle/dplay: LAN sessions on Transport; analysis/netcode/directplay.md
 IDirectPlay4A	EnumGroupsInGroup	36	stdcall	24	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
 IDirectPlay4A	GetGroupConnectionSettings	37	stdcall	20	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
-IDirectPlay4A	InitializeConnection	38	stdcall	12	todo	0x006147C7	analysis/netcode/directplay.md
+IDirectPlay4A	InitializeConnection	38	stdcall	12	implemented	0x006147C7	src/hle/dplay: LAN sessions on Transport; analysis/netcode/directplay.md
 IDirectPlay4A	SecureOpen	39	stdcall	20	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
 IDirectPlay4A	SendChatMessage	40	stdcall	20	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
 IDirectPlay4A	SetGroupConnectionSettings	41	stdcall	16	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
@@ -681,32 +681,32 @@ IDirectPlay4A	StartSession	42	stdcall	12	unused	-	not called; analysis/netcode/d
 IDirectPlay4A	GetGroupFlags	43	stdcall	12	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
 IDirectPlay4A	GetGroupParent	44	stdcall	12	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
 IDirectPlay4A	GetPlayerAccount	45	stdcall	20	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
-IDirectPlay4A	GetPlayerFlags	46	stdcall	12	todo	0x00615249	analysis/netcode/directplay.md
+IDirectPlay4A	GetPlayerFlags	46	stdcall	12	implemented	0x00615249	src/hle/dplay: LAN sessions on Transport; analysis/netcode/directplay.md
 IDirectPlay4A	GetGroupOwner	47	stdcall	12	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
 IDirectPlay4A	SetGroupOwner	48	stdcall	12	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
-IDirectPlay4A	SendEx	49	stdcall	40	todo	0x00616330	call inside the wrapper function at this address; analysis/netcode/directplay.md
-IDirectPlay4A	GetMessageQueue	50	stdcall	24	todo	0x00612471	analysis/netcode/directplay.md
-IDirectPlay4A	CancelMessage	51	stdcall	12	todo	0x006153BF	analysis/netcode/directplay.md
+IDirectPlay4A	SendEx	49	stdcall	40	implemented	0x00616330	src/hle/dplay: LAN sessions on Transport; call inside the wrapper function at this address; analysis/netcode/directplay.md
+IDirectPlay4A	GetMessageQueue	50	stdcall	24	implemented	0x00612471	src/hle/dplay: LAN sessions on Transport; analysis/netcode/directplay.md
+IDirectPlay4A	CancelMessage	51	stdcall	12	stub	0x006153BF	src/hle/dplay: fixed result DP_OK: nothing waits in a send queue; analysis/netcode/directplay.md
 IDirectPlay4A	CancelPriority	52	stdcall	16	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
 IDirectPlayLobby3A	QueryInterface	0	stdcall	12	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
 IDirectPlayLobby3A	AddRef	1	stdcall	4	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
-IDirectPlayLobby3A	Release	2	stdcall	4	todo	0x00616B7D	analysis/netcode/directplay.md
+IDirectPlayLobby3A	Release	2	stdcall	4	implemented	0x00616B7D	src/hle/dplay: DirectPlay addresses; analysis/netcode/directplay.md
 IDirectPlayLobby3A	Connect	3	stdcall	16	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
 IDirectPlayLobby3A	CreateAddress	4	stdcall	28	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
-IDirectPlayLobby3A	EnumAddress	5	stdcall	20	todo	0x006168E4	analysis/netcode/directplay.md
+IDirectPlayLobby3A	EnumAddress	5	stdcall	20	implemented	0x006168E4	src/hle/dplay: DirectPlay addresses; analysis/netcode/directplay.md
 IDirectPlayLobby3A	EnumAddressTypes	6	stdcall	20	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
 IDirectPlayLobby3A	EnumLocalApplications	7	stdcall	16	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
-IDirectPlayLobby3A	GetConnectionSettings	8	stdcall	16	todo	0x00616BB6	analysis/netcode/directplay.md
+IDirectPlayLobby3A	GetConnectionSettings	8	stdcall	16	stub	0x00616BB6	src/hle/dplay: fixed result DPERR_NOTLOBBIED: no lobby application starts the game; analysis/netcode/directplay.md
 IDirectPlayLobby3A	ReceiveLobbyMessage	9	stdcall	24	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
 IDirectPlayLobby3A	RunApplication	10	stdcall	20	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
 IDirectPlayLobby3A	SendLobbyMessage	11	stdcall	20	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
-IDirectPlayLobby3A	SetConnectionSettings	12	stdcall	16	todo	0x00616C3A	analysis/netcode/directplay.md
+IDirectPlayLobby3A	SetConnectionSettings	12	stdcall	16	stub	0x00616C3A	src/hle/dplay: fixed result DPERR_NOTLOBBIED: no lobby application starts the game; analysis/netcode/directplay.md
 IDirectPlayLobby3A	SetLobbyMessageEvent	13	stdcall	16	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
-IDirectPlayLobby3A	CreateCompoundAddress	14	stdcall	20	todo	0x00614841	analysis/netcode/directplay.md
-IDirectPlayLobby3A	ConnectEx	15	stdcall	20	todo	0x00616C80	call inside the wrapper function at this address; analysis/netcode/directplay.md
+IDirectPlayLobby3A	CreateCompoundAddress	14	stdcall	20	implemented	0x00614841	src/hle/dplay: DirectPlay addresses; analysis/netcode/directplay.md
+IDirectPlayLobby3A	ConnectEx	15	stdcall	20	stub	0x00616C80	src/hle/dplay: fixed result DPERR_NOTLOBBIED: no lobby application starts the game; call inside the wrapper function at this address; analysis/netcode/directplay.md
 IDirectPlayLobby3A	RegisterApplication	16	stdcall	12	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
 IDirectPlayLobby3A	UnregisterApplication	17	stdcall	12	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
-IDirectPlayLobby3A	WaitForConnectionSettings	18	stdcall	8	todo	0x00616C6A	analysis/netcode/directplay.md
+IDirectPlayLobby3A	WaitForConnectionSettings	18	stdcall	8	stub	0x00616C6A	src/hle/dplay: fixed result DPERR_NOTLOBBIED: no lobby application starts the game; analysis/netcode/directplay.md
 IDirectSound	QueryInterface	0	stdcall	12	implemented	-	src/hle/ds3d: IDirectSound and the base COM IID
 IDirectSound	AddRef	1	stdcall	4	implemented	-	src/hle/ds3d: the device lives until it and its buffers are released
 IDirectSound	Release	2	stdcall	4	implemented	-	src/hle/ds3d: the device lives until it and its buffers are released
