@@ -12,67 +12,23 @@ verifying it. DESIGN §5.1, §5.3, §6.6, §6.8 and §8 define the behavior.
 | `Startup.h` | All of the above in order, for `main()` |
 | `Sha256.h` | SHA-256, fed in pieces |
 | `HostPlatform.h` | The platform and its environment, one file per platform, passed in so every platform's rules are tested everywhere |
-| `Files.h` | **Temporary.** The few file operations these need, until the Store component's header (`src/platform/Store/Store.h`) lands; the integrator replaces it with Store's at gate G0. `FilesMock.h` holds the in-memory test double |
+| `Files.h` | **Temporary.** The few file operations these need, until the Store component has a real backend (B5); the integrator then replaces it with Store's in its own pull request. `FilesMock.h` holds the in-memory test double |
 
 The install is only ever read. Nothing here writes outside the data folder.
 
-## Wiring into `main.cpp` (not done yet)
+## Wiring into `main.cpp`
 
-`src/app/main.cpp` and the build configuration belong to F1, and the integrator wires this
-package in. Until then the client calls none of it. Two edits are needed.
+Done at gate G0 (2026-11-04). `main.cpp` calls `startClient` with `consoleStartup(SFCOP_HASH_LIST,
+kBootFlags, {SFCOP_INSTALL_DIR})`: the build's install is tried after the remembered one and
+before the platform's usual folders, and when none is found the player is asked on the terminal,
+except with `--headless`. The temporary boot platform's own flags are the `kBootFlags` extras, so
+`--help` lists them and they come back in `start.options.passThrough`; `main.cpp` turns `start`
+into the boot platform's arguments until Wave 1 replaces that platform. `SFCOP_HASH_LIST` is
+defined by `cmake/sfcop_build_config.h.in`.
 
-**1. The build configuration does not define `SFCOP_HASH_LIST` yet.** F1's build must add this
-line to `cmake/sfcop_build_config.h.in` (configured with `@ONLY`):
-
-```c
-#define SFCOP_HASH_LIST "@CMAKE_SOURCE_DIR@/analysis/results/retail_hashes.sha256"
-```
-
-**2. `main.cpp` hands its command line to `startClient`.** Its own flag parsing and
-`printUsage` go away. Its temporary boot-platform flags move into `kBootFlags`, so `--help` lists
-them and `startClient` hands them back unchanged in `start.options.passThrough`:
-
-```cpp
-#include "Startup.h"
-
-namespace {
-
-// The temporary boot platform's own flags, until Wave 1.
-const std::vector<sfcop::app::ExtraFlag> kBootFlags = {
-    {"--game", "DIR", "a writable copy of the install (default: the build's copy)"},
-    {"--trace", "", "log every Win32 call on stderr"},
-    {"--silent", "", "no sound"},
-    {"--shots", "DIR", "write screenshots into DIR"},
-    {"--shot-every", "S", "seconds between screenshots (default 5)"},
-    {"--dry-run", "", "map and bind the exe, then stop"},
-};
-
-} // namespace
-
-int main(int argc, char **argv) {
-    const sfcop::app::Startup start = sfcop::app::startClient(
-        argc, argv, sfcop::app::consoleStartup(SFCOP_HASH_LIST, kBootFlags, {SFCOP_INSTALL_DIR}));
-    if (start.exitCode) {
-        return *start.exitCode;
-    }
-    // The boot platform's arguments are then built from `start`, as main.cpp builds them from
-    // its own parsing today:
-    //   start.options.passThrough   --game DIR sets the copy; --dry-run drops --run; the rest
-    //                               (--trace, --silent, --shots DIR, --shot-every S) pass on.
-    //                               --shot-every's value is not checked here, so keep isCount()
-    //   start.options.headless      "--headless"
-    //   start.options.watchdogSeconds > 0
-    //                               "--watchdog" and the number
-    //   start.installDir            the verified install, in place of SFCOP_INSTALL_DIR in the
-    //                               check that --game is not the install itself
-    ...
-}
-```
-
-`consoleStartup` tries the build's install (`SFCOP_INSTALL_DIR`) after the remembered one and
-before the platform's usual folders. When it finds none, it asks on the terminal, except with
-`--headless`. It prints to `std::cout` and `std::cerr`. `start.dataDir` is the per-user data
-folder, already created with its subfolders.
+`kDataSubdirs` is built from `Store`'s `userFolderName` (`src/platform/Store/Store.h`), so the
+per-user subfolders have one list. `Files.h` stays until a real `Store` backend lands (B5); the
+swap to `Store` is the integrator's, in its own pull request, once that backend exists.
 
 ## Hash list
 

@@ -1,6 +1,8 @@
 #include "app/DataDir.h"
 
+#include <iterator>
 #include <map>
+#include <string>
 
 #include <doctest/doctest.h>
 
@@ -28,6 +30,15 @@ std::string dirOf(Platform platform, std::map<std::string, std::string> env) {
 }
 
 } // namespace
+
+TEST_CASE("the data folder's subfolders are Store's user folders, by name and in order") {
+    REQUIRE(std::size(kDataSubdirs) == 5);
+    CHECK(std::string(kDataSubdirs[0]) == "settings");
+    CHECK(std::string(kDataSubdirs[1]) == "saves");
+    CHECK(std::string(kDataSubdirs[2]) == "replays");
+    CHECK(std::string(kDataSubdirs[3]) == "logs");
+    CHECK(std::string(kDataSubdirs[4]) == "mods");
+}
 
 TEST_CASE("on macOS the data folder is in Application Support") {
     CHECK(dirOf(Platform::kMacos, {{"HOME", "/Users/testcaptain"},
