@@ -13,7 +13,7 @@
  *
  * plus tDynamicAllocator::mGetAllocatorID(const char*) (0x006FCC10), a lifted function that calls
  * the first two directly. Every expected value below is written by hand. The same test runs in the
- * all-lifted build and in the build with SFCOP_GUEST_SOURCES; its "[test]" lines must be the same
+ * all-lifted build and in the build with SFCOP_GUEST_MODE (which defines SFCOP_GUEST_MODE_SOURCES); its "[test]" lines must be the same
  * in both (spike/guest-mode/run_all.sh compares them). "[path]" lines say which body answered:
  * they are the only lines that differ. Exit status: 0 when every check holds.
  */

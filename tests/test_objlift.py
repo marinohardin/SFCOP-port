@@ -1,0 +1,582 @@
+"""tools/objlift: placement, relocation and lifting of VC6 COFF objects (DESIGN §6.3, §7.2).
+
+The fixtures are written by tools/objlift/fixtures/make_coff.py, not by a compiler, so every byte
+and every expected value below is worked out by hand. The lift tests need pcrecomp's lifter: they
+run it in-process when capstone imports, else in the lifter container, else they skip. The
+retail test compiles DynamicAllocator.cpp with the pinned VC6 and lifts its real object.
+
+Where each runs: everywhere, the CI runner included (it has no lift): the placement, relocation,
+COMDAT, command-line and report tests, the exe-lift format fixtures and the golden-C structure
+test. Only with pcrecomp and capstone or the lifter container: the two lift tests (the golden
+comparison among them). Only with the install, docker and the toolchain image: the retail test.
+A test that cannot run says why on stderr (`skip`) and in pytest's -rs summary.
+"""
+import csv
+import hashlib
+import os
+import shutil
+import struct
+import subprocess
+import sys
+
+import pytest
+
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+TOOL = os.path.join(REPO, 'tools', 'objlift')
+for _p in (TOOL, os.path.join(TOOL, 'fixtures'), REPO):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
+import make_coff as mc  # noqa: E402
+import objlift  # noqa: E402
+import placement  # noqa: E402
+from harness.lib import paths  # noqa: E402
+from placement import Claim, InputObject, Placer, PlacementError, SymbolIndex  # noqa: E402
+
+EXE_SECTIONS = [(0x00401000, 0x00795000), (0x00795000, 0x00838000), (0x00838000, 0x00C83000)]
+
+
+def write(tmp_path, name, obj):
+    p = tmp_path / name
+    p.write_bytes(obj.build())
+    return str(p)
+
+
+def objects(tmp_path, **objs):
+    return [InputObject(write(tmp_path, n + '.obj', o), f'Test/{n}.cpp') for n, o in objs.items()]
+
+
+def place(objs, claims, known=None, code=(), **kw):
+    index = SymbolIndex({k: {v} for k, v in (known or {}).items()}, set(code))
+    placement._claimed_sections(objs, claims)
+    return Placer(objs, claims, index, exe_sections=EXE_SECTIONS, **kw).place()
+
+
+def dword(result, sec, off):
+    return struct.unpack_from('<I', result.images[sec], off)[0]
+
+
+def section(result, label):
+    return next(s for s in result.sections if s.label == label)
+
+
+# --- relocations -----------------------------------------------------------------------------------
+
+def every_type_object():
+    """_f at 0x00401000. Its fields, each against _target (the exe's, at 0x00839000):
+    +1 REL32 field 0, +5 DIR32 field 4, +9 DIR32NB field 0, +13 SECTION field 0,
+    +15 SECREL field 8, +19 ABSOLUTE field 0x11223344 (ignored)."""
+    o = mc.Obj()
+    code = (b'\xe8' + b'\0' * 4 + struct.pack('<I', 4) + b'\0' * 4 + b'\0\0'
+            + struct.pack('<I', 8) + struct.pack('<I', 0x11223344) + b'\xc3')
+    t = o.section('.text', code, mc.CODE | mc.COMDAT | mc.ALIGN_16, selection=mc.NODUPLICATES)
+    o.define('_f', t, 0, function=True)
+    for off, typ in ((1, mc.REL32), (5, mc.DIR32), (9, mc.DIR32NB), (13, mc.SECTION),
+                     (15, mc.SECREL), (19, mc.ABSOLUTE)):
+        o.reloc(t, off, '_target', typ)
+    return o
+
+
+def test_every_relocation_type_vc6_emits(tmp_path):
+    objs = objects(tmp_path, every=every_type_object())
+    r = place(objs, [Claim(0x00401000, 24, '_f', 'f', 'Test/every.cpp')],
+              known={'_target': 0x00839000})
+    t = section(r, 'every.obj:.text#1')
+    assert (t.mode, t.va) == ('claimed', 0x00401000)
+    img = r.images[t]
+    assert dword(r, t, 1) == 0x00437FFB          # 0x00839000 - (0x00401001 + 4)
+    assert dword(r, t, 5) == 0x00839004          # 4 + 0x00839000
+    assert dword(r, t, 9) == 0x00439000          # 0x00839000 - 0x00400000
+    assert struct.unpack_from('<H', img, 13)[0] == 3   # the exe's third section, .data
+    assert dword(r, t, 15) == 0x00001008         # 8 + 0x00839000 - 0x00838000
+    assert dword(r, t, 19) == 0x11223344
+    assert [(off, typ) for _, off, typ, _, _, _ in r.relocations] == [
+        (1, 'REL32'), (5, 'DIR32'), (9, 'DIR32NB'), (13, 'SECTION'), (15, 'SECREL')]
+
+
+def test_section_and_secrel_need_the_exe_sections(tmp_path):
+    objs = objects(tmp_path, every=every_type_object())
+    claims = [Claim(0x00401000, 24, '_f', 'f', 'Test/every.cpp')]
+    placement._claimed_sections(objs, claims)
+    index = SymbolIndex({'_target': {0x00839000}})
+    with pytest.raises(PlacementError, match=r'needs the exe\'s section table'):
+        Placer(objs, claims, index).place()
+
+
+def test_an_unknown_relocation_type_is_refused(tmp_path):
+    o = mc.Obj()
+    t = o.section('.text', b'\0' * 4 + b'\xc3', mc.CODE)
+    o.define('_f', t, 0, function=True)
+    o.reloc(t, 0, '_target', 0x09)                  # REL_I386_SEG12
+    objs = objects(tmp_path, seg=o)
+    with pytest.raises(PlacementError, match='relocation type 0x9 against _target'):
+        place(objs, [Claim(0x00401000, 5, '_f', 'f', 'Test/seg.cpp')], known={'_target': 0x839000})
+
+
+def test_an_unresolved_external_is_refused_with_its_name(tmp_path):
+    o = mc.Obj()
+    t = o.section('.text', b'\xe8\0\0\0\0\xc3', mc.CODE | mc.COMDAT, selection=mc.NODUPLICATES)
+    o.define('_f', t, 0, function=True)
+    o.reloc(t, 1, '?Nowhere@@YAXXZ', mc.REL32)
+    objs = objects(tmp_path, missing=o)
+    with pytest.raises(PlacementError, match=r'unresolved external symbol \?Nowhere@@YAXXZ '
+                                             r'\(referenced from missing\.obj:\.text#1\)'):
+        place(objs, [Claim(0x00401000, 6, '_f', 'f', 'Test/missing.cpp')])
+
+
+# --- placement -------------------------------------------------------------------------------------
+
+def test_two_functions_in_one_section_share_its_placement(tmp_path):
+    o = mc.Obj()
+    t = o.section('.text', b'\xc3' + b'\x90' * 15 + b'\xe8\0\0\0\0\xc3', mc.CODE | mc.ALIGN_16)
+    o.define('_a', t, 0, function=True)
+    o.define('_b', t, 16, function=True)
+    o.reloc(t, 17, '_a', mc.REL32)                  # _b calls _a
+    objs = objects(tmp_path, two=o)
+    r = place(objs, [Claim(0x00500000, 1, '_a', 'a', 'Test/two.cpp'),
+                     Claim(0x00500010, 6, '_b', 'b', 'Test/two.cpp')])
+    sec = section(r, 'two.obj:.text#1')
+    assert (sec.mode, sec.va) == ('claimed', 0x00500000)
+    assert dword(r, sec, 17) == 0xFFFFFFEB          # 0x00500000 - (0x00500011 + 4)
+    entries = objlift.entries_by_section(r, [])
+    assert entries[sec] == [0x00500000, 0x00500010]
+
+
+def test_two_claims_that_split_one_section_are_refused(tmp_path):
+    o = mc.Obj()
+    t = o.section('.text', b'\xc3' + b'\x90' * 15 + b'\xc3', mc.CODE)
+    o.define('_a', t, 0, function=True)
+    o.define('_b', t, 16, function=True)
+    objs = objects(tmp_path, two=o)
+    with pytest.raises(PlacementError, match='inconsistent addresses: 0x00500000 and 0x00500010'):
+        place(objs, [Claim(0x00500000, 1, '_a', 'a', 'Test/two.cpp'),
+                     Claim(0x00500020, 1, '_b', 'b', 'Test/two.cpp')])
+
+
+def code_and_data_object():
+    """_f calls a helper the exe does not have, reads a string the exe does not have, and
+    increments a counter the exe does have; a .drectve and an unused function are dropped."""
+    o = mc.Obj()
+    o.section('.drectve', b'-defaultlib:LIBC ', mc.INFO | mc.ALIGN_1)
+    # call _helper / mov eax, offset string / inc dword ptr [_gCount] / ret
+    code = b'\xe8\0\0\0\0' + b'\xb8\0\0\0\0' + b'\xff\x05\0\0\0\0' + b'\xc3'
+    t = o.section('.text', code, mc.CODE | mc.COMDAT | mc.ALIGN_16, selection=mc.NODUPLICATES)
+    o.define('_f', t, 0, function=True)
+    h = o.section('.text', b'\x33\xc0\xc3', mc.CODE | mc.COMDAT | mc.ALIGN_16, selection=mc.ANY)
+    o.define('?helper@@YAHXZ', h, 0, function=True)
+    s = o.section('.rdata', b'abc\0', mc.RDATA | mc.COMDAT | mc.ALIGN_4, selection=mc.ANY)
+    o.define('??_C@_03FHKD@abc?$AA@', s, 0)
+    d = o.section('.data', b'\0' * 8, mc.DATA | mc.ALIGN_4)
+    o.define('_gOther', d, 0)
+    o.define('_gCount', d, 4)
+    u = o.section('.text', b'\xc3', mc.CODE | mc.COMDAT | mc.ALIGN_16, selection=mc.ANY)
+    o.define('?unused@@YAXXZ', u, 0, function=True)
+    o.reloc(t, 1, '?helper@@YAHXZ', mc.REL32)
+    o.reloc(t, 6, '??_C@_03FHKD@abc?$AA@', mc.DIR32)
+    o.reloc(t, 12, '_gCount', mc.DIR32)
+    return o
+
+
+def test_data_referenced_from_code_goes_to_the_exe_or_the_reserved_range(tmp_path):
+    objs = objects(tmp_path, unit=code_and_data_object())
+    r = place(objs, [Claim(0x00401000, 17, '_f', 'f', 'Test/unit.cpp')],
+              known={'_gCount': 0x00839104})
+    by = {s.label: s for s in r.sections}
+    f, helper = by['unit.obj:.text#2'], by['unit.obj:.text#3']
+    string, data = by['unit.obj:.rdata#4'], by['unit.obj:.data#5']
+    assert (helper.mode, helper.va) == ('fresh', 0x0F000000)
+    assert (string.mode, string.va) == ('fresh', 0x0F000004)   # after the code, 4-aligned
+    assert (data.mode, data.va) == ('exe', 0x00839100)          # _gCount is at +4
+    assert dword(r, f, 1) == 0x0EBFEFFB             # 0x0F000000 - (0x00401001 + 4)
+    assert dword(r, f, 6) == 0x0F000004
+    assert dword(r, f, 12) == 0x00839104
+    assert r.reserved_end == 0x0F000008
+    assert data not in r.images                     # the exe's copy is the one used
+    assert r.images[string] == b'abc\0'
+    dropped = dict(r.dropped)
+    assert dropped['unit.obj:.drectve#1'] == 'never put in an image'
+    assert dropped['unit.obj:.text#6'] == 'not referenced by claimed code'
+    assert [s.label for s in r.code_sections()] == ['unit.obj:.text#2', 'unit.obj:.text#3']
+
+
+def test_writable_data_the_exe_does_not_hold_is_refused(tmp_path):
+    objs = objects(tmp_path, unit=code_and_data_object())
+    with pytest.raises(PlacementError, match=r'unit\.obj:\.data#5 is writable and has no address '
+                                             r'in the exe \(_gOther, _gCount\)'):
+        place(objs, [Claim(0x00401000, 17, '_f', 'f', 'Test/unit.cpp')])
+
+
+def test_data_the_exe_holds_apart_is_resolved_symbol_by_symbol(tmp_path):
+    objs = objects(tmp_path, unit=code_and_data_object())
+    r = place(objs, [Claim(0x00401000, 17, '_f', 'f', 'Test/unit.cpp')],
+              known={'_gCount': 0x00839104, '_gOther': 0x00840000})
+    data = section(r, 'unit.obj:.data#5')
+    assert data.mode == 'exe' and data.va is None
+    assert data.split == {'_gOther': 0x00840000, '_gCount': 0x00839104}
+    assert dword(r, section(r, 'unit.obj:.text#2'), 12) == 0x00839104
+
+
+def test_evidence_from_an_exact_function_names_a_static(tmp_path):
+    o = mc.Obj()
+    t = o.section('.text', b'\xa1\0\0\0\0\xc3', mc.CODE | mc.COMDAT, selection=mc.NODUPLICATES)
+    o.define('_f', t, 0, function=True)
+    d = o.section('.bss', b'\0' * 4, mc.BSS | mc.ALIGN_4)
+    o.define('_s_value', d, 0, static=True)
+    o.reloc(t, 1, '_s_value', mc.DIR32)
+    objs = objects(tmp_path, ev=o)
+    evidence = {(objs[0].path, '_s_value'): 0x00C80010}
+    r = place(objs, [Claim(0x00401000, 6, '_f', 'f', 'Test/ev.cpp')], evidence=evidence)
+    assert section(r, 'ev.obj:.bss#2').va == 0x00C80010
+    assert dword(r, section(r, 'ev.obj:.text#1'), 1) == 0x00C80010
+
+
+def test_the_reserved_range_has_a_limit(tmp_path):
+    objs = objects(tmp_path, unit=code_and_data_object())
+    with pytest.raises(PlacementError, match='need 0x8 bytes; the reserved guest range holds 0x4'):
+        place(objs, [Claim(0x00401000, 17, '_f', 'f', 'Test/unit.cpp')],
+              known={'_gCount': 0x00839104}, reserved=(0x0F000000, 4))
+
+
+def test_duplicate_code_addresses_take_the_lowest_and_say_so(tmp_path):
+    o = mc.Obj()
+    t = o.section('.text', b'\xe8\0\0\0\0\xc3', mc.CODE | mc.COMDAT, selection=mc.NODUPLICATES)
+    o.define('_f', t, 0, function=True)
+    o.reloc(t, 1, '??1tObject@@UAE@XZ', mc.REL32)
+    objs = objects(tmp_path, dup=o)
+    index = SymbolIndex({'??1tObject@@UAE@XZ': {0x00500020, 0x00500010}}, {0x00500010, 0x00500020})
+    claims = [Claim(0x00401000, 6, '_f', 'f', 'Test/dup.cpp')]
+    placement._claimed_sections(objs, claims)
+    r = Placer(objs, claims, index).place()
+    assert dword(r, section(r, 'dup.obj:.text#1'), 1) == 0x000FF00B   # 0x00500010 - 0x00401005
+    assert r.notes == ['??1tObject@@UAE@XZ has 2 addresses in the exe (0x00500010, 0x00500020), '
+                       'copies of one function; 0x00500010 is used']
+
+
+# --- COMDAT selection ------------------------------------------------------------------------------
+
+def comdat_pair(sel_a, sel_b, body_a=b'\xc3', body_b=b'\xc3'):
+    """Two objects; each defines ?dup@@YAXXZ in a COMDAT, with an associative section beside
+    it. Only a.obj's _f is claimed; it calls ?dup."""
+    objs = {}
+    for name, sel, body, claimed in (('a', sel_a, body_a, True), ('b', sel_b, body_b, False)):
+        o = mc.Obj()
+        if claimed:
+            t = o.section('.text', b'\xe8\0\0\0\0\xc3', mc.CODE | mc.COMDAT,
+                          selection=mc.NODUPLICATES)
+            o.define('_f', t, 0, function=True)
+            o.reloc(t, 1, '?dup@@YAXXZ', mc.REL32)
+        d = o.section('.text', body, mc.CODE | mc.COMDAT | mc.ALIGN_16, selection=sel)
+        o.define('?dup@@YAXXZ', d, 0, function=True)
+        o.section('.rdata', b'\x01\x02\x03\x04', mc.RDATA | mc.COMDAT | mc.ALIGN_4,
+                  selection=mc.ASSOCIATIVE, associated=d.number)
+        objs[name] = o
+    return objs
+
+
+def test_comdat_any_keeps_the_first_and_its_associative_section(tmp_path):
+    objs = objects(tmp_path, **comdat_pair(mc.ANY, mc.ANY))
+    r = place(objs, [Claim(0x00401000, 6, '_f', 'f', 'Test/a.cpp')])
+    assert [(s.label, s.mode, s.va) for s in r.sections] == [
+        ('a.obj:.text#1', 'claimed', 0x00401000),
+        ('a.obj:.text#2', 'fresh', 0x0F000000),
+        ('a.obj:.rdata#3', 'fresh', 0x0F000004)]
+    dropped = dict(r.dropped)
+    assert dropped['b.obj:.text#1'] == 'COMDAT duplicate (any)'
+    assert dropped['b.obj:.rdata#2'] == 'not referenced by claimed code'
+
+
+def test_comdat_largest_takes_the_larger_copy(tmp_path):
+    objs = objects(tmp_path, **comdat_pair(mc.LARGEST, mc.LARGEST, b'\xc3', b'\x90\x90\xc3'))
+    r = place(objs, [Claim(0x00401000, 6, '_f', 'f', 'Test/a.cpp')])
+    dup = section(r, 'b.obj:.text#1')
+    assert (dup.mode, dup.va) == ('fresh', 0x0F000000)
+    assert dword(r, section(r, 'a.obj:.text#1'), 1) == 0x0EBFEFFB
+    assert section(r, 'b.obj:.rdata#2').va == 0x0F000004
+    assert 'a.obj:.text#2' in dict(r.dropped)
+
+
+@pytest.mark.parametrize('sel_a, sel_b, body_b, message', [
+    (mc.NODUPLICATES, mc.NODUPLICATES, b'\xc3', 'selection "no duplicates"'),
+    (mc.SAME_SIZE, mc.SAME_SIZE, b'\x90\xc3', '"same size" differs \\(1 and 2 bytes\\)'),
+    (mc.EXACT_MATCH, mc.EXACT_MATCH, b'\xcc', '"exact match" differs'),
+])
+def test_comdat_selection_refuses_what_a_linker_refuses(tmp_path, sel_a, sel_b, body_b, message):
+    with pytest.raises(PlacementError, match=r'\?dup@@YAXXZ: COMDAT .*' + message):
+        objects_ = objects(tmp_path, **comdat_pair(sel_a, sel_b, b'\xc3', body_b))
+        place(objects_, [Claim(0x00401000, 6, '_f', 'f', 'Test/a.cpp')])
+
+
+def test_a_plain_symbol_defined_twice_is_refused(tmp_path):
+    a, b = mc.Obj(), mc.Obj()
+    for o in (a, b):
+        t = o.section('.text', b'\xc3', mc.CODE)
+        o.define('_f', t, 0, function=True)
+    with pytest.raises(PlacementError, match=r'_f is defined twice \(a\.obj:\.text#1 and '
+                                             r'b\.obj:\.text#1\)'):
+        place(objects(tmp_path, a=a, b=b), [Claim(0x00401000, 1, '_f', 'f', 'Test/a.cpp')])
+
+
+def test_the_obj_argument_splits_at_the_first_equals_sign(tmp_path):
+    (tmp_path / 'a=b.obj').write_bytes(b'')
+    spec = str(tmp_path / 'a=b.obj')
+    assert objlift.parse_obj_args([f'Test/unit.cpp={spec}']) == [('Test/unit.cpp', spec)]
+    assert objlift.parse_obj_args([f'U={tmp_path}/a=b.obj']) == [('U', f'{tmp_path}/a=b.obj')]
+    (tmp_path / 'plain.obj').write_bytes(b'')
+    assert objlift.parse_obj_args([str(tmp_path / 'plain.obj')]) == [(None, str(tmp_path / 'plain.obj'))]
+
+
+def test_comdat_copies_that_disagree_on_the_selection_kind_are_refused(tmp_path):
+    objs = objects(tmp_path, **comdat_pair(mc.ANY, mc.LARGEST))
+    with pytest.raises(PlacementError, match=r'\?dup@@YAXXZ: COMDAT copies disagree on the '
+                                             r'selection kind'):
+        place(objs, [Claim(0x00401000, 6, '_f', 'f', 'Test/a.cpp')])
+
+
+# --- the exe lift's generated text -----------------------------------------------------------------
+# objlift.py reads two files the exe lift (cmake/lifter/run_lift.py) writes; these fixtures are
+# their current formats, so a format change fails here rather than in a build.
+
+EXE_LIFT = os.path.join(TOOL, 'fixtures', 'exe_lift')
+
+
+def test_read_lifted_names_reads_the_exe_lifts_function_header():
+    assert objlift.read_lifted_names(EXE_LIFT) == {0x00401000, 0x0040103B, 0x006FC4D0}
+
+
+def test_read_dispatch_reads_the_exe_lifts_table_and_entry():
+    entries, entry_va = objlift.read_dispatch(EXE_LIFT)
+    assert entries == [(0x00401000, 'sub_00401000'), (0x0040103B, 'sub_0040103B'),
+                       (0x006FC4D0, 'sub_006FC4D0')]
+    assert entry_va == 0x0073A2A0
+
+
+def test_read_dispatch_names_a_file_without_the_entry_line(tmp_path):
+    (tmp_path / 'recomp_dispatch.c').write_text('{ 0x00401000u, sub_00401000 },\n')
+    with pytest.raises(PlacementError, match='no sfcop_entry_va line'):
+        objlift.read_dispatch(str(tmp_path))
+
+
+# --- the command line ------------------------------------------------------------------------------
+
+FUNCTIONS_HEADER = ['address', 'size', 'name', 'mangled', 'demangled', 'name_source',
+                    'translation_unit', 'tu_evidence', 'headers', 'is_library', 'library', 'kind',
+                    'tags']
+
+
+def cli_inputs(tmp_path, obj, rows, functions=()):
+    """A manifest, a functions.csv and an empty SDK table for the command line."""
+    write(tmp_path, 'unit.obj', obj)
+    with open(tmp_path / 'manifest.tsv', 'w', newline='') as f:
+        f.write('address\tsize\tsymbol\tsource\tmodes\n')
+        for address, size, name in rows:
+            f.write(f'0x{address:08x}\t{size}\t{name}\tTest/unit.cpp\tvc6\n')
+    with open(tmp_path / 'functions.csv', 'w', newline='') as f:
+        w = csv.writer(f)
+        w.writerow(FUNCTIONS_HEADER)
+        for address, size, name, mangled in functions:
+            w.writerow([f'{address:08x}', size, name, mangled, '', 'test', '', '', '', '0', '',
+                        'function', ''])
+    (tmp_path / 'sdk.tsv').write_text('address\tname\n')
+    (tmp_path / 'game').mkdir(exist_ok=True)
+    return ['--obj', f'Test/unit.cpp={tmp_path / "unit.obj"}', '--manifest',
+            str(tmp_path / 'manifest.tsv'), '--symbols', str(tmp_path / 'functions.csv'),
+            '--sdk-symbols', str(tmp_path / 'sdk.tsv'), '--game', str(tmp_path / 'game')]
+
+
+def two_instruction_object():
+    """mov eax, dword ptr [_gValue] / ret, claimed at 0x00401000; _gValue is the exe's
+    0x00838010."""
+    o = mc.Obj()
+    t = o.section('.text', b'\xa1\0\0\0\0\xc3', mc.CODE | mc.COMDAT | mc.ALIGN_16,
+                  selection=mc.NODUPLICATES)
+    o.define('?Value@@YAHXZ', t, 0, function=True)
+    o.reloc(t, 1, '_gValue', mc.DIR32)
+    return o
+
+
+TWO_FUNCTIONS = [(0x00401000, 6, 'Value', '?Value@@YAHXZ'), (0x00838010, 4, 'gValue', '_gValue')]
+
+
+def test_the_command_line_places_and_reports_without_lifting(tmp_path, capsys):
+    args = cli_inputs(tmp_path, two_instruction_object(), [(0x00401000, 6, 'Value()')],
+                      TWO_FUNCTIONS)
+    out = tmp_path / 'out'
+    assert objlift.main(args + ['--out', str(out), '--no-lift']) == 0
+    assert sorted(os.listdir(out)) == ['objlift_report.txt']
+    text = (out / 'objlift_report.txt').read_text()
+    assert '  0x00401000 ?Value@@YAHXZ (Value(), game/Test/unit.cpp)\n' in text
+    assert '  unit.obj:.text#1+0x1 DIR32   _gValue -> 0x00838010 (exe symbol)\n' in text
+    assert 'data image: empty\n' in text
+    assert objlift.main(args + ['--out', str(out), '--no-lift', '--check']) == 0
+
+
+def test_the_command_line_names_an_unresolved_external(tmp_path, capsys):
+    args = cli_inputs(tmp_path, two_instruction_object(), [(0x00401000, 6, 'Value()')],
+                      TWO_FUNCTIONS[:1])
+    assert objlift.main(args + ['--out', str(tmp_path / 'out'), '--no-lift']) == 2
+    assert 'unresolved external symbol _gValue' in capsys.readouterr().err
+
+
+def test_a_claim_without_its_object_is_refused(tmp_path, capsys):
+    args = cli_inputs(tmp_path, two_instruction_object(), [(0x00401000, 6, 'Value()')],
+                      TWO_FUNCTIONS)
+    args[1] = f'Test/other.cpp={tmp_path / "unit.obj"}'
+    assert objlift.main(args + ['--out', str(tmp_path / 'out'), '--no-lift']) == 2
+    assert 'no --obj for its unit Test/unit.cpp' in capsys.readouterr().err
+
+
+# --- lifting ---------------------------------------------------------------------------------------
+
+def skip(reason):
+    """Skip, and say why on the real stderr too, so a log that hides pytest's skip summary
+    still shows which lift-dependent test did not run."""
+    print(f'test_objlift: SKIPPED: {reason}', file=sys.__stderr__, flush=True)
+    pytest.skip(reason)
+
+
+def _pcrecomp():
+    d = os.environ.get('SFCOP_PCRECOMP_DIR') or os.path.join(paths.WORK, 'lifter-hle', 'pcrecomp')
+    return d if os.path.isfile(os.path.join(d, 'tools', 'lift', 'lift32.py')) else None
+
+
+def _lifter_image():
+    if shutil.which('docker') is None:
+        return None
+    digest = hashlib.sha256(open(os.path.join(REPO, 'cmake', 'lifter', 'Dockerfile'), 'rb')
+                            .read()).hexdigest()[:12]
+    image = f'sfcop-lifter-py:{digest}'
+    ok = subprocess.run(['docker', 'image', 'inspect', image], capture_output=True).returncode == 0
+    return image if ok else None
+
+
+def run_lift(tmp_path, args):
+    """objlift.py with pcrecomp: in-process when capstone imports, else in the lifter container
+    (no network, the repository and pcrecomp read-only). Returns (status, stderr)."""
+    pcr = _pcrecomp()
+    if pcr is None:
+        skip('no pcrecomp clone (SFCOP_PCRECOMP_DIR, or work/lifter-hle/pcrecomp)')
+    try:
+        import capstone  # noqa: F401
+        local = True
+    except ImportError:
+        local = False
+    if local:
+        return objlift.main(args + ['--pcrecomp', pcr]), ''
+    image = _lifter_image()
+    if image is None:
+        skip('neither capstone nor the lifter container image (sfcop-lifter-py:<digest>) is available')
+    inner = [a.replace(str(tmp_path), '/t') for a in args]
+    p = subprocess.run(['docker', 'run', '--rm', '--network', 'none', '-v', f'{REPO}:/r:ro',
+                        '-v', f'{pcr}:/p:ro', '-v', f'{tmp_path}:/t', image, 'python', '-I',
+                        '/r/tools/objlift/objlift.py'] + inner + ['--pcrecomp', '/p'],
+                       capture_output=True, text=True)
+    return p.returncode, p.stderr
+
+
+# The expected C of the two-instruction case is a committed golden file, produced by the tool
+# (tools/objlift/fixtures/two_instruction.c). Two tests hold it: the lift test regenerates the body
+# and compares (needs pcrecomp and capstone or the container), and the structure test below runs
+# everywhere and checks the golden against the conventions written out by hand. To refresh it after a
+# deliberate change of the lifter: SFCOP_UPDATE_GOLDEN=1 python3 -m pytest tests/test_objlift.py.
+GOLDEN = os.path.join(TOOL, 'fixtures', 'two_instruction.c')
+
+
+def golden():
+    with open(GOLDEN) as f:
+        return f.read()
+
+
+def test_the_golden_c_has_the_lifting_conventions_written_by_hand():
+    lines = golden().splitlines()
+    assert lines[0] == '/* 0x00401000 claimed .text, game/Test/unit.cpp */'
+    assert lines[1] == 'void sub_00401000(void) {' and lines[-1] == '}'
+    # the fixed preamble of flag and register locals
+    assert lines[2:9] == ['    int _fpu_cmp = 0;', '    uint32_t _cf = 0;', '    int _df = 1;',
+                          '    uint32_t _flag_k = FK_NONE;', '    uint32_t _flag_a = 0, _flag_b = 0;',
+                          '    uint32_t _itail_tgt = 0;', '    RECOMP_REGS_LOCALS']
+    # the hook before RECOMP_ENTER, so the counter sees the caller
+    assert '    sfcop_guest_entered(0u); RECOMP_ENTER(0x00401000u);' in lines
+    # the load from the relocated field, the exe's _gValue at 0x00838010
+    assert '    eax = MEM32(0x838010); /* 0x00401000: mov eax, dword ptr [0x838010] */' in lines
+    # the return pops the return address and leaves through the register write-back
+    assert any(l.startswith('    RECOMP_FLAGS_OUT(); esp += 4; { RECOMP_REGS_OUT(); return; }')
+               for l in lines)
+    assert sum(1 for l in lines if l.startswith('L_')) == 1
+
+
+
+
+def test_a_two_instruction_function_lifts_to_the_expected_c(tmp_path):
+    args = cli_inputs(tmp_path, two_instruction_object(), [(0x00401000, 6, 'Value()')],
+                      TWO_FUNCTIONS)
+    out = tmp_path / 'out'
+    status, err = run_lift(tmp_path, args + ['--out', str(out)])
+    assert status == 0, err
+    code = (out / 'objlift_code.c').read_text()
+    body = code[code.index('/* 0x00401000'):]
+    body = body.rstrip('\n') + '\n'
+    if os.environ.get('SFCOP_UPDATE_GOLDEN') == '1':
+        with open(GOLDEN, 'w') as f:
+            f.write(body)
+    assert body == golden()
+    table = (out / 'objlift_table.c').read_text()
+    assert '    {0x00401000u, sub_00401000, "Value()", "Test/unit.cpp"},\n' in table
+    assert 'const unsigned sfcop_guest_override_count = 1u;\n' in table
+    assert 'const unsigned sfcop_guest_object_section_count = 0u;\n' in table
+    assert (out / 'objlift_weak.h').read_text().endswith('#pragma weak sub_00401000\n')
+    assert (out / 'objlift_funcs.h').read_text().endswith('void sub_00401000(void);\n')
+
+
+def test_fresh_code_lifts_under_its_reserved_address_and_loads_the_image(tmp_path):
+    obj = code_and_data_object()
+    args = cli_inputs(tmp_path, obj, [(0x00401000, 17, 'f()')],
+                      [(0x00401000, 17, 'f', '_f'), (0x00839104, 4, 'gCount', '_gCount')])
+    out = tmp_path / 'out'
+    status, err = run_lift(tmp_path, args + ['--out', str(out)])
+    assert status == 0, err
+    code = (out / 'objlift_code.c').read_text()
+    assert 'RECOMP_CALL(sub_0F000000); /* 0x00401000: call 0xf000000 */' in code
+    assert 'SFCOP_GUEST_OBJECTS_LOAD(); sfcop_guest_entered(0u); RECOMP_ENTER(0x00401000u);' in code
+    assert 'SFCOP_GUEST_OBJECTS_LOAD(); RECOMP_ENTER(0x0F000000u);' in code
+    table = (out / 'objlift_table.c').read_text()
+    assert ('static const uint8_t sfcop_guest_object_bytes_1[4] = {\n'
+            '    0x61, 0x62, 0x63, 0x00,\n};\n') in table
+    assert '    {0x0F000004u, 4u, sfcop_guest_object_bytes_1}, /* unit.obj:.rdata#4 */\n' in table
+    assert 'const uint32_t sfcop_guest_object_size = 0x10000u;\n' in table
+    weak = (out / 'objlift_weak.h').read_text()
+    assert '#pragma weak sub_00401000\n' in weak and 'sub_0F000000' not in weak
+
+
+# --- against the install ---------------------------------------------------------------------------
+
+@pytest.mark.retail
+def test_the_real_dynamic_allocator_object_lifts_onto_the_exe(tmp_path):
+    if not os.path.isfile(paths.EXE):
+        skip('the original exe is not in the install folder')
+    if shutil.which('docker') is None:
+        skip('docker is not installed, and the pinned VC6 runs in its container')
+    rows = []
+    with open(os.path.join(REPO, 'game', 'manifest.tsv'), newline='') as f:
+        for r in csv.DictReader(f, delimiter='\t'):
+            if r['source'] == 'Common/DynamicAllocator.cpp' and 'vc6' in r['modes'].split():
+                rows.append(r)
+    assert [r['address'] for r in rows] == ['0x006fc4d0', '0x006fc5a0', '0x006fc750']
+    manifest = tmp_path / 'manifest.tsv'
+    with open(manifest, 'w', newline='') as f:
+        w = csv.DictWriter(f, rows[0].keys(), delimiter='\t', lineterminator='\n')
+        w.writeheader()
+        w.writerows(rows)
+    import compile as objcompile
+    built = tmp_path / 'obj'
+    assert objcompile.main(['--manifest', str(manifest), '--out', str(built)]) == 0
+    args = ['--obj', f'Common/DynamicAllocator.cpp={built / "Common" / "DynamicAllocator.obj"}',
+            '--manifest', str(manifest), '--symbols', os.path.join(REPO, 'ghidra', 'exports'),
+            '--exe', paths.EXE, '--out', str(tmp_path / 'out'), '--no-lift']
+    assert objlift.main(args) == 0
+    text = (tmp_path / 'out' / 'objlift_report.txt').read_text()
+    for address in ('0x006fc4d0', '0x006fc5a0', '0x006fc750'):
+        assert any(line.startswith(f'  {address} ') and line.endswith('identical to the exe')
+                   for line in text.splitlines()), address
+    relocs = text.split('\nrelocations:\n')[1].split('\n\n')[0].splitlines()
+    assert {line.split()[1] for line in relocs} == {'REL32', 'DIR32'}
+    assert 'data image: empty\n' in text

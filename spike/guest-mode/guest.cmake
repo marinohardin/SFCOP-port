@@ -1,15 +1,17 @@
-# The guest-mode spike's build (C3, DESIGN §12.4): the SFCOP_GUEST_SOURCES option, prototyped
+# The guest-mode spike's build (C3, DESIGN §12.4): the SFCOP_GUEST_MODE option, prototyped
 # outside the build's own files, which are not this package's.
 #
 #   cmake --preset macos-arm64 -DCMAKE_PROJECT_INCLUDE=<repo>/spike/guest-mode/guest.cmake \
-#         [-DSFCOP_GUEST_SOURCES=ON]
+#         [-DSFCOP_GUEST_MODE=ON] -DSFCOP_OBJLIFT=OFF
+#
+# SFCOP_OBJLIFT (cmake/lifter/objlift.cmake) replaces the same bodies, so both builds set it OFF.
 #
 # CMake reads this file inside the top-level project() call; the work is deferred to the end of the
 # top-level CMakeLists.txt, when sfcop, sfcop_src and sfcop_lifted exist. Then:
 #
 # - always: sfcop_guest_test, the spike's guest test (spike/guest-mode/guest_test.c), linked like
 #   sfcop;
-# - with SFCOP_GUEST_SOURCES=ON:
+# - with SFCOP_GUEST_MODE=ON:
 #   1. the claimed units of game/manifest.tsv (mode "guest") and src/app/guest/override.cpp are
 #      compiled in guest mode into sfcop_guest (override.cpp leaves sfcop_src, which would
 #      otherwise build its empty table);
@@ -22,7 +24,7 @@
 # What folding this into the build means is in spike/guest-mode/REPORT.md ("Build").
 include_guard(GLOBAL)
 
-option(SFCOP_GUEST_SOURCES "Compile the functions claimed in game/ in guest mode into sfcop" OFF)
+option(SFCOP_GUEST_MODE "Compile the functions claimed in game/ in guest mode into sfcop" OFF)
 
 function(_sfcop_guest_setup)
     if(NOT TARGET sfcop_lifted OR NOT TARGET sfcop_boot)
@@ -34,13 +36,13 @@ function(_sfcop_guest_setup)
     get_target_property(_recomp_defs sfcop_boot COMPILE_DEFINITIONS)
     get_target_property(_recomp_incs sfcop_boot INCLUDE_DIRECTORIES)
 
-    if(SFCOP_GUEST_SOURCES)
+    if(SFCOP_GUEST_MODE)
         # The manifest and override table in the tree must be what the annotations give.
         execute_process(
             COMMAND "${Python3_EXECUTABLE}" "${_root}/tools/manifest.py" --check
             RESULT_VARIABLE _rc ERROR_VARIABLE _err)
         if(NOT _rc EQUAL 0)
-            message(FATAL_ERROR "SFCOP_GUEST_SOURCES: ${_err}")
+            message(FATAL_ERROR "SFCOP_GUEST_MODE: ${_err}")
         endif()
         file(STRINGS "${_root}/game/manifest.tsv" _rows)
         set(_units "")
@@ -83,9 +85,9 @@ function(_sfcop_guest_setup)
             endif()
         endforeach()
         if(_base STREQUAL "")
-            message(FATAL_ERROR "SFCOP_GUEST_SOURCES: the lift defines no RECOMP_MEM_BASE")
+            message(FATAL_ERROR "SFCOP_GUEST_MODE: the lift defines no RECOMP_MEM_BASE")
         endif()
-        target_compile_definitions(sfcop_guest PRIVATE SFCOP_GUEST SFCOP_GUEST_SOURCES
+        target_compile_definitions(sfcop_guest PRIVATE SFCOP_GUEST SFCOP_GUEST_MODE_SOURCES
             "SFCOP_GUEST_BASE=${_base}")
         # -fno-access-control: the generated entry points name private members and nested classes,
         # as the original's own code may. game/ builds with warnings allowed (CONVENTIONS §1).
@@ -98,7 +100,7 @@ function(_sfcop_guest_setup)
         # 3.
         target_link_libraries(sfcop PRIVATE sfcop_guest)
         list(LENGTH _units _n)
-        message(STATUS "guest-mode spike: SFCOP_GUEST_SOURCES on, ${_n} unit(s) in guest mode")
+        message(STATUS "guest-mode spike: SFCOP_GUEST_MODE on, ${_n} unit(s) in guest mode")
     endif()
 
     add_executable(sfcop_guest_test "${_root}/spike/guest-mode/guest_test.c")
@@ -107,7 +109,10 @@ function(_sfcop_guest_setup)
     target_compile_options(sfcop_guest_test PRIVATE -fno-strict-aliasing -fwrapv)
     target_link_libraries(sfcop_guest_test PRIVATE sfcop_src sfcop_boot sfcop_win32hle sfcop_lifted
         SDL2::SDL2 pthread m)
-    if(SFCOP_GUEST_SOURCES)
+    if(TARGET sfcop_hle_guest)   # the HLE modules' shim tables, which the registration names
+        target_link_libraries(sfcop_guest_test PRIVATE sfcop_hle_guest)
+    endif()
+    if(SFCOP_GUEST_MODE)
         target_link_libraries(sfcop_guest_test PRIVATE sfcop_guest)
     endif()
     add_dependencies(sfcop_guest_test SDL3-shared)
