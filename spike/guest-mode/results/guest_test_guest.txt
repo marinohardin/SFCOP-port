@@ -1,0 +1,32 @@
+[path] 3 functions claimed from game/ in this build
+[path] 0x006FC5A0 runs the override compiled from game/ (dispatch table entry replaced)
+[path] 0x006FC750 runs the override compiled from game/ (dispatch table entry replaced)
+[path] 0x006FC4D0 runs the override compiled from game/ (dispatch table entry replaced)
+[test] info{tShip} == ".?AVtShip@@"                               00000001 ok
+[test] info{tShip} == ".?AVtShipX@@"                              00000000 ok
+[test] info{tShip} == ".?AVtShi" (a prefix)                       00000000 ok
+[test] info{tShip} == ""                                          00000000 ok
+[test] info{no type} == ".?AVtShip@@"                             00000000 ok
+[test] LockDownAllocator: locked                                  00000001 ok
+[test] LockDownAllocator: tClassAllocator<tShip> got ID           00000000 ok
+[test] LockDownAllocator: tClassAllocator<tCampaignInfo> got ID   00000001 ok
+[test] LockDownAllocator: tClassAllocator<tBattles> got ID        00000002 ok
+[test] LockDownAllocator again: nothing reassigned                00000007 ok
+[test] LockDownAllocator, empty vector: locked                    00000001 ok
+[test] LockDownAllocator, empty vector: nothing assigned          00000007 ok
+[test] mGetAllocatorID(".?AVtCampaignInfo@@")                     00000001 ok
+[test] mGetAllocatorID locked the registry                        00000001 ok
+[test] mGetAllocatorID: tClassAllocator<tBattles> got ID          00000002 ok
+[test] mGetAllocatorID(".?AVtNothing@@")                          FFFFFFFF ok
+[test] slot 2 of tAllocatedClass's vtable                         006FC4D0 ok
+[test] tAllocatedClass object == typeid(tAllocatedClass)          00000001 ok
+[test] tAllocatedClass object == typeid(tAllocatedClass*)         00000001 ok
+[test] tAllocatedClass object == typeid(tShip)                    00000000 ok
+[test] tShip object == typeid(tShip)                              00000001 ok
+[test] tShip object == typeid(tAllocatedClass)                    00000000 ok
+[test] tShip object == typeid(tAllocatedClass*)                   00000001 ok
+[test] tShip object == typeid(tCampaignInfo)                      00000000 ok
+[path] 0x006FC5A0 override ran 10 times
+[path] 0x006FC750 override ran 5 times
+[path] 0x006FC4D0 override ran 7 times
+[test] all checks passed
