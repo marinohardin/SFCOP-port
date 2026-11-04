@@ -1,0 +1,11 @@
+run	clock	outcome	at_s	exit	background	last_line
+1	16:29:34	throw	-	3	-	[throw] guest C++ exceptions are not handled yet (P1-1): stopping
+2	16:29:36	throw	-	3	-	[throw] guest C++ exceptions are not handled yet (P1-1): stopping
+3	16:29:37	throw	-	3	-	[throw] guest C++ exceptions are not handled yet (P1-1): stopping
+4	16:29:39	throw	-	3	-	[throw] guest C++ exceptions are not handled yet (P1-1): stopping
+5	16:29:41	throw	-	3	-	[throw] guest C++ exceptions are not handled yet (P1-1): stopping
+6	16:29:43	throw	-	3	-	[throw] guest C++ exceptions are not handled yet (P1-1): stopping
+7	16:29:45	throw	-	3	-	[throw] guest C++ exceptions are not handled yet (P1-1): stopping
+8	16:29:47	throw	-	3	-	[throw] guest C++ exceptions are not handled yet (P1-1): stopping
+9	16:29:48	throw	-	3	-	[throw] guest C++ exceptions are not handled yet (P1-1): stopping
+10	16:29:50	throw	-	3	-	[throw] guest C++ exceptions are not handled yet (P1-1): stopping

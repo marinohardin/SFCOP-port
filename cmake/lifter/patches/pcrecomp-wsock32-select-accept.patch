@@ -1,0 +1,95 @@
+diff --git a/runtime/win32hle/wsock32.c b/runtime/win32hle/wsock32.c
+index 4a58127..5cf82dc 100644
+--- a/runtime/win32hle/wsock32.c
++++ b/runtime/win32hle/wsock32.c
+@@ -256,6 +256,78 @@ static void w_getsockname(void) {
+     RET(0, 3);
+ }
+ 
++/* accept(s, &addr, &len): blocks (without the machine) unless s is non-blocking. */
++static void w_accept(void) {
++    int fd = fd_of(A32(0));
++    uint32_t addr = A32(1), lenp = A32(2);
++    struct sockaddr_in a;
++    socklen_t l = sizeof a;
++    hle_block_begin();
++    int c = accept(fd, (struct sockaddr *)&a, &l);
++    int e = errno;
++    hle_block_end();
++    if (c < 0) { g_wsa_error = wsa_errno(e); RET(INVALID_SOCKET, 3); }
++    if (c >= 0x10000) { close(c); g_wsa_error = 10024u /* WSAEMFILE */; RET(INVALID_SOCKET, 3); }
++#ifdef SO_NOSIGPIPE
++    { int one = 1; setsockopt(c, SOL_SOCKET, SO_NOSIGPIPE, &one, sizeof one); }
++#endif
++    g_ipx[c >> 3] &= (uint8_t)~(1 << (c & 7));
++    if (addr) to_guest(&a, (uint8_t *)hle_ptr(addr));
++    if (lenp) MEM32(lenp) = 16;
++    RET(SOCK_BASE + (uint32_t)c, 3);
++}
++static void w_getpeername(void) {                        /* (s, &addr, &len) */
++    struct sockaddr_in a;
++    socklen_t l = sizeof a;
++    if (getpeername(fd_of(A32(0)), (struct sockaddr *)&a, &l) != 0) FAIL(3);
++    if (A32(1)) to_guest(&a, (uint8_t *)APTR(1));
++    if (A32(2)) MEM32(A32(2)) = 16;
++    RET(0, 3);
++}
++static void w_shutdown(void) {                           /* (s, how): SD_RECEIVE/SEND/BOTH are SHUT_RD/WR/RDWR */
++    if (shutdown(fd_of(A32(0)), (int)A32(1)) != 0) FAIL(2);
++    RET(0, 2);
++}
++/* A Winsock fd_set is a count and an array of up to 64 SOCKETs. */
++static void w___WSAFDIsSet(void) {                       /* (s, &set) */
++    uint32_t set = A32(1), n = set ? MEM32(set) : 0;
++    for (uint32_t i = 0; i < n && i < 64; i++) if (MEM32(set + 4 + 4 * i) == A32(0)) RET(1, 2);
++    RET(0, 2);
++}
++/* select(nfds, read, write, except, timeout): poll over the three sets, then
++ * each set keeps only its ready sockets. A NULL timeout blocks; the wait
++ * gives the machine up. */
++static void w_select(void) {
++    uint32_t sets[3] = { A32(1), A32(2), A32(3) }, tv = A32(4);
++    static const short ev[3] = { POLLIN, POLLOUT, POLLPRI };
++    struct pollfd p[192];
++    int which[192], n = 0;
++    for (int k = 0; k < 3; k++) {
++        uint32_t c = sets[k] ? MEM32(sets[k]) : 0;
++        for (uint32_t i = 0; i < c && i < 64; i++) {
++            int fd = fd_of(MEM32(sets[k] + 4 + 4 * i));
++            if (fd < 0) { g_wsa_error = WSAENOTSOCK; RET(SOCKET_ERROR, 5); }
++            p[n].fd = fd, p[n].events = ev[k], p[n].revents = 0, which[n++] = k;
++        }
++    }
++    int ms = tv ? (int)(MEM32(tv) * 1000u + MEM32(tv + 4) / 1000u) : -1;
++    int r;
++    if (ms == 0) r = poll(p, (nfds_t)n, 0);
++    else { hle_block_begin(); r = poll(p, (nfds_t)n, ms); hle_block_end(); }
++    if (r < 0) FAIL(5);
++    int total = 0;
++    for (int k = 0; k < 3; k++) if (sets[k]) MEM32(sets[k]) = 0;
++    for (int j = 0; j < n; j++) {
++        short hit = which[j] == 0 ? (short)(POLLIN | POLLHUP | POLLERR) : which[j] == 1 ? (short)(POLLOUT | POLLERR) : (short)POLLPRI;
++        if (!(p[j].revents & hit)) continue;
++        uint32_t set = sets[which[j]], c = MEM32(set);
++        MEM32(set + 4 + 4 * c) = SOCK_BASE + (uint32_t)p[j].fd;
++        MEM32(set) = c + 1;
++        total++;
++    }
++    RET((uint32_t)total, 5);
++}
++
+ static void w_htonl(void) { RET(htonl(A32(0)), 1); }
+ static void w_htons(void) { RET(htons((uint16_t)A32(0)), 1); }
+ static void w_ntohl(void) { RET(ntohl(A32(0)), 1); }
+@@ -358,6 +430,11 @@ static void w_EnumProtocolsA(void) {
+ #define SHIM2(ord, name, fn) { "wsock32.dll#" #ord, fn }, { name, fn }
+ const win32hle_shim win32hle_wsock32[] = {
+     SHIM2(1111, "EnumProtocolsA", w_EnumProtocolsA),
++    SHIM2(1, "accept", w_accept),
++    SHIM2(5, "getpeername", w_getpeername),
++    SHIM2(18, "select", w_select),
++    SHIM2(22, "shutdown", w_shutdown),
++    SHIM2(151, "__WSAFDIsSet", w___WSAFDIsSet),
+     SHIM2(2, "bind", w_bind),
+     SHIM2(3, "closesocket", w_closesocket),
+     SHIM2(4, "connect", w_connect),

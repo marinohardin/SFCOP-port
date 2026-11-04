@@ -1,0 +1,49 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": { "major": 3, "minor": 28, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
+    },
+    {
+      "name": "macos-arm64",
+      "inherits": "base",
+      "displayName": "macOS arm64 (Apple clang)",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_OSX_ARCHITECTURES": "arm64",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++"
+      }
+    },
+    {
+      "name": "windows-x64",
+      "inherits": "base",
+      "displayName": "Windows x64 (cross toolchain: stub until Wave 2)",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/windows-x64.cmake"
+    },
+    {
+      "name": "linux-x64",
+      "inherits": "base",
+      "displayName": "Linux x64 (cross toolchain: stub until Wave 2)",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/linux-x64.cmake"
+    }
+  ],
+  "buildPresets": [
+    { "name": "macos-arm64", "configurePreset": "macos-arm64", "jobs": 4 }
+  ],
+  "testPresets": [
+    {
+      "name": "macos-arm64",
+      "configurePreset": "macos-arm64",
+      "output": { "outputOnFailure": true },
+      "execution": { "jobs": 4, "noTestsAction": "error" }
+    }
+  ]
+}

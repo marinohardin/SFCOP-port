@@ -1,4 +1,30 @@
-# Third-party code in StarFleetOP.exe 2.5.5.2: inventory (P0-6)
+# Third-party inventory
+
+Two lists: the libraries the native build links (pinned in `CMakeLists.txt` here), and the
+third-party code found inside the original exe (P0-6).
+
+## Build dependencies of the native build
+
+Pinned by a tagged release and the SHA-256 of its archive in `third_party/CMakeLists.txt`, fetched
+at configure time into the build directory, never vendored. Only the integrator adds, removes or
+bumps one (CONVENTIONS §5). `DependencyPinsTest.cpp` checks that the linked SDL3, miniaudio and
+doctest are these; sdl2-compat is not linked into the tests.
+
+| Name | Version | Pin | Licence | Where used | Why |
+| --- | --- | --- | --- | --- | --- |
+| SDL3 | 3.4.18 (2026-10-02) | release asset `SDL3-3.4.18.tar.gz`, sha256 `9c75cf16...4334a3`; tag commit `829a65d7` | zlib | `src/platform/` backends (Wave 1); today only `sfcop_tests` links it | Window, GPU (SDL GPU), input and events on all three platforms |
+| miniaudio | 0.11.25 (2026-03-03) | commit archive `9634bedb`, sha256 `1a3a79b8...76fa55` | public domain (Unlicense) or MIT-0 | the Audio backend (Wave 1); today only `sfcop_tests` | The audio engine under the Miles and DirectSound 3D HLE |
+| doctest | 2.5.3 (2026-07-06) | release asset `doctest-v2.5.3.tar.gz`, sha256 `eb4a3972...d5d50f`; tag commit `2d0a9359` | MIT | `sfcop_tests` only | C++ unit tests through CTest (CONVENTIONS §6) |
+| sdl2-compat | 2.32.74 (TEMPORARY: leaves with Wave 1 B1/B3) | release asset `sdl2-compat-2.32.74.tar.gz`, sha256 `ec68abde...8924588` | zlib | `sfcop` only, with `SFCOP_LIFT`: the boot platform (`src/app/boot/`) and win32hle; a shared library that loads the pinned SDL3, built shared beside `sfcop` | The SDL2 API the copied boot platform is written against |
+
+Not a dependency, and not in this directory, but the build uses it until Wave 1 replaces the
+temporary boot platform (`src/app/boot/`):
+
+| Name | Version | Licence | How the build gets it | Why |
+| --- | --- | --- | --- | --- |
+| pcrecomp | commit `ef3f0da6` with `cmake/lifter/patches/` | MIT | a clone outside the repository (`SFCOP_PCRECOMP_DIR`, made by `cmake/lifter/setup.sh`) | The lifter (its Python tools, run in a container) and its win32hle runtime, which the boot platform links |
+
+## Third-party code in StarFleetOP.exe 2.5.5.2 (P0-6)
 
 Every evidence column below was produced by a script in `scripts/`; see `README.md` for how to rerun them.
 "Vendored" means the code is copied into this directory; "reference" means it was read in a clone under
@@ -17,7 +43,7 @@ Every evidence column below was produced by a script in `scripts/`; see `README.
 | **BugslayerUtil** (John Robbins, *Debugging Applications*, 2000) | **Not imported by the game, the server or the scripts.** The DLL ships (35 exports: `SetCrashHandlerFilter`, `GetFaultReason`, `DiagAssert*`, ...) and links the *debug* CRT `MSVCRTD.dll`. The SDK also has `BugslayerUtil.lib`, and the script templates link it. | `BugslayerUtil.dll` 3.0.000, "Copyright 1997-2000 by John Robbins" | Book companion source (copyright John Robbins / Microsoft Press; free to use in your own programs per the book, **not verified**) | Book licence, unverified | No | Not needed: no code of it is in the exe. Ignore. |
 | QSI dmp3d / Tiger, Taldren Common/Switch | First-party engine code | | SDK libs and headers in `reference/` | Proprietary game code | n/a (the decomp target, not third-party) | Decompile; see P0-3/P0-7 |
 
-## Notes for other tasks
+### Notes for other tasks
 
 - **P0-3 / P0-7 (symbol matching).** Treat every `cryptlibR.lib` match in `analysis/results/*_sdklib_matches.tsv`
   as a false positive. Crypto++ is not in the exe. The 32 addresses involved are relocation-masked STL template
