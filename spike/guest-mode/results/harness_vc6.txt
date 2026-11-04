@@ -1,0 +1,12 @@
+== 0x006fc4d0
+OK    build Common/DynamicAllocator.cpp (0.8 s, profile sdk-release)
+OK    0x006fc4d0 tAllocatedClass::operator== 100.00% exact (48 bytes original, 48 rebuilt; 4 relocations, 1 unverified); not in matched_set.json
+RESULT OK
+== 0x006fc5a0
+OK    build Common/DynamicAllocator.cpp (0.7 s, profile sdk-release)
+OK    0x006fc5a0 tDynamicAllocator::tAllocatorInfo::operator== 100.00% exact (96 bytes original, 96 rebuilt; 1 relocations, 0 unverified); not in matched_set.json
+RESULT OK
+== 0x006fc750
+OK    build Common/DynamicAllocator.cpp (0.7 s, profile sdk-release)
+OK    0x006fc750 tDynamicAllocator::LockDownAllocator 100.00% exact (64 bytes original, 64 rebuilt; 0 relocations, 0 unverified); not in matched_set.json
+RESULT OK

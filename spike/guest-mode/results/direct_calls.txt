@@ -1,0 +1,16 @@
+== lifted build: the claimed symbols
+00000001045564bc (__TEXT,__text) external _sub_006FC4D0
+0000000104556eec (__TEXT,__text) external _sub_006FC5A0
+000000010455829c (__TEXT,__text) external _sub_006FC750
+== lifted build: calls made by the lifted sub_006FCC10
+10455ee58:     	bl	0x10455829c <_sub_006FC750>
+10455ef94:     	bl	0x10455d03c <_sub_006FCC80>
+10455f04c:     	bl	0x104556eec <_sub_006FC5A0>
+== guest build: the claimed symbols
+000000010004a564 (__TEXT,__text) external _sub_006FC4D0
+000000010004a68c (__TEXT,__text) external _sub_006FC5A0
+000000010004a7bc (__TEXT,__text) external _sub_006FC750
+== guest build: calls made by the lifted sub_006FCC10
+10455f51c:     	bl	0x10004a7bc <_sub_006FC750>
+10455f658:     	bl	0x10455d700 <_sub_006FCC80>
+10455f710:     	bl	0x10004a68c <_sub_006FC5A0>

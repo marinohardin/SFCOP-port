@@ -1,0 +1,15 @@
+== run 1
+[override] 3 functions compiled from game/ run in place of their lifted bodies
+[override] 0x006FC4D0 tAllocatedClass::operator==(const type_info&): 0 calls
+[override] 0x006FC5A0 tDynamicAllocator::tAllocatorInfo::operator==(const char*) const: 0 calls
+[override] 0x006FC750 tDynamicAllocator::LockDownAllocator(): 0 calls
+== run 2
+[override] 3 functions compiled from game/ run in place of their lifted bodies
+[override] 0x006FC4D0 tAllocatedClass::operator==(const type_info&): 0 calls
+[override] 0x006FC5A0 tDynamicAllocator::tAllocatorInfo::operator==(const char*) const: 0 calls
+[override] 0x006FC750 tDynamicAllocator::LockDownAllocator(): 0 calls
+== run 3
+[override] 3 functions compiled from game/ run in place of their lifted bodies
+[override] 0x006FC4D0 tAllocatedClass::operator==(const type_info&): 0 calls
+[override] 0x006FC5A0 tDynamicAllocator::tAllocatorInfo::operator==(const char*) const: 0 calls
+[override] 0x006FC750 tDynamicAllocator::LockDownAllocator(): 0 calls
