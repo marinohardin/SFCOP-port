@@ -28,7 +28,23 @@ harness/**
 # Every module's public surface and dependencies (frozen at gate G0, docs/PLAN.md §6.2)
 src/hle/surface.tsv
 src/hle/com/**
-src/platform/*/*.h
+src/platform/Window/Window.h
+src/platform/Gpu/Gpu.h
+src/platform/Input/Input.h
+src/platform/Audio/Audio.h
+src/platform/Transport/Transport.h
+src/platform/Store/Store.h
+src/platform/Clock/Clock.h
+src/platform/Threads/Threads.h
+src/platform/Window/WindowMock.h
+src/platform/Gpu/GpuMock.h
+src/platform/Input/InputMock.h
+src/platform/Audio/AudioMock.h
+src/platform/Transport/TransportMock.h
+src/platform/Store/StoreMock.h
+src/platform/Clock/ClockMock.h
+src/platform/Threads/ThreadsMock.h
+src/platform/Core/**
 game/port/**
 game/UNITS.tsv
 src/fixes/fixes.h

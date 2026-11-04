@@ -417,7 +417,7 @@ static void a_set_redist_directory(void) {
     RET(old, 1);
 }
 
-const win32hle_shim sfcop_hle_mss[] = {
+const win32hle_shim sfcop_spike_mss[] = {
     { "_AIL_waveOutOpen@16", a_waveOutOpen }, { "_AIL_waveOutClose@4", a_waveOutClose },
     { "_AIL_allocate_sample_handle@4", a_allocate_sample_handle },
     { "_AIL_release_sample_handle@4", a_release_sample_handle },

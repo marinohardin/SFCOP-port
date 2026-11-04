@@ -164,4 +164,8 @@ public:
 // A Threads whose every method fails with kUnsupported.
 std::unique_ptr<Threads> makeThreadsStub();
 
+// The build's real backend, on the host threads, one file per platform (B6); declared here so that the client needs no
+// backend header, defined by the backend's own source file once it lands.
+std::unique_ptr<Threads> makeThreads();
+
 } // namespace sfcop::platform

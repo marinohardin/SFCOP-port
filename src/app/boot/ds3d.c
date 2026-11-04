@@ -171,7 +171,7 @@ static void b_QueryInterface(void) {
     hle_com_QueryInterface();
 }
 
-const win32hle_shim sfcop_hle_ds3d[] = {
+const win32hle_shim sfcop_spike_ds3d[] = {
     { "IDirectSoundBuffer::QueryInterface", b_QueryInterface },
     { 0, 0 }
 };

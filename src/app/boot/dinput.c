@@ -328,7 +328,7 @@ static void s_DirectInputCreateA(void) {                 /* (hinst, version, &ou
     RET(DI_OK, 4);
 }
 
-const win32hle_shim sfcop_hle_dinput[] = {
+const win32hle_shim sfcop_spike_dinput[] = {
     { "DirectInputCreateA", s_DirectInputCreateA },
     { 0, 0 }
 };

@@ -180,7 +180,7 @@ static void dd_DirectDrawCreateClipper(void) {           /* (flags, &out, outer)
     RET(0, 3);
 }
 
-const win32hle_shim sfcop_hle_misc[] = {
+const win32hle_shim sfcop_spike_misc[] = {
     { "WinExec", k_WinExec }, { "OpenFileMappingA", k_OpenFileMappingA }, { "VirtualQueryEx", k_VirtualQueryEx },
     { "GetThreadContext", k_GetThreadContext }, { "GetShortPathNameA", k_GetShortPathNameA },
     { "VirtualLock", k_VirtualLock }, { "MapViewOfFileEx", k_MapViewOfFileEx },

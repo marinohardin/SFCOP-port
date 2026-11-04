@@ -198,4 +198,11 @@ public:
 // A Store whose every method fails with kUnsupported.
 std::unique_ptr<Store> makeStoreStub();
 
+// The build's real backend, on the host file system (B5); declared here so that the client needs
+// no backend header, defined by the backend's own source file once it lands. The two roots are
+// absolute host paths in UTF-8: the verified install (read-only) and the per-user data folder
+// (`Startup::installDir` and `Startup::dataDir` in src/app/Startup.h); the backend creates
+// nothing under the install and may create registry.tsv under the per-user root.
+std::unique_ptr<Store> makeStore(std::string installDir, std::string userDir);
+
 } // namespace sfcop::platform

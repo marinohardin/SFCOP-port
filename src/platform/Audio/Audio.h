@@ -164,7 +164,8 @@ public:
     // kInvalidArgument outside 0-1.
     virtual Status SetGain(VoiceId voice, float gain) = 0;
 
-    // Stereo position of a 2D voice: -1 left, 0 centre, +1 right, constant power. Errors:
+    // Stereo position of a 2D voice: -1 left, 0 centre, +1 right, DirectSound's law (the near
+    // side at unity, the far side attenuated by |pan| x 100 dB; both at unity at the centre). Errors:
     // kUnsupported; kInvalidHandle; kInvalidArgument outside -1 to +1.
     virtual Status SetPan(VoiceId voice, float pan) = 0;
 
@@ -230,5 +231,9 @@ public:
 
 // An Audio whose every method fails with kUnsupported.
 std::unique_ptr<Audio> makeAudioStub();
+
+// The build's real backend, on miniaudio (B4); declared here so that the client needs no
+// backend header, defined by the backend's own source file once it lands.
+std::unique_ptr<Audio> makeAudio();
 
 } // namespace sfcop::platform
