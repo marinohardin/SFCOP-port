@@ -46,7 +46,7 @@ docs/                 DESIGN.md, CONVENTIONS.md, PLAN.md, FIXES.md
 spike/                Phase 0 and 1 spikes, frozen; read, never extended
 ```
 
-What may include what: `game/` includes only `game/`; `src/hle/` includes `src/platform/` headers and the `game/` headers a layout needs; `src/platform/` includes `third_party/` and the C++ standard library, never Win32; `src/app/` includes anything in `src/`; `server/` includes `src/net/` and `third_party/`; `tools/` includes `src/` where it must. Generated files (lifted code, objects, traces under test, build directories) live under `work/` or `build/`, never in git.
+What may include what: `game/` includes only `game/`, by paths from the `game/` root (§4.1); `src/hle/` includes `src/platform/` headers and the `game/` headers a layout needs; `src/platform/` includes `third_party/` and the C++ standard library, never Win32; `src/app/` includes anything in `src/`; `server/` includes `src/net/` and `third_party/`; `tools/` includes `src/` where it must. Generated files (lifted code, objects, traces under test, build directories) live under `work/` or `build/`, never in git.
 
 ## 3. Naming
 
@@ -81,6 +81,7 @@ Branches follow §7.1. Commit scopes are the top-level directory or the componen
 
 - The goal is the original's source, so the style is the original's: its spacing, its idioms, its member order. The matched SDK sources (`Common/`, the scripting library) show that style; follow it.
 - Every function carries its `// FUNCTION: STARFLEETOP 0x...` or `// STUB:` line (DESIGN §6.3). Functions appear in address order inside a unit.
+- Includes are paths from the `game/` root: `#include "Common/DynamicAllocator.h"`, with `game/` and `game/port/` the only include directories (owner's decision, 2026-11-04). The original wrote bare file names with a long list of include directories; its include lines are rewritten to this form when a unit is imported, and that rewrite is the one standing exception to "the original's source", since include lines change no code bytes.
 - Only what VC6 SP4 compiles: no C++11 or later, no `long long`, no anonymous namespaces where the original had none. The native build compiles the same file with clang in C++17 mode with `-fms-extensions` and `game/port/types.h` first; a construct clang rejects is fixed with a `PORT:` line, never by forking the file.
 - A `PORT:` line is one line, tagged on the line itself: `// PORT: <reason>`. The reasons allowed: 64-bit or pointer-size hygiene, undefined behavior the original relied on, a platform difference the HLE surface cannot absorb. Everything else belongs in `src/` or behind a fix switch.
 - A fix is `#if SFCOP_FIX(name)` around the smallest possible region, with the original code in the `#else` branch. No fix changes a function's `FUNCTION:` status: the byte check compiles with every fix off.
