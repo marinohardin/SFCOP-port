@@ -6,8 +6,12 @@
 #if defined(SFCOP_GUEST_SOURCES)
 
 #include "Common/DynamicAllocator.h"
+#include "Tiger/tBag.h"
+#include "Tiger/tatomic.cpp"
+#include "Tiger/tcglue.h"
 #include "Tiger/tcrandsequence.h"
 #include "Tiger/tpart.h"
+#include "Tiger/tsay.h"
 #include "Tiger/tsequence.h"
 
 // Entry points: the lifted names, the guest calling convention.
@@ -36,45 +40,105 @@ extern "C" void sub_00628E50(void) {
     ::sfcop::guest::Entry< static_cast< void (*)( tPart ** ) >( &tPart::mAddToPartCachePtrList ) >::run();
 }
 
+// tAtomicLock::mAcquire(), game/Tiger/tatomic.cpp
+extern "C" void sub_00628EF0(void) {
+    ::sfcop::guest::entered(4);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth() >( &tAtomicLock::mAcquire ) >::run();
+}
+
+// tAtomicLock::mRelease(), game/Tiger/tatomic.cpp
+extern "C" void sub_00628F20(void) {
+    ::sfcop::guest::entered(5);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tAtomicLock::mRelease ) >::run();
+}
+
+// clib::memset(void *,int8u,iCount), game/Tiger/tcglue.cpp
+extern "C" void sub_0062DDB0(void) {
+    ::sfcop::guest::entered(6);
+    ::sfcop::guest::Entry< static_cast< void (*)( void *, int8u, iCount ) >( &clib::memset ) >::run();
+}
+
+// clib::strcpy(char *,const char *), game/Tiger/tcglue.cpp
+extern "C" void sub_0062DDE0(void) {
+    ::sfcop::guest::entered(7);
+    ::sfcop::guest::Entry< static_cast< void (*)( char *, const char * ) >( &clib::strcpy ) >::run();
+}
+
+// clib::memcpy(void *,const void *,size_t), game/Tiger/tcglue.cpp
+extern "C" void sub_0062DE10(void) {
+    ::sfcop::guest::entered(8);
+    ::sfcop::guest::Entry< static_cast< void * (*)( void *, const void *, size_t ) >( &clib::memcpy ) >::run();
+}
+
 // tCRandomSequence::mSetSeed(int32u), game/Tiger/tcrandsequence.cpp
 extern "C" void sub_0066C1C0(void) {
-    ::sfcop::guest::entered(4);
+    ::sfcop::guest::entered(9);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( int32u ) >( &tCRandomSequence::mSetSeed ) >::run();
 }
 
 // tCRandomSequence::mGenerateNumber(), game/Tiger/tcrandsequence.cpp
 extern "C" void sub_0066C1E0(void) {
-    ::sfcop::guest::entered(5);
+    ::sfcop::guest::entered(10);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32u() >( &tCRandomSequence::mGenerateNumber ) >::run();
+}
+
+// tSay::mHandleOutput(const int,const char *), game/Tiger/tsay.cpp
+extern "C" void sub_0066C6A0(void) {
+    ::sfcop::guest::entered(11);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( const int, const char * ) >( &tSay::mHandleOutput ) >::run();
+}
+
+// tSay::mSay(const char *,...), game/Tiger/tsay.cpp
+extern "C" void sub_0066C890(void) {
+    ::sfcop::guest::entered(12);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( const char *, ... ) >( &tSay::mSay ) >::run();
+}
+
+// tSay::mJustSayIt(const char *,...), game/Tiger/tsay.cpp
+extern "C" void sub_0066C8C0(void) {
+    ::sfcop::guest::entered(13);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( const char *, ... ) >( &tSay::mJustSayIt ) >::run();
+}
+
+// tItemBag::mAddToList(tBaseItemBag *,char *), game/Tiger/tBag.cpp
+extern "C" void sub_0066D7E0(void) {
+    ::sfcop::guest::entered(14);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< long( tBaseItemBag *, char * ) >( &tItemBag::mAddToList ) >::run();
+}
+
+// tItemBag::mFindItemWithLabel(char *), game/Tiger/tBag.cpp
+extern "C" void sub_0066D880(void) {
+    ::sfcop::guest::entered(15);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tBaseItemBag *( char * ) >( &tItemBag::mFindItemWithLabel ) >::run();
 }
 
 // tSequencePart::mGetNumber(), game/Tiger/tsequence.cpp
 extern "C" void sub_00670180(void) {
-    ::sfcop::guest::entered(6);
+    ::sfcop::guest::entered(16);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32u() >( &tSequencePart::mGetNumber ) >::run();
 }
 
 // tSequencePart::mGetNumber(int32u), game/Tiger/tsequence.cpp
 extern "C" void sub_006701C0(void) {
-    ::sfcop::guest::entered(7);
+    ::sfcop::guest::entered(17);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32u( int32u ) >( &tSequencePart::mGetNumber ) >::run();
 }
 
 // tAllocatedClass::operator==(const type_info&), game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC4D0(void) {
-    ::sfcop::guest::entered(8);
+    ::sfcop::guest::entered(18);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32( const type_info& ) >( &tAllocatedClass::operator== ) >::run();
 }
 
 // tDynamicAllocator::tAllocatorInfo::operator==(const char*) const, game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC5A0(void) {
-    ::sfcop::guest::entered(9);
+    ::sfcop::guest::entered(19);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32( const char* ) const >( &tDynamicAllocator::tAllocatorInfo::operator== ) >::run();
 }
 
 // tDynamicAllocator::LockDownAllocator(), game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC750(void) {
-    ::sfcop::guest::entered(10);
+    ::sfcop::guest::entered(20);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tDynamicAllocator::LockDownAllocator ) >::run();
 }
 
@@ -102,15 +166,25 @@ const sfcop_guest_override sfcop_guest_overrides[] = {
     {0x00628C20u, sub_00628C20, "tPart::mActivateParts()", "Tiger/tpart.cpp"},
     {0x00628DA0u, sub_00628DA0, "tPart::mDeactivateParts()", "Tiger/tpart.cpp"},
     {0x00628E50u, sub_00628E50, "tPart::mAddToPartCachePtrList(tPart **)", "Tiger/tpart.cpp"},
+    {0x00628EF0u, sub_00628EF0, "tAtomicLock::mAcquire()", "Tiger/tatomic.cpp"},
+    {0x00628F20u, sub_00628F20, "tAtomicLock::mRelease()", "Tiger/tatomic.cpp"},
+    {0x0062DDB0u, sub_0062DDB0, "clib::memset(void *,int8u,iCount)", "Tiger/tcglue.cpp"},
+    {0x0062DDE0u, sub_0062DDE0, "clib::strcpy(char *,const char *)", "Tiger/tcglue.cpp"},
+    {0x0062DE10u, sub_0062DE10, "clib::memcpy(void *,const void *,size_t)", "Tiger/tcglue.cpp"},
     {0x0066C1C0u, sub_0066C1C0, "tCRandomSequence::mSetSeed(int32u)", "Tiger/tcrandsequence.cpp"},
     {0x0066C1E0u, sub_0066C1E0, "tCRandomSequence::mGenerateNumber()", "Tiger/tcrandsequence.cpp"},
+    {0x0066C6A0u, sub_0066C6A0, "tSay::mHandleOutput(const int,const char *)", "Tiger/tsay.cpp"},
+    {0x0066C890u, sub_0066C890, "tSay::mSay(const char *,...)", "Tiger/tsay.cpp"},
+    {0x0066C8C0u, sub_0066C8C0, "tSay::mJustSayIt(const char *,...)", "Tiger/tsay.cpp"},
+    {0x0066D7E0u, sub_0066D7E0, "tItemBag::mAddToList(tBaseItemBag *,char *)", "Tiger/tBag.cpp"},
+    {0x0066D880u, sub_0066D880, "tItemBag::mFindItemWithLabel(char *)", "Tiger/tBag.cpp"},
     {0x00670180u, sub_00670180, "tSequencePart::mGetNumber()", "Tiger/tsequence.cpp"},
     {0x006701C0u, sub_006701C0, "tSequencePart::mGetNumber(int32u)", "Tiger/tsequence.cpp"},
     {0x006FC4D0u, sub_006FC4D0, "tAllocatedClass::operator==(const type_info&)", "Common/DynamicAllocator.cpp"},
     {0x006FC5A0u, sub_006FC5A0, "tDynamicAllocator::tAllocatorInfo::operator==(const char*) const", "Common/DynamicAllocator.cpp"},
     {0x006FC750u, sub_006FC750, "tDynamicAllocator::LockDownAllocator()", "Common/DynamicAllocator.cpp"},
 };
-const unsigned sfcop_guest_override_count = 11u;
+const unsigned sfcop_guest_override_count = 21u;
 
 }  // extern "C"
 
