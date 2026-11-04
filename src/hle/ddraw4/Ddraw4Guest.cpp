@@ -23,7 +23,7 @@
 
 // TEMPORARY: the boot platform's table that answers DirectDrawCreateClipper (src/app/boot/), for
 // the hand-off below.
-extern "C" const win32hle_shim sfcop_hle_misc[];
+extern "C" const win32hle_shim sfcop_spike_misc[];
 
 namespace sfcop::hle::ddraw4 {
 
@@ -1322,7 +1322,7 @@ void onDestroyed(const ComObject *object) {
 
 // TEMPORARY: without a guest host (GuestViews.h) the boot platform's DirectDraw answers.
 void handOffToBootPlatform(const char *name) {
-    for (const win32hle_shim *table : {win32hle_ddraw, sfcop_hle_misc}) {
+    for (const win32hle_shim *table : {win32hle_ddraw, sfcop_spike_misc}) {
         for (const win32hle_shim *entry = table; entry->name != nullptr; ++entry) {
             if (std::strcmp(entry->name, name) == 0) {
                 entry->fn(); // it reads its arguments and purges the stack itself
