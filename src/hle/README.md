@@ -141,9 +141,9 @@ the TSV is a hotspot, a Wave 1 pull request that edits its rows carries the `con
 label, and `python3 src/hle/gen_surface.py --check` must still pass.
 
 **Handle types.** A module that gives the game handles through win32hle's handle table claims a
-type number here, so that two modules never share one: `kernel` 24 (files, find handles),
-`registry` 25 (keys). The next module takes the next free number and adds its line in the same
-pull request as its shims.
+type number here, so that two modules never share one: `kernel` 24 (files) and 25 (find
+handles); `registry` claims none (keys are the module's own guest integers). The next module
+takes the next free number and adds its line in the same pull request as its shims.
 
 ## Writing a COM layout
 
