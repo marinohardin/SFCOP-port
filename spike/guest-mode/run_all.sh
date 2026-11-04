@@ -7,8 +7,8 @@
 #   manifest  tools/manifest.py --check and its tests
 #   harness   the three claimed functions scored in VC6 mode (harness/build-and-verify.sh)
 #   build     two native builds with spike/guest-mode/guest.cmake as the project include:
-#             all-lifted (build/macos-arm64, SFCOP_GUEST_SOURCES=OFF) and guest
-#             ($SFCOP_WORK/C3/build-guest, SFCOP_GUEST_SOURCES=ON); targets sfcop, sfcop_guest_test
+#             all-lifted (build/macos-arm64, SFCOP_GUEST_MODE=OFF) and guest
+#             ($SFCOP_WORK/C3/build-guest, SFCOP_GUEST_MODE=ON); targets sfcop, sfcop_guest_test
 #   test      sfcop_guest_test in both; their "[test]" lines must be identical
 #   boot      tools/boot_probe.sh, three headless boots of each sfcop with the clock at 15:38
 #             (a boot that reaches the CD-key prompt); the guest build's "[override]" lines say which
@@ -56,9 +56,9 @@ fi
 
 if has build; then
     cmake --preset macos-arm64 -DCMAKE_PROJECT_INCLUDE="$root/spike/guest-mode/guest.cmake" \
-        -DSFCOP_GUEST_SOURCES=OFF > "$work/C3/configure.log"
+        -DSFCOP_GUEST_MODE=OFF -DSFCOP_OBJLIFT=OFF > "$work/C3/configure.log"
     cmake --preset macos-arm64 -B "$guest" -DCMAKE_PROJECT_INCLUDE="$root/spike/guest-mode/guest.cmake" \
-        -DSFCOP_GUEST_SOURCES=ON > "$work/C3/configure-guest.log"
+        -DSFCOP_GUEST_MODE=ON -DSFCOP_OBJLIFT=OFF > "$work/C3/configure-guest.log"
     grep "guest-mode spike" "$work/C3/configure-guest.log"
     nice -n 19 cmake --build "$lifted" -j4 --target sfcop sfcop_guest_test > "$work/C3/build.log"
     nice -n 19 cmake --build "$guest" -j4 --target sfcop sfcop_guest_test > "$work/C3/build-guest.log"

@@ -313,11 +313,11 @@ Roughly in the order the decompilation would hit them, starting with the rest of
 
 ## Build
 
-The spike prototypes the `SFCOP_GUEST_SOURCES` option in `spike/guest-mode/guest.cmake`, loaded
+The spike prototypes the `SFCOP_GUEST_MODE` option in `spike/guest-mode/guest.cmake`, loaded
 with `-DCMAKE_PROJECT_INCLUDE=...`, because `CMakeLists.txt` and `cmake/` are hotspot files. To fold
 it into the build:
 
-- `option(SFCOP_GUEST_SOURCES)` and the body of `_sfcop_guest_setup` move into
+- `option(SFCOP_GUEST_MODE)` and the body of `_sfcop_guest_setup` move into
   `cmake/SfcopLifter.cmake`.
 - `override.cpp` moves from `sfcop_src` into the `sfcop_guest` object library unconditionally. It
   builds the empty table without the option.
@@ -409,6 +409,21 @@ These are for the integrator; `docs/` is not this package's.
 | `game/manifest.tsv` | generated: address, size, symbol, source, modes |
 | `tools/manifest.py`, `tests/test_manifest.py` | manifest and override-table generator, its tests |
 | `src/app/guest/override.h`, `override.cpp` | the entry-point machinery and guest runtime; the generated table |
-| `spike/guest-mode/guest.cmake` | the `SFCOP_GUEST_SOURCES` prototype and `sfcop_guest_test` |
+| `spike/guest-mode/guest.cmake` | the `SFCOP_GUEST_MODE` prototype and `sfcop_guest_test` |
 | `spike/guest-mode/guest_test.c` | the guest test |
 | `spike/guest-mode/run_all.sh` | reproduces `results/` |
+
+**Closing note.** The decision went to the alternative. The native build compiles each claimed unit
+with VC6 and lifts its object (`tools/objlift/`, built by `cmake/lifter/objlift.cmake`, option
+`SFCOP_OBJLIFT`, on by default), with pcrecomp unchanged. The three functions above now run that
+way. `DynamicAllocator.h` has lost its guest-mode `PORT:` lines and `ptr32`, the harness still
+scores the functions exact, and the guest test's `[test]` lines match the all-lifted build's
+(`tools/objlift/README.md`, "Proof"). Guest mode remains here as a fallback that cannot be on
+together with the object lift (the spike's builds set `SFCOP_OBJLIFT=OFF`). Retiring it, and the
+documentation changes listed above, are separate decisions.
+
+The fallback's build is not kept working for the current `game/`. Its target defines
+`SFCOP_GUEST_MODE_SOURCES`, so `override.cpp` takes the real table branch, and that branch no
+longer compiles: the headers of `game/` lost their guest-mode lines, and the units added since
+(`Tiger/`) declare `int32` as `long` and use pure virtuals that the guest-mode `types.h` turns into
+errors. That was hidden while the macro name did not match and the table compiled empty.

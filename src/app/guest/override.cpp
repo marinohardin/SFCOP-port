@@ -3,7 +3,7 @@
 #define SFCOP_GUEST_OVERRIDE_IMPLEMENTATION
 #include "app/guest/override.h"
 
-#if defined(SFCOP_GUEST_SOURCES)
+#if defined(SFCOP_GUEST_MODE_SOURCES)
 
 #include "Common/DynamicAllocator.h"
 #include "Tiger/tBag.h"
@@ -188,7 +188,7 @@ const unsigned sfcop_guest_override_count = 21u;
 
 }  // extern "C"
 
-#else  // the native build without SFCOP_GUEST_SOURCES: everything stays lifted
+#else  // the native build without SFCOP_GUEST_MODE_SOURCES: everything stays lifted
 
 extern "C" {
 
