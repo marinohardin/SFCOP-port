@@ -1,0 +1,4 @@
+run	clock	outcome	at_s	exit	background	last_line
+1	15:38:00	prompt	5.567	0	space21.mod	[override] 0x006FC750 tDynamicAllocator::LockDownAllocator(): 0 calls
+2	15:38:00	prompt	5.572	0	space21.mod	[override] 0x006FC750 tDynamicAllocator::LockDownAllocator(): 0 calls
+3	15:38:00	prompt	5.540	0	space21.mod	[override] 0x006FC750 tDynamicAllocator::LockDownAllocator(): 0 calls
