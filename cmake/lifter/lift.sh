@@ -8,13 +8,14 @@
 # the pcrecomp clone and this directory are mounted, the last two read-only):
 #   rtti      pcrecomp tools/cpp/rtti.py        -> cat/rtti.json, cat/rtti_seeds.json
 #   disasm    pcrecomp tools/disasm/disasm32.py -> cat/functions.json      (about 4 minutes)
-#   lift      run_lift.py                       -> out/gen/, out/lift_stats.json (about 2 minutes)
+#   lift      run_lift.py (with eh_frames.py)   -> out/gen/, out/lift_stats.json (about 2 minutes)
 # The layout is the one scripts/progress.py --lifter reads.
 #
-# The lift is keyed by its inputs (the exe's hash, the pcrecomp revision, this directory's files,
-# the marks, the file count). When the key is unchanged nothing is rerun and no output is
-# touched, so a fresh checkout of the same sources does not recompile the lifted code. When it
-# changes, only the generated files whose content changed are replaced.
+# The lift is keyed by its inputs (the exe's hash, the pcrecomp revision, this directory's files
+# and the patches applied to pcrecomp, the marks, the file count). When the key is unchanged
+# nothing is rerun and no output is touched, so a fresh checkout of the same sources does not
+# recompile the lifted code. When it changes, only the generated files whose content changed are
+# replaced.
 set -eu
 HERE=$(cd "$(dirname "$0")" && pwd)
 PCRECOMP_REV=ef3f0da6e08a8eb7a3f869273f3df071ca8d7373
@@ -51,7 +52,9 @@ command -v docker >/dev/null 2>&1 || die "docker is not installed; the lift runs
 docker info >/dev/null 2>&1 || die "docker is not running"
 
 key=$( (echo "exe $got"; echo "pcrecomp $rev"; echo "files $files"; echo "marks $marks"
-        sha256 "$HERE/run_lift.py" "$HERE/lift.sh" "$HERE/Dockerfile" | cut -d' ' -f1) | sha256 | cut -d' ' -f1)
+        sha256 "$HERE/run_lift.py" "$HERE/eh_frames.py" "$HERE/lift.sh" "$HERE/Dockerfile" \
+            "$HERE"/patches/*.patch | cut -d' ' -f1) \
+      | sha256 | cut -d' ' -f1)
 mkdir -p "$out"
 if [ -f "$out/key" ] && [ "$(cat "$out/key")" = "$key" ] && [ -f "$out/out/gen/recomp_dispatch.c" ]; then
     echo "lift: up to date ($out)"

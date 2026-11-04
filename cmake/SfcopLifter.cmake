@@ -14,9 +14,9 @@
 #   SFCOP_LIFT_MISSING       what is missing, as one sentence per item
 #   sfcop_lifted             STATIC library of the lifted functions (when ready)
 #   sfcop_win32hle           OBJECT library of pcrecomp's win32hle runtime (when ready)
-#   sfcop_gameroot           target: a writable copy of the install in ${CMAKE_BINARY_DIR}/gameroot
-#                            (TEMPORARY: the boot platform runs the game in place; Wave 1 B5 makes
-#                            the install read-only and moves writes to the per-user directory)
+#   sfcop_gameroot           target: a writable copy of the install in ${CMAKE_BINARY_DIR}/gameroot,
+#                            for the boot probes and proofs (tools/boot_probe.sh clones one per run);
+#                            the guest host never writes the install
 include_guard(GLOBAL)
 
 find_package(Python3 3.11 REQUIRED COMPONENTS Interpreter)
@@ -37,8 +37,8 @@ set(SFCOP_EXE_SHA256 "${SFCOP_FOUND_EXE_SHA256}")
 
 # Number of lifted .c files: fixed, so the build knows their names before the lift runs.
 set(SFCOP_LIFT_FILES 64)
-# Functions whose entry calls the boot host's sfcop_mark(va), which logs "[mark] reached ...":
-# WinMain, and the function that shows the CD-key prompt (src/app/boot/BootHost.c).
+# Functions whose entry calls the guest host's sfcop_mark(va), which logs "[mark] reached ...":
+# WinMain, and the function that shows the CD-key prompt (src/app/guest/GuestGame.cpp).
 set(SFCOP_MARK_WINMAIN 0x0069A840)
 set(SFCOP_MARK_CDKEY_PROMPT 0x00484102)
 set(SFCOP_LIFT_EXTRA_MARKS "" CACHE STRING
@@ -67,7 +67,8 @@ if(NOT EXISTS "${SFCOP_PCRECOMP_DIR}/tools/lift/lift32.py" OR NOT EXISTS "${_sfc
 else()
     find_package(Git REQUIRED)
     foreach(_p IN ITEMS pcrecomp-tib-hook pcrecomp-kernel32-unnamed-objects
-                        pcrecomp-manual-lookup-hook pcrecomp-wsock32-select-accept)
+                        pcrecomp-manual-lookup-hook pcrecomp-wsock32-select-accept
+                        pcrecomp-eh-landing-pads pcrecomp-mach-depth pcrecomp-div-fault)
         execute_process(
             COMMAND "${GIT_EXECUTABLE}" -C "${SFCOP_PCRECOMP_DIR}" apply --reverse --check
                     "${CMAKE_SOURCE_DIR}/cmake/lifter/patches/${_p}.patch"
@@ -101,11 +102,13 @@ foreach(_i RANGE ${_sfcop_last})
 endforeach()
 add_custom_command(
     OUTPUT ${_sfcop_lifted_c} "${_sfcop_gen}/recomp_dispatch.c" "${_sfcop_gen}/recomp_funcs.h"
+           "${_sfcop_gen}/recomp_eh_table.c"
     COMMAND sh "${CMAKE_SOURCE_DIR}/cmake/lifter/lift.sh"
             --exe "${_sfcop_exe}" --sha256 "${SFCOP_EXE_SHA256}" --pcrecomp "${SFCOP_PCRECOMP_DIR}"
             --out "${SFCOP_LIFTED_DIR}" --files ${SFCOP_LIFT_FILES} --marks "${SFCOP_LIFT_MARKS}"
     DEPENDS "${_sfcop_exe}" "${CMAKE_SOURCE_DIR}/cmake/lifter/lift.sh"
-            "${CMAKE_SOURCE_DIR}/cmake/lifter/run_lift.py" "${CMAKE_SOURCE_DIR}/cmake/lifter/Dockerfile"
+            "${CMAKE_SOURCE_DIR}/cmake/lifter/run_lift.py" "${CMAKE_SOURCE_DIR}/cmake/lifter/eh_frames.py"
+            "${CMAKE_SOURCE_DIR}/cmake/lifter/Dockerfile"
     COMMENT "Lifting StarFleetOP.exe (rtti, disasm, lift: about 6 minutes the first time)"
     USES_TERMINAL
     VERBATIM)
@@ -113,7 +116,10 @@ add_custom_command(
 set(SFCOP_RECOMP_DEFINITIONS RECOMP_RETADDR=0u RECOMP_LOCAL_REGS RECOMP_MEM_BASE=0x100000000000ull)
 set(SFCOP_RECOMP_INCLUDES "${_sfcop_gen}" "${_sfcop_win32hle}" "${SFCOP_PCRECOMP_DIR}/runtime/recomp32")
 
-add_library(sfcop_lifted STATIC ${_sfcop_lifted_c} "${_sfcop_gen}/recomp_dispatch.c")
+# recomp_eh_table.c: every catch and __except continuation with the function that owns it, which
+# the guest host checks each resume against (src/app/guest/).
+add_library(sfcop_lifted STATIC ${_sfcop_lifted_c} "${_sfcop_gen}/recomp_dispatch.c"
+    "${_sfcop_gen}/recomp_eh_table.c")
 target_include_directories(sfcop_lifted PRIVATE ${SFCOP_RECOMP_INCLUDES})
 target_compile_definitions(sfcop_lifted PRIVATE ${SFCOP_RECOMP_DEFINITIONS})
 # Generated code: no warnings, the spike's optimisation and its integer semantics.
@@ -123,7 +129,7 @@ target_compile_options(sfcop_lifted PRIVATE -w -O2 -fno-strict-aliasing -fwrapv)
 file(GLOB _sfcop_win32hle_c CONFIGURE_DEPENDS "${_sfcop_win32hle}/*.c")
 list(FILTER _sfcop_win32hle_c EXCLUDE REGEX "_selftest\\.c$")
 # TEMPORARY: win32hle is written against SDL2 (the pinned sdl2-compat, third_party/); it leaves
-# with the boot platform in Wave 1.
+# at gate G1, with the spike's stubs, once every row it still answers has an owner.
 add_library(sfcop_win32hle OBJECT ${_sfcop_win32hle_c})
 target_include_directories(sfcop_win32hle BEFORE PRIVATE "${CMAKE_SOURCE_DIR}/src/app/boot/include")
 target_include_directories(sfcop_win32hle PRIVATE ${SFCOP_RECOMP_INCLUDES})
@@ -131,7 +137,7 @@ target_compile_definitions(sfcop_win32hle PRIVATE ${SFCOP_RECOMP_DEFINITIONS})
 target_compile_options(sfcop_win32hle PRIVATE -w -fno-strict-aliasing -fwrapv)
 target_link_libraries(sfcop_win32hle PUBLIC SDL2::SDL2)
 
-# --- A writable copy of the install for the boot platform (TEMPORARY, see above) -------------------
+# --- A writable copy of the install for the boot probes and the proofs ------------------------------
 set(SFCOP_GAMEROOT "${CMAKE_BINARY_DIR}/gameroot")
 add_custom_command(
     OUTPUT "${SFCOP_GAMEROOT}/.sfcop-copy"
@@ -140,7 +146,7 @@ add_custom_command(
     COMMAND sh -c "cp -Rc \"$1\" \"$2\" 2>/dev/null || cp -R \"$1\" \"$2\"" sh "${SFCOP_INSTALL_DIR}" "${SFCOP_GAMEROOT}"
     COMMAND "${CMAKE_COMMAND}" -E touch "${SFCOP_GAMEROOT}/.sfcop-copy"
     DEPENDS "${_sfcop_exe}"
-    COMMENT "Copying the install to ${SFCOP_GAMEROOT} (the boot platform writes into it)"
+    COMMENT "Copying the install to ${SFCOP_GAMEROOT} (a writable copy for the boot probes)"
     VERBATIM)
 add_custom_target(sfcop_gameroot DEPENDS "${SFCOP_GAMEROOT}/.sfcop-copy")
 

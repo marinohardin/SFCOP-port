@@ -13,15 +13,15 @@ COMDLG32.DLL	GetOpenFileNameA	-	stdcall	4	stub-spike	0x00630495	P1-2 misc_stubs.
 COMDLG32.DLL	GetOpenFileNameW	-	stdcall	4	stub-spike	0x0062FDD6	P1-2 misc_stubs.c: fixed result FALSE (cancelled)
 COMDLG32.DLL	GetSaveFileNameA	-	stdcall	4	stub-spike	0x00630C55	P1-2 misc_stubs.c: fixed result FALSE (cancelled)
 COMDLG32.DLL	GetSaveFileNameW	-	stdcall	4	stub-spike	0x00630856	P1-2 misc_stubs.c: fixed result FALSE (cancelled)
-DBGHELP.DLL	StackWalk	-	stdcall	36	stub-spike	0x007121FE	P1-2 misc_stubs.c: fixed result 0
-DBGHELP.DLL	SymFunctionTableAccess	-	stdcall	8	stub-spike	0x007121EF	P1-2 misc_stubs.c: fixed result 0
-DBGHELP.DLL	SymGetLineFromAddr	-	stdcall	16	stub-spike	0x0071259F	P1-2 misc_stubs.c: fixed result 0
-DBGHELP.DLL	SymGetModuleInfo	-	stdcall	12	stub-spike	0x0071239B	P1-2 misc_stubs.c: fixed result 0
-DBGHELP.DLL	SymGetOptions	-	stdcall	0	stub-spike	0x0071215D	P1-2 misc_stubs.c: fixed result 0
-DBGHELP.DLL	SymGetSymFromAddr	-	stdcall	16	stub-spike	0x0071252F	P1-2 misc_stubs.c: fixed result 0
-DBGHELP.DLL	SymInitialize	-	stdcall	12	stub-spike	0x00712177	P1-2 misc_stubs.c: fixed result 1
-DBGHELP.DLL	SymLoadModule	-	stdcall	24	stub-spike	0x00712423	P1-2 misc_stubs.c: fixed result 0
-DBGHELP.DLL	SymSetOptions	-	stdcall	4	stub-spike	0x00712166	P1-2 misc_stubs.c: fixed result the options passed
+DBGHELP.DLL	StackWalk	-	stdcall	36	stub	0x007121FE	hle/kernel32rt Kernel32rtGuest.cpp: fixed result 0 (no frame: lifted code has no x86 frames)
+DBGHELP.DLL	SymFunctionTableAccess	-	stdcall	8	stub	0x007121EF	hle/kernel32rt Kernel32rtGuest.cpp: fixed result 0
+DBGHELP.DLL	SymGetLineFromAddr	-	stdcall	16	stub	0x0071259F	hle/kernel32rt Kernel32rtGuest.cpp: fixed result 0
+DBGHELP.DLL	SymGetModuleInfo	-	stdcall	12	stub	0x0071239B	hle/kernel32rt Kernel32rtGuest.cpp: fixed result 0
+DBGHELP.DLL	SymGetOptions	-	stdcall	0	stub	0x0071215D	hle/kernel32rt Kernel32rtGuest.cpp: fixed result 0
+DBGHELP.DLL	SymGetSymFromAddr	-	stdcall	16	stub	0x0071252F	hle/kernel32rt Kernel32rtGuest.cpp: fixed result 0
+DBGHELP.DLL	SymInitialize	-	stdcall	12	stub	0x00712177	hle/kernel32rt Kernel32rtGuest.cpp: fixed result 1
+DBGHELP.DLL	SymLoadModule	-	stdcall	24	stub	0x00712423	hle/kernel32rt Kernel32rtGuest.cpp: fixed result 0
+DBGHELP.DLL	SymSetOptions	-	stdcall	4	stub	0x00712166	hle/kernel32rt Kernel32rtGuest.cpp: fixed result the options passed
 DDRAW.DLL	DirectDrawCreate	-	stdcall	12	implemented	0x0069D61A	ddraw4 DirectDraw; without a guest host, the boot platform's (TEMPORARY); called on the boot to the CD-key prompt
 DDRAW.DLL	DirectDrawCreateClipper	-	stdcall	12	implemented	0x006B46E4	ddraw4 Clipper without a DirectDraw object; without a guest host, the boot platform's (TEMPORARY)
 DDRAW.DLL	DirectDrawEnumerateA	-	stdcall	8	implemented	0x006B79D5	Ddraw4Guest.cpp: the one display device; without a guest host, the boot platform's (TEMPORARY); called on the boot to the CD-key prompt
@@ -55,23 +55,23 @@ KERNEL32.DLL	CompareStringW	-	stdcall	24	stub-spike	0x0074B90D	win32hle kernel32
 KERNEL32.DLL	CopyFileA	-	stdcall	12	implemented	0x0070A0F9	hle/kernel Files.cpp
 KERNEL32.DLL	CreateDirectoryA	-	stdcall	8	implemented	0x00632D8C	hle/kernel Files.cpp
 KERNEL32.DLL	CreateDirectoryW	-	stdcall	8	implemented	0x00632D5D	hle/kernel Files.cpp
-KERNEL32.DLL	CreateEventA	-	stdcall	16	implemented-spike	0x004294C4	win32hle kernel32.c; called on the boot to the CD-key prompt
+KERNEL32.DLL	CreateEventA	-	stdcall	16	implemented	0x004294C4	hle/kernel32rt Sync.cpp; called on the boot to the CD-key prompt
 KERNEL32.DLL	CreateFileA	-	stdcall	28	implemented	0x0062A72E	hle/kernel Files.cpp: reads the per-user copy, else the install; a write goes to the per-user copy (settings/; logs/ for .txt and .log; saves/, replays/, mods/ as they are); called on the boot to the CD-key prompt
 KERNEL32.DLL	CreateFileMappingA	-	stdcall	24	implemented-spike	0x00429565	win32hle kernel32_ext.c
 KERNEL32.DLL	CreateFileW	-	stdcall	28	implemented	0x0063189A	hle/kernel Files.cpp, as CreateFileA; called on the boot to the CD-key prompt
-KERNEL32.DLL	CreateMutexA	-	stdcall	12	implemented-spike	0x0063467B	win32hle kernel32.c
+KERNEL32.DLL	CreateMutexA	-	stdcall	12	implemented	0x0063467B	hle/kernel32rt Sync.cpp
 KERNEL32.DLL	CreateProcessA	-	stdcall	40	implemented-spike	0x0040FAFC	win32hle kernel32.c
-KERNEL32.DLL	CreateSemaphoreA	-	stdcall	16	implemented-spike	0x006346DB	win32hle kernel32.c; called on the boot to the CD-key prompt
-KERNEL32.DLL	CreateThread	-	stdcall	24	implemented-spike	0x0040168D	win32hle kernel32_crt.c; called on the boot to the CD-key prompt
-KERNEL32.DLL	DeleteCriticalSection	-	stdcall	4	implemented-spike	0x004296E2	win32hle kernel32.c; called on the boot to the CD-key prompt
+KERNEL32.DLL	CreateSemaphoreA	-	stdcall	16	implemented	0x006346DB	hle/kernel32rt Sync.cpp; called on the boot to the CD-key prompt
+KERNEL32.DLL	CreateThread	-	stdcall	24	implemented	0x0040168D	hle/kernel32rt Sync.cpp: a Threads thread with a host stack of at least 16 MB; called on the boot to the CD-key prompt
+KERNEL32.DLL	DeleteCriticalSection	-	stdcall	4	implemented	0x004296E2	hle/kernel32rt CriticalSections.cpp; called on the boot to the CD-key prompt
 KERNEL32.DLL	DeleteFileA	-	stdcall	4	implemented	0x006336F2	hle/kernel Files.cpp
 KERNEL32.DLL	DeleteFileW	-	stdcall	4	implemented	0x006336C5	hle/kernel Files.cpp
-KERNEL32.DLL	EnterCriticalSection	-	stdcall	4	implemented-spike	0x0042972E	win32hle kernel32.c; called on the boot to the CD-key prompt
+KERNEL32.DLL	EnterCriticalSection	-	stdcall	4	implemented	0x0042972E	hle/kernel32rt CriticalSections.cpp: waits without the machine lock; called on the boot to the CD-key prompt
 KERNEL32.DLL	EnumSystemLocalesA	-	stdcall	8	implemented-spike	0x00748745	win32hle kernel32_crt.c
-KERNEL32.DLL	ExitProcess	-	stdcall	4	implemented-spike	0x0073A3EA	win32hle kernel32.c
-KERNEL32.DLL	ExitThread	-	stdcall	4	implemented-spike	0x0061A5DC	win32hle kernel32_crt.c
-KERNEL32.DLL	FileTimeToLocalFileTime	-	stdcall	8	implemented-spike	0x00738F04	win32hle kernel32_ext.c
-KERNEL32.DLL	FileTimeToSystemTime	-	stdcall	8	implemented-spike	0x00738F1A	win32hle kernel32_ext.c
+KERNEL32.DLL	ExitProcess	-	stdcall	4	implemented	0x0073A3EA	hle/kernel32rt Kernel32rtGuest.cpp
+KERNEL32.DLL	ExitThread	-	stdcall	4	implemented	0x0061A5DC	hle/kernel32rt Kernel32rtGuest.cpp
+KERNEL32.DLL	FileTimeToLocalFileTime	-	stdcall	8	implemented	0x00738F04	hle/kernel32rt Time.cpp on Clock
+KERNEL32.DLL	FileTimeToSystemTime	-	stdcall	8	implemented	0x00738F1A	hle/kernel32rt Time.cpp
 KERNEL32.DLL	FindClose	-	stdcall	4	implemented	0x0047CF48	hle/kernel Find.cpp: the install and the per-user copies listed together; called on the boot to the CD-key prompt
 KERNEL32.DLL	FindFirstFileA	-	stdcall	8	implemented	0x0047CE35	hle/kernel Find.cpp: the install and the per-user copies listed together; called on the boot to the CD-key prompt
 KERNEL32.DLL	FindFirstFileW	-	stdcall	8	implemented	0x00631FC9	hle/kernel Find.cpp: the install and the per-user copies listed together; called on the boot to the CD-key prompt
@@ -79,25 +79,25 @@ KERNEL32.DLL	FindNextFileA	-	stdcall	8	implemented	0x0047CF37	hle/kernel Find.cp
 KERNEL32.DLL	FindNextFileW	-	stdcall	8	implemented	0x0063264A	hle/kernel Find.cpp: the install and the per-user copies listed together; called on the boot to the CD-key prompt
 KERNEL32.DLL	FlushFileBuffers	-	stdcall	4	implemented	0x00631ECF	hle/kernel Files.cpp; called on the boot to the CD-key prompt
 KERNEL32.DLL	FormatMessageA	-	stdcall	28	implemented-spike	0x00637C81	win32hle kernel32.c
-KERNEL32.DLL	FreeEnvironmentStringsA	-	stdcall	4	stub-spike	0x00745C0B	win32hle kernel32_crt.c: fixed result 1; called on the boot to the CD-key prompt
-KERNEL32.DLL	FreeEnvironmentStringsW	-	stdcall	4	stub-spike	0x00745BBA	win32hle kernel32_crt.c: fixed result 1
-KERNEL32.DLL	FreeLibrary	-	stdcall	4	implemented-spike	0x0052E3C2	P1-2 sfcop_game.c over win32hle module.c; called on the boot to the CD-key prompt
-KERNEL32.DLL	GetACP	-	stdcall	0	stub-spike	0x0073F878	win32hle kernel32_crt.c: fixed result 1252u; called on the boot to the CD-key prompt
+KERNEL32.DLL	FreeEnvironmentStringsA	-	stdcall	4	implemented	0x00745C0B	hle/kernel32rt Kernel32rtGuest.cpp; called on the boot to the CD-key prompt
+KERNEL32.DLL	FreeEnvironmentStringsW	-	stdcall	4	stub	0x00745BBA	hle/kernel32rt Kernel32rtGuest.cpp: fixed result 1
+KERNEL32.DLL	FreeLibrary	-	stdcall	4	implemented	0x0052E3C2	hle/kernel32rt Modules.cpp: the host's own DLLs, else win32hle module.c; called on the boot to the CD-key prompt
+KERNEL32.DLL	GetACP	-	stdcall	0	stub	0x0073F878	hle/kernel32rt Kernel32rtGuest.cpp: fixed result 1252; called on the boot to the CD-key prompt
 KERNEL32.DLL	GetCommandLineA	-	stdcall	0	implemented-spike	0x0062EA3F	win32hle kernel32.c; called on the boot to the CD-key prompt
 KERNEL32.DLL	GetCommState	-	stdcall	8	stub-spike	0x0062A746	win32hle kernel32.c: fixed result FALSE, last error ERROR_INVALID_HANDLE
-KERNEL32.DLL	GetCPInfo	-	stdcall	8	implemented-spike	0x0073F6ED	win32hle kernel32_crt.c; called on the boot to the CD-key prompt
+KERNEL32.DLL	GetCPInfo	-	stdcall	8	implemented	0x0073F6ED	hle/kernel32rt Kernel32rtGuest.cpp; called on the boot to the CD-key prompt
 KERNEL32.DLL	GetCurrentDirectoryA	-	stdcall	8	implemented	0x006183B0	hle/kernel Paths.cpp; called on the boot to the CD-key prompt
 KERNEL32.DLL	GetCurrentDirectoryW	-	stdcall	8	implemented	0x00630F1A	hle/kernel Paths.cpp
-KERNEL32.DLL	GetCurrentProcess	-	stdcall	0	implemented-spike	0x006D1410	win32hle kernel32.c: answers the process pseudo-handle -1
-KERNEL32.DLL	GetCurrentThread	-	stdcall	0	implemented-spike	0x0064093D	win32hle kernel32_crt.c: answers the thread pseudo-handle -2; called on the boot to the CD-key prompt
-KERNEL32.DLL	GetCurrentThreadId	-	stdcall	0	implemented-spike	0x00429741	win32hle kernel32.c; called on the boot to the CD-key prompt
+KERNEL32.DLL	GetCurrentProcess	-	stdcall	0	implemented	0x006D1410	hle/kernel32rt Kernel32rtGuest.cpp: answers the process pseudo-handle -1
+KERNEL32.DLL	GetCurrentThread	-	stdcall	0	implemented	0x0064093D	hle/kernel32rt Kernel32rtGuest.cpp: answers the thread pseudo-handle -2; called on the boot to the CD-key prompt
+KERNEL32.DLL	GetCurrentThreadId	-	stdcall	0	implemented	0x00429741	hle/kernel32rt Kernel32rtGuest.cpp: pcrecomp's id, the one CreateThread answers; called on the boot to the CD-key prompt
 KERNEL32.DLL	GetDiskFreeSpaceA	-	stdcall	20	stub	0x00631150	hle/kernel Paths.cpp: fixed geometry, 2 GB free of 4 GB on the game drive; called on the boot to the CD-key prompt
 KERNEL32.DLL	GetDiskFreeSpaceW	-	stdcall	20	stub	0x00631111	hle/kernel Paths.cpp: fixed geometry, 2 GB free of 4 GB on the game drive
 KERNEL32.DLL	GetDriveTypeA	-	stdcall	4	implemented	0x0063136E	hle/kernel Paths.cpp
 KERNEL32.DLL	GetDriveTypeW	-	stdcall	4	implemented	0x0063133C	hle/kernel Paths.cpp
-KERNEL32.DLL	GetEnvironmentStrings	-	stdcall	0	implemented-spike	0x00745B1B	win32hle kernel32_crt.c; called on the boot to the CD-key prompt
-KERNEL32.DLL	GetEnvironmentStringsW	-	stdcall	0	stub-spike	0x00745AF5	win32hle kernel32_crt.c: fixed result NULL, last error ERROR_CALL_NOT_IMPLEMENTED; called on the boot to the CD-key prompt
-KERNEL32.DLL	GetEnvironmentVariableA	-	stdcall	12	implemented-spike	0x006B59AF	win32hle kernel32_crt.c; called on the boot to the CD-key prompt
+KERNEL32.DLL	GetEnvironmentStrings	-	stdcall	0	implemented	0x00745B1B	hle/kernel32rt Kernel32rtGuest.cpp: a private PATH and WINDIR; called on the boot to the CD-key prompt
+KERNEL32.DLL	GetEnvironmentStringsW	-	stdcall	0	stub	0x00745AF5	hle/kernel32rt Kernel32rtGuest.cpp: fixed result NULL, last error ERROR_CALL_NOT_IMPLEMENTED, as Windows 95 and 98; called on the boot to the CD-key prompt
+KERNEL32.DLL	GetEnvironmentVariableA	-	stdcall	12	implemented	0x006B59AF	hle/kernel32rt Kernel32rtGuest.cpp: the private environment; called on the boot to the CD-key prompt
 KERNEL32.DLL	GetFileAttributesA	-	stdcall	4	implemented	0x0063375C	hle/kernel Files.cpp
 KERNEL32.DLL	GetFileAttributesW	-	stdcall	4	implemented	0x00633730	hle/kernel Files.cpp
 KERNEL32.DLL	GetFileSize	-	stdcall	8	implemented	0x0063350D	hle/kernel Files.cpp; called on the boot to the CD-key prompt
@@ -107,60 +107,60 @@ KERNEL32.DLL	GetFullPathNameA	-	stdcall	16	implemented	0x00738C3A	hle/kernel Pat
 KERNEL32.DLL	GetLastError	-	stdcall	0	implemented-spike	0x005D0D03	win32hle kernel32.c; called on the boot to the CD-key prompt
 KERNEL32.DLL	GetLocaleInfoA	-	stdcall	16	implemented-spike	0x00748CB2	win32hle kernel32_crt.c
 KERNEL32.DLL	GetLocaleInfoW	-	stdcall	16	stub-spike	0x0074B6D4	win32hle kernel32_crt.c: fixed result 0, last error ERROR_CALL_NOT_IMPLEMENTED
-KERNEL32.DLL	GetLocalTime	-	stdcall	4	implemented-spike	0x00629987	win32hle kernel32_ext.c; called on the boot to the CD-key prompt
+KERNEL32.DLL	GetLocalTime	-	stdcall	4	implemented	0x00629987	hle/kernel32rt Time.cpp on Clock; called on the boot to the CD-key prompt
 KERNEL32.DLL	GetModuleFileNameA	-	stdcall	12	implemented	0x0050AE4A	hle/kernel Paths.cpp for the game's own module (C:\StarFleetOP.exe); another module goes to win32hle module.c; called on the boot to the CD-key prompt
-KERNEL32.DLL	GetModuleHandleA	-	stdcall	4	implemented-spike	0x00401427	win32hle module.c; called on the boot to the CD-key prompt
-KERNEL32.DLL	GetOEMCP	-	stdcall	0	stub-spike	0x0073F863	win32hle kernel32_crt.c: fixed result 437u
+KERNEL32.DLL	GetModuleHandleA	-	stdcall	4	implemented	0x00401427	hle/kernel32rt Modules.cpp: the host's own DLLs, else win32hle module.c; called on the boot to the CD-key prompt
+KERNEL32.DLL	GetOEMCP	-	stdcall	0	stub	0x0073F863	hle/kernel32rt Kernel32rtGuest.cpp: fixed result 437
 KERNEL32.DLL	GetPrivateProfileIntA	-	stdcall	16	implemented	0x004573CD	hle/kernel Ini.cpp: the per-user copy, else the install (a bare name: settings/windows/ first, then the game folder); decimal numbers only; called on the boot to the CD-key prompt
 KERNEL32.DLL	GetPrivateProfileStringA	-	stdcall	24	implemented	0x0062957A	hle/kernel Ini.cpp: the per-user copy, else the install (a bare name: settings/windows/ first, then the game folder); decimal numbers only; called on the boot to the CD-key prompt
-KERNEL32.DLL	GetProcAddress	-	stdcall	8	implemented-spike	0x0052E405	P1-2 sfcop_game.c over win32hle module.c; called on the boot to the CD-key prompt
-KERNEL32.DLL	GetProcessHeap	-	stdcall	0	implemented-spike	0x00732373	win32hle kernel32.c: answers the handle of the module's one heap
+KERNEL32.DLL	GetProcAddress	-	stdcall	8	implemented	0x0052E405	hle/kernel32rt Modules.cpp: the host's own DLLs, else win32hle module.c; called on the boot to the CD-key prompt
+KERNEL32.DLL	GetProcessHeap	-	stdcall	0	implemented	0x00732373	hle/kernel32rt Kernel32rtGuest.cpp: the system allocator in guest memory
 KERNEL32.DLL	GetShortPathNameA	-	stdcall	12	implemented	0x0040FCD7	hle/kernel Paths.cpp
-KERNEL32.DLL	GetStartupInfoA	-	stdcall	4	implemented-spike	0x0073A351	win32hle kernel32.c; called on the boot to the CD-key prompt
+KERNEL32.DLL	GetStartupInfoA	-	stdcall	4	implemented	0x0073A351	hle/kernel32rt Kernel32rtGuest.cpp; called on the boot to the CD-key prompt
 KERNEL32.DLL	GetStdHandle	-	stdcall	4	implemented-spike	0x00740D14	win32hle kernel32_crt.c; called on the boot to the CD-key prompt
 KERNEL32.DLL	GetStringTypeA	-	stdcall	20	implemented-spike	0x00745FD5	win32hle kernel32_crt.c; called on the boot to the CD-key prompt
 KERNEL32.DLL	GetStringTypeW	-	stdcall	16	stub-spike	0x00745FBB	win32hle kernel32_crt.c: fixed result 0, last error ERROR_CALL_NOT_IMPLEMENTED; called on the boot to the CD-key prompt
 KERNEL32.DLL	GetSystemDirectoryA	-	stdcall	8	implemented	0x00630FAA	hle/kernel Paths.cpp
 KERNEL32.DLL	GetSystemDirectoryW	-	stdcall	8	implemented	0x00630F78	hle/kernel Paths.cpp
-KERNEL32.DLL	GetSystemInfo	-	stdcall	4	implemented-spike	0x0042942B	win32hle kernel32_crt.c; called on the boot to the CD-key prompt
-KERNEL32.DLL	GetSystemTime	-	stdcall	4	implemented-spike	0x00739111	win32hle kernel32_ext.c; called on the boot to the CD-key prompt
-KERNEL32.DLL	GetSystemTimeAsFileTime	-	stdcall	4	implemented-spike	0x006F1FF9	win32hle kernel32_ext.c; called on the boot to the CD-key prompt
-KERNEL32.DLL	GetThreadContext	-	stdcall	8	stub-spike	0x007121CF	P1-2 misc_stubs.c: fixed result 0
-KERNEL32.DLL	GetTickCount	-	stdcall	0	implemented-spike	0x0040B53D	win32hle kernel32.c; called on the boot to the CD-key prompt
-KERNEL32.DLL	GetTimeZoneInformation	-	stdcall	4	implemented-spike	0x00739166	win32hle kernel32_ext.c; called on the boot to the CD-key prompt
+KERNEL32.DLL	GetSystemInfo	-	stdcall	4	stub	0x0042942B	hle/kernel32rt Kernel32rtGuest.cpp: fixed one Pentium-class processor; called on the boot to the CD-key prompt
+KERNEL32.DLL	GetSystemTime	-	stdcall	4	implemented	0x00739111	hle/kernel32rt Time.cpp on Clock; called on the boot to the CD-key prompt
+KERNEL32.DLL	GetSystemTimeAsFileTime	-	stdcall	4	implemented	0x006F1FF9	hle/kernel32rt Time.cpp on Clock; called on the boot to the CD-key prompt
+KERNEL32.DLL	GetThreadContext	-	stdcall	8	stub	0x007121CF	hle/kernel32rt Kernel32rtGuest.cpp: fixed result 0, last error ERROR_INVALID_FUNCTION
+KERNEL32.DLL	GetTickCount	-	stdcall	0	implemented	0x0040B53D	hle/kernel32rt Time.cpp on Clock; called on the boot to the CD-key prompt
+KERNEL32.DLL	GetTimeZoneInformation	-	stdcall	4	implemented	0x00739166	hle/kernel32rt Time.cpp: the bias in force, no daylight rule; called on the boot to the CD-key prompt
 KERNEL32.DLL	GetUserDefaultLCID	-	stdcall	0	stub-spike	0x00748B43	win32hle kernel32_crt.c: fixed result 0x0409u
-KERNEL32.DLL	GetVersion	-	stdcall	0	implemented-spike	0x00733569	win32hle kernel32.c; called on the boot to the CD-key prompt
-KERNEL32.DLL	GetVersionExA	-	stdcall	4	implemented-spike	0x0062A4C8	win32hle kernel32.c; called on the boot to the CD-key prompt
+KERNEL32.DLL	GetVersion	-	stdcall	0	stub	0x00733569	hle/kernel32rt Kernel32rtGuest.cpp: fixed Windows XP SP3 (5.1.2600); called on the boot to the CD-key prompt
+KERNEL32.DLL	GetVersionExA	-	stdcall	4	stub	0x0062A4C8	hle/kernel32rt Kernel32rtGuest.cpp: fixed Windows XP SP3 (5.1.2600); called on the boot to the CD-key prompt
 KERNEL32.DLL	GetVolumeInformationA	-	stdcall	32	stub	0x0062E551	hle/kernel Paths.cpp: a fixed NTFS volume for the game drive
 KERNEL32.DLL	GetVolumeInformationW	-	stdcall	32	stub	0x0062E2F8	hle/kernel Paths.cpp: a fixed NTFS volume for the game drive; called on the boot to the CD-key prompt
 KERNEL32.DLL	GetWindowsDirectoryA	-	stdcall	8	implemented	0x00630FFA	hle/kernel Paths.cpp
 KERNEL32.DLL	GetWindowsDirectoryW	-	stdcall	8	implemented	0x00630FC8	hle/kernel Paths.cpp
-KERNEL32.DLL	GlobalAlloc	-	stdcall	8	implemented-spike	0x004D385A	win32hle kernel32.c; called on the boot to the CD-key prompt
-KERNEL32.DLL	GlobalFree	-	stdcall	4	implemented-spike	0x00639185	win32hle kernel32.c; called on the boot to the CD-key prompt
-KERNEL32.DLL	GlobalHandle	-	stdcall	4	implemented-spike	0x00695186	win32hle kernel32.c; called on the boot to the CD-key prompt
-KERNEL32.DLL	GlobalLock	-	stdcall	4	implemented-spike	0x004D3805	win32hle kernel32.c; called on the boot to the CD-key prompt
-KERNEL32.DLL	GlobalMemoryStatus	-	stdcall	4	implemented-spike	0x0063A8E8	win32hle kernel32_crt.c
-KERNEL32.DLL	GlobalReAlloc	-	stdcall	12	implemented-spike	0x006381DC	win32hle kernel32.c
-KERNEL32.DLL	GlobalUnlock	-	stdcall	4	stub-spike	0x004D382B	win32hle kernel32.c: fixed result 1; called on the boot to the CD-key prompt
-KERNEL32.DLL	HeapAlloc	-	stdcall	12	implemented-spike	0x0073237A	win32hle kernel32.c
-KERNEL32.DLL	HeapCreate	-	stdcall	12	stub-spike	0x00745DA4	win32hle kernel32.c: fixed result 0x00000001u; called on the boot to the CD-key prompt
-KERNEL32.DLL	HeapDestroy	-	stdcall	4	stub-spike	0x00745DE3	win32hle kernel32.c: fixed result 1
-KERNEL32.DLL	HeapFree	-	stdcall	12	implemented-spike	0x0073239A	win32hle kernel32.c
-KERNEL32.DLL	InitializeCriticalSection	-	stdcall	4	implemented-spike	0x004295A3	win32hle kernel32.c; called on the boot to the CD-key prompt
-KERNEL32.DLL	InterlockedDecrement	-	stdcall	4	implemented-spike	0x00429826	win32hle kernel32.c; called on the boot to the CD-key prompt
-KERNEL32.DLL	InterlockedExchange	-	stdcall	8	implemented-spike	0x00429591	win32hle kernel32.c; called on the boot to the CD-key prompt
-KERNEL32.DLL	InterlockedIncrement	-	stdcall	4	implemented-spike	0x00429750	win32hle kernel32.c; called on the boot to the CD-key prompt
-KERNEL32.DLL	IsBadCodePtr	-	stdcall	4	implemented-spike	0x0073281C	win32hle kernel32.c
-KERNEL32.DLL	IsBadReadPtr	-	stdcall	8	implemented-spike	0x00737AEC	win32hle kernel32.c
-KERNEL32.DLL	IsBadWritePtr	-	stdcall	8	implemented-spike	0x00746A11	win32hle kernel32.c
-KERNEL32.DLL	IsValidCodePage	-	stdcall	4	implemented-spike	0x007485EE	win32hle kernel32_crt.c
+KERNEL32.DLL	GlobalAlloc	-	stdcall	8	implemented	0x004D385A	hle/kernel32rt Kernel32rtGuest.cpp: the handle is the address; called on the boot to the CD-key prompt
+KERNEL32.DLL	GlobalFree	-	stdcall	4	implemented	0x00639185	hle/kernel32rt Kernel32rtGuest.cpp; called on the boot to the CD-key prompt
+KERNEL32.DLL	GlobalHandle	-	stdcall	4	implemented	0x00695186	hle/kernel32rt Kernel32rtGuest.cpp; called on the boot to the CD-key prompt
+KERNEL32.DLL	GlobalLock	-	stdcall	4	implemented	0x004D3805	hle/kernel32rt Kernel32rtGuest.cpp; called on the boot to the CD-key prompt
+KERNEL32.DLL	GlobalMemoryStatus	-	stdcall	4	stub	0x0063A8E8	hle/kernel32rt Kernel32rtGuest.cpp: fixed 256 MB of physical memory
+KERNEL32.DLL	GlobalReAlloc	-	stdcall	12	implemented	0x006381DC	hle/kernel32rt Kernel32rtGuest.cpp
+KERNEL32.DLL	GlobalUnlock	-	stdcall	4	stub	0x004D382B	hle/kernel32rt Kernel32rtGuest.cpp: fixed result 1; called on the boot to the CD-key prompt
+KERNEL32.DLL	HeapAlloc	-	stdcall	12	implemented	0x0073237A	hle/kernel32rt Kernel32rtGuest.cpp
+KERNEL32.DLL	HeapCreate	-	stdcall	12	implemented	0x00745DA4	hle/kernel32rt Kernel32rtGuest.cpp: a distinct handle on the one system allocator; called on the boot to the CD-key prompt
+KERNEL32.DLL	HeapDestroy	-	stdcall	4	implemented	0x00745DE3	hle/kernel32rt Kernel32rtGuest.cpp: the heap's blocks stay allocated
+KERNEL32.DLL	HeapFree	-	stdcall	12	implemented	0x0073239A	hle/kernel32rt Kernel32rtGuest.cpp
+KERNEL32.DLL	InitializeCriticalSection	-	stdcall	4	implemented	0x004295A3	hle/kernel32rt CriticalSections.cpp; called on the boot to the CD-key prompt
+KERNEL32.DLL	InterlockedDecrement	-	stdcall	4	implemented	0x00429826	hle/kernel32rt Kernel32rtGuest.cpp; called on the boot to the CD-key prompt
+KERNEL32.DLL	InterlockedExchange	-	stdcall	8	implemented	0x00429591	hle/kernel32rt Kernel32rtGuest.cpp; called on the boot to the CD-key prompt
+KERNEL32.DLL	InterlockedIncrement	-	stdcall	4	implemented	0x00429750	hle/kernel32rt Kernel32rtGuest.cpp; called on the boot to the CD-key prompt
+KERNEL32.DLL	IsBadCodePtr	-	stdcall	4	implemented	0x0073281C	hle/kernel32rt HostMemory: the host's mapping
+KERNEL32.DLL	IsBadReadPtr	-	stdcall	8	implemented	0x00737AEC	hle/kernel32rt HostMemory: the host's mapping
+KERNEL32.DLL	IsBadWritePtr	-	stdcall	8	implemented	0x00746A11	hle/kernel32rt HostMemory: the host's mapping
+KERNEL32.DLL	IsValidCodePage	-	stdcall	4	implemented	0x007485EE	hle/kernel32rt Kernel32rtGuest.cpp
 KERNEL32.DLL	IsValidLocale	-	stdcall	8	implemented-spike	0x00748604	win32hle kernel32_crt.c
 KERNEL32.DLL	LCMapStringA	-	stdcall	24	implemented-spike	0x0073EC19	win32hle kernel32_crt.c; called on the boot to the CD-key prompt
 KERNEL32.DLL	LCMapStringW	-	stdcall	24	stub-spike	0x0073EBFD	win32hle kernel32_crt.c: fixed result 0, last error ERROR_CALL_NOT_IMPLEMENTED; called on the boot to the CD-key prompt
-KERNEL32.DLL	LeaveCriticalSection	-	stdcall	4	implemented-spike	0x0042980F	win32hle kernel32.c; called on the boot to the CD-key prompt
-KERNEL32.DLL	LoadLibraryA	-	stdcall	4	implemented-spike	0x0052E3EE	P1-2 sfcop_game.c over win32hle module.c; called on the boot to the CD-key prompt
-KERNEL32.DLL	LocalFileTimeToFileTime	-	stdcall	8	implemented-spike	0x0075A71C	win32hle kernel32_ext.c
-KERNEL32.DLL	LocalFree	-	stdcall	4	implemented-spike	0x00699745	win32hle kernel32.c
+KERNEL32.DLL	LeaveCriticalSection	-	stdcall	4	implemented	0x0042980F	hle/kernel32rt CriticalSections.cpp; called on the boot to the CD-key prompt
+KERNEL32.DLL	LoadLibraryA	-	stdcall	4	implemented	0x0052E3EE	hle/kernel32rt Modules.cpp: the host's own DLLs, else win32hle module.c; called on the boot to the CD-key prompt
+KERNEL32.DLL	LocalFileTimeToFileTime	-	stdcall	8	implemented	0x0075A71C	hle/kernel32rt Time.cpp on Clock
+KERNEL32.DLL	LocalFree	-	stdcall	4	implemented	0x00699745	hle/kernel32rt Kernel32rtGuest.cpp
 KERNEL32.DLL	lstrcatA	-	stdcall	8	implemented-spike	0x0040FAB5	win32hle kernel32.c
 KERNEL32.DLL	lstrlenA	-	stdcall	4	implemented-spike	0x00629BB7	win32hle kernel32.c
 KERNEL32.DLL	MapViewOfFile	-	stdcall	20	implemented-spike	0x00429574	win32hle kernel32_ext.c
@@ -169,51 +169,51 @@ KERNEL32.DLL	MoveFileA	-	stdcall	8	implemented	0x00738CF1	hle/kernel Files.cpp
 KERNEL32.DLL	MulDiv	-	stdcall	12	implemented-spike	0x00629C86	win32hle kernel32.c
 KERNEL32.DLL	MultiByteToWideChar	-	stdcall	24	implemented-spike	0x006AAC4D	win32hle kernel32_crt.c
 KERNEL32.DLL	OpenFileMappingA	-	stdcall	12	stub-spike	0x00732900	P1-2 misc_stubs.c: fixed result NULL, last error 2 (no other instance is running)
-KERNEL32.DLL	OpenMutexA	-	stdcall	12	implemented-spike	0x007329DE	win32hle kernel32.c
+KERNEL32.DLL	OpenMutexA	-	stdcall	12	implemented	0x007329DE	hle/kernel32rt Sync.cpp
 KERNEL32.DLL	OpenProcess	-	stdcall	12	stub-spike	0x00732DA2	win32hle kernel32_ext.c: fixed result NULL, last error 5 (access denied)
 KERNEL32.DLL	OutputDebugStringA	-	stdcall	4	implemented-spike	0x00634704	win32hle kernel32.c; called on the boot to the CD-key prompt
-KERNEL32.DLL	QueryPerformanceCounter	-	stdcall	4	implemented-spike	0x0054712C	win32hle kernel32.c; called on the boot to the CD-key prompt
-KERNEL32.DLL	QueryPerformanceFrequency	-	stdcall	4	implemented-spike	0x0061431A	win32hle kernel32.c; called on the boot to the CD-key prompt
-KERNEL32.DLL	RaiseException	-	stdcall	16	implemented-spike	0x007374A7	P1-2 sfcop_game.c over win32hle kernel32_crt.c
+KERNEL32.DLL	QueryPerformanceCounter	-	stdcall	4	implemented	0x0054712C	hle/kernel32rt Time.cpp on Clock; called on the boot to the CD-key prompt
+KERNEL32.DLL	QueryPerformanceFrequency	-	stdcall	4	implemented	0x0061431A	hle/kernel32rt Time.cpp on Clock; called on the boot to the CD-key prompt
+KERNEL32.DLL	RaiseException	-	stdcall	16	implemented	0x007374A7	hle/kernel32rt Dispatcher.cpp: walks the guest fs:[0] chain
 KERNEL32.DLL	ReadFile	-	stdcall	20	implemented	0x00633B5B	hle/kernel Files.cpp; any other handle (a standard handle) goes to win32hle kernel32_ext.c; called on the boot to the CD-key prompt
-KERNEL32.DLL	ReleaseMutex	-	stdcall	4	implemented-spike	0x006346B5	win32hle kernel32.c
-KERNEL32.DLL	ReleaseSemaphore	-	stdcall	12	implemented-spike	0x0063479E	win32hle kernel32.c; called on the boot to the CD-key prompt
+KERNEL32.DLL	ReleaseMutex	-	stdcall	4	implemented	0x006346B5	hle/kernel32rt Sync.cpp
+KERNEL32.DLL	ReleaseSemaphore	-	stdcall	12	implemented	0x0063479E	hle/kernel32rt Sync.cpp; called on the boot to the CD-key prompt
 KERNEL32.DLL	RemoveDirectoryA	-	stdcall	4	implemented	0x00632F83	hle/kernel Files.cpp
 KERNEL32.DLL	RemoveDirectoryW	-	stdcall	4	implemented	0x00632F56	hle/kernel Files.cpp
-KERNEL32.DLL	ResetEvent	-	stdcall	4	implemented-spike	0x0070E55B	win32hle kernel32.c
-KERNEL32.DLL	ResumeThread	-	stdcall	4	implemented-spike	0x0073A832	win32hle kernel32_crt.c
-KERNEL32.DLL	RtlUnwind	-	stdcall	16	stub-spike	0x00735EE0	win32hle kernel32_crt.c: fixed result returns without unwinding
+KERNEL32.DLL	ResetEvent	-	stdcall	4	implemented	0x0070E55B	hle/kernel32rt Sync.cpp
+KERNEL32.DLL	ResumeThread	-	stdcall	4	implemented	0x0073A832	hle/kernel32rt Sync.cpp
+KERNEL32.DLL	RtlUnwind	-	stdcall	16	implemented	0x00735EE0	hle/kernel32rt Dispatcher.cpp
 KERNEL32.DLL	SetCommState	-	stdcall	8	stub-spike	0x0062A6B6	win32hle kernel32.c: fixed result FALSE, last error ERROR_INVALID_HANDLE
 KERNEL32.DLL	SetCurrentDirectoryA	-	stdcall	4	implemented	0x006301E8	hle/kernel Paths.cpp; called on the boot to the CD-key prompt
 KERNEL32.DLL	SetCurrentDirectoryW	-	stdcall	4	implemented	0x006301BB	hle/kernel Paths.cpp
 KERNEL32.DLL	SetEndOfFile	-	stdcall	4	implemented	0x0074A823	hle/kernel Files.cpp
-KERNEL32.DLL	SetEnvironmentVariableA	-	stdcall	8	implemented-spike	0x0074BCBF	win32hle kernel32_crt.c
-KERNEL32.DLL	SetErrorMode	-	stdcall	4	stub-spike	0x006B58D7	win32hle kernel32.c: fixed result 1; called on the boot to the CD-key prompt
-KERNEL32.DLL	SetEvent	-	stdcall	4	implemented-spike	0x00429845	win32hle kernel32.c; called on the boot to the CD-key prompt
+KERNEL32.DLL	SetEnvironmentVariableA	-	stdcall	8	implemented	0x0074BCBF	hle/kernel32rt Kernel32rtGuest.cpp: the private environment
+KERNEL32.DLL	SetErrorMode	-	stdcall	4	implemented	0x006B58D7	hle/kernel32rt Kernel32rtGuest.cpp: keeps the mode; called on the boot to the CD-key prompt
+KERNEL32.DLL	SetEvent	-	stdcall	4	implemented	0x00429845	hle/kernel32rt Sync.cpp; called on the boot to the CD-key prompt
 KERNEL32.DLL	SetFileAttributesA	-	stdcall	8	stub	0x0063382D	hle/kernel Files.cpp: checks the path; attributes are not kept
 KERNEL32.DLL	SetFileAttributesW	-	stdcall	8	stub	0x00633806	hle/kernel Files.cpp: checks the path; attributes are not kept
 KERNEL32.DLL	SetFilePointer	-	stdcall	16	implemented	0x0062A8DC	hle/kernel Files.cpp; called on the boot to the CD-key prompt
 KERNEL32.DLL	SetFileTime	-	stdcall	16	implemented	0x0075A7A4	hle/kernel Files.cpp
-KERNEL32.DLL	SetHandleCount	-	stdcall	4	implemented-spike	0x00740D59	win32hle kernel32_crt.c; called on the boot to the CD-key prompt
+KERNEL32.DLL	SetHandleCount	-	stdcall	4	implemented	0x00740D59	hle/kernel32rt Kernel32rtGuest.cpp: answers the count, as Windows NT; called on the boot to the CD-key prompt
 KERNEL32.DLL	SetLastError	-	stdcall	4	implemented-spike	0x00631881	win32hle kernel32.c; called on the boot to the CD-key prompt
 KERNEL32.DLL	SetStdHandle	-	stdcall	8	stub-spike	0x00746BD8	win32hle kernel32_crt.c: fixed result 1
-KERNEL32.DLL	SetThreadPriority	-	stdcall	8	stub-spike	0x0050A735	win32hle kernel32_crt.c: fixed result 1; called on the boot to the CD-key prompt
-KERNEL32.DLL	SetUnhandledExceptionFilter	-	stdcall	4	stub-spike	0x0073CB42	win32hle kernel32_crt.c: fixed result 0; called on the boot to the CD-key prompt
-KERNEL32.DLL	Sleep	-	stdcall	4	implemented-spike	0x004017F2	win32hle kernel32.c; called on the boot to the CD-key prompt
-KERNEL32.DLL	SystemTimeToFileTime	-	stdcall	8	implemented-spike	0x0075A6C5	win32hle kernel32_ext.c
-KERNEL32.DLL	TerminateProcess	-	stdcall	8	implemented-spike	0x006D1419	win32hle kernel32.c
-KERNEL32.DLL	TlsAlloc	-	stdcall	0	implemented-spike	0x0073BFC2	win32hle kernel32.c; called on the boot to the CD-key prompt
-KERNEL32.DLL	TlsGetValue	-	stdcall	4	implemented-spike	0x0073C033	win32hle kernel32.c; called on the boot to the CD-key prompt
-KERNEL32.DLL	TlsSetValue	-	stdcall	8	implemented-spike	0x0073A891	win32hle kernel32.c; called on the boot to the CD-key prompt
-KERNEL32.DLL	UnhandledExceptionFilter	-	stdcall	4	stub-spike	0x0074574A	win32hle kernel32_crt.c: fixed result 0
+KERNEL32.DLL	SetThreadPriority	-	stdcall	8	implemented	0x0050A735	hle/kernel32rt Sync.cpp: kept, not applied to the host thread; called on the boot to the CD-key prompt
+KERNEL32.DLL	SetUnhandledExceptionFilter	-	stdcall	4	implemented	0x0073CB42	hle/kernel32rt Kernel32rtGuest.cpp; called on the boot to the CD-key prompt
+KERNEL32.DLL	Sleep	-	stdcall	4	implemented	0x004017F2	hle/kernel32rt Kernel32rtGuest.cpp on Clock, without the machine lock; called on the boot to the CD-key prompt
+KERNEL32.DLL	SystemTimeToFileTime	-	stdcall	8	implemented	0x0075A6C5	hle/kernel32rt Time.cpp
+KERNEL32.DLL	TerminateProcess	-	stdcall	8	implemented	0x006D1419	hle/kernel32rt Kernel32rtGuest.cpp: the current process only
+KERNEL32.DLL	TlsAlloc	-	stdcall	0	implemented	0x0073BFC2	hle/kernel32rt ThreadLocal.cpp; called on the boot to the CD-key prompt
+KERNEL32.DLL	TlsGetValue	-	stdcall	4	implemented	0x0073C033	hle/kernel32rt ThreadLocal.cpp; called on the boot to the CD-key prompt
+KERNEL32.DLL	TlsSetValue	-	stdcall	8	implemented	0x0073A891	hle/kernel32rt ThreadLocal.cpp; called on the boot to the CD-key prompt
+KERNEL32.DLL	UnhandledExceptionFilter	-	stdcall	4	implemented	0x0074574A	hle/kernel32rt Kernel32rtGuest.cpp: the game's filter, else a report and EXCEPTION_EXECUTE_HANDLER
 KERNEL32.DLL	UnmapViewOfFile	-	stdcall	4	implemented-spike	0x00429709	win32hle kernel32_ext.c
-KERNEL32.DLL	VirtualAlloc	-	stdcall	16	implemented-spike	0x007323DA	win32hle kernel32.c; called on the boot to the CD-key prompt
-KERNEL32.DLL	VirtualFree	-	stdcall	12	implemented-spike	0x007325D6	win32hle kernel32.c; called on the boot to the CD-key prompt
-KERNEL32.DLL	VirtualLock	-	stdcall	8	stub-spike	0x0073244D	P1-2 misc_stubs.c: fixed result 1
-KERNEL32.DLL	VirtualQuery	-	stdcall	12	implemented-spike	0x0073247D	win32hle kernel32.c; called on the boot to the CD-key prompt
-KERNEL32.DLL	VirtualQueryEx	-	stdcall	16	stub-spike	0x007123C6	P1-2 misc_stubs.c: fixed result 0
-KERNEL32.DLL	WaitForMultipleObjects	-	stdcall	16	implemented-spike	0x0070E374	win32hle kernel32.c
-KERNEL32.DLL	WaitForSingleObject	-	stdcall	8	implemented-spike	0x0042976F	P1-2 sfcop_game.c over win32hle kernel32.c; called on the boot to the CD-key prompt
+KERNEL32.DLL	VirtualAlloc	-	stdcall	16	implemented	0x007323DA	hle/kernel32rt VirtualMemory.cpp; called on the boot to the CD-key prompt
+KERNEL32.DLL	VirtualFree	-	stdcall	12	implemented	0x007325D6	hle/kernel32rt VirtualMemory.cpp; called on the boot to the CD-key prompt
+KERNEL32.DLL	VirtualLock	-	stdcall	8	stub	0x0073244D	hle/kernel32rt Kernel32rtGuest.cpp: fixed result 1
+KERNEL32.DLL	VirtualQuery	-	stdcall	12	implemented	0x0073247D	hle/kernel32rt VirtualMemory.cpp; called on the boot to the CD-key prompt
+KERNEL32.DLL	VirtualQueryEx	-	stdcall	16	implemented	0x007123C6	hle/kernel32rt VirtualMemory.cpp: the current process only
+KERNEL32.DLL	WaitForMultipleObjects	-	stdcall	16	implemented	0x0070E374	hle/kernel32rt Sync.cpp: waits without the machine lock; another handle goes to win32hle kernel32.c
+KERNEL32.DLL	WaitForSingleObject	-	stdcall	8	implemented	0x0042976F	hle/kernel32rt Sync.cpp: waits without the machine lock; another handle goes to win32hle kernel32.c; called on the boot to the CD-key prompt
 KERNEL32.DLL	WideCharToMultiByte	-	stdcall	32	implemented-spike	0x0073EDC8	win32hle kernel32_crt.c; called on the boot to the CD-key prompt
 KERNEL32.DLL	WinExec	-	stdcall	8	stub-spike	0x00633F91	P1-2 misc_stubs.c: fixed result 2 (file not found); no program is run
 KERNEL32.DLL	WriteFile	-	stdcall	20	implemented	0x00633DC9	hle/kernel Files.cpp: a file under the game folder is written in its per-user copy; any other handle (a standard handle) goes to win32hle kernel32_ext.c; called on the boot to the CD-key prompt
@@ -321,9 +321,9 @@ USER32.DLL	UnhookWindowsHookEx	-	stdcall	4	implemented-spike	0x00699795	win32hle
 USER32.DLL	UpdateWindow	-	stdcall	4	implemented-spike	0x0062A13E	win32hle user32.c; called on the boot to the CD-key prompt
 USER32.DLL	VkKeyScanA	-	stdcall	4	implemented-spike	0x0069ADA7	P1-2 misc_stubs.c
 USER32.DLL	wsprintfA	-	varargs	0	implemented-spike	0x0062A70E	win32hle user32.c
-WINMM.DLL	timeGetTime	-	stdcall	0	implemented-spike	0x004C4DF7	win32hle winmm.c; called on the boot to the CD-key prompt
-WINMM.DLL	timeKillEvent	-	stdcall	4	implemented-spike	0x00637B5B	win32hle winmm.c
-WINMM.DLL	timeSetEvent	-	stdcall	20	implemented-spike	0x006379DE	win32hle winmm.c; called on the boot to the CD-key prompt
+WINMM.DLL	timeGetTime	-	stdcall	0	implemented	0x004C4DF7	hle/kernel32rt Time.cpp on Clock; called on the boot to the CD-key prompt
+WINMM.DLL	timeKillEvent	-	stdcall	4	implemented	0x00637B5B	hle/kernel32rt Timers.cpp: stops without the machine lock
+WINMM.DLL	timeSetEvent	-	stdcall	20	implemented	0x006379DE	hle/kernel32rt Timers.cpp: one Threads thread per timer; called on the boot to the CD-key prompt
 WSOCK32.DLL	__WSAFDIsSet	151	stdcall	8	implemented	0x006BA94F	src/hle/winsock fdIsSet: the first fd_count (at most 64) entries; SelectTest.cpp
 WSOCK32.DLL	accept	1	stdcall	12	implemented	0x006C0654	src/hle/winsock Winsock::Accept on Transport::Accept; blocks unless FIONBIO; WinsockTest.cpp, LoopbackTest.cpp
 WSOCK32.DLL	bind	2	stdcall	12	implemented	0x006CE2E4	src/hle/winsock Winsock::Bind on Transport::Bind; AF_INET only; WinsockTest.cpp, LoopbackTest.cpp

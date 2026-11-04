@@ -1,6 +1,8 @@
 #!/bin/sh
 # Make the pcrecomp clone the build needs: pcrecomp at the pinned revision with this directory's
-# patches applied (the P0-4 static TLS hook and the three P1-2 win32hle patches). The clone is
+# patches applied (the P0-4 static TLS hook, the three P1-2 win32hle patches, and the guest
+# exception patches: landing pads for every catching function, the machine lock's depth for a
+# longjmp out of nested guest calls, and a host hook for a zero divisor). The clone is
 # regenerable and lives outside the repository, by default in $SFCOP_WORK/lifter-hle/pcrecomp.
 #
 #   cmake/lifter/setup.sh DIR       clone into DIR (or check and patch an existing clone)
@@ -20,7 +22,10 @@ fi
 for p in "$HERE/patches/pcrecomp-tib-hook.patch" \
          "$HERE/patches/pcrecomp-kernel32-unnamed-objects.patch" \
          "$HERE/patches/pcrecomp-manual-lookup-hook.patch" \
-         "$HERE/patches/pcrecomp-wsock32-select-accept.patch"; do
+         "$HERE/patches/pcrecomp-wsock32-select-accept.patch" \
+         "$HERE/patches/pcrecomp-eh-landing-pads.patch" \
+         "$HERE/patches/pcrecomp-mach-depth.patch" \
+         "$HERE/patches/pcrecomp-div-fault.patch"; do
     if git -C "$dir" apply --check "$p" 2>/dev/null; then
         git -C "$dir" apply "$p"; echo "applied $(basename "$p")"
     elif git -C "$dir" apply --reverse --check "$p" 2>/dev/null; then
