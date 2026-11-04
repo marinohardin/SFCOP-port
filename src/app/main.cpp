@@ -1,53 +1,44 @@
 // The native client's entry point.
 //
-// Until Wave 1 replaces it, the game runs on the temporary boot platform (src/app/boot/), the
-// P1-2 spike host on pcrecomp's win32hle. This file takes the client's command line, turns it
-// into the boot platform's, and hands over. The full command line of DESIGN §6.8 (--install,
-// --data, --fix, --oracle) and install verification belong to the application skeleton (C4).
+// startClient (Startup.h) takes the command line of DESIGN §6.8, finds or makes the per-user data
+// folder, and finds, hash-verifies and remembers the install. Until Wave 1 replaces it, the game
+// then runs on the temporary boot platform (src/app/boot/), the P1-2 spike host on pcrecomp's
+// win32hle: the verified install and the client's options become that platform's arguments.
 
 #include <cerrno>
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
 #include <filesystem>
 #include <string>
 #include <system_error>
 #include <vector>
 
+#include "ExitCodes.h"
+#include "Startup.h"
 #include "boot/BootHost.h"
 #include "sfcop_build_config.h"
 
 namespace {
 
-constexpr int kExitBadInput = 2;
+// The temporary boot platform's own flags, until Wave 1. --help lists them and startClient hands
+// them back unchanged in passThrough.
+const std::vector<sfcop::app::ExtraFlag> kBootFlags = {
+    {"--game", "DIR", "a writable copy of the install (default: the build's copy)"},
+    {"--trace", "", "log every Win32 call on stderr"},
+    {"--silent", "", "no sound"},
+    {"--shots", "DIR", "write screenshots into DIR"},
+    {"--shot-every", "S", "seconds between screenshots (default 5)"},
+    {"--dry-run", "", "map and bind the exe, then stop"},
+};
 
-void printUsage(std::FILE *out) {
-    std::fprintf(out,
-                 "usage: sfcop [--game DIR] [--headless] [--watchdog S] [--windowed|--fullscreen]\n"
-                 "             [--trace] [--silent] [--shots DIR] [--shot-every S] [--dry-run]\n"
-                 "\n"
-                 "  --game DIR      a writable copy of the install (default: the build's copy,\n"
-                 "                  %s)\n"
-                 "  --headless      no window, no sound\n"
-                 "  --watchdog S    stop after S seconds; exit 0 if the boot reached the CD-key\n"
-                 "                  prompt, 1 if not (0: no watchdog)\n"
-                 "  --windowed, --fullscreen\n"
-                 "                  accepted; the boot platform always opens a window (F11 toggles)\n"
-                 "  --trace         log every Win32 call on stderr\n"
-                 "  --silent        no sound\n"
-                 "  --shots DIR     write screenshots into DIR; --shot-every S seconds (default 5)\n"
-                 "  --dry-run       map and bind the exe, then stop\n",
-                 SFCOP_DEFAULT_GAME_DIR);
-}
-
-bool isCount(const char *text) {
-    if (*text == '\0') {
+bool isCount(const std::string &text) {
+    if (text.empty() || text[0] == '-') {
         return false;
     }
     char *end = nullptr;
     errno = 0;
-    const unsigned long value = std::strtoul(text, &end, 10);
-    return errno == 0 && *end == '\0' && text[0] != '-' && value <= 86400UL;
+    const unsigned long value = std::strtoul(text.c_str(), &end, 10);
+    return errno == 0 && *end == '\0' && value <= 86400UL;
 }
 
 bool sameFolder(const std::string &a, const std::string &b) {
@@ -58,50 +49,62 @@ bool sameFolder(const std::string &a, const std::string &b) {
 }  // namespace
 
 int main(int argc, char **argv) {
+    using namespace sfcop::app;
+    const Startup start = startClient(
+        argc, argv, consoleStartup(SFCOP_HASH_LIST, kBootFlags, {SFCOP_INSTALL_DIR}));
+    if (start.exitCode) {
+        return *start.exitCode;
+    }
+
+    // The boot platform's flags, out of passThrough. The parser has already checked that every
+    // flag that takes a value has one.
     std::string game = SFCOP_DEFAULT_GAME_DIR;
-    std::vector<std::string> pass;
     bool dryRun = false;
-    for (int i = 1; i < argc; i++) {
-        const std::string arg = argv[i];
-        const bool hasValue = i + 1 < argc;
-        if (arg == "--help" || arg == "-h") {
-            printUsage(stdout);
-            return 0;
-        } else if (arg == "--game" && hasValue) {
-            game = argv[++i];
-        } else if ((arg == "--watchdog" || arg == "--shot-every") && hasValue) {
-            if (!isCount(argv[i + 1])) {
-                std::fprintf(stderr, "sfcop: %s takes a number of seconds, not '%s'\n", arg.c_str(),
-                             argv[i + 1]);
+    std::vector<std::string> pass;
+    const std::vector<std::string> &through = start.options.passThrough;
+    for (std::size_t i = 0; i < through.size(); i++) {
+        const std::string &arg = through[i];
+        const bool hasValue = i + 1 < through.size();
+        if (arg == "--game" && hasValue) {
+            game = through[++i];
+        } else if (arg == "--dry-run") {
+            dryRun = true;
+        } else if (arg == "--shot-every" && hasValue) {
+            const std::string &value = through[++i];
+            if (!isCount(value)) {
+                std::fprintf(stderr, "sfcop: --shot-every takes a number of seconds, not '%s'\n",
+                             value.c_str());
                 return kExitBadInput;
             }
             pass.push_back(arg);
-            pass.push_back(argv[++i]);
+            pass.push_back(value);
         } else if (arg == "--shots" && hasValue) {
             pass.push_back(arg);
-            pass.push_back(argv[++i]);
-        } else if (arg == "--headless" || arg == "--trace" || arg == "--silent") {
-            pass.push_back(arg);
-        } else if (arg == "--windowed" || arg == "--fullscreen") {
-            // DESIGN §6.8 flags; the boot platform decides the window itself.
-        } else if (arg == "--dry-run") {
-            dryRun = true;
+            pass.push_back(through[++i]);
         } else {
-            std::fprintf(stderr, "sfcop: unknown or incomplete option '%s'\n\n", arg.c_str());
-            printUsage(stderr);
-            return kExitBadInput;
+            pass.push_back(arg);  // --trace, --silent
         }
     }
-    if (sameFolder(game, SFCOP_INSTALL_DIR)) {
-        std::fprintf(stderr, "sfcop: %s is the install itself; the boot platform writes into its "
-                             "game folder, so give a copy\n",
+    if (sameFolder(game, start.installDir)) {
+        std::fprintf(stderr,
+                     "sfcop: %s is the install itself; the boot platform writes into its game "
+                     "folder, so give a copy\n",
                      game.c_str());
         return kExitBadInput;
     }
 
+    // --windowed and --fullscreen are parsed and kept in start.options.window; the boot platform
+    // always opens a window (F11 toggles) until Wave 1.
     std::vector<std::string> bootArgs = {"sfcop", "--game", game};
     if (!dryRun) {
         bootArgs.emplace_back("--run");
+    }
+    if (start.options.headless) {
+        bootArgs.emplace_back("--headless");
+    }
+    if (start.options.watchdogSeconds > 0) {
+        bootArgs.emplace_back("--watchdog");
+        bootArgs.push_back(std::to_string(start.options.watchdogSeconds));
     }
     bootArgs.insert(bootArgs.end(), pass.begin(), pass.end());
     std::vector<char *> bootArgv;

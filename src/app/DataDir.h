@@ -8,11 +8,19 @@
 
 #include "app/Files.h"
 #include "app/HostPlatform.h"
+#include "platform/Store/Store.h"
 
 namespace sfcop::app {
 
-// The subfolders of DESIGN §6.6, created on first use. registry.tsv is a file Store writes.
-inline constexpr const char *kDataSubdirs[] = {"settings", "saves", "replays", "logs", "mods"};
+// The subfolders of DESIGN §6.6, created on first use: Store's user folders, under Store's names,
+// so the two lists cannot drift apart. registry.tsv is a file Store writes.
+inline constexpr const char *kDataSubdirs[] = {
+    platform::userFolderName(platform::UserFolder::kSettings),
+    platform::userFolderName(platform::UserFolder::kSaves),
+    platform::userFolderName(platform::UserFolder::kReplays),
+    platform::userFolderName(platform::UserFolder::kLogs),
+    platform::userFolderName(platform::UserFolder::kMods),
+};
 
 // Where the install found on the first run is remembered: one line, the install's path.
 inline constexpr const char kRememberedInstallFile[] = "install.txt";

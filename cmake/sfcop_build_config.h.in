@@ -4,3 +4,6 @@
 // The install the build lifted, and the build's writable copy of it (cmake/SfcopLifter.cmake).
 #define SFCOP_INSTALL_DIR "@SFCOP_INSTALL_DIR@"
 #define SFCOP_DEFAULT_GAME_DIR "@SFCOP_GAMEROOT@"
+
+// The hash list the install is verified against (src/app/Install.h).
+#define SFCOP_HASH_LIST "@CMAKE_SOURCE_DIR@/analysis/results/retail_hashes.sha256"
