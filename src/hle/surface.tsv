@@ -26,7 +26,7 @@ DDRAW.DLL	DirectDrawCreate	-	stdcall	12	implemented	0x0069D61A	ddraw4 DirectDraw
 DDRAW.DLL	DirectDrawCreateClipper	-	stdcall	12	implemented	0x006B46E4	ddraw4 Clipper without a DirectDraw object; without a guest host, the boot platform's (TEMPORARY)
 DDRAW.DLL	DirectDrawEnumerateA	-	stdcall	8	implemented	0x006B79D5	Ddraw4Guest.cpp: the one display device; without a guest host, the boot platform's (TEMPORARY); called on the boot to the CD-key prompt
 DINPUT.DLL	DirectInputCreateA	-	stdcall	16	implemented	0x0040142E	src/hle/dinput: DirectInput::Create; versions 0x0300 to 0x0700 (the game passes 0x0700 and a null hinst); called on the boot to the CD-key prompt
-DSOUND.DLL	DirectSoundCreate	1	stdcall	12	implemented-spike	0x006413C4	win32hle dsound.c
+DSOUND.DLL	DirectSoundCreate	1	stdcall	12	implemented	0x006413C4	src/hle/ds3d: opens Audio at 44100 Hz stereo; DSERR_NODRIVER when it does not open
 GDI32.DLL	BitBlt	-	stdcall	36	implemented-spike	0x006B2C37	win32hle gdidc.c
 GDI32.DLL	CreateCompatibleDC	-	stdcall	4	implemented-spike	0x006B2606	win32hle gdidc.c
 GDI32.DLL	CreateDIBSection	-	stdcall	24	implemented-spike	0x006B3100	win32hle gdi32.c
@@ -218,32 +218,32 @@ KERNEL32.DLL	WideCharToMultiByte	-	stdcall	32	implemented-spike	0x0073EDC8	win32
 KERNEL32.DLL	WinExec	-	stdcall	8	stub-spike	0x00633F91	P1-2 misc_stubs.c: fixed result 2 (file not found); no program is run
 KERNEL32.DLL	WriteFile	-	stdcall	20	implemented	0x00633DC9	hle/kernel Files.cpp: a file under the game folder is written in its per-user copy; any other handle (a standard handle) goes to win32hle kernel32_ext.c; called on the boot to the CD-key prompt
 KERNEL32.DLL	WritePrivateProfileStringA	-	stdcall	16	implemented	0x00457891	hle/kernel Ini.cpp: written in the per-user copy (settings/; a bare name in settings/windows/), the install left as it is
-MSS32.DLL	_AIL_allocate_sample_handle@4	-	stdcall	4	implemented-spike	0x0050EFC3	P1-2 mss_sample.c; called on the boot to the CD-key prompt
-MSS32.DLL	_AIL_end_sample@4	-	stdcall	4	implemented-spike	0x00510096	P1-2 mss_sample.c
-MSS32.DLL	_AIL_init_sample@4	-	stdcall	4	implemented-spike	0x0050EFD2	P1-2 mss_sample.c; called on the boot to the CD-key prompt
-MSS32.DLL	_AIL_last_error@0	-	stdcall	0	implemented-spike	0x0050EF76	P1-2 mss_sample.c; called on the boot to the CD-key prompt
-MSS32.DLL	_AIL_load_sample_buffer@16	-	stdcall	16	implemented-spike	0x005100E9	P1-2 mss_sample.c
-MSS32.DLL	_AIL_mem_alloc_lock@4	-	stdcall	4	implemented-spike	0x00510275	win32hle mss.c
-MSS32.DLL	_AIL_mem_free_lock@4	-	stdcall	4	implemented-spike	0x0050F15C	win32hle mss.c
-MSS32.DLL	_AIL_minimum_sample_buffer_size@12	-	stdcall	12	implemented-spike	0x0050F019	P1-2 mss_sample.c; called on the boot to the CD-key prompt
-MSS32.DLL	_AIL_release_sample_handle@4	-	stdcall	4	implemented-spike	0x0050F1B1	P1-2 mss_sample.c
-MSS32.DLL	_AIL_sample_buffer_ready@4	-	stdcall	4	implemented-spike	0x00510045	P1-2 mss_sample.c
-MSS32.DLL	_AIL_sample_status@4	-	stdcall	4	implemented-spike	0x0051087D	P1-2 mss_sample.c
-MSS32.DLL	_AIL_sample_volume@4	-	stdcall	4	implemented-spike	0x0050F268	P1-2 mss_sample.c
-MSS32.DLL	_AIL_serve@0	-	stdcall	0	implemented-spike	0x0050EB7E	P1-2 mss_sample.c; called on the boot to the CD-key prompt
-MSS32.DLL	_AIL_set_digital_master_volume@8	-	stdcall	8	implemented-spike	0x0050F842	P1-2 mss_sample.c; called on the boot to the CD-key prompt
-MSS32.DLL	_AIL_set_DirectSound_HWND@8	-	stdcall	8	stub-spike	0x0050EF93	P1-2 mss_sample.c: fixed result 0; called on the boot to the CD-key prompt
-MSS32.DLL	_AIL_set_redist_directory@4	-	stdcall	4	implemented-spike	0x0050EF02	P1-2 mss_sample.c over win32hle mss.c; called on the boot to the CD-key prompt
-MSS32.DLL	_AIL_set_sample_adpcm_block_size@8	-	stdcall	8	implemented-spike	0x0050F8FF	P1-2 mss_sample.c
-MSS32.DLL	_AIL_set_sample_pan@8	-	stdcall	8	implemented-spike	0x0050FEA1	P1-2 mss_sample.c
-MSS32.DLL	_AIL_set_sample_playback_rate@8	-	stdcall	8	implemented-spike	0x0050F8BF	P1-2 mss_sample.c
-MSS32.DLL	_AIL_set_sample_type@12	-	stdcall	12	implemented-spike	0x0050F8CE	P1-2 mss_sample.c
-MSS32.DLL	_AIL_set_sample_user_data@12	-	stdcall	12	implemented-spike	0x0050EFAB	P1-2 mss_sample.c; called on the boot to the CD-key prompt
-MSS32.DLL	_AIL_set_sample_volume@8	-	stdcall	8	implemented-spike	0x0050F299	P1-2 mss_sample.c
-MSS32.DLL	_AIL_shutdown@0	-	stdcall	0	implemented-spike	0x0050F23B	win32hle mss.c
-MSS32.DLL	_AIL_startup@0	-	stdcall	0	stub-spike	0x0050EF0D	win32hle mss.c: fixed result 1; called on the boot to the CD-key prompt
-MSS32.DLL	_AIL_waveOutClose@4	-	stdcall	4	implemented-spike	0x0050F233	P1-2 mss_sample.c
-MSS32.DLL	_AIL_waveOutOpen@16	-	stdcall	16	implemented-spike	0x0050EF6E	P1-2 mss_sample.c; called on the boot to the CD-key prompt
+MSS32.DLL	_AIL_allocate_sample_handle@4	-	stdcall	4	implemented	0x0050EFC3	src/hle/miles: a handle 1-64 as a guest block; called on the boot to the CD-key prompt
+MSS32.DLL	_AIL_end_sample@4	-	stdcall	4	implemented	0x00510096	src/hle/miles: stops and discards the queued buffers
+MSS32.DLL	_AIL_init_sample@4	-	stdcall	4	implemented	0x0050EFD2	src/hle/miles: 16-bit mono 22050 Hz, volume 127, pan 64; called on the boot to the CD-key prompt
+MSS32.DLL	_AIL_last_error@0	-	stdcall	0	implemented	0x0050EF76	src/hle/miles: the last failure as a guest string; called on the boot to the CD-key prompt
+MSS32.DLL	_AIL_load_sample_buffer@16	-	stdcall	16	implemented	0x005100E9	src/hle/miles: decoded to 16-bit PCM and queued on an Audio stream; 0 bytes ends the sample
+MSS32.DLL	_AIL_mem_alloc_lock@4	-	stdcall	4	implemented	0x00510275	src/hle/miles shim: a guest heap block
+MSS32.DLL	_AIL_mem_free_lock@4	-	stdcall	4	implemented	0x0050F15C	src/hle/miles shim: frees a guest heap block
+MSS32.DLL	_AIL_minimum_sample_buffer_size@12	-	stdcall	12	implemented	0x0050F019	src/hle/miles: about 50 ms of the format, in 2 KB steps; called on the boot to the CD-key prompt
+MSS32.DLL	_AIL_release_sample_handle@4	-	stdcall	4	implemented	0x0050F1B1	src/hle/miles: closes the stream; the handle reads as free
+MSS32.DLL	_AIL_sample_buffer_ready@4	-	stdcall	4	implemented	0x00510045	src/hle/miles: the buffer to fill next, or -1
+MSS32.DLL	_AIL_sample_status@4	-	stdcall	4	implemented	0x0051087D	src/hle/miles: free, playing while a buffer is still to be heard, else done
+MSS32.DLL	_AIL_sample_volume@4	-	stdcall	4	implemented	0x0050F268	src/hle/miles: 0-127
+MSS32.DLL	_AIL_serve@0	-	stdcall	0	implemented	0x0050EB7E	src/hle/miles: drains the Audio completion queue; called on the boot to the CD-key prompt
+MSS32.DLL	_AIL_set_digital_master_volume@8	-	stdcall	8	implemented	0x0050F842	src/hle/miles: the master gain, 0-127; called on the boot to the CD-key prompt
+MSS32.DLL	_AIL_set_DirectSound_HWND@8	-	stdcall	8	stub	0x0050EF93	src/hle/miles: fixed result 0, the output needs no window; called on the boot to the CD-key prompt
+MSS32.DLL	_AIL_set_redist_directory@4	-	stdcall	4	implemented	0x0050EF02	src/hle/miles: kept; the previous one as a guest string; called on the boot to the CD-key prompt
+MSS32.DLL	_AIL_set_sample_adpcm_block_size@8	-	stdcall	8	implemented	0x0050F8FF	src/hle/miles: IMA ADPCM block size
+MSS32.DLL	_AIL_set_sample_pan@8	-	stdcall	8	implemented	0x0050FEA1	src/hle/miles: 0-127 onto the stream pan
+MSS32.DLL	_AIL_set_sample_playback_rate@8	-	stdcall	8	implemented	0x0050F8BF	src/hle/miles: Hz; a new rate reopens the stream
+MSS32.DLL	_AIL_set_sample_type@12	-	stdcall	12	implemented	0x0050F8CE	src/hle/miles: 8 or 16 bits, mono or stereo, PCM or IMA ADPCM
+MSS32.DLL	_AIL_set_sample_user_data@12	-	stdcall	12	implemented	0x0050EFAB	src/hle/miles: slots 0-7; called on the boot to the CD-key prompt
+MSS32.DLL	_AIL_set_sample_volume@8	-	stdcall	8	implemented	0x0050F299	src/hle/miles: 0-127 onto the stream gain
+MSS32.DLL	_AIL_shutdown@0	-	stdcall	0	implemented	0x0050F23B	src/hle/miles: releases every sample and closes the output
+MSS32.DLL	_AIL_startup@0	-	stdcall	0	stub	0x0050EF0D	src/hle/miles: fixed result 1; called on the boot to the CD-key prompt
+MSS32.DLL	_AIL_waveOutClose@4	-	stdcall	4	implemented	0x0050F233	src/hle/miles: every sample stops
+MSS32.DLL	_AIL_waveOutOpen@16	-	stdcall	16	implemented	0x0050EF6E	src/hle/miles: opens Audio at 44100 Hz stereo, a null device when silent; called on the boot to the CD-key prompt
 OLE32.DLL	CoCreateInstance	-	stdcall	20	implemented-spike	0x0061678A	win32hle ole32.c
 OLE32.DLL	CoInitialize	-	stdcall	4	stub-spike	0x0061179F	win32hle ole32.c: fixed result S_OK; called on the boot to the CD-key prompt
 OLE32.DLL	CoUninitialize	-	stdcall	0	implemented-spike	0x006100E6	win32hle ole32.c
@@ -707,74 +707,74 @@ IDirectPlayLobby3A	ConnectEx	15	stdcall	20	todo	0x00616C80	call inside the wrapp
 IDirectPlayLobby3A	RegisterApplication	16	stdcall	12	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
 IDirectPlayLobby3A	UnregisterApplication	17	stdcall	12	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
 IDirectPlayLobby3A	WaitForConnectionSettings	18	stdcall	8	todo	0x00616C6A	analysis/netcode/directplay.md
-IDirectSound	QueryInterface	0	stdcall	12	implemented-spike	-	win32hle dsound.c
-IDirectSound	AddRef	1	stdcall	4	implemented-spike	-	win32hle dsound.c
-IDirectSound	Release	2	stdcall	4	implemented-spike	-	win32hle dsound.c
-IDirectSound	CreateSoundBuffer	3	stdcall	16	implemented-spike	-	win32hle dsound.c
-IDirectSound	GetCaps	4	stdcall	8	implemented-spike	-	win32hle dsound.c
-IDirectSound	DuplicateSoundBuffer	5	stdcall	12	implemented-spike	-	win32hle dsound.c
-IDirectSound	SetCooperativeLevel	6	stdcall	12	stub-spike	-	win32hle dsound.c: fixed result DS_OK
-IDirectSound	Compact	7	stdcall	4	stub-spike	-	win32hle dsound.c: fixed result DS_OK
-IDirectSound	GetSpeakerConfig	8	stdcall	8	implemented-spike	-	win32hle dsound.c
-IDirectSound	SetSpeakerConfig	9	stdcall	8	stub-spike	-	win32hle dsound.c: fixed result DS_OK
-IDirectSound	Initialize	10	stdcall	8	stub-spike	-	win32hle dsound.c: fixed result DS_OK
-IDirectSound3DBuffer	QueryInterface	0	stdcall	12	implemented-spike	-	P1-2 ds3d.c
-IDirectSound3DBuffer	AddRef	1	stdcall	4	implemented-spike	-	P1-2 ds3d.c
-IDirectSound3DBuffer	Release	2	stdcall	4	implemented-spike	0x00641B0A	P1-2 ds3d.c
-IDirectSound3DBuffer	GetAllParameters	3	stdcall	8	implemented-spike	-	P1-2 ds3d.c
-IDirectSound3DBuffer	GetConeAngles	4	stdcall	12	implemented-spike	-	P1-2 ds3d.c
-IDirectSound3DBuffer	GetConeOrientation	5	stdcall	8	implemented-spike	-	P1-2 ds3d.c
-IDirectSound3DBuffer	GetConeOutsideVolume	6	stdcall	8	implemented-spike	-	P1-2 ds3d.c
-IDirectSound3DBuffer	GetMaxDistance	7	stdcall	8	implemented-spike	-	P1-2 ds3d.c
-IDirectSound3DBuffer	GetMinDistance	8	stdcall	8	implemented-spike	-	P1-2 ds3d.c
-IDirectSound3DBuffer	GetMode	9	stdcall	8	implemented-spike	-	P1-2 ds3d.c
-IDirectSound3DBuffer	GetPosition	10	stdcall	8	implemented-spike	-	P1-2 ds3d.c
-IDirectSound3DBuffer	GetVelocity	11	stdcall	8	implemented-spike	-	P1-2 ds3d.c
-IDirectSound3DBuffer	SetAllParameters	12	stdcall	12	implemented-spike	-	P1-2 ds3d.c: stored, not applied
-IDirectSound3DBuffer	SetConeAngles	13	stdcall	16	implemented-spike	-	P1-2 ds3d.c: stored, not applied
-IDirectSound3DBuffer	SetConeOrientation	14	stdcall	20	implemented-spike	0x00644B57	P1-2 ds3d.c: stored, not applied
-IDirectSound3DBuffer	SetConeOutsideVolume	15	stdcall	12	implemented-spike	0x00644A67	P1-2 ds3d.c: stored, not applied
-IDirectSound3DBuffer	SetMaxDistance	16	stdcall	12	implemented-spike	-	P1-2 ds3d.c: stored, not applied
-IDirectSound3DBuffer	SetMinDistance	17	stdcall	12	implemented-spike	-	P1-2 ds3d.c: stored, not applied
-IDirectSound3DBuffer	SetMode	18	stdcall	12	implemented-spike	-	P1-2 ds3d.c: stored, not applied
-IDirectSound3DBuffer	SetPosition	19	stdcall	20	implemented-spike	0x00644B2A	P1-2 ds3d.c: stored, not applied
-IDirectSound3DBuffer	SetVelocity	20	stdcall	20	implemented-spike	0x00644B84	P1-2 ds3d.c: stored, not applied
-IDirectSound3DListener	QueryInterface	0	stdcall	12	implemented-spike	-	P1-2 ds3d.c
-IDirectSound3DListener	AddRef	1	stdcall	4	implemented-spike	-	P1-2 ds3d.c
-IDirectSound3DListener	Release	2	stdcall	4	implemented-spike	0x0064597D	P1-2 ds3d.c
-IDirectSound3DListener	GetAllParameters	3	stdcall	8	implemented-spike	-	P1-2 ds3d.c
-IDirectSound3DListener	GetDistanceFactor	4	stdcall	8	implemented-spike	-	P1-2 ds3d.c
-IDirectSound3DListener	GetDopplerFactor	5	stdcall	8	implemented-spike	-	P1-2 ds3d.c
-IDirectSound3DListener	GetOrientation	6	stdcall	12	implemented-spike	-	P1-2 ds3d.c
-IDirectSound3DListener	GetPosition	7	stdcall	8	implemented-spike	-	P1-2 ds3d.c
-IDirectSound3DListener	GetRolloffFactor	8	stdcall	8	implemented-spike	-	P1-2 ds3d.c
-IDirectSound3DListener	GetVelocity	9	stdcall	8	implemented-spike	-	P1-2 ds3d.c
-IDirectSound3DListener	SetAllParameters	10	stdcall	12	implemented-spike	-	P1-2 ds3d.c: stored, not applied
-IDirectSound3DListener	SetDistanceFactor	11	stdcall	12	implemented-spike	0x00645FC5	P1-2 ds3d.c: stored, not applied
-IDirectSound3DListener	SetDopplerFactor	12	stdcall	12	implemented-spike	-	P1-2 ds3d.c: stored, not applied
-IDirectSound3DListener	SetOrientation	13	stdcall	32	implemented-spike	0x00645D2A	P1-2 ds3d.c: stored, not applied
-IDirectSound3DListener	SetPosition	14	stdcall	20	implemented-spike	0x00645CF6	P1-2 ds3d.c: stored, not applied
-IDirectSound3DListener	SetRolloffFactor	15	stdcall	12	implemented-spike	-	P1-2 ds3d.c: stored, not applied
-IDirectSound3DListener	SetVelocity	16	stdcall	20	implemented-spike	0x00645D4A	P1-2 ds3d.c: stored, not applied
-IDirectSound3DListener	CommitDeferredSettings	17	stdcall	4	stub-spike	-	P1-2 ds3d.c: fixed result DS_OK
-IDirectSoundBuffer	QueryInterface	0	stdcall	12	implemented-spike	-	P1-2 ds3d.c
-IDirectSoundBuffer	AddRef	1	stdcall	4	implemented-spike	-	win32hle dsound.c
-IDirectSoundBuffer	Release	2	stdcall	4	implemented-spike	0x00641B20	win32hle dsound.c
-IDirectSoundBuffer	GetCaps	3	stdcall	8	implemented-spike	-	win32hle dsound.c
-IDirectSoundBuffer	GetCurrentPosition	4	stdcall	12	implemented-spike	0x00642578	win32hle dsound.c
-IDirectSoundBuffer	GetFormat	5	stdcall	16	implemented-spike	-	win32hle dsound.c
-IDirectSoundBuffer	GetVolume	6	stdcall	8	implemented-spike	-	win32hle dsound.c
-IDirectSoundBuffer	GetPan	7	stdcall	8	implemented-spike	-	win32hle dsound.c
-IDirectSoundBuffer	GetFrequency	8	stdcall	8	implemented-spike	-	win32hle dsound.c
-IDirectSoundBuffer	GetStatus	9	stdcall	8	implemented-spike	0x00641811	win32hle dsound.c
-IDirectSoundBuffer	Initialize	10	stdcall	12	stub-spike	-	win32hle dsound.c: fixed result DSERR_INVALIDCALL
-IDirectSoundBuffer	Lock	11	stdcall	32	implemented-spike	0x00641ECD	win32hle dsound.c
-IDirectSoundBuffer	Play	12	stdcall	16	implemented-spike	0x006445E8	win32hle dsound.c
-IDirectSoundBuffer	SetCurrentPosition	13	stdcall	8	implemented-spike	0x00641664	win32hle dsound.c
-IDirectSoundBuffer	SetFormat	14	stdcall	8	implemented-spike	-	win32hle dsound.c
-IDirectSoundBuffer	SetVolume	15	stdcall	8	implemented-spike	0x0064479D	win32hle dsound.c
-IDirectSoundBuffer	SetPan	16	stdcall	8	implemented-spike	0x00644722	win32hle dsound.c
-IDirectSoundBuffer	SetFrequency	17	stdcall	8	implemented-spike	-	win32hle dsound.c
-IDirectSoundBuffer	Stop	18	stdcall	4	implemented-spike	0x00644808	win32hle dsound.c
-IDirectSoundBuffer	Unlock	19	stdcall	20	stub-spike	0x0064292D	win32hle dsound.c: fixed result DS_OK
-IDirectSoundBuffer	Restore	20	stdcall	4	stub-spike	0x00644C40	win32hle dsound.c: fixed result DS_OK
+IDirectSound	QueryInterface	0	stdcall	12	implemented	-	src/hle/ds3d: IDirectSound and the base COM IID
+IDirectSound	AddRef	1	stdcall	4	implemented	-	src/hle/ds3d: the device lives until it and its buffers are released
+IDirectSound	Release	2	stdcall	4	implemented	-	src/hle/ds3d: the device lives until it and its buffers are released
+IDirectSound	CreateSoundBuffer	3	stdcall	16	implemented	-	src/hle/ds3d: the primary buffer once; secondary buffers as Audio clips, 3D ones mono
+IDirectSound	GetCaps	4	stdcall	8	implemented	-	src/hle/ds3d: 8 and 16 bits, mono and stereo, 100-100000 Hz, 64 mixing buffers
+IDirectSound	DuplicateSoundBuffer	5	stdcall	12	implemented	-	src/hle/ds3d: shares the clip, with a voice of its own
+IDirectSound	SetCooperativeLevel	6	stdcall	12	implemented	-	src/hle/ds3d: checks the window and the level
+IDirectSound	Compact	7	stdcall	4	stub	-	src/hle/ds3d: fixed result DS_OK
+IDirectSound	GetSpeakerConfig	8	stdcall	8	implemented	-	src/hle/ds3d: DSSPEAKER_STEREO until set
+IDirectSound	SetSpeakerConfig	9	stdcall	8	implemented	-	src/hle/ds3d: kept
+IDirectSound	Initialize	10	stdcall	8	stub	-	src/hle/ds3d: fixed result DSERR_ALREADYINITIALIZED
+IDirectSound3DBuffer	QueryInterface	0	stdcall	12	implemented	-	src/hle/ds3d: shares the buffer object and its count
+IDirectSound3DBuffer	AddRef	1	stdcall	4	implemented	-	src/hle/ds3d: the buffer count
+IDirectSound3DBuffer	Release	2	stdcall	4	implemented	0x00641B0A	src/hle/ds3d: the buffer count
+IDirectSound3DBuffer	GetAllParameters	3	stdcall	8	implemented	-	src/hle/ds3d: the latest values set
+IDirectSound3DBuffer	GetConeAngles	4	stdcall	12	implemented	-	src/hle/ds3d: the latest values set
+IDirectSound3DBuffer	GetConeOrientation	5	stdcall	8	implemented	-	src/hle/ds3d: the latest values set
+IDirectSound3DBuffer	GetConeOutsideVolume	6	stdcall	8	implemented	-	src/hle/ds3d: the latest values set
+IDirectSound3DBuffer	GetMaxDistance	7	stdcall	8	implemented	-	src/hle/ds3d: the latest values set
+IDirectSound3DBuffer	GetMinDistance	8	stdcall	8	implemented	-	src/hle/ds3d: the latest values set
+IDirectSound3DBuffer	GetMode	9	stdcall	8	implemented	-	src/hle/ds3d: the latest values set
+IDirectSound3DBuffer	GetPosition	10	stdcall	8	implemented	-	src/hle/ds3d: the latest values set
+IDirectSound3DBuffer	GetVelocity	11	stdcall	8	implemented	-	src/hle/ds3d: the latest values set
+IDirectSound3DBuffer	SetAllParameters	12	stdcall	12	implemented	-	src/hle/ds3d: onto the voice 3D parameters; deferred until CommitDeferredSettings
+IDirectSound3DBuffer	SetConeAngles	13	stdcall	16	implemented	-	src/hle/ds3d: onto the voice 3D parameters; deferred until CommitDeferredSettings
+IDirectSound3DBuffer	SetConeOrientation	14	stdcall	20	implemented	0x00644B57	src/hle/ds3d: onto the voice 3D parameters; deferred until CommitDeferredSettings
+IDirectSound3DBuffer	SetConeOutsideVolume	15	stdcall	12	implemented	0x00644A67	src/hle/ds3d: onto the voice 3D parameters; deferred until CommitDeferredSettings
+IDirectSound3DBuffer	SetMaxDistance	16	stdcall	12	implemented	-	src/hle/ds3d: onto the voice 3D parameters; deferred until CommitDeferredSettings
+IDirectSound3DBuffer	SetMinDistance	17	stdcall	12	implemented	-	src/hle/ds3d: onto the voice 3D parameters; deferred until CommitDeferredSettings
+IDirectSound3DBuffer	SetMode	18	stdcall	12	implemented	-	src/hle/ds3d: onto the voice 3D parameters; deferred until CommitDeferredSettings
+IDirectSound3DBuffer	SetPosition	19	stdcall	20	implemented	0x00644B2A	src/hle/ds3d: onto the voice 3D parameters; deferred until CommitDeferredSettings
+IDirectSound3DBuffer	SetVelocity	20	stdcall	20	implemented	0x00644B84	src/hle/ds3d: onto the voice 3D parameters; deferred until CommitDeferredSettings
+IDirectSound3DListener	QueryInterface	0	stdcall	12	implemented	-	src/hle/ds3d: shares the primary buffer object and its count
+IDirectSound3DListener	AddRef	1	stdcall	4	implemented	-	src/hle/ds3d: the primary buffer count
+IDirectSound3DListener	Release	2	stdcall	4	implemented	0x0064597D	src/hle/ds3d: the primary buffer count
+IDirectSound3DListener	GetAllParameters	3	stdcall	8	implemented	-	src/hle/ds3d: the latest values set
+IDirectSound3DListener	GetDistanceFactor	4	stdcall	8	implemented	-	src/hle/ds3d: the latest values set
+IDirectSound3DListener	GetDopplerFactor	5	stdcall	8	implemented	-	src/hle/ds3d: the latest values set
+IDirectSound3DListener	GetOrientation	6	stdcall	12	implemented	-	src/hle/ds3d: the latest values set
+IDirectSound3DListener	GetPosition	7	stdcall	8	implemented	-	src/hle/ds3d: the latest values set
+IDirectSound3DListener	GetRolloffFactor	8	stdcall	8	implemented	-	src/hle/ds3d: the latest values set
+IDirectSound3DListener	GetVelocity	9	stdcall	8	implemented	-	src/hle/ds3d: the latest values set
+IDirectSound3DListener	SetAllParameters	10	stdcall	12	implemented	-	src/hle/ds3d: onto the Audio listener; deferred until CommitDeferredSettings
+IDirectSound3DListener	SetDistanceFactor	11	stdcall	12	implemented	0x00645FC5	src/hle/ds3d: onto the Audio listener; deferred until CommitDeferredSettings
+IDirectSound3DListener	SetDopplerFactor	12	stdcall	12	implemented	-	src/hle/ds3d: onto the Audio listener; deferred until CommitDeferredSettings
+IDirectSound3DListener	SetOrientation	13	stdcall	32	implemented	0x00645D2A	src/hle/ds3d: onto the Audio listener; deferred until CommitDeferredSettings
+IDirectSound3DListener	SetPosition	14	stdcall	20	implemented	0x00645CF6	src/hle/ds3d: onto the Audio listener; deferred until CommitDeferredSettings
+IDirectSound3DListener	SetRolloffFactor	15	stdcall	12	implemented	-	src/hle/ds3d: onto the Audio listener; deferred until CommitDeferredSettings
+IDirectSound3DListener	SetVelocity	16	stdcall	20	implemented	0x00645D4A	src/hle/ds3d: onto the Audio listener; deferred until CommitDeferredSettings
+IDirectSound3DListener	CommitDeferredSettings	17	stdcall	4	implemented	-	src/hle/ds3d: applies the listener and every 3D buffer deferred settings
+IDirectSoundBuffer	QueryInterface	0	stdcall	12	implemented	-	src/hle/ds3d: the buffer, its 3D buffer (DSBCAPS_CTRL3D) or the listener (primary)
+IDirectSoundBuffer	AddRef	1	stdcall	4	implemented	-	src/hle/ds3d: one count shared with its 3D interfaces
+IDirectSoundBuffer	Release	2	stdcall	4	implemented	0x00641B20	src/hle/ds3d: one count shared with its 3D interfaces
+IDirectSoundBuffer	GetCaps	3	stdcall	8	implemented	-	src/hle/ds3d: the flags in software and the size
+IDirectSoundBuffer	GetCurrentPosition	4	stdcall	12	implemented	0x00642578	src/hle/ds3d: the voice position; the write cursor 10 ms ahead
+IDirectSoundBuffer	GetFormat	5	stdcall	16	implemented	-	src/hle/ds3d: WAVEFORMATEX
+IDirectSoundBuffer	GetVolume	6	stdcall	8	implemented	-	src/hle/ds3d: needs DSBCAPS_CTRLVOLUME
+IDirectSoundBuffer	GetPan	7	stdcall	8	implemented	-	src/hle/ds3d: needs DSBCAPS_CTRLPAN
+IDirectSoundBuffer	GetFrequency	8	stdcall	8	implemented	-	src/hle/ds3d: needs DSBCAPS_CTRLFREQUENCY
+IDirectSoundBuffer	GetStatus	9	stdcall	8	implemented	0x00641811	src/hle/ds3d: playing and looping from the voice
+IDirectSoundBuffer	Initialize	10	stdcall	12	stub	-	src/hle/ds3d: fixed result DSERR_ALREADYINITIALIZED
+IDirectSoundBuffer	Lock	11	stdcall	32	implemented	0x00641ECD	src/hle/ds3d: the bytes in guest memory, in one or two pieces
+IDirectSoundBuffer	Play	12	stdcall	16	implemented	0x006445E8	src/hle/ds3d: once or looping; from the start after the end
+IDirectSoundBuffer	SetCurrentPosition	13	stdcall	8	implemented	0x00641664	src/hle/ds3d: the voice position in whole frames
+IDirectSoundBuffer	SetFormat	14	stdcall	8	implemented	-	src/hle/ds3d: the primary buffer at DSSCL_PRIORITY; the output keeps its rate
+IDirectSoundBuffer	SetVolume	15	stdcall	8	implemented	0x0064479D	src/hle/ds3d: hundredths of a decibel onto the voice gain; the master gain for the primary
+IDirectSoundBuffer	SetPan	16	stdcall	8	implemented	0x00644722	src/hle/ds3d: the far side attenuated by the pan in hundredths of a decibel, the near side at unity
+IDirectSoundBuffer	SetFrequency	17	stdcall	8	implemented	-	src/hle/ds3d: the voice rate, 100-100000 Hz
+IDirectSoundBuffer	Stop	18	stdcall	4	implemented	0x00644808	src/hle/ds3d: keeps the position
+IDirectSoundBuffer	Unlock	19	stdcall	20	implemented	0x0064292D	src/hle/ds3d: copies the written bytes into the clip
+IDirectSoundBuffer	Restore	20	stdcall	4	stub	0x00644C40	src/hle/ds3d: fixed result DS_OK, the bytes are never lost

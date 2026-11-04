@@ -9,7 +9,7 @@ and they know nothing of Win32.
 | `Window` | the game's window, display modes, the OS event loop, the frame cap | `Window/Window.h` |
 | `Gpu` | DirectDraw 4 surfaces and Direct3D 3 fixed-function drawing, present | `Gpu/Gpu.h` |
 | `Input` | DirectInput keyboard and mouse: state and a timestamped event queue | `Input/Input.h` |
-| `Audio` | the Miles sample API and DirectSound/DirectSound3D: clips, voices, 3D, streams | `Audio/Audio.h` |
+| `Audio` | the Miles sample API and DirectSound/DirectSound3D: clips, voices, 3D, streams; backend on miniaudio, with a null device and a manual clock (`Audio/AudioMiniaudio.h`) | `Audio/Audio.h` |
 | `Transport` | Winsock UDP and TCP sockets; `Rendezvous` for Phase 3 | `Transport/Transport.h` |
 | `Store` | install files (read-only), the per-user directory, atomic writes, the registry store | `Store/Store.h`; host backend `makeStore(installDir, userDir)` (`StoreHost.cpp`, over file primitives defined in one `StoreHost_<platform>.cpp` each; registry values in `registry.tsv`, whose header line gives its form) |
 | `Clock` | millisecond ticks, the high-resolution counter, the wall clock, sleep | `Clock/Clock.h` |
