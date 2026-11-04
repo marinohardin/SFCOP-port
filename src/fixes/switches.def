@@ -1,0 +1,26 @@
+/* src/fixes/switches.def: every fix switch, in docs/FIXES.md order (src/fixes/README.md).
+ *
+ * One line per switch:
+ *
+ *   SFCOP_FIX_SWITCH(name, kind, default, origin, "description")
+ *
+ *   name         fix_ and a lower_snake_case verb phrase
+ *   kind         Runtime (read in src/ by sfcop::fixes::isEnabled) or Build (read in game/ by #if)
+ *   default      1 on, 0 off: crash and hang fixes on, rules changes off (DESIGN §5.14)
+ *   origin       Project or Community
+ *   description  one sentence on the behavior the switch changes
+ *
+ * A Build switch also has its block just above its line, with the same default:
+ *
+ *   #ifndef SFCOP_FIX_BUILD_fix_name
+ *   #define SFCOP_FIX_BUILD_fix_name 1
+ *   #endif
+ *   #define SFCOP_FIX_fix_name() SFCOP_FIX_POSITION(SFCOP_FIX_BUILD_fix_name)
+ *
+ * fixes.h includes this file for the blocks, with SFCOP_FIX_SWITCH defined empty; Fixes.cpp
+ * includes it again to build the registry. Plain C preprocessor only: VC6 reads it too.
+ */
+
+SFCOP_FIX_SWITCH(fix_hle_named_objects, Runtime, 1, Project,
+    "A kernel object created with an empty name is unnamed, so each such event, mutex and "
+    "semaphore is its own object instead of one shared by all")
