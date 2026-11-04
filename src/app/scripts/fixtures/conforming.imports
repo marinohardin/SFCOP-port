@@ -1,0 +1,11 @@
+# An invented import list that keeps to the scripting library and the C runtime.
+??0tShipInfo@@QAE@XZ
+?mAssessDamage@tShipInfo@@QAEJW4eRace@@@Z
+?mAddShipToTeamList@tTeamInfo@@QAEEAAUtCreateShipInfo@@@Z
+??0tString@@QAE@PBD@Z
+?mIdentity@tMatrix@@QAEXXZ
+_atexit
+_free
+__CxxThrowException@8
+KERNEL32.DLL!HeapAlloc
+USER32.DLL!wsprintfA
