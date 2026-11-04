@@ -25,7 +25,7 @@ DBGHELP.DLL	SymSetOptions	-	stdcall	4	stub-spike	0x00712166	P1-2 misc_stubs.c: f
 DDRAW.DLL	DirectDrawCreate	-	stdcall	12	implemented-spike	0x0069D61A	win32hle ddraw.c; called on the boot to the CD-key prompt
 DDRAW.DLL	DirectDrawCreateClipper	-	stdcall	12	implemented-spike	0x006B46E4	P1-2 misc_stubs.c
 DDRAW.DLL	DirectDrawEnumerateA	-	stdcall	8	implemented-spike	0x006B79D5	win32hle ddraw.c; called on the boot to the CD-key prompt
-DINPUT.DLL	DirectInputCreateA	-	stdcall	16	implemented-spike	0x0040142E	P1-2 dinput.c; called on the boot to the CD-key prompt
+DINPUT.DLL	DirectInputCreateA	-	stdcall	16	implemented	0x0040142E	src/hle/dinput: DirectInput::Create; versions 0x0300 to 0x0700 (the game passes 0x0700 and a null hinst); called on the boot to the CD-key prompt
 DSOUND.DLL	DirectSoundCreate	1	stdcall	12	implemented-spike	0x006413C4	win32hle dsound.c
 GDI32.DLL	BitBlt	-	stdcall	36	implemented-spike	0x006B2C37	win32hle gdidc.c
 GDI32.DLL	CreateCompatibleDC	-	stdcall	4	implemented-spike	0x006B2606	win32hle gdidc.c
@@ -609,32 +609,32 @@ IDirectDrawSurface4	GetPrivateData	41	stdcall	16	stub-spike	-	win32hle ddraw.c: 
 IDirectDrawSurface4	FreePrivateData	42	stdcall	8	stub-spike	-	win32hle ddraw.c: fixed result DD_OK
 IDirectDrawSurface4	GetUniquenessValue	43	stdcall	8	implemented-spike	-	win32hle ddraw.c
 IDirectDrawSurface4	ChangeUniquenessValue	44	stdcall	4	implemented-spike	-	win32hle ddraw.c
-IDirectInputA	QueryInterface	0	stdcall	12	implemented-spike	-	P1-2 dinput.c
-IDirectInputA	AddRef	1	stdcall	4	implemented-spike	-	P1-2 dinput.c
-IDirectInputA	Release	2	stdcall	4	implemented-spike	0x0040141A	P1-2 dinput.c
-IDirectInputA	CreateDevice	3	stdcall	16	implemented-spike	0x00401443	P1-2 dinput.c; called on the boot to the CD-key prompt
-IDirectInputA	EnumDevices	4	stdcall	20	implemented-spike	-	P1-2 dinput.c
-IDirectInputA	GetDeviceStatus	5	stdcall	8	implemented-spike	-	P1-2 dinput.c
-IDirectInputA	RunControlPanel	6	stdcall	12	stub-spike	-	P1-2 dinput.c: fixed result DI_OK
-IDirectInputA	Initialize	7	stdcall	12	stub-spike	-	P1-2 dinput.c: fixed result DI_OK
-IDirectInputDeviceA	QueryInterface	0	stdcall	12	implemented-spike	-	P1-2 dinput.c
-IDirectInputDeviceA	AddRef	1	stdcall	4	implemented-spike	-	P1-2 dinput.c
-IDirectInputDeviceA	Release	2	stdcall	4	implemented-spike	0x0040140C	P1-2 dinput.c
-IDirectInputDeviceA	GetCapabilities	3	stdcall	8	implemented-spike	-	P1-2 dinput.c
-IDirectInputDeviceA	EnumObjects	4	stdcall	16	stub-spike	-	P1-2 dinput.c: fixed result DI_OK; no objects enumerated
-IDirectInputDeviceA	GetProperty	5	stdcall	12	implemented-spike	-	P1-2 dinput.c
-IDirectInputDeviceA	SetProperty	6	stdcall	12	implemented-spike	-	P1-2 dinput.c
-IDirectInputDeviceA	Acquire	7	stdcall	4	implemented-spike	0x00401472	P1-2 dinput.c; called on the boot to the CD-key prompt
-IDirectInputDeviceA	Unacquire	8	stdcall	4	implemented-spike	0x00401404	P1-2 dinput.c
-IDirectInputDeviceA	GetDeviceState	9	stdcall	12	implemented-spike	-	P1-2 dinput.c
-IDirectInputDeviceA	GetDeviceData	10	stdcall	20	implemented-spike	-	P1-2 dinput.c
-IDirectInputDeviceA	SetDataFormat	11	stdcall	8	implemented-spike	0x00401454	P1-2 dinput.c; called on the boot to the CD-key prompt
-IDirectInputDeviceA	SetEventNotification	12	stdcall	8	stub-spike	-	P1-2 dinput.c: fixed result DI_OK; the event is never signalled
-IDirectInputDeviceA	SetCooperativeLevel	13	stdcall	12	stub-spike	0x00401466	P1-2 dinput.c: fixed result DI_OK; called on the boot to the CD-key prompt
-IDirectInputDeviceA	GetObjectInfo	14	stdcall	16	stub-spike	-	P1-2 dinput.c: fixed result DIERR_OBJECTNOTFOUND
-IDirectInputDeviceA	GetDeviceInfo	15	stdcall	8	implemented-spike	-	P1-2 dinput.c
-IDirectInputDeviceA	RunControlPanel	16	stdcall	12	stub-spike	-	P1-2 dinput.c: fixed result DI_OK
-IDirectInputDeviceA	Initialize	17	stdcall	16	stub-spike	-	P1-2 dinput.c: fixed result DI_OK
+IDirectInputA	QueryInterface	0	stdcall	12	implemented	-	src/hle/dinput: its own IID and the base COM IID only; the game never asks for 2A or 7A
+IDirectInputA	AddRef	1	stdcall	4	implemented	-	src/hle/dinput: DirectInput::AddRef
+IDirectInputA	Release	2	stdcall	4	implemented	0x0040141A	src/hle/dinput: DirectInput::Release
+IDirectInputA	CreateDevice	3	stdcall	16	implemented	0x00401443	src/hle/dinput: DirectInput::CreateDevice; GUID_SysKeyboard only, DIERR_DEVICENOTREG for any other device; called on the boot to the CD-key prompt
+IDirectInputA	EnumDevices	4	stdcall	20	implemented	-	src/hle/dinput: DirectInput::EnumDevices; lists the system keyboard
+IDirectInputA	GetDeviceStatus	5	stdcall	8	implemented	-	src/hle/dinput: DirectInput::GetDeviceStatus
+IDirectInputA	RunControlPanel	6	stdcall	12	stub	-	src/hle/dinput: fixed result DI_OK; there is no control panel to show
+IDirectInputA	Initialize	7	stdcall	12	implemented	-	src/hle/dinput: DirectInput::Initialize; the version check of DirectInputCreateA
+IDirectInputDeviceA	QueryInterface	0	stdcall	12	implemented	-	src/hle/dinput: its own IID and the base COM IID only
+IDirectInputDeviceA	AddRef	1	stdcall	4	implemented	-	src/hle/dinput: KeyboardDevice::AddRef
+IDirectInputDeviceA	Release	2	stdcall	4	implemented	0x0040140C	src/hle/dinput: KeyboardDevice::Release
+IDirectInputDeviceA	GetCapabilities	3	stdcall	8	implemented	-	src/hle/dinput: KeyboardDevice::GetCapabilities
+IDirectInputDeviceA	EnumObjects	4	stdcall	16	implemented	-	src/hle/dinput: KeyboardDevice::EnumObjects; the keys in DIK_ order
+IDirectInputDeviceA	GetProperty	5	stdcall	12	implemented	-	src/hle/dinput: KeyboardDevice::GetProperty; DIPROP_BUFFERSIZE, any other DIERR_UNSUPPORTED
+IDirectInputDeviceA	SetProperty	6	stdcall	12	implemented	-	src/hle/dinput: KeyboardDevice::SetProperty; DIPROP_BUFFERSIZE, any other DIERR_UNSUPPORTED
+IDirectInputDeviceA	Acquire	7	stdcall	4	implemented	0x00401472	src/hle/dinput: KeyboardDevice::Acquire; called on the boot to the CD-key prompt
+IDirectInputDeviceA	Unacquire	8	stdcall	4	implemented	0x00401404	src/hle/dinput: KeyboardDevice::Unacquire
+IDirectInputDeviceA	GetDeviceState	9	stdcall	12	implemented	-	src/hle/dinput: KeyboardDevice::GetDeviceState; Input's keyboard state by DIK_ code
+IDirectInputDeviceA	GetDeviceData	10	stdcall	20	implemented	-	src/hle/dinput: KeyboardDevice::GetDeviceData; records from Input's event queue, presses and releases both
+IDirectInputDeviceA	SetDataFormat	11	stdcall	8	implemented	0x00401454	src/hle/dinput: KeyboardDevice::SetDataFormat; keyboard formats (the game links c_dfDIKeyboard); called on the boot to the CD-key prompt
+IDirectInputDeviceA	SetEventNotification	12	stdcall	8	implemented	-	src/hle/dinput: KeyboardDevice::SetEventNotification; a Threads event signalled when the acquired keyboard changes; the game's HANDLE is resolved through the runtime (DinputBridge.h)
+IDirectInputDeviceA	SetCooperativeLevel	13	stdcall	12	implemented	0x00401466	src/hle/dinput: KeyboardDevice::SetCooperativeLevel; flags checked, nothing to apply (the game passes 0x16); called on the boot to the CD-key prompt
+IDirectInputDeviceA	GetObjectInfo	14	stdcall	16	implemented	-	src/hle/dinput: KeyboardDevice::GetObjectInfo; by offset or by ID
+IDirectInputDeviceA	GetDeviceInfo	15	stdcall	8	implemented	-	src/hle/dinput: KeyboardDevice::GetDeviceInfo
+IDirectInputDeviceA	RunControlPanel	16	stdcall	12	stub	-	src/hle/dinput: fixed result DI_OK; there is no control panel to show
+IDirectInputDeviceA	Initialize	17	stdcall	16	implemented	-	src/hle/dinput: KeyboardDevice::Initialize; the version check, and GUID_SysKeyboard only
 IDirectPlay4A	QueryInterface	0	stdcall	12	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
 IDirectPlay4A	AddRef	1	stdcall	4	unused	-	not called; analysis/netcode/directplay.md lists every DirectPlay call
 IDirectPlay4A	Release	2	stdcall	4	todo	0x00616951	analysis/netcode/directplay.md

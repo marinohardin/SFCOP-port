@@ -59,6 +59,12 @@ The build collects these by name (`cmake/SfcopSources.cmake`): every `.cpp` here
 goes into `sfcop_src`, `*Test.cpp` into `sfcop_tests`, and `*_macos.*`, `*_windows.*`,
 `*_linux.*` only on that platform. Nothing here needs a CMake edit.
 
+## Backends
+
+| Component | Backend | File | Notes |
+| --- | --- | --- | --- |
+| `Input` | SDL3 (`makeInput()`) | `Input/InputSdl.cpp` | Fed by the window's `PumpEvents()`; keys are SDL3 scancodes, which are the usage IDs `Input.h` names, passed through; queue of 64 by default, at most 65536 |
+
 ## Adding a backend (CONVENTIONS §8)
 
 1. Read the component's header; it is the contract. If the backend needs a change to it, that is

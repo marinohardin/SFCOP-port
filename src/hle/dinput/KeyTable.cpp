@@ -1,0 +1,93 @@
+// Written out by hand from the public DirectInput key definitions (DIK_) and the USB HID usage
+// tables (page 0x07).
+#include "hle/dinput/KeyTable.h"
+
+#include <array>
+
+namespace sfcop::hle::dinput {
+namespace {
+
+// clang-format off
+constexpr KeyInfo kKeys[] = {
+    {0x29, 0x01, "Esc"},         {0x1E, 0x02, "1"},           {0x1F, 0x03, "2"},
+    {0x20, 0x04, "3"},           {0x21, 0x05, "4"},           {0x22, 0x06, "5"},
+    {0x23, 0x07, "6"},           {0x24, 0x08, "7"},           {0x25, 0x09, "8"},
+    {0x26, 0x0A, "9"},           {0x27, 0x0B, "0"},           {0x2D, 0x0C, "-"},
+    {0x2E, 0x0D, "="},           {0x2A, 0x0E, "Backspace"},   {0x2B, 0x0F, "Tab"},
+    {0x14, 0x10, "Q"},           {0x1A, 0x11, "W"},           {0x08, 0x12, "E"},
+    {0x15, 0x13, "R"},           {0x17, 0x14, "T"},           {0x1C, 0x15, "Y"},
+    {0x18, 0x16, "U"},           {0x0C, 0x17, "I"},           {0x12, 0x18, "O"},
+    {0x13, 0x19, "P"},           {0x2F, 0x1A, "["},           {0x30, 0x1B, "]"},
+    {0x28, 0x1C, "Enter"},       {0xE0, 0x1D, "Ctrl"},        {0x04, 0x1E, "A"},
+    {0x16, 0x1F, "S"},           {0x07, 0x20, "D"},           {0x09, 0x21, "F"},
+    {0x0A, 0x22, "G"},           {0x0B, 0x23, "H"},           {0x0D, 0x24, "J"},
+    {0x0E, 0x25, "K"},           {0x0F, 0x26, "L"},           {0x33, 0x27, ";"},
+    {0x34, 0x28, "'"},           {0x35, 0x29, "`"},           {0xE1, 0x2A, "Shift"},
+    {0x31, 0x2B, "\\"},          {0x1D, 0x2C, "Z"},           {0x1B, 0x2D, "X"},
+    {0x06, 0x2E, "C"},           {0x19, 0x2F, "V"},           {0x05, 0x30, "B"},
+    {0x11, 0x31, "N"},           {0x10, 0x32, "M"},           {0x36, 0x33, ","},
+    {0x37, 0x34, "."},           {0x38, 0x35, "/"},           {0xE5, 0x36, "Right Shift"},
+    {0x55, 0x37, "Num *"},       {0xE2, 0x38, "Alt"},         {0x2C, 0x39, "Space"},
+    {0x39, 0x3A, "Caps Lock"},   {0x3A, 0x3B, "F1"},          {0x3B, 0x3C, "F2"},
+    {0x3C, 0x3D, "F3"},          {0x3D, 0x3E, "F4"},          {0x3E, 0x3F, "F5"},
+    {0x3F, 0x40, "F6"},          {0x40, 0x41, "F7"},          {0x41, 0x42, "F8"},
+    {0x42, 0x43, "F9"},          {0x43, 0x44, "F10"},         {0x53, 0x45, "Num Lock"},
+    {0x47, 0x46, "Scroll Lock"}, {0x5F, 0x47, "Num 7"},       {0x60, 0x48, "Num 8"},
+    {0x61, 0x49, "Num 9"},       {0x56, 0x4A, "Num -"},       {0x5C, 0x4B, "Num 4"},
+    {0x5D, 0x4C, "Num 5"},       {0x5E, 0x4D, "Num 6"},       {0x57, 0x4E, "Num +"},
+    {0x59, 0x4F, "Num 1"},       {0x5A, 0x50, "Num 2"},       {0x5B, 0x51, "Num 3"},
+    {0x62, 0x52, "Num 0"},       {0x63, 0x53, "Num Del"},     {0x64, 0x56, "<>"},
+    {0x44, 0x57, "F11"},         {0x45, 0x58, "F12"},         {0x68, 0x64, "F13"},
+    {0x69, 0x65, "F14"},         {0x6A, 0x66, "F15"},         {0x88, 0x70, "Kana"},
+    {0x87, 0x73, "Ro"},          {0x8A, 0x79, "Convert"},     {0x8B, 0x7B, "No Convert"},
+    {0x89, 0x7D, "Yen"},         {0x67, 0x8D, "Num ="},       {0x58, 0x9C, "Num Enter"},
+    {0xE4, 0x9D, "Right Ctrl"},  {0x7F, 0xA0, "Mute"},        {0x81, 0xAE, "Volume Down"},
+    {0x80, 0xB0, "Volume Up"},   {0x85, 0xB3, "Num ,"},       {0x54, 0xB5, "Num /"},
+    {0x46, 0xB7, "Prnt Scrn"},   {0xE6, 0xB8, "Right Alt"},   {0x48, 0xC5, "Pause"},
+    {0x4A, 0xC7, "Home"},        {0x52, 0xC8, "Up"},          {0x4B, 0xC9, "Page Up"},
+    {0x50, 0xCB, "Left"},        {0x4F, 0xCD, "Right"},       {0x4D, 0xCF, "End"},
+    {0x51, 0xD0, "Down"},        {0x4E, 0xD1, "Page Down"},   {0x49, 0xD2, "Insert"},
+    {0x4C, 0xD3, "Delete"},      {0xE3, 0xDB, "Left Windows"}, {0xE7, 0xDC, "Right Windows"},
+    {0x65, 0xDD, "Application"}, {0x66, 0xDE, "Power"},
+};
+// clang-format on
+
+// The ISO keyboard's key beside Enter (usage 0x32, "Non-US # and ~") sends the same scan code
+// as the US backslash key, so it is DIK_BACKSLASH too. Not in kKeys: that lists each DIK_ once.
+constexpr platform::Scancode kUsageNonUsHash = 0x32;
+constexpr std::uint8_t kDikBackslash = 0x2B;
+
+struct Index {
+    std::array<std::uint8_t, platform::kScancodeCount> dikOfUsage{};
+    std::array<const KeyInfo *, 256> keyOfDik{};
+};
+
+const Index &index() {
+    static const Index built = [] {
+        Index result;
+        for (const KeyInfo &key : kKeys) {
+            result.dikOfUsage[key.usage] = key.dik;
+            result.keyOfDik[key.dik] = &key;
+        }
+        result.dikOfUsage[kUsageNonUsHash] = kDikBackslash;
+        return result;
+    }();
+    return built;
+}
+
+} // namespace
+
+const KeyInfo *keyTable(std::size_t *count) {
+    *count = sizeof kKeys / sizeof kKeys[0];
+    return kKeys;
+}
+
+std::uint8_t dikFromUsage(platform::Scancode usage) {
+    return usage < platform::kScancodeCount ? index().dikOfUsage[usage] : 0;
+}
+
+const KeyInfo *keyFromDik(std::uint32_t dik) {
+    return dik < 256 ? index().keyOfDik[dik] : nullptr;
+}
+
+} // namespace sfcop::hle::dinput
