@@ -18,6 +18,19 @@ and they know nothing of Win32.
 `Core/` holds what they share: `Result.h` (the one `Error` enum and `Result<T>`), `Handle.h`
 (typed handles) and `MockLog.h` (the call recorder the mocks use; tests only).
 
+## Backends
+
+| Component | Backend | Files | Where it runs | Notes |
+| --- | --- | --- | --- | --- |
+| `Window` | SDL3 | `Window/WindowSdl.cpp` (`makeWindow()`) | every platform SDL3 builds for | `SFCOP_WINDOW_HIDDEN=1` creates the window hidden (tests, headless runs); fullscreen uses the desktop mode unless `SFCOP_FULLSCREEN=exclusive` and the display has the exact size; event timestamps are milliseconds since SDL started (`SDL_GetTicks()`) |
+| `Gpu` | SDL GPU | `Gpu/GpuSdl.cpp`, `GpuSdlPixels.cpp`, `GpuSdlShaders.cpp` (`makeGpu()`) | macOS (Metal); Vulkan and Direct3D 12 once their shaders land | accepts only a window from `makeWindow()`; colour textures are BGRA8 on the GPU; a hidden window or the dummy video driver has no swapchain and `Present()` only paces; Metal needs the Cocoa video driver; the letterbox `Present()` draws and the one the window maps the mouse through agree when `SetMode` and `ConfigureBackBuffer` share an aspect ratio |
+
+The Gpu backend's shaders live in `Gpu/GpuSdlShaders.cpp`: one vertex and one fragment program that
+carry Direct3D 3's fixed function, as Metal Shading Language source compiled when the device is
+created. SPIR-V (Vulkan) and DXIL (Direct3D 12) are byte arrays compiled offline from the same
+program and land with the Windows and Linux builds in Wave 2; until then `Attach()` returns
+`kUnsupported` on those drivers and names the driver in the log.
+
 ## Rules
 
 - **No third-party type in a header.** No SDL, miniaudio or operating-system type, and no Win32
