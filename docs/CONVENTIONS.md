@@ -67,7 +67,7 @@ Identifiers
 | Original classes, functions, members | The original identifier, exactly, once evidence gives it (a symbol, RTTI, an assertion string, an SDK match); `fn_<address>` until then | `tDynamicAllocator::Instance`, `fn_006FC690` |
 | Names that exist only in a leaked or unlicensed source | Never used; a descriptive name of this project's own instead | |
 | New classes and types in `src/`, `server/`, `tools/` | UpperCamelCase, no prefix | `Transport`, `Envelope` |
-| New functions and methods | UpperCamelCase for methods, lowerCamelCase for free functions and locals | `Audio::playVoice`, `openInstall()` |
+| New functions and methods | UpperCamelCase for methods, lowerCamelCase for free functions and locals | `Audio::PlayVoice`, `openInstall()` |
 | Constants and enumerators | `k` prefix UpperCamelCase, as the original does | `kMaxPlayers` |
 | Namespaces | `sfcop::<component>` for new code; the original's `n*` namespaces untouched | `sfcop::hle` |
 | Fix switches | lower_snake_case, verb first | `fix_shield_overflow` |
@@ -82,10 +82,10 @@ Branches follow §7.1. Commit scopes are the top-level directory or the componen
 - The goal is the original's source, so the style is the original's: its spacing, its idioms, its member order. The matched SDK sources (`Common/`, the scripting library) show that style; follow it.
 - Every function carries its `// FUNCTION: STARFLEETOP 0x...` or `// STUB:` line (DESIGN §6.3). Functions appear in address order inside a unit.
 - Includes are paths from the `game/` root: `#include "Common/DynamicAllocator.h"`, with `game/` and `game/port/` the only include directories (owner's decision, 2026-11-04). The original wrote bare file names with a long list of include directories; its include lines are rewritten to this form when a unit is imported, and that rewrite is the one standing exception to "the original's source", since include lines change no code bytes.
-- Only what VC6 SP4 compiles: no C++11 or later, no `long long`, no anonymous namespaces where the original had none. The native build compiles the same file with clang in C++17 mode with `-fms-extensions` and `game/port/types.h` first; a construct clang rejects is fixed with a `PORT:` line, never by forking the file.
+- Only what VC6 SP4 compiles: no C++11 or later, no `long long`, no anonymous namespaces where the original had none. When the guest mode is retired the whole tree compiles with clang in C++17 mode with `-fms-extensions`; a construct clang would reject is fixed with a `PORT:` line when it is written, never by forking the file.
 - A `PORT:` line is one line, tagged on the line itself: `// PORT: <reason>`. The reasons allowed: 64-bit or pointer-size hygiene, undefined behavior the original relied on, a platform difference the HLE surface cannot absorb. Everything else belongs in `src/` or behind a fix switch.
 - A fix is `#if SFCOP_FIX(name)` around the smallest possible region, with the original code in the `#else` branch. No fix changes a function's `FUNCTION:` status: the byte check compiles with every fix off.
-- Pointer-typed members and `long` use the aliases from `game/port/types.h` (`ptr32<T>`, `int32`, ...) once the guest-mode spike (DESIGN §12.4) settles their form; until then the VC6 types.
+- Pointer-typed members and `long` keep the original's VC6 types. The native build takes the VC6 object of a unit and lifts it (DESIGN §7.2, §12.4), so `game/` is never compiled in a guest mode; `game/port/types.h` is the fallback route's header and nothing in `game/` depends on it.
 - No comment restates the code. A comment records evidence (`// matches SharedR.lib DynamicAllocator.obj`), a judgement (`// the original reads one past the end here; kept, see fix_...`) or a `PORT:` reason.
 
 ### 4.2 New code (`src/`, `server/`, `tools/`)
@@ -99,7 +99,7 @@ Branches follow §7.1. Commit scopes are the top-level directory or the componen
 
 ## 5. Dependencies
 
-- Declared in `third_party/INVENTORY.md` (name, version, licence, where used, why) and pinned there and in the build (`FetchContent` with a commit hash, or a vendored copy). Only the integrator adds, removes or bumps one, in its own pull request labelled `contract-change`.
+- Declared in `third_party/INVENTORY.md` (name, version, licence, where used, why) and pinned there and in the build (`FetchContent` with a release URL and its SHA-256, or a commit hash, or a vendored copy). Only the integrator adds, removes or bumps one, in its own pull request labelled `contract-change`.
 - Permissive licences only until DESIGN §12.1 is decided: zlib, MIT, BSD, public domain. Nothing derived from the WONAPI or GameSpy sources, ever.
 - Current set: SDL3, miniaudio, doctest (tests), one NAT traversal library chosen in Phase 3 (DESIGN §12.8). Python tooling uses the standard library; a package it needs is recorded in the venv's requirements file under `tools/` and in the inventory.
 - A dependency is taken for a capability the project cannot reasonably write (a GPU abstraction, an audio engine, ICE), never for convenience.
@@ -173,7 +173,7 @@ Branches follow §7.1. Commit scopes are the top-level directory or the componen
 
 **Adding a fix**
 1. Row in `docs/FIXES.md`: name, default, origin, behaviors, tests.
-2. `#if SFCOP_FIX(name)` around the smallest region in `game/`, original code in `#else`; the switch declared in `src/fixes/fixes.h`.
+2. `#if SFCOP_FIX(name)` around the smallest region in `game/`, original code in `#else`; the switch declared in `src/fixes/switches.def` (the kind, `build` or `runtime`, decides where it is read; DESIGN §6.9).
 3. A test in each position; the byte check still passes with the fix off.
 4. Commit: `fix(game/<dir>): <what> (fix_<name>)`.
 

@@ -44,7 +44,7 @@ The open questions of DESIGN §12, with what each blocks here.
 | 12.1 | Licence | Open (owner) | Wave 5 release |
 | 12.2 | No binary until complete; source plus build tool if earlier; a signed launcher at the end | Decided 2026-11-03 | L1 |
 | 12.3 | The key prompt and online key check in the native client | Open (owner) | N6, V1 |
-| 12.4 | Guest mode: one source for both compile modes | Spike C3 decides | D in the native build; A1 |
+| 12.4 | Guest mode or lift the VC6 object | Decided 2026-11-04: lift the object (DESIGN §12.4); B9 builds the lifter | D in the native build |
 | 12.5 | Scripting library sources: committed or copied from the install | Open (owner) | A3, C8 (the build copies until decided) |
 | 12.6 | Dynaverse mission transport | N1 analysis | V1 |
 | 12.7 | 53-bit floating point reproduces the traces | First oracle run on the native build | "functional" in the native build |
@@ -171,13 +171,14 @@ same subscription. Review turns are capped at 40.
 | C1 to C8 | F1 (the build and the check) |
 | B1 Window and GPU backends | C2 |
 | B2 DirectDraw 4 and Direct3D 3 HLE | C1, C2 (the `Gpu` and `Window` headers), B1 at link time only |
-| B3 Input | C1, C2 |
+| B3 Input | C1, C2, B1's `Window` event feed at run time (`AttachInput`) |
 | B4 Audio | C1, C2 |
 | B5 Store, kernel and registry HLE | C1, C2, C4 (paths) |
-| B6 Guest runtime | C3, C2 (`Clock`, `Threads`) |
+| B6 Guest runtime | C2 (`Clock`, `Threads`), C3's override table |
 | B7 Winsock on Transport | C1, C2 |
 | B8 DirectPlay 4 HLE (LAN) | C1, B7's `Transport` header |
-| D grind | C3, C7, the harness |
+| B9 Object lifter | C3 (the manifest and the override table), the harness (the VC6 object of a unit), F1's lift step |
+| D grind | C7, the harness; B9 for the native build |
 | A1 Boot to the menu | B1 to B6 |
 | A2 Skirmish | A1, B3, B4, the oracle trace |
 | A3 Mission modules and scr2native | B5, C3, C8 |
@@ -226,10 +227,11 @@ A package consumes a contract through the file that declares it (§6 of DESIGN),
 | B5 | Store, kernel and registry HLE | `src/platform/Store/` (backend), `src/hle/kernel/`, `src/hle/registry/` | Files, the wide-char calls, the per-user directory, `registry.tsv` with the game's key names and types, atomic writes | A `.gf` round trip is byte-identical; a registry value written through the HLE is read back through the game's path in a test; the install directory is opened read-only |
 | B6 | Guest runtime | `src/app/guest/` (except `override.*`), `src/platform/Clock/`, `src/platform/Threads/` | The P1-1 exception dispatcher as a component, the lock-depth leak fixed, divide-by-zero, static TLS, the worker threads, the system allocator in place of SmartHeap | The 14 guest tests pass on all three presets; the game's first throw on the boot path unwinds as on the original; a throw across a guest callback leaves the lock depth unchanged |
 | B7 | Winsock on Transport | `src/platform/Transport/` (plain sockets backend), `src/hle/winsock/` | The Winsock rows including `select`, `accept`, `shutdown`, `getpeername`, `__WSAFDIsSet`, on `Transport` | The spike's loopback tests pass; a `select` with a timeout returns on time in a doctest |
+| B9 | Object lifter (DESIGN §7.2, §12.4) | `tools/objlift/`, `cmake/lifter/` additions and the lift step's CMake (contract change), `tests/test_objlift.py`, `spike/guest-mode/` (a closing note only) | A lifter for the VC6 COFF objects the harness builds: relocations resolved against the exe's symbols, lifted C in the form the exe lift emits, the override table fed from it; the build step that compiles claimed units in the container and lifts them | The three functions of the C3 spike, compiled by VC6 from `game/` with no guest-mode constructs, enter the native build through their lifted objects and the guest tests give the same output as with the lifted-exe bodies; the harness still scores them exact; a hand-written COFF fixture with every i386 relocation type VC6 emits lifts to the expected C in a test |
 | B8 | DirectPlay 4 HLE for LAN | `src/hle/dplay/` | `IDirectPlay4A` and `IDirectPlayLobby3A` methods the inventory lists, over `Transport` with LAN broadcast enumeration; the `tNetMsg` framing left untouched | Two native clients on one machine enumerate and join a session and exchange the inventory's first three message kinds in a test harness |
 | D | Grind batches | `game/<units>` as claimed, `analysis/results/matched_set.json`, `analysis/results/difficult_functions.tsv` | One pull request per batch from the harness loop (CONVENTIONS §8); batches ordered by SDK evidence first (`Common/`, the scripting library), then the boot path by coverage | Each batch: every claimed function exact in the harness; `progress.py --gate` passes; nothing outside the claimed units changed |
 
-**Gate G1.** The native build boots to the key prompt on macOS with every component real (no spike path linked); `surface.tsv` has no row in status `stub` without a line in the pull request that justified it; Windows and Linux presets build and run the headless boot to the first frame; the grind has merged at least one batch and the progress figure moved; every worktree of the wave removed.
+**Gate G1.** The native build boots to the key prompt on macOS with every component real (no spike path linked); `surface.tsv` has no row in status `stub` without a line in the pull request that justified it; Windows and Linux presets build and run the headless boot to the first frame; the grind has merged at least one batch and the progress figure moved; at least one decompiled function runs in the native build through B9's lifted object; every worktree of the wave removed.
 
 ### 6.4 Wave 2 (mostly parallel)
 
