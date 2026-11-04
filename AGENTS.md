@@ -141,7 +141,8 @@ Up to eight agents run at once on one MacBook Pro that also hosts Docker, Ghidra
 
 This section is the project's memory. It starts short. Every time an agent breaks a rule that the documents state, or a rule the documents should have stated, the integrator adds one line here, concrete enough to test against, with the reason.
 
-- (none yet)
+- **A contract pull request that renames or removes a symbol, file or table checks every open package branch for that name before it is merged** (`git grep` across `origin/wp/*`), and the merge order is written down. Reason: #25 renamed the spike's `sfcop_hle_*` tables while B2 was coding against them; the merged develop did not link until #34, and the CI build job did not catch it because it does not run the lift.
+- **Merging a pull request that adds `// FUNCTION:` annotations regenerates `game/manifest.tsv` and `src/app/guest/override.cpp` in the same merge window** (`python3 tools/manifest.py`), or the next check on develop fails at `tests/test_manifest.py`. Reason: #27 merged after #23 without regenerating; #33 repaired it.
 
 ## Original work
 
