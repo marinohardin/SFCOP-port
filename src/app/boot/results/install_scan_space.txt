@@ -1,0 +1,15 @@
+Assets/Models/space/B_03.bmp	truncated	5517	17462
+Assets/Models/space/B_04.bmp	empty	0	-
+Assets/Models/space/SpTx256-B.BMP	truncated	65074	66616
+Assets/Models/space/_NSF_04.bmp	truncated	30777	66612
+Assets/Models/space/_SF_11.bmp	truncated	30684	66612
+Assets/Models/space/_SF_20.bmp	truncated	65942	66612
+Assets/Models/space/_SF_22.bmp	truncated	31125	66612
+Assets/Models/space/_SF_28.bmp	truncated	30792	66612
+Assets/Models/space/_SF_65.bmp	truncated	49542	66612
+Assets/Models/space/_SF_67.bmp	truncated	40807	66612
+Assets/Models/space/imageB4.bmp	truncated	7050	17462
+Assets/Models/space/space24.mod	empty	0	-
+Assets/Models/space/spacetex02.bmp	truncated	13750	17462
+Assets/Models/space/spacetex04.bmp	empty	0	-
+install_scan: 14 damaged (3 empty, 11 BMP truncated or not a BMP) of 165 BMP files read

@@ -1,0 +1,11 @@
+run	clock	outcome	at_s	exit	background	last_line
+1	15:38:00	prompt	5.860	0	space21.mod	[boot] watchdog after 12 s: the boot reached the CD-key prompt
+2	15:38:00	prompt	5.919	0	space21.mod	[boot] watchdog after 12 s: the boot reached the CD-key prompt
+3	15:38:00	prompt	5.903	0	space21.mod	[boot] watchdog after 12 s: the boot reached the CD-key prompt
+4	15:38:00	prompt	5.907	0	space21.mod	[boot] watchdog after 12 s: the boot reached the CD-key prompt
+5	15:38:00	prompt	6.224	0	space21.mod	[boot] watchdog after 12 s: the boot reached the CD-key prompt
+6	15:38:00	prompt	6.434	0	space21.mod	[boot] watchdog after 12 s: the boot reached the CD-key prompt
+7	15:38:00	prompt	5.848	0	space21.mod	[boot] watchdog after 12 s: the boot reached the CD-key prompt
+8	15:38:00	prompt	5.995	0	space21.mod	[boot] watchdog after 12 s: the boot reached the CD-key prompt
+9	15:38:00	prompt	6.172	0	space21.mod	[boot] watchdog after 12 s: the boot reached the CD-key prompt
+10	15:38:00	prompt	6.230	0	space21.mod	[boot] watchdog after 12 s: the boot reached the CD-key prompt

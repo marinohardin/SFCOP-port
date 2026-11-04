@@ -1,11 +1,14 @@
 # third_party/ (task P0-6)
 
-`INVENTORY.md` lists the third-party code in `StarFleetOP.exe` 2.5.5.2 and what to do with each piece.
+`INVENTORY.md` lists the native build's dependencies, and the third-party code in `StarFleetOP.exe` 2.5.5.2
+and what to do with each piece.
 Each vendored tree has a `PROVENANCE.md`.
 
 | Path | What |
 |---|---|
 | `INVENTORY.md` | Table of components, evidence, versions, licences and port strategy |
+| `CMakeLists.txt` | The native build's pinned dependencies (SDL3, miniaudio, doctest), fetched at configure time |
+| `DependencyPinsTest.cpp` | Checks that the linked libraries are the pinned releases |
 | `cryptopp/src/` | Crypto++ 3.1 library sources (vendored). It is in the SDK lib but **not** in the exe. |
 | `cryptopp/evidence/` | Version markers and object list for `cryptlibR.lib` |
 | the out-of-repo headers folder | WONAPI headers, **reference only** (leaked source, no licence) |

@@ -1,0 +1,67 @@
+# The native build's dependencies (CONVENTIONS §5), each pinned by a tagged release and the
+# SHA-256 of its archive; INVENTORY.md ("Build dependencies") says what each is for. Only the
+# integrator adds, removes or bumps one. Archives are fetched at configure time into the build
+# directory (_deps/); nothing is vendored.
+#
+# Targets:
+#   SDL3::SDL3-static   SDL3, static (window, GPU, input, events)
+#   sfcop_miniaudio     miniaudio, static (audio engine)
+#   sfcop_doctest       doctest headers (C++ tests)
+#   SDL2::SDL2          TEMPORARY, with SFCOP_LIFT only: sdl2-compat, the SDL2 API over SDL3, for
+#                       the copied boot platform; leaves with Wave 1 B1/B3
+include(FetchContent)
+
+# SDL 3.4.18, release asset; tag release-3.4.18 is commit 829a65d769d935c4852f8159e964312c0957260a.
+FetchContent_Declare(SDL3
+    URL https://github.com/libsdl-org/SDL/releases/download/release-3.4.18/SDL3-3.4.18.tar.gz
+    URL_HASH SHA256=9c75cf16330322c217dedd2e0609f1124f1b54b8633e763467b4684d0f4334a3
+    DOWNLOAD_EXTRACT_TIMESTAMP ON)
+# miniaudio 0.11.25: the tag's commit archive (the release has no asset).
+FetchContent_Declare(miniaudio
+    URL https://github.com/mackron/miniaudio/archive/9634bedb5b5a2ca38c1ee7108a9358a4e233f14d.tar.gz
+    URL_HASH SHA256=1a3a79b80fc6f0b0cc155e28b954a598e0ddfa2db64e2afa8466be88c476fa55
+    DOWNLOAD_EXTRACT_TIMESTAMP ON
+    SOURCE_SUBDIR do-not-add-its-cmake)
+# doctest 2.5.3, release asset; tag v2.5.3 is commit 2d0a9359a60c51affe2a9bebb1be1dca47868151.
+FetchContent_Declare(doctest
+    URL https://github.com/doctest/doctest/releases/download/v2.5.3/doctest-v2.5.3.tar.gz
+    URL_HASH SHA256=eb4a39729d091e43d4d593888bf4d145ee9a0f0e13f7404484b6f2fb60d5d50f
+    DOWNLOAD_EXTRACT_TIMESTAMP ON
+    SOURCE_SUBDIR do-not-add-its-cmake)
+
+# TEMPORARY: leaves with Wave 1 B1/B3. sdl2-compat 2.32.74, release asset; the boot platform
+# (src/app/boot/) and win32hle are written against the SDL2 API. It is a shared library that
+# loads libSDL3.dylib from its own directory, so SDL3 is also built shared and both are written
+# next to sfcop.
+FetchContent_Declare(sdl2_compat
+    URL https://github.com/libsdl-org/sdl2-compat/releases/download/release-2.32.74/sdl2-compat-2.32.74.tar.gz
+    URL_HASH SHA256=ec68abde77e2e459c8abc4f9587b8976b5d2a657b2bfda2fb3a079b0f8924588
+    DOWNLOAD_EXTRACT_TIMESTAMP ON)
+
+set(SDL_SHARED ${SFCOP_LIFT})
+set(SDL_STATIC ON)
+set(SDL_TEST_LIBRARY OFF)
+set(SDL_TESTS OFF)
+set(SDL_EXAMPLES OFF)
+set(SDL_INSTALL OFF)
+set(SDL_DISABLE_INSTALL ON)
+if(SFCOP_LIFT)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
+endif()
+FetchContent_MakeAvailable(SDL3 miniaudio doctest)
+if(SFCOP_LIFT)
+    set(SDL2COMPAT_TESTS OFF)
+    set(SDL2COMPAT_INSTALL OFF)
+    FetchContent_MakeAvailable(sdl2_compat)
+endif()
+
+add_library(sfcop_miniaudio STATIC "${miniaudio_SOURCE_DIR}/miniaudio.c")
+target_include_directories(sfcop_miniaudio SYSTEM PUBLIC "${miniaudio_SOURCE_DIR}")
+target_compile_options(sfcop_miniaudio PRIVATE -w)
+if(APPLE)
+    target_link_libraries(sfcop_miniaudio PUBLIC
+        "-framework CoreFoundation" "-framework CoreAudio" "-framework AudioToolbox")
+endif()
+
+add_library(sfcop_doctest INTERFACE)
+target_include_directories(sfcop_doctest SYSTEM INTERFACE "${doctest_SOURCE_DIR}")
