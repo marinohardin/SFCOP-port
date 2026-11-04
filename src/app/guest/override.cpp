@@ -6,24 +6,75 @@
 #if defined(SFCOP_GUEST_SOURCES)
 
 #include "Common/DynamicAllocator.h"
+#include "Tiger/tcrandsequence.h"
+#include "Tiger/tpart.h"
+#include "Tiger/tsequence.h"
 
 // Entry points: the lifted names, the guest calling convention.
 
+// tPart::mValidateParts(), game/Tiger/tpart.cpp
+extern "C" void sub_00628A60(void) {
+    ::sfcop::guest::entered(0);
+    ::sfcop::guest::Entry< static_cast< void (*)() >( &tPart::mValidateParts ) >::run();
+}
+
+// tPart::mActivateParts(), game/Tiger/tpart.cpp
+extern "C" void sub_00628C20(void) {
+    ::sfcop::guest::entered(1);
+    ::sfcop::guest::Entry< static_cast< void (*)() >( &tPart::mActivateParts ) >::run();
+}
+
+// tPart::mDeactivateParts(), game/Tiger/tpart.cpp
+extern "C" void sub_00628DA0(void) {
+    ::sfcop::guest::entered(2);
+    ::sfcop::guest::Entry< static_cast< void (*)() >( &tPart::mDeactivateParts ) >::run();
+}
+
+// tPart::mAddToPartCachePtrList(tPart **), game/Tiger/tpart.cpp
+extern "C" void sub_00628E50(void) {
+    ::sfcop::guest::entered(3);
+    ::sfcop::guest::Entry< static_cast< void (*)( tPart ** ) >( &tPart::mAddToPartCachePtrList ) >::run();
+}
+
+// tCRandomSequence::mSetSeed(int32u), game/Tiger/tcrandsequence.cpp
+extern "C" void sub_0066C1C0(void) {
+    ::sfcop::guest::entered(4);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int32u ) >( &tCRandomSequence::mSetSeed ) >::run();
+}
+
+// tCRandomSequence::mGenerateNumber(), game/Tiger/tcrandsequence.cpp
+extern "C" void sub_0066C1E0(void) {
+    ::sfcop::guest::entered(5);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< int32u() >( &tCRandomSequence::mGenerateNumber ) >::run();
+}
+
+// tSequencePart::mGetNumber(), game/Tiger/tsequence.cpp
+extern "C" void sub_00670180(void) {
+    ::sfcop::guest::entered(6);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< int32u() >( &tSequencePart::mGetNumber ) >::run();
+}
+
+// tSequencePart::mGetNumber(int32u), game/Tiger/tsequence.cpp
+extern "C" void sub_006701C0(void) {
+    ::sfcop::guest::entered(7);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< int32u( int32u ) >( &tSequencePart::mGetNumber ) >::run();
+}
+
 // tAllocatedClass::operator==(const type_info&), game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC4D0(void) {
-    ::sfcop::guest::entered(0);
+    ::sfcop::guest::entered(8);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32( const type_info& ) >( &tAllocatedClass::operator== ) >::run();
 }
 
 // tDynamicAllocator::tAllocatorInfo::operator==(const char*) const, game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC5A0(void) {
-    ::sfcop::guest::entered(1);
+    ::sfcop::guest::entered(9);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32( const char* ) const >( &tDynamicAllocator::tAllocatorInfo::operator== ) >::run();
 }
 
 // tDynamicAllocator::LockDownAllocator(), game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC750(void) {
-    ::sfcop::guest::entered(2);
+    ::sfcop::guest::entered(10);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tDynamicAllocator::LockDownAllocator ) >::run();
 }
 
@@ -47,11 +98,19 @@ void tAllocator::mAssignAllocID( iAllocatorID allocID ) {
 extern "C" {
 
 const sfcop_guest_override sfcop_guest_overrides[] = {
+    {0x00628A60u, sub_00628A60, "tPart::mValidateParts()", "Tiger/tpart.cpp"},
+    {0x00628C20u, sub_00628C20, "tPart::mActivateParts()", "Tiger/tpart.cpp"},
+    {0x00628DA0u, sub_00628DA0, "tPart::mDeactivateParts()", "Tiger/tpart.cpp"},
+    {0x00628E50u, sub_00628E50, "tPart::mAddToPartCachePtrList(tPart **)", "Tiger/tpart.cpp"},
+    {0x0066C1C0u, sub_0066C1C0, "tCRandomSequence::mSetSeed(int32u)", "Tiger/tcrandsequence.cpp"},
+    {0x0066C1E0u, sub_0066C1E0, "tCRandomSequence::mGenerateNumber()", "Tiger/tcrandsequence.cpp"},
+    {0x00670180u, sub_00670180, "tSequencePart::mGetNumber()", "Tiger/tsequence.cpp"},
+    {0x006701C0u, sub_006701C0, "tSequencePart::mGetNumber(int32u)", "Tiger/tsequence.cpp"},
     {0x006FC4D0u, sub_006FC4D0, "tAllocatedClass::operator==(const type_info&)", "Common/DynamicAllocator.cpp"},
     {0x006FC5A0u, sub_006FC5A0, "tDynamicAllocator::tAllocatorInfo::operator==(const char*) const", "Common/DynamicAllocator.cpp"},
     {0x006FC750u, sub_006FC750, "tDynamicAllocator::LockDownAllocator()", "Common/DynamicAllocator.cpp"},
 };
-const unsigned sfcop_guest_override_count = 3u;
+const unsigned sfcop_guest_override_count = 11u;
 
 }  // extern "C"
 
