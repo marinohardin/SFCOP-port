@@ -324,34 +324,34 @@ USER32.DLL	wsprintfA	-	varargs	0	implemented-spike	0x0062A70E	win32hle user32.c
 WINMM.DLL	timeGetTime	-	stdcall	0	implemented-spike	0x004C4DF7	win32hle winmm.c; called on the boot to the CD-key prompt
 WINMM.DLL	timeKillEvent	-	stdcall	4	implemented-spike	0x00637B5B	win32hle winmm.c
 WINMM.DLL	timeSetEvent	-	stdcall	20	implemented-spike	0x006379DE	win32hle winmm.c; called on the boot to the CD-key prompt
-WSOCK32.DLL	__WSAFDIsSet	151	stdcall	8	implemented-spike	0x006BA94F	P1-2 patch pcrecomp-wsock32-select-accept.patch
-WSOCK32.DLL	accept	1	stdcall	12	implemented-spike	0x006C0654	P1-2 patch pcrecomp-wsock32-select-accept.patch
-WSOCK32.DLL	bind	2	stdcall	12	implemented-spike	0x006CE2E4	win32hle wsock32.c
-WSOCK32.DLL	closesocket	3	stdcall	4	implemented-spike	0x006CE970	win32hle wsock32.c
-WSOCK32.DLL	connect	4	stdcall	12	implemented-spike	0x006CE3C7	win32hle wsock32.c
-WSOCK32.DLL	gethostbyname	52	stdcall	4	implemented-spike	0x006CF44D	win32hle wsock32.c
-WSOCK32.DLL	gethostname	57	stdcall	8	implemented-spike	0x006CF337	win32hle wsock32.c
-WSOCK32.DLL	getpeername	5	stdcall	12	implemented-spike	0x005D83A8	P1-2 patch pcrecomp-wsock32-select-accept.patch
-WSOCK32.DLL	getsockname	6	stdcall	12	implemented-spike	0x006CDFB9	win32hle wsock32.c
-WSOCK32.DLL	getsockopt	7	stdcall	20	implemented-spike	0x006CE594	win32hle wsock32.c
-WSOCK32.DLL	htonl	8	stdcall	4	implemented-spike	0x006CE2A5	win32hle wsock32.c
-WSOCK32.DLL	htons	9	stdcall	4	implemented-spike	0x006CE2B4	win32hle wsock32.c
-WSOCK32.DLL	inet_addr	10	stdcall	4	implemented-spike	0x006CF435	win32hle wsock32.c
-WSOCK32.DLL	inet_ntoa	11	stdcall	4	implemented-spike	0x006CF6AF	win32hle wsock32.c
-WSOCK32.DLL	ioctlsocket	12	stdcall	12	implemented-spike	0x006CE18A	win32hle wsock32.c
-WSOCK32.DLL	listen	13	stdcall	8	implemented-spike	0x006CE47B	win32hle wsock32.c
-WSOCK32.DLL	ntohs	15	stdcall	4	implemented-spike	0x006CDFCF	win32hle wsock32.c
-WSOCK32.DLL	recv	16	stdcall	16	implemented-spike	0x006CE848	win32hle wsock32.c
-WSOCK32.DLL	recvfrom	17	stdcall	24	implemented-spike	0x006C1B43	win32hle wsock32.c
-WSOCK32.DLL	select	18	stdcall	20	implemented-spike	0x006CE564	P1-2 patch pcrecomp-wsock32-select-accept.patch
-WSOCK32.DLL	send	19	stdcall	16	implemented-spike	0x006CE798	win32hle wsock32.c
-WSOCK32.DLL	sendto	20	stdcall	24	implemented-spike	0x006C1F20	win32hle wsock32.c
-WSOCK32.DLL	setsockopt	21	stdcall	20	implemented-spike	0x006CE264	win32hle wsock32.c
-WSOCK32.DLL	shutdown	22	stdcall	8	implemented-spike	0x006BB819	P1-2 patch pcrecomp-wsock32-select-accept.patch
-WSOCK32.DLL	socket	23	stdcall	12	implemented-spike	0x006CE094	win32hle wsock32.c
-WSOCK32.DLL	WSACleanup	116	stdcall	0	implemented-spike	0x006CE010	win32hle wsock32.c
-WSOCK32.DLL	WSAGetLastError	111	stdcall	0	implemented-spike	0x006CDF60	win32hle wsock32.c
-WSOCK32.DLL	WSAStartup	115	stdcall	8	implemented-spike	0x006CDFF0	win32hle wsock32.c
+WSOCK32.DLL	__WSAFDIsSet	151	stdcall	8	implemented	0x006BA94F	src/hle/winsock fdIsSet: the first fd_count (at most 64) entries; SelectTest.cpp
+WSOCK32.DLL	accept	1	stdcall	12	implemented	0x006C0654	src/hle/winsock Winsock::Accept on Transport::Accept; blocks unless FIONBIO; WinsockTest.cpp, LoopbackTest.cpp
+WSOCK32.DLL	bind	2	stdcall	12	implemented	0x006CE2E4	src/hle/winsock Winsock::Bind on Transport::Bind; AF_INET only; WinsockTest.cpp, LoopbackTest.cpp
+WSOCK32.DLL	closesocket	3	stdcall	4	implemented	0x006CE970	src/hle/winsock Winsock::CloseSocket on Transport::Close; a call blocked on the socket fails with WSAEINTR; WinsockTest.cpp, LoopbackTest.cpp
+WSOCK32.DLL	connect	4	stdcall	12	implemented	0x006CE3C7	src/hle/winsock Winsock::Connect on Transport::Connect; non-blocking: WSAEWOULDBLOCK, then select and SO_ERROR; WinsockTest.cpp, SelectTest.cpp, LoopbackTest.cpp
+WSOCK32.DLL	gethostbyname	52	stdcall	4	implemented	0x006CF44D	src/hle/winsock Winsock::GetHostByName on Transport::Resolve; the shim keeps one hostent per thread in guest memory, up to 16 addresses; WinsockTest.cpp, LoopbackTest.cpp
+WSOCK32.DLL	gethostname	57	stdcall	8	implemented	0x006CF337	src/hle/winsock Winsock::GetHostName on Transport::HostName; WinsockTest.cpp
+WSOCK32.DLL	getpeername	5	stdcall	12	implemented	0x005D83A8	src/hle/winsock Winsock::GetPeerName on Transport::PeerName; WinsockTest.cpp, LoopbackTest.cpp
+WSOCK32.DLL	getsockname	6	stdcall	12	implemented	0x006CDFB9	src/hle/winsock Winsock::GetSockName on Transport::LocalName; WinsockTest.cpp, LoopbackTest.cpp
+WSOCK32.DLL	getsockopt	7	stdcall	20	implemented	0x006CE594	src/hle/winsock Winsock::GetSockOpt: SO_ERROR, SO_TYPE, SO_LINGER, SO_DONTLINGER, SO_REUSEADDR, SO_KEEPALIVE, SO_BROADCAST, SO_SNDBUF, SO_RCVBUF, TCP_NODELAY; WinsockTest.cpp
+WSOCK32.DLL	htonl	8	stdcall	4	implemented	0x006CE2A5	src/hle/winsock hostToNetworkLong; AddressTest.cpp
+WSOCK32.DLL	htons	9	stdcall	4	implemented	0x006CE2B4	src/hle/winsock hostToNetworkShort; AddressTest.cpp
+WSOCK32.DLL	inet_addr	10	stdcall	4	implemented	0x006CF435	src/hle/winsock inetAddr: dotted quad and the short, octal and hex forms; AddressTest.cpp
+WSOCK32.DLL	inet_ntoa	11	stdcall	4	implemented	0x006CF6AF	src/hle/winsock inetNtoa; the shim keeps one buffer per thread in guest memory; AddressTest.cpp
+WSOCK32.DLL	ioctlsocket	12	stdcall	12	implemented	0x006CE18A	src/hle/winsock Winsock::IoctlSocket: FIONBIO, FIONREAD, SIOCATMARK; WinsockTest.cpp
+WSOCK32.DLL	listen	13	stdcall	8	implemented	0x006CE47B	src/hle/winsock Winsock::Listen on Transport::Listen; WinsockTest.cpp, LoopbackTest.cpp
+WSOCK32.DLL	ntohs	15	stdcall	4	implemented	0x006CDFCF	src/hle/winsock networkToHostShort; AddressTest.cpp
+WSOCK32.DLL	recv	16	stdcall	16	implemented	0x006CE848	src/hle/winsock Winsock::Recv on Transport::Receive; flags other than 0 give WSAEOPNOTSUPP; WinsockTest.cpp, LoopbackTest.cpp
+WSOCK32.DLL	recvfrom	17	stdcall	24	implemented	0x006C1B43	src/hle/winsock Winsock::RecvFrom on Transport::ReceiveFrom; flags other than 0 give WSAEOPNOTSUPP; WinsockTest.cpp, LoopbackTest.cpp
+WSOCK32.DLL	select	18	stdcall	20	implemented	0x006CE564	src/hle/winsock Winsock::Select on Transport::Select; NULL timeout waits forever, a part of a millisecond rounds up; SelectTest.cpp, LoopbackTest.cpp
+WSOCK32.DLL	send	19	stdcall	16	implemented	0x006CE798	src/hle/winsock Winsock::Send on Transport::Send; MSG_OOB gives WSAEOPNOTSUPP; WinsockTest.cpp, LoopbackTest.cpp
+WSOCK32.DLL	sendto	20	stdcall	24	implemented	0x006C1F20	src/hle/winsock Winsock::SendTo on Transport::SendTo; a NULL address sends on the connected peer; WinsockTest.cpp, LoopbackTest.cpp
+WSOCK32.DLL	setsockopt	21	stdcall	20	implemented	0x006CE264	src/hle/winsock Winsock::SetSockOpt: SO_REUSEADDR, SO_KEEPALIVE, SO_BROADCAST, SO_LINGER, SO_DONTLINGER, SO_SNDBUF, SO_RCVBUF, TCP_NODELAY; others WSAENOPROTOOPT; WinsockTest.cpp
+WSOCK32.DLL	shutdown	22	stdcall	8	implemented	0x006BB819	src/hle/winsock Winsock::Shutdown on Transport::Shutdown; WinsockTest.cpp, LoopbackTest.cpp
+WSOCK32.DLL	socket	23	stdcall	12	implemented	0x006CE094	src/hle/winsock Winsock::Socket on Transport::Open; AF_INET stream and datagram only; WinsockTest.cpp, LoopbackTest.cpp
+WSOCK32.DLL	WSACleanup	116	stdcall	0	implemented	0x006CE010	src/hle/winsock Winsock::WsaCleanup; the last one closes the sockets left open; WinsockTest.cpp
+WSOCK32.DLL	WSAGetLastError	111	stdcall	0	implemented	0x006CDF60	src/hle/winsock Winsock::WsaGetLastError, per thread; WinsockTest.cpp
+WSOCK32.DLL	WSAStartup	115	stdcall	8	implemented	0x006CDFF0	src/hle/winsock Winsock::WsaStartup: version 1.1, the shim writes the 400-byte WSADATA; WinsockTest.cpp, LoopbackTest.cpp
 IDirect3D3	QueryInterface	0	stdcall	12	implemented	-	d3d3 Direct3D: one per DirectDraw object, from its QueryInterface
 IDirect3D3	AddRef	1	stdcall	4	implemented	-	d3d3 Direct3D
 IDirect3D3	Release	2	stdcall	4	implemented	0x006B34EA	d3d3 Direct3D: lives while its devices and viewports remain; called on the boot to the CD-key prompt
