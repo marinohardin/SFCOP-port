@@ -1,24 +1,38 @@
 #!/usr/bin/env python3
-"""Lift StarFleetOP.exe with pcrecomp's lift32 and measure the result.
+"""Lift a VC6 exe (StarFleetOP.exe by default) with pcrecomp's lift32, with guest exception
+handling, and measure the result.
 
 The build's lift driver (cmake/lifter/lift.sh) runs this inside the sandbox container, with the
 build's lift directory at /w and this directory read-only at /s:
 
     python -I /s/run_lift.py --all --out out/gen --files 64
 
-This is the P0-4 spike's driver (spike/lifter/scripts/run_lift.py) with one addition, --files:
-the output is spread over a fixed number of .c files, so that the build knows the file names
-before the lift runs.
+Adapted from redalert2-recomp's run_lift.py (the reference driver for an MSVC 6 PE32 on
+pcrecomp): catalog from disasm32 + RTTI vtable seeds, extents by walking branches
+(generate.true_extent), outside branch targets added as entries until none are new, lift32 with
+precise carry. No game patches, no name_lift; --mark VAs call the host's sfcop_mark(va) on entry
+(default: WinMain). --files spreads the output over a fixed number of .c files, so that the build
+knows the file names before the lift runs.
 
-Adapted from redalert2-recomp's run_lift.py (the reference driver for an MSVC 6
-PE32 on pcrecomp): catalog from disasm32 + RTTI vtable seeds, extents by
-walking branches (generate.true_extent), outside branch targets added as
-entries until none are new, lift32 with precise carry, landing pads for
-functions with C++ EH frames (eh32.resume_points). Differences: no game
-patches, no hooks, no name_lift; --mark VAs call the host's sfcop_mark(va) on
-entry (default: WinMain); and it writes measurements:
+Guest exceptions (the host side is src/app/guest/):
 
-    <out>/../lift_stats.json   counts, errors, unimplemented mnemonics, ICALL kinds
+  * Landing pads come from eh_frames.py, not eh32.resume_points: every function that installs a
+    C++ frame with catch blocks (ebp prologue, FPO, or __EH_prolog) or an `__except` frame gets
+    one, with every continuation its catches resume at (needs
+    patches/pcrecomp-eh-landing-pads.patch, so a pad is emitted when a continuation lies outside
+    the body).
+  * A continuation outside its owner's body is made an entry of its own, so the pad's default
+    case can tail-call it.
+  * The CRT's _JumpToContinuation lifts as a call to the host's sfcop_eh_jump_to_continuation(),
+    and the `__except` call inside _except_handler3 as sfcop_eh_enter_except(): the two places
+    where the CRT moves control into a frame further up the stack, which the host does with a
+    longjmp to the owner's pad.
+  * recomp_eh_table.c lists every continuation with the function that owns it, for the host to
+    check each resume against.
+
+Measurements:
+
+    <out>/../lift_stats.json   counts, errors, unimplemented mnemonics, ICALL kinds, "eh"
     <out>/../lift_errors.txt   one line per lifter exception
 """
 import argparse
@@ -37,6 +51,8 @@ sys.path.insert(0, os.path.join(TOOLS, 'disasm'))
 import pefile                                              # noqa: E402
 from capstone import Cs, CS_ARCH_X86, CS_MODE_32          # noqa: E402
 import eh32                                                # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import eh_frames                                           # noqa: E402
 from generate import (EXTENT_REACH, closure, find_splits, true_extent,  # noqa: E402
                       linear_disassemble_function, lift_function_linear, write_chunk)
 from lift32 import Lifter                                  # noqa: E402
@@ -71,7 +87,7 @@ def main():
     ap.add_argument('--files', type=int, default=0,
                     help='write exactly this many recomp_NNNN.c files instead of --split per file')
     # WinMain (the CRT entry calls it right after GetModuleHandleA(NULL)).
-    ap.add_argument('--mark', default='0x0069A840',
+    ap.add_argument('--mark', default='',
                     help='comma-separated VAs whose entry calls the host\'s sfcop_mark(va)')
     args = ap.parse_args()
 
@@ -119,6 +135,19 @@ def main():
         if fn.startswith('recomp_') and fn.endswith('.c'):
             os.remove(os.path.join(args.out, fn))
 
+    # Guest EH: which functions get a landing pad, and with what continuations.
+    frames = eh_frames.analyse(args.exe, [a for a in byaddr if byaddr[a].get('entry_kind') != 'alias'])
+    pads, cont_owner = eh_frames.landing_pads(frames)
+    crt = frames['crt']
+    print('[*] EH: %d functions with landing pads, %d continuations; CRT %s' % (
+        len(pads), len(cont_owner), {k: ('0x%08X' % v if v else None) for k, v in crt.items()}))
+    ehs = {'pads': 0, 'pad_functions_not_lifted': 0, 'continuations_in_body': 0,
+           'continuations_made_entries': 0, 'funclets_made_entries': 0,
+           'eh32_baseline_frames': 0, 'eh32_baseline_pads': 0,
+           'jump_to_continuation_hooked': 0, 'except_call_hooked': 0}
+    eh_missing = set()
+    padded = set()
+
     entries, chunk, idx, dirty = [], [], 0, 0
     errors = []
     unimpl = collections.Counter()
@@ -163,14 +192,37 @@ def main():
             resume = None
             if insns:
                 head = [i for i in insns if i.address >= addr][:eh32.PROLOGUE_WINDOW]
-                resume = eh32.resume_points(md, read, head)
-                if resume is not None:
+                base = eh32.resume_points(md, read, head)
+                if base is not None:
                     eh['frames'] += 1
-                    eh['with_resume'] += bool(resume)
-                    eh['resume_points'] += len(resume)
+                    eh['with_resume'] += bool(base)
+                    eh['resume_points'] += len(base)
+                    ehs['eh32_baseline_frames'] += 1
+                    ehs['eh32_baseline_pads'] += bool({a for a in base if a in {i.address for i in insns}})
+                if addr in pads and pads[addr]:
+                    resume = pads[addr]
+                    padded.add(addr)
+                    here = {i.address for i in insns}
+                    inside = {a for a in resume if a in here}
+                    ehs['continuations_in_body'] += len(inside)
+                    eh_missing.update(a for a in resume - inside if a not in byaddr)
             n_insns += len(insns)
-            body = (lift_function_linear(lifter, name, insns, leaders, addr, eh_resume=resume) if insns
-                    else 'void %s(void) { }\n' % name)
+            if addr == crt['jump_to_continuation']:
+                # mov esp,[pRN-4]; mov ebp,pRN+12; jmp target: the host does it with a longjmp.
+                body = ('void %s(void) { g_cur_func = 0x%08Xu; sfcop_eh_jump_to_continuation(); }\n'
+                        % (name, addr))
+                ehs['jump_to_continuation_hooked'] += 1
+            else:
+                body = (lift_function_linear(lifter, name, insns, leaders, addr, eh_resume=resume) if insns
+                        else 'void %s(void) { }\n' % name)
+            site = crt['except_handler3_call']
+            if site and '/* 0x%08X: call' % site in body:
+                lines = body.split('\n')
+                for k, ln in enumerate(lines):
+                    if '/* 0x%08X: call' % site in ln and 'RECOMP_ICALL(' in ln:
+                        lines[k] = ln.replace('RECOMP_ICALL(', 'SFCOP_EH_ENTER_EXCEPT(', 1)
+                        ehs['except_call_hooked'] += 1
+                body = '\n'.join(lines)
             if addr in marks:
                 enter = 'RECOMP_ENTER(0x%08Xu);' % addr
                 body = body.replace(enter, enter + ' sfcop_mark(0x%08Xu);' % addr, 1)
@@ -190,6 +242,13 @@ def main():
             print('[*]   %d/%d (%d err) %.0fs' % (len(entries), len(chosen), len(errors), time.time() - t0),
                   flush=True)
 
+    # Funclets the CRT calls indirectly, mid-function: each is an entry of its own as well, so the
+    # indirect call finds it; the function around it lifts as before.
+    missing = sorted(a for a in eh_frames.funclets(frames) if cs <= a < ce and a not in byaddr)
+    for t in missing:
+        byaddr[t] = {'address': t, 'end': ce, 'calls_to': [], 'entry_kind': 'start'}
+        chosen.add(t)
+    ehs['funclets_made_entries'] = len(missing)
     todo, added = sorted(chosen), 0
     while todo:
         outside = set()
@@ -201,6 +260,9 @@ def main():
             outside |= {t for t in behind if t not in reached} | called
             dirty += not clean
             lift_one(addr, name, end, reached)
+        ehs['continuations_made_entries'] += len(eh_missing - set(byaddr))
+        outside |= eh_missing
+        eh_missing.clear()
         todo = sorted(t for t in outside if cs <= t < ce and t not in byaddr)
         for t in todo:
             byaddr[t] = {'address': t, 'end': ce, 'calls_to': [], 'entry_kind': 'start'}
@@ -217,20 +279,38 @@ def main():
     flush(force=True)
 
     with open(os.path.join(args.out, 'recomp_funcs.h'), 'w', newline='\n') as f:
-        f.write('/* StarFleetOP.exe - generated by cmake/lifter/run_lift.py */\n#pragma once\n'
+        f.write('/* generated by cmake/lifter/run_lift.py */\n#pragma once\n'
                 '#include <stdint.h>\n\nvoid recomp_not_lifted(uint32_t va);\n'
                 '#define RECOMP_NOT_LIFTED(va) recomp_not_lifted(va)\n'
-                'void sfcop_mark(uint32_t va);\n\n')
+                'void sfcop_mark(uint32_t va);\n'
+                '/* Guest exceptions (src/app/guest/): never return. */\n'
+                'void sfcop_eh_jump_to_continuation(void);\n'
+                'void sfcop_eh_enter_except(uint32_t target);\n'
+                '#define SFCOP_EH_ENTER_EXCEPT(t) do { uint32_t _eh_t = (uint32_t)(t); RECOMP_REGS_OUT(); '
+                'sfcop_eh_enter_except(_eh_t); } while (0)\n\n')
         for a, n in entries:
             f.write('void %s(void);\n' % n)
     with open(os.path.join(args.out, 'recomp_dispatch.c'), 'w', newline='\n') as f:
-        f.write('/* StarFleetOP.exe - generated by cmake/lifter/run_lift.py */\n'
+        f.write('/* generated by cmake/lifter/run_lift.py */\n'
                 '#include "recomp_types.h"\n#include "recomp_funcs.h"\n\n'
                 'const recomp_dispatch_entry_t recomp_dispatch_table[] = {\n')
         for a, n in sorted(entries):
             f.write('    { 0x%08Xu, %s },\n' % (a, n))
         f.write('};\nconst uint32_t recomp_dispatch_count = %d;\n'
                 'const uint32_t sfcop_entry_va = 0x%08Xu;\n' % (len(entries), entry))
+
+    with open(os.path.join(args.out, 'recomp_eh_table.c'), 'w', newline='\n') as f:
+        f.write('/* Generated by cmake/lifter/run_lift.py: catch and __except\n'
+                ' * continuations with each function that owns one (sorted by continuation). */\n'
+                '#include <stdint.h>\n\n'
+                'const uint32_t sfcop_eh_cont_table[][2] = {\n')
+        rows = sorted((a, o) for a in cont_owner for o in cont_owner[a])
+        for a, o in rows:
+            f.write('    { 0x%08Xu, 0x%08Xu },\n' % (a, o))
+        f.write('    { 0, 0 }\n};\nconst uint32_t sfcop_eh_cont_count = %d;\n' % len(rows))
+    ehs['pads'] = len(padded)
+    ehs['pad_functions_not_lifted'] = sorted('0x%08X' % a for a in pads if pads[a] and a not in padded)
+    ehs['frames'] = eh_frames.summary(frames)
 
     lines = nbytes = 0
     for fn in os.listdir(args.out):
@@ -242,7 +322,7 @@ def main():
         'outside_targets_added': added, 'lifted': len(chosen), 'not_lifted_stubs': len(stubs),
         'errors': len(errors), 'no_terminator': dirty, 'instructions_lifted': n_insns,
         'files': idx, 'lines': lines, 'bytes': nbytes, 'seconds': round(time.time() - t0, 1),
-        'eh_cxx_frames': eh, 'unimplemented_by_mnemonic': dict(unimpl.most_common()),
+        'eh_cxx_frames': eh, 'eh': ehs, 'unimplemented_by_mnemonic': dict(unimpl.most_common()),
         'unimplemented_functions_by_mnemonic': dict(unimpl_funcs.most_common()),
         'icall_sites_by_kind': dict(icalls.most_common()),
     }
@@ -253,6 +333,11 @@ def main():
     print('  lifted %d  stubs %d  errors %d  no-terminator %d' % (len(chosen), len(stubs), len(errors), dirty))
     print('  %s lines, %.1f MB of C in %d files, %.1fs' % (format(lines, ','), nbytes / 1e6, idx, stats['seconds']))
     print('  unimplemented: %d sites, %d mnemonics' % (sum(unimpl.values()), len(unimpl)))
+    print('  EH: %d landing pads (%d functions want one), %d continuations in body, %d made entries, '
+          '%d funclets made entries, hooks: jump_to_continuation %d, __except call %d' % (
+              ehs['pads'], sum(1 for a in pads if pads[a]), ehs['continuations_in_body'],
+              ehs['continuations_made_entries'], ehs['funclets_made_entries'],
+              ehs['jump_to_continuation_hooked'], ehs['except_call_hooked']))
     print('=' * 60)
 
 

@@ -8,8 +8,9 @@
 #                                                  pcrecomp's win32hle form (src/hle/README.md), built
 #                                                  by the top-level CMakeLists.txt with the lift's
 #                                                  headers, never into sfcop_src or the tests
-# Left out of sfcop_src: src/app/main.cpp (the entry point) and src/app/boot/ (the temporary
-# boot platform, built by the top-level CMakeLists.txt).
+# Left out of sfcop_src: src/app/main.cpp (the entry point), the lift-dependent files of src/app/guest/
+# (the guest host, built with the lift by the top-level CMakeLists.txt; its tests run on a lifted
+# program, not in sfcop_tests) and src/app/boot/ (the temporary boot platform's sources, no longer built).
 include_guard(GLOBAL)
 
 if(APPLE)
@@ -29,6 +30,11 @@ list(FILTER _sfcop_src EXCLUDE REGEX "Guest\\.(c|cpp)$")
 list(FILTER _sfcop_tests EXCLUDE REGEX "Guest\\.(c|cpp)$")
 list(FILTER _sfcop_src EXCLUDE REGEX "/src/app/main\\.cpp$")
 list(FILTER _sfcop_src EXCLUDE REGEX "/src/app/boot/")
+# The guest host's own files include the lift's headers, so only they and the guest tests stay out;
+# the lift-free helpers (GuestPump, GuestShots, FaultClass) and their doctests are built as usual.
+set(_sfcop_lift_only "/src/app/guest/(Guest(Host|Exceptions|Game)|override|tests/)")
+list(FILTER _sfcop_src EXCLUDE REGEX "${_sfcop_lift_only}")
+list(FILTER _sfcop_tests EXCLUDE REGEX "${_sfcop_lift_only}")
 list(FILTER _sfcop_src EXCLUDE REGEX "(Test|Mock)\\.(c|cpp|mm)$")
 foreach(_other IN ITEMS macos windows linux)
     if(NOT _other STREQUAL SFCOP_PLATFORM_SUFFIX)
