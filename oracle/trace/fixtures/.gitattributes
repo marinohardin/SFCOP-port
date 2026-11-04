@@ -1,0 +1,3 @@
+# The fixtures depend on exact line endings (the mission log is CRLF, traces are LF):
+# never convert them on checkout.
+* -text
