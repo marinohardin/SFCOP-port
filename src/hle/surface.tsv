@@ -22,9 +22,9 @@ DBGHELP.DLL	SymGetSymFromAddr	-	stdcall	16	stub-spike	0x0071252F	P1-2 misc_stubs
 DBGHELP.DLL	SymInitialize	-	stdcall	12	stub-spike	0x00712177	P1-2 misc_stubs.c: fixed result 1
 DBGHELP.DLL	SymLoadModule	-	stdcall	24	stub-spike	0x00712423	P1-2 misc_stubs.c: fixed result 0
 DBGHELP.DLL	SymSetOptions	-	stdcall	4	stub-spike	0x00712166	P1-2 misc_stubs.c: fixed result the options passed
-DDRAW.DLL	DirectDrawCreate	-	stdcall	12	implemented-spike	0x0069D61A	win32hle ddraw.c; called on the boot to the CD-key prompt
-DDRAW.DLL	DirectDrawCreateClipper	-	stdcall	12	implemented-spike	0x006B46E4	P1-2 misc_stubs.c
-DDRAW.DLL	DirectDrawEnumerateA	-	stdcall	8	implemented-spike	0x006B79D5	win32hle ddraw.c; called on the boot to the CD-key prompt
+DDRAW.DLL	DirectDrawCreate	-	stdcall	12	implemented	0x0069D61A	ddraw4 DirectDraw; without a guest host, the boot platform's (TEMPORARY); called on the boot to the CD-key prompt
+DDRAW.DLL	DirectDrawCreateClipper	-	stdcall	12	implemented	0x006B46E4	ddraw4 Clipper without a DirectDraw object; without a guest host, the boot platform's (TEMPORARY)
+DDRAW.DLL	DirectDrawEnumerateA	-	stdcall	8	implemented	0x006B79D5	Ddraw4Guest.cpp: the one display device; without a guest host, the boot platform's (TEMPORARY); called on the boot to the CD-key prompt
 DINPUT.DLL	DirectInputCreateA	-	stdcall	16	implemented	0x0040142E	src/hle/dinput: DirectInput::Create; versions 0x0300 to 0x0700 (the game passes 0x0700 and a null hinst); called on the boot to the CD-key prompt
 DSOUND.DLL	DirectSoundCreate	1	stdcall	12	implemented-spike	0x006413C4	win32hle dsound.c
 GDI32.DLL	BitBlt	-	stdcall	36	implemented-spike	0x006B2C37	win32hle gdidc.c
@@ -352,263 +352,263 @@ WSOCK32.DLL	socket	23	stdcall	12	implemented-spike	0x006CE094	win32hle wsock32.c
 WSOCK32.DLL	WSACleanup	116	stdcall	0	implemented-spike	0x006CE010	win32hle wsock32.c
 WSOCK32.DLL	WSAGetLastError	111	stdcall	0	implemented-spike	0x006CDF60	win32hle wsock32.c
 WSOCK32.DLL	WSAStartup	115	stdcall	8	implemented-spike	0x006CDFF0	win32hle wsock32.c
-IDirect3D3	QueryInterface	0	stdcall	12	implemented-spike	-	win32hle d3d.c
-IDirect3D3	AddRef	1	stdcall	4	implemented-spike	-	win32hle d3d.c
-IDirect3D3	Release	2	stdcall	4	implemented-spike	0x006B34EA	win32hle d3d.c; called on the boot to the CD-key prompt
-IDirect3D3	EnumDevices	3	stdcall	12	implemented-spike	-	win32hle d3d.c; called on the boot to the CD-key prompt
-IDirect3D3	CreateLight	4	stdcall	12	implemented-spike	-	win32hle d3d.c
-IDirect3D3	CreateMaterial	5	stdcall	12	implemented-spike	-	win32hle d3d.c
-IDirect3D3	CreateViewport	6	stdcall	12	implemented-spike	0x006B3D02	win32hle d3d.c; called on the boot to the CD-key prompt
-IDirect3D3	FindDevice	7	stdcall	12	implemented-spike	-	win32hle d3d.c; called on the boot to the CD-key prompt
-IDirect3D3	CreateDevice	8	stdcall	20	implemented-spike	-	win32hle d3d.c; called on the boot to the CD-key prompt
-IDirect3D3	CreateVertexBuffer	9	stdcall	20	implemented-spike	-	win32hle d3d.c
-IDirect3D3	EnumZBufferFormats	10	stdcall	16	implemented-spike	-	win32hle d3d.c; called on the boot to the CD-key prompt
-IDirect3D3	EvictManagedTextures	11	stdcall	4	stub-spike	-	win32hle d3d.c: fixed result D3D_OK
-IDirect3DDevice3	QueryInterface	0	stdcall	12	implemented-spike	-	win32hle d3d.c
-IDirect3DDevice3	AddRef	1	stdcall	4	implemented-spike	-	win32hle d3d.c
-IDirect3DDevice3	Release	2	stdcall	4	implemented-spike	-	win32hle d3d.c
-IDirect3DDevice3	GetCaps	3	stdcall	12	implemented-spike	0x0069D785	win32hle d3d.c; called on the boot to the CD-key prompt
-IDirect3DDevice3	GetStats	4	stdcall	8	stub-spike	-	win32hle d3d.c: fixed result D3D_OK
-IDirect3DDevice3	AddViewport	5	stdcall	8	implemented-spike	-	win32hle d3d.c; called on the boot to the CD-key prompt
-IDirect3DDevice3	DeleteViewport	6	stdcall	8	implemented-spike	-	win32hle d3d.c
-IDirect3DDevice3	NextViewport	7	stdcall	16	stub-spike	-	win32hle d3d.c: fixed result D3DERR_NOTFOUND
-IDirect3DDevice3	EnumTextureFormats	8	stdcall	12	implemented-spike	0x006A8787	win32hle d3d.c; called on the boot to the CD-key prompt
-IDirect3DDevice3	BeginScene	9	stdcall	4	implemented-spike	0x0069E36A	win32hle d3d.c; called on the boot to the CD-key prompt
-IDirect3DDevice3	EndScene	10	stdcall	4	implemented-spike	0x0069E41B	win32hle d3d.c; called on the boot to the CD-key prompt
-IDirect3DDevice3	GetDirect3D	11	stdcall	8	implemented-spike	-	win32hle d3d.c
-IDirect3DDevice3	SetCurrentViewport	12	stdcall	8	implemented-spike	-	win32hle d3d.c; called on the boot to the CD-key prompt
-IDirect3DDevice3	GetCurrentViewport	13	stdcall	8	implemented-spike	-	win32hle d3d.c
-IDirect3DDevice3	SetRenderTarget	14	stdcall	12	implemented-spike	-	win32hle d3d.c
-IDirect3DDevice3	GetRenderTarget	15	stdcall	8	implemented-spike	-	win32hle d3d.c
-IDirect3DDevice3	Begin	16	stdcall	16	implemented-spike	-	win32hle d3d.c
-IDirect3DDevice3	BeginIndexed	17	stdcall	24	stub-spike	-	win32hle d3d.c: fixed result D3D_OK
-IDirect3DDevice3	Vertex	18	stdcall	8	implemented-spike	-	win32hle d3d.c
-IDirect3DDevice3	Index	19	stdcall	8	stub-spike	-	win32hle d3d.c: fixed result D3D_OK
-IDirect3DDevice3	End	20	stdcall	8	implemented-spike	-	win32hle d3d.c
-IDirect3DDevice3	GetRenderState	21	stdcall	12	implemented-spike	-	win32hle d3d.c
-IDirect3DDevice3	SetRenderState	22	stdcall	12	implemented-spike	0x0069DC2A	win32hle d3d.c; called on the boot to the CD-key prompt
-IDirect3DDevice3	GetLightState	23	stdcall	12	stub-spike	-	win32hle d3d.c: fixed result D3D_OK, state 0
-IDirect3DDevice3	SetLightState	24	stdcall	12	stub-spike	-	win32hle d3d.c: fixed result D3D_OK
-IDirect3DDevice3	SetTransform	25	stdcall	12	implemented-spike	-	win32hle d3d.c
-IDirect3DDevice3	GetTransform	26	stdcall	12	implemented-spike	-	win32hle d3d.c
-IDirect3DDevice3	MultiplyTransform	27	stdcall	12	implemented-spike	-	win32hle d3d.c
-IDirect3DDevice3	DrawPrimitive	28	stdcall	24	implemented-spike	0x006ABA5A	win32hle d3d.c
-IDirect3DDevice3	DrawIndexedPrimitive	29	stdcall	32	implemented-spike	-	win32hle d3d.c
-IDirect3DDevice3	SetClipStatus	30	stdcall	8	stub-spike	-	win32hle d3d.c: fixed result D3D_OK
-IDirect3DDevice3	GetClipStatus	31	stdcall	8	stub-spike	-	win32hle d3d.c: fixed result D3D_OK
-IDirect3DDevice3	DrawPrimitiveStrided	32	stdcall	24	stub-spike	-	win32hle d3d.c: fixed result D3D_OK; nothing drawn
-IDirect3DDevice3	DrawIndexedPrimitiveStrided	33	stdcall	32	stub-spike	-	win32hle d3d.c: fixed result D3D_OK; nothing drawn
-IDirect3DDevice3	DrawPrimitiveVB	34	stdcall	24	implemented-spike	-	win32hle d3d.c
-IDirect3DDevice3	DrawIndexedPrimitiveVB	35	stdcall	24	implemented-spike	-	win32hle d3d.c
-IDirect3DDevice3	ComputeSphereVisibility	36	stdcall	24	stub-spike	-	win32hle d3d.c: fixed result D3D_OK; every sphere visible
-IDirect3DDevice3	GetTexture	37	stdcall	12	implemented-spike	-	win32hle d3d.c
-IDirect3DDevice3	SetTexture	38	stdcall	12	implemented-spike	0x006A889C	win32hle d3d.c
-IDirect3DDevice3	GetTextureStageState	39	stdcall	16	implemented-spike	-	win32hle d3d.c
-IDirect3DDevice3	SetTextureStageState	40	stdcall	16	implemented-spike	0x0069D9B9	win32hle d3d.c; called on the boot to the CD-key prompt
-IDirect3DDevice3	ValidateDevice	41	stdcall	8	implemented-spike	0x0069DE3C	win32hle d3d.c; called on the boot to the CD-key prompt
-IDirect3DTexture2	QueryInterface	0	stdcall	12	implemented-spike	-	win32hle d3d.c
-IDirect3DTexture2	AddRef	1	stdcall	4	implemented-spike	-	win32hle d3d.c
-IDirect3DTexture2	Release	2	stdcall	4	implemented-spike	-	win32hle d3d.c
-IDirect3DTexture2	GetHandle	3	stdcall	12	implemented-spike	-	win32hle d3d.c
-IDirect3DTexture2	PaletteChanged	4	stdcall	12	stub-spike	-	win32hle d3d.c: fixed result D3D_OK
-IDirect3DTexture2	Load	5	stdcall	8	implemented-spike	-	win32hle d3d.c
-IDirect3DViewport3	QueryInterface	0	stdcall	12	implemented-spike	-	win32hle d3d.c
-IDirect3DViewport3	AddRef	1	stdcall	4	implemented-spike	-	win32hle d3d.c
-IDirect3DViewport3	Release	2	stdcall	4	implemented-spike	-	win32hle d3d.c
-IDirect3DViewport3	Initialize	3	stdcall	8	stub-spike	-	win32hle d3d.c: fixed result D3D_OK
-IDirect3DViewport3	GetViewport	4	stdcall	8	implemented-spike	-	win32hle d3d.c
-IDirect3DViewport3	SetViewport	5	stdcall	8	implemented-spike	-	win32hle d3d.c
-IDirect3DViewport3	TransformVertices	6	stdcall	20	stub-spike	-	win32hle d3d.c: fixed result D3D_OK
-IDirect3DViewport3	LightElements	7	stdcall	12	stub-spike	-	win32hle d3d.c: fixed result D3D_OK
-IDirect3DViewport3	SetBackground	8	stdcall	8	implemented-spike	-	win32hle d3d.c
-IDirect3DViewport3	GetBackground	9	stdcall	12	implemented-spike	-	win32hle d3d.c
-IDirect3DViewport3	SetBackgroundDepth	10	stdcall	8	stub-spike	-	win32hle d3d.c: fixed result D3D_OK
-IDirect3DViewport3	GetBackgroundDepth	11	stdcall	12	stub-spike	-	win32hle d3d.c: fixed result D3D_OK, no depth surface
-IDirect3DViewport3	Clear	12	stdcall	16	implemented-spike	-	win32hle d3d.c
-IDirect3DViewport3	AddLight	13	stdcall	8	stub-spike	-	win32hle d3d.c: fixed result D3D_OK
-IDirect3DViewport3	DeleteLight	14	stdcall	8	stub-spike	-	win32hle d3d.c: fixed result D3D_OK
-IDirect3DViewport3	NextLight	15	stdcall	16	stub-spike	-	win32hle d3d.c: fixed result D3DERR_NOTFOUND
-IDirect3DViewport3	GetViewport2	16	stdcall	8	implemented-spike	-	win32hle d3d.c
-IDirect3DViewport3	SetViewport2	17	stdcall	8	implemented-spike	-	win32hle d3d.c; called on the boot to the CD-key prompt
-IDirect3DViewport3	SetBackgroundDepth2	18	stdcall	8	stub-spike	-	win32hle d3d.c: fixed result D3D_OK
-IDirect3DViewport3	GetBackgroundDepth2	19	stdcall	12	stub-spike	-	win32hle d3d.c: fixed result D3D_OK, no depth surface
-IDirect3DViewport3	Clear2	20	stdcall	28	implemented-spike	-	win32hle d3d.c; called on the boot to the CD-key prompt
-IDirectDraw	QueryInterface	0	stdcall	12	implemented-spike	-	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDraw	AddRef	1	stdcall	4	implemented-spike	-	win32hle ddraw.c
-IDirectDraw	Release	2	stdcall	4	implemented-spike	-	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDraw	Compact	3	stdcall	4	stub-spike	-	win32hle ddraw.c: fixed result DD_OK
-IDirectDraw	CreateClipper	4	stdcall	16	implemented-spike	-	win32hle ddraw.c
-IDirectDraw	CreatePalette	5	stdcall	20	implemented-spike	-	win32hle ddraw.c
-IDirectDraw	CreateSurface	6	stdcall	16	implemented-spike	-	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDraw	DuplicateSurface	7	stdcall	12	stub-spike	-	win32hle ddraw.c: fixed result DDERR_UNSUPPORTED
-IDirectDraw	EnumDisplayModes	8	stdcall	20	implemented-spike	-	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDraw	EnumSurfaces	9	stdcall	20	stub-spike	-	win32hle ddraw.c: fixed result DD_OK
-IDirectDraw	FlipToGDISurface	10	stdcall	4	stub-spike	-	win32hle ddraw.c: fixed result DD_OK
-IDirectDraw	GetCaps	11	stdcall	12	implemented-spike	-	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDraw	GetDisplayMode	12	stdcall	8	implemented-spike	-	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDraw	GetFourCCCodes	13	stdcall	12	implemented-spike	-	win32hle ddraw.c
-IDirectDraw	GetGDISurface	14	stdcall	8	implemented-spike	-	win32hle ddraw.c
-IDirectDraw	GetMonitorFrequency	15	stdcall	8	implemented-spike	-	win32hle ddraw.c
-IDirectDraw	GetScanLine	16	stdcall	8	implemented-spike	-	win32hle ddraw.c
-IDirectDraw	GetVerticalBlankStatus	17	stdcall	8	implemented-spike	-	win32hle ddraw.c
-IDirectDraw	Initialize	18	stdcall	8	stub-spike	-	win32hle ddraw.c: fixed result DD_OK
-IDirectDraw	RestoreDisplayMode	19	stdcall	4	stub-spike	-	win32hle ddraw.c: fixed result DD_OK
-IDirectDraw	SetCooperativeLevel	20	stdcall	12	implemented-spike	-	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDraw	SetDisplayMode	21	stdcall	16	implemented-spike	-	win32hle ddraw.c
-IDirectDraw	WaitForVerticalBlank	22	stdcall	12	implemented-spike	-	win32hle ddraw.c
-IDirectDraw2	QueryInterface	0	stdcall	12	implemented-spike	-	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDraw2	AddRef	1	stdcall	4	implemented-spike	-	win32hle ddraw.c
-IDirectDraw2	Release	2	stdcall	4	implemented-spike	-	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDraw2	Compact	3	stdcall	4	stub-spike	-	win32hle ddraw.c: fixed result DD_OK
-IDirectDraw2	CreateClipper	4	stdcall	16	implemented-spike	-	win32hle ddraw.c
-IDirectDraw2	CreatePalette	5	stdcall	20	implemented-spike	-	win32hle ddraw.c
-IDirectDraw2	CreateSurface	6	stdcall	16	implemented-spike	-	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDraw2	DuplicateSurface	7	stdcall	12	stub-spike	-	win32hle ddraw.c: fixed result DDERR_UNSUPPORTED
-IDirectDraw2	EnumDisplayModes	8	stdcall	20	implemented-spike	-	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDraw2	EnumSurfaces	9	stdcall	20	stub-spike	-	win32hle ddraw.c: fixed result DD_OK
-IDirectDraw2	FlipToGDISurface	10	stdcall	4	stub-spike	-	win32hle ddraw.c: fixed result DD_OK
-IDirectDraw2	GetCaps	11	stdcall	12	implemented-spike	-	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDraw2	GetDisplayMode	12	stdcall	8	implemented-spike	-	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDraw2	GetFourCCCodes	13	stdcall	12	implemented-spike	-	win32hle ddraw.c
-IDirectDraw2	GetGDISurface	14	stdcall	8	implemented-spike	-	win32hle ddraw.c
-IDirectDraw2	GetMonitorFrequency	15	stdcall	8	implemented-spike	-	win32hle ddraw.c
-IDirectDraw2	GetScanLine	16	stdcall	8	implemented-spike	-	win32hle ddraw.c
-IDirectDraw2	GetVerticalBlankStatus	17	stdcall	8	implemented-spike	-	win32hle ddraw.c
-IDirectDraw2	Initialize	18	stdcall	8	stub-spike	-	win32hle ddraw.c: fixed result DD_OK
-IDirectDraw2	RestoreDisplayMode	19	stdcall	4	stub-spike	-	win32hle ddraw.c: fixed result DD_OK
-IDirectDraw2	SetCooperativeLevel	20	stdcall	12	implemented-spike	-	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDraw2	SetDisplayMode	21	stdcall	24	implemented-spike	-	win32hle ddraw.c
-IDirectDraw2	WaitForVerticalBlank	22	stdcall	12	implemented-spike	-	win32hle ddraw.c
-IDirectDraw2	GetAvailableVidMem	23	stdcall	16	implemented-spike	-	win32hle ddraw.c
-IDirectDraw4	QueryInterface	0	stdcall	12	implemented-spike	0x006A7F9A	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDraw4	AddRef	1	stdcall	4	implemented-spike	-	win32hle ddraw.c
-IDirectDraw4	Release	2	stdcall	4	implemented-spike	0x006A7CFD	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDraw4	Compact	3	stdcall	4	stub-spike	-	win32hle ddraw.c: fixed result DD_OK
-IDirectDraw4	CreateClipper	4	stdcall	16	implemented-spike	0x006A82FE	win32hle ddraw.c
-IDirectDraw4	CreatePalette	5	stdcall	20	implemented-spike	0x006B4AFC	win32hle ddraw.c
-IDirectDraw4	CreateSurface	6	stdcall	16	implemented-spike	0x006A8205	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDraw4	DuplicateSurface	7	stdcall	12	stub-spike	-	win32hle ddraw.c: fixed result DDERR_UNSUPPORTED
-IDirectDraw4	EnumDisplayModes	8	stdcall	20	implemented-spike	-	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDraw4	EnumSurfaces	9	stdcall	20	stub-spike	-	win32hle ddraw.c: fixed result DD_OK
-IDirectDraw4	FlipToGDISurface	10	stdcall	4	stub-spike	0x006A8514	win32hle ddraw.c: fixed result DD_OK
-IDirectDraw4	GetCaps	11	stdcall	12	implemented-spike	-	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDraw4	GetDisplayMode	12	stdcall	8	implemented-spike	0x006A7E19	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDraw4	GetFourCCCodes	13	stdcall	12	implemented-spike	-	win32hle ddraw.c
-IDirectDraw4	GetGDISurface	14	stdcall	8	implemented-spike	-	win32hle ddraw.c
-IDirectDraw4	GetMonitorFrequency	15	stdcall	8	implemented-spike	-	win32hle ddraw.c
-IDirectDraw4	GetScanLine	16	stdcall	8	implemented-spike	-	win32hle ddraw.c
-IDirectDraw4	GetVerticalBlankStatus	17	stdcall	8	implemented-spike	-	win32hle ddraw.c
-IDirectDraw4	Initialize	18	stdcall	8	stub-spike	-	win32hle ddraw.c: fixed result DD_OK
-IDirectDraw4	RestoreDisplayMode	19	stdcall	4	stub-spike	0x006B44D7	win32hle ddraw.c: fixed result DD_OK
-IDirectDraw4	SetCooperativeLevel	20	stdcall	12	implemented-spike	0x006A7CF4	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDraw4	SetDisplayMode	21	stdcall	24	implemented-spike	0x006A819C	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDraw4	WaitForVerticalBlank	22	stdcall	12	implemented-spike	-	win32hle ddraw.c
-IDirectDraw4	GetAvailableVidMem	23	stdcall	16	implemented-spike	-	win32hle ddraw.c
-IDirectDraw4	GetSurfaceFromDC	24	stdcall	12	implemented-spike	-	win32hle ddraw.c
-IDirectDraw4	RestoreAllSurfaces	25	stdcall	4	stub-spike	-	win32hle ddraw.c: fixed result DD_OK
-IDirectDraw4	TestCooperativeLevel	26	stdcall	4	stub-spike	-	win32hle ddraw.c: fixed result DD_OK
-IDirectDraw4	GetDeviceIdentifier	27	stdcall	12	implemented-spike	-	win32hle ddraw.c
-IDirectDrawClipper	QueryInterface	0	stdcall	12	implemented-spike	-	win32hle ddraw.c
-IDirectDrawClipper	AddRef	1	stdcall	4	implemented-spike	-	win32hle ddraw.c
-IDirectDrawClipper	Release	2	stdcall	4	implemented-spike	-	win32hle ddraw.c
-IDirectDrawClipper	GetClipList	3	stdcall	16	stub-spike	-	win32hle ddraw.c: fixed result E_NOTIMPL
-IDirectDrawClipper	GetHWnd	4	stdcall	8	implemented-spike	-	win32hle ddraw.c
-IDirectDrawClipper	Initialize	5	stdcall	12	stub-spike	-	win32hle ddraw.c: fixed result DD_OK
-IDirectDrawClipper	IsClipListChanged	6	stdcall	8	implemented-spike	-	win32hle ddraw.c
-IDirectDrawClipper	SetClipList	7	stdcall	12	stub-spike	-	win32hle ddraw.c: fixed result DD_OK
-IDirectDrawClipper	SetHWnd	8	stdcall	12	implemented-spike	-	win32hle ddraw.c
-IDirectDrawPalette	QueryInterface	0	stdcall	12	implemented-spike	-	win32hle ddraw.c
-IDirectDrawPalette	AddRef	1	stdcall	4	implemented-spike	-	win32hle ddraw.c
-IDirectDrawPalette	Release	2	stdcall	4	implemented-spike	-	win32hle ddraw.c
-IDirectDrawPalette	GetCaps	3	stdcall	8	implemented-spike	-	win32hle ddraw.c
-IDirectDrawPalette	GetEntries	4	stdcall	20	implemented-spike	-	win32hle ddraw.c
-IDirectDrawPalette	Initialize	5	stdcall	16	stub-spike	-	win32hle ddraw.c: fixed result DD_OK
-IDirectDrawPalette	SetEntries	6	stdcall	20	implemented-spike	-	win32hle ddraw.c
-IDirectDrawSurface3	QueryInterface	0	stdcall	12	implemented-spike	-	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDrawSurface3	AddRef	1	stdcall	4	implemented-spike	-	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDrawSurface3	Release	2	stdcall	4	implemented-spike	-	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDrawSurface3	AddAttachedSurface	3	stdcall	8	implemented-spike	-	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDrawSurface3	AddOverlayDirtyRect	4	stdcall	8	stub-spike	-	win32hle ddraw.c: fixed result DDERR_UNSUPPORTED
-IDirectDrawSurface3	Blt	5	stdcall	24	implemented-spike	-	win32hle ddraw.c
-IDirectDrawSurface3	BltBatch	6	stdcall	16	stub-spike	-	win32hle ddraw.c: fixed result DDERR_UNSUPPORTED
-IDirectDrawSurface3	BltFast	7	stdcall	24	implemented-spike	-	win32hle ddraw.c
-IDirectDrawSurface3	DeleteAttachedSurface	8	stdcall	12	implemented-spike	-	win32hle ddraw.c
-IDirectDrawSurface3	EnumAttachedSurfaces	9	stdcall	12	implemented-spike	-	win32hle ddraw.c
-IDirectDrawSurface3	EnumOverlayZOrders	10	stdcall	16	stub-spike	-	win32hle ddraw.c: fixed result DD_OK
-IDirectDrawSurface3	Flip	11	stdcall	12	implemented-spike	-	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDrawSurface3	GetAttachedSurface	12	stdcall	12	implemented-spike	-	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDrawSurface3	GetBltStatus	13	stdcall	8	stub-spike	-	win32hle ddraw.c: fixed result DD_OK
-IDirectDrawSurface3	GetCaps	14	stdcall	8	implemented-spike	-	win32hle ddraw.c
-IDirectDrawSurface3	GetClipper	15	stdcall	8	implemented-spike	-	win32hle ddraw.c
-IDirectDrawSurface3	GetColorKey	16	stdcall	12	implemented-spike	-	win32hle ddraw.c
-IDirectDrawSurface3	GetDC	17	stdcall	8	implemented-spike	-	win32hle ddraw.c
-IDirectDrawSurface3	GetFlipStatus	18	stdcall	8	stub-spike	-	win32hle ddraw.c: fixed result DD_OK
-IDirectDrawSurface3	GetOverlayPosition	19	stdcall	12	stub-spike	-	win32hle ddraw.c: fixed result DDERR_UNSUPPORTED
-IDirectDrawSurface3	GetPalette	20	stdcall	8	implemented-spike	-	win32hle ddraw.c
-IDirectDrawSurface3	GetPixelFormat	21	stdcall	8	implemented-spike	-	win32hle ddraw.c
-IDirectDrawSurface3	GetSurfaceDesc	22	stdcall	8	implemented-spike	-	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDrawSurface3	Initialize	23	stdcall	12	stub-spike	-	win32hle ddraw.c: fixed result DD_OK
-IDirectDrawSurface3	IsLost	24	stdcall	4	stub-spike	-	win32hle ddraw.c: fixed result DD_OK
-IDirectDrawSurface3	Lock	25	stdcall	20	implemented-spike	-	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDrawSurface3	ReleaseDC	26	stdcall	8	implemented-spike	-	win32hle ddraw.c
-IDirectDrawSurface3	Restore	27	stdcall	4	stub-spike	-	win32hle ddraw.c: fixed result DD_OK
-IDirectDrawSurface3	SetClipper	28	stdcall	8	implemented-spike	-	win32hle ddraw.c
-IDirectDrawSurface3	SetColorKey	29	stdcall	12	implemented-spike	-	win32hle ddraw.c
-IDirectDrawSurface3	SetOverlayPosition	30	stdcall	12	stub-spike	-	win32hle ddraw.c: fixed result DDERR_UNSUPPORTED
-IDirectDrawSurface3	SetPalette	31	stdcall	8	implemented-spike	-	win32hle ddraw.c
-IDirectDrawSurface3	Unlock	32	stdcall	8	implemented-spike	-	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDrawSurface3	UpdateOverlay	33	stdcall	24	stub-spike	-	win32hle ddraw.c: fixed result DDERR_UNSUPPORTED
-IDirectDrawSurface3	UpdateOverlayDisplay	34	stdcall	8	stub-spike	-	win32hle ddraw.c: fixed result DDERR_UNSUPPORTED
-IDirectDrawSurface3	UpdateOverlayZOrder	35	stdcall	12	stub-spike	-	win32hle ddraw.c: fixed result DDERR_UNSUPPORTED
-IDirectDrawSurface3	GetDDInterface	36	stdcall	8	implemented-spike	-	win32hle ddraw.c
-IDirectDrawSurface3	PageLock	37	stdcall	8	stub-spike	-	win32hle ddraw.c: fixed result DD_OK
-IDirectDrawSurface3	PageUnlock	38	stdcall	8	stub-spike	-	win32hle ddraw.c: fixed result DD_OK
-IDirectDrawSurface3	SetSurfaceDesc	39	stdcall	12	implemented-spike	-	win32hle ddraw.c
-IDirectDrawSurface4	QueryInterface	0	stdcall	12	implemented-spike	-	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDrawSurface4	AddRef	1	stdcall	4	implemented-spike	-	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDrawSurface4	Release	2	stdcall	4	implemented-spike	0x006A6F06	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDrawSurface4	AddAttachedSurface	3	stdcall	8	implemented-spike	-	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDrawSurface4	AddOverlayDirtyRect	4	stdcall	8	stub-spike	-	win32hle ddraw.c: fixed result DDERR_UNSUPPORTED
-IDirectDrawSurface4	Blt	5	stdcall	24	implemented-spike	0x006A730F	win32hle ddraw.c
-IDirectDrawSurface4	BltBatch	6	stdcall	16	stub-spike	-	win32hle ddraw.c: fixed result DDERR_UNSUPPORTED
-IDirectDrawSurface4	BltFast	7	stdcall	24	implemented-spike	-	win32hle ddraw.c
-IDirectDrawSurface4	DeleteAttachedSurface	8	stdcall	12	implemented-spike	-	win32hle ddraw.c
-IDirectDrawSurface4	EnumAttachedSurfaces	9	stdcall	12	implemented-spike	-	win32hle ddraw.c
-IDirectDrawSurface4	EnumOverlayZOrders	10	stdcall	16	stub-spike	-	win32hle ddraw.c: fixed result DD_OK
-IDirectDrawSurface4	Flip	11	stdcall	12	implemented-spike	-	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDrawSurface4	GetAttachedSurface	12	stdcall	12	implemented-spike	-	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDrawSurface4	GetBltStatus	13	stdcall	8	stub-spike	-	win32hle ddraw.c: fixed result DD_OK
-IDirectDrawSurface4	GetCaps	14	stdcall	8	implemented-spike	-	win32hle ddraw.c
-IDirectDrawSurface4	GetClipper	15	stdcall	8	implemented-spike	-	win32hle ddraw.c
-IDirectDrawSurface4	GetColorKey	16	stdcall	12	implemented-spike	-	win32hle ddraw.c
-IDirectDrawSurface4	GetDC	17	stdcall	8	implemented-spike	-	win32hle ddraw.c
-IDirectDrawSurface4	GetFlipStatus	18	stdcall	8	stub-spike	-	win32hle ddraw.c: fixed result DD_OK
-IDirectDrawSurface4	GetOverlayPosition	19	stdcall	12	stub-spike	-	win32hle ddraw.c: fixed result DDERR_UNSUPPORTED
-IDirectDrawSurface4	GetPalette	20	stdcall	8	implemented-spike	0x006A70DE	win32hle ddraw.c
-IDirectDrawSurface4	GetPixelFormat	21	stdcall	8	implemented-spike	-	win32hle ddraw.c
-IDirectDrawSurface4	GetSurfaceDesc	22	stdcall	8	implemented-spike	-	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDrawSurface4	Initialize	23	stdcall	12	stub-spike	-	win32hle ddraw.c: fixed result DD_OK
-IDirectDrawSurface4	IsLost	24	stdcall	4	stub-spike	0x006A854D	win32hle ddraw.c: fixed result DD_OK
-IDirectDrawSurface4	Lock	25	stdcall	20	implemented-spike	0x006A6F85	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDrawSurface4	ReleaseDC	26	stdcall	8	implemented-spike	-	win32hle ddraw.c
-IDirectDrawSurface4	Restore	27	stdcall	4	stub-spike	0x006A6F99	win32hle ddraw.c: fixed result DD_OK
-IDirectDrawSurface4	SetClipper	28	stdcall	8	implemented-spike	-	win32hle ddraw.c
-IDirectDrawSurface4	SetColorKey	29	stdcall	12	implemented-spike	-	win32hle ddraw.c
-IDirectDrawSurface4	SetOverlayPosition	30	stdcall	12	stub-spike	-	win32hle ddraw.c: fixed result DDERR_UNSUPPORTED
-IDirectDrawSurface4	SetPalette	31	stdcall	8	implemented-spike	-	win32hle ddraw.c
-IDirectDrawSurface4	Unlock	32	stdcall	8	implemented-spike	0x006A7002	win32hle ddraw.c; called on the boot to the CD-key prompt
-IDirectDrawSurface4	UpdateOverlay	33	stdcall	24	stub-spike	-	win32hle ddraw.c: fixed result DDERR_UNSUPPORTED
-IDirectDrawSurface4	UpdateOverlayDisplay	34	stdcall	8	stub-spike	-	win32hle ddraw.c: fixed result DDERR_UNSUPPORTED
-IDirectDrawSurface4	UpdateOverlayZOrder	35	stdcall	12	stub-spike	-	win32hle ddraw.c: fixed result DDERR_UNSUPPORTED
-IDirectDrawSurface4	GetDDInterface	36	stdcall	8	implemented-spike	-	win32hle ddraw.c
-IDirectDrawSurface4	PageLock	37	stdcall	8	stub-spike	-	win32hle ddraw.c: fixed result DD_OK
-IDirectDrawSurface4	PageUnlock	38	stdcall	8	stub-spike	-	win32hle ddraw.c: fixed result DD_OK
-IDirectDrawSurface4	SetSurfaceDesc	39	stdcall	12	implemented-spike	-	win32hle ddraw.c
-IDirectDrawSurface4	SetPrivateData	40	stdcall	20	stub-spike	-	win32hle ddraw.c: fixed result DD_OK
-IDirectDrawSurface4	GetPrivateData	41	stdcall	16	stub-spike	-	win32hle ddraw.c: fixed result DDERR_NOTFOUND
-IDirectDrawSurface4	FreePrivateData	42	stdcall	8	stub-spike	-	win32hle ddraw.c: fixed result DD_OK
-IDirectDrawSurface4	GetUniquenessValue	43	stdcall	8	implemented-spike	-	win32hle ddraw.c
-IDirectDrawSurface4	ChangeUniquenessValue	44	stdcall	4	implemented-spike	-	win32hle ddraw.c
+IDirect3D3	QueryInterface	0	stdcall	12	implemented	-	d3d3 Direct3D: one per DirectDraw object, from its QueryInterface
+IDirect3D3	AddRef	1	stdcall	4	implemented	-	d3d3 Direct3D
+IDirect3D3	Release	2	stdcall	4	implemented	0x006B34EA	d3d3 Direct3D: lives while its devices and viewports remain; called on the boot to the CD-key prompt
+IDirect3D3	EnumDevices	3	stdcall	12	implemented	-	d3d3 Direct3D: one hardware device, its texture sizes from the Gpu; called on the boot to the CD-key prompt
+IDirect3D3	CreateLight	4	stdcall	12	stub	-	fixed result DDERR_UNSUPPORTED: no lighting
+IDirect3D3	CreateMaterial	5	stdcall	12	stub	-	fixed result DDERR_UNSUPPORTED: no materials
+IDirect3D3	CreateViewport	6	stdcall	12	implemented	0x006B3D02	d3d3 Direct3D; called on the boot to the CD-key prompt
+IDirect3D3	FindDevice	7	stdcall	12	implemented	-	d3d3 Direct3D: the hardware RGB device; called on the boot to the CD-key prompt
+IDirect3D3	CreateDevice	8	stdcall	20	implemented	-	d3d3 Direct3D: the HAL or RGB device on a 3D surface; called on the boot to the CD-key prompt
+IDirect3D3	CreateVertexBuffer	9	stdcall	20	stub	-	fixed result DDERR_UNSUPPORTED: no vertex buffers
+IDirect3D3	EnumZBufferFormats	10	stdcall	16	implemented	-	d3d3 Direct3D: 16-bit depth; called on the boot to the CD-key prompt
+IDirect3D3	EvictManagedTextures	11	stdcall	4	stub	-	fixed result D3D_OK
+IDirect3DDevice3	QueryInterface	0	stdcall	12	implemented	-	d3d3 Device
+IDirect3DDevice3	AddRef	1	stdcall	4	implemented	-	d3d3 Device
+IDirect3DDevice3	Release	2	stdcall	4	implemented	-	d3d3 Device
+IDirect3DDevice3	GetCaps	3	stdcall	12	implemented	0x0069D785	d3d3 Device: the hardware device of EnumDevices; called on the boot to the CD-key prompt
+IDirect3DDevice3	GetStats	4	stdcall	8	stub	-	fixed result D3D_OK, zero counts
+IDirect3DDevice3	AddViewport	5	stdcall	8	implemented	-	d3d3 Device; called on the boot to the CD-key prompt
+IDirect3DDevice3	DeleteViewport	6	stdcall	8	implemented	-	d3d3 Device
+IDirect3DDevice3	NextViewport	7	stdcall	16	implemented	-	d3d3 Device
+IDirect3DDevice3	EnumTextureFormats	8	stdcall	12	implemented	0x006A8787	d3d3 Device: the formats the Gpu holds; called on the boot to the CD-key prompt
+IDirect3DDevice3	BeginScene	9	stdcall	4	implemented	0x0069E36A	d3d3 Device: the Gpu scene on the target and its z-buffer; called on the boot to the CD-key prompt
+IDirect3DDevice3	EndScene	10	stdcall	4	implemented	0x0069E41B	d3d3 Device; called on the boot to the CD-key prompt
+IDirect3DDevice3	GetDirect3D	11	stdcall	8	implemented	-	d3d3 Device
+IDirect3DDevice3	SetCurrentViewport	12	stdcall	8	implemented	-	d3d3 Device; called on the boot to the CD-key prompt
+IDirect3DDevice3	GetCurrentViewport	13	stdcall	8	implemented	-	d3d3 Device
+IDirect3DDevice3	SetRenderTarget	14	stdcall	12	implemented	-	d3d3 Device
+IDirect3DDevice3	GetRenderTarget	15	stdcall	8	implemented	-	d3d3 Device
+IDirect3DDevice3	Begin	16	stdcall	16	stub	-	fixed result DDERR_UNSUPPORTED: no vertex-at-a-time drawing
+IDirect3DDevice3	BeginIndexed	17	stdcall	24	stub	-	fixed result DDERR_UNSUPPORTED: no vertex-at-a-time drawing
+IDirect3DDevice3	Vertex	18	stdcall	8	stub	-	fixed result DDERR_UNSUPPORTED: no vertex-at-a-time drawing
+IDirect3DDevice3	Index	19	stdcall	8	stub	-	fixed result DDERR_UNSUPPORTED: no vertex-at-a-time drawing
+IDirect3DDevice3	End	20	stdcall	8	stub	-	fixed result DDERR_UNSUPPORTED: no vertex-at-a-time drawing
+IDirect3DDevice3	GetRenderState	21	stdcall	12	implemented	-	d3d3 Device
+IDirect3DDevice3	SetRenderState	22	stdcall	12	implemented	0x0069DC2A	d3d3 Device: the Gpu pipeline state; legacy texture states set stage 0; called on the boot to the CD-key prompt
+IDirect3DDevice3	GetLightState	23	stdcall	12	implemented	-	d3d3 Device
+IDirect3DDevice3	SetLightState	24	stdcall	12	implemented	-	d3d3 Device: kept; nothing is lit
+IDirect3DDevice3	SetTransform	25	stdcall	12	implemented	-	d3d3 Device: for the CPU transform of untransformed vertices
+IDirect3DDevice3	GetTransform	26	stdcall	12	implemented	-	d3d3 Device
+IDirect3DDevice3	MultiplyTransform	27	stdcall	12	implemented	-	d3d3 Device
+IDirect3DDevice3	DrawPrimitive	28	stdcall	24	implemented	0x006ABA5A	d3d3 Device: on the Gpu; untransformed vertices transformed on the CPU, unclipped
+IDirect3DDevice3	DrawIndexedPrimitive	29	stdcall	32	implemented	-	d3d3 Device
+IDirect3DDevice3	SetClipStatus	30	stdcall	8	stub	-	fixed result D3D_OK
+IDirect3DDevice3	GetClipStatus	31	stdcall	8	stub	-	fixed result D3D_OK, all zero
+IDirect3DDevice3	DrawPrimitiveStrided	32	stdcall	24	implemented	-	D3d3Guest.cpp: gathered, then drawn as DrawPrimitive
+IDirect3DDevice3	DrawIndexedPrimitiveStrided	33	stdcall	32	implemented	-	D3d3Guest.cpp: gathered, then drawn as DrawIndexedPrimitive
+IDirect3DDevice3	DrawPrimitiveVB	34	stdcall	24	stub	-	fixed result DDERR_UNSUPPORTED: no vertex buffers
+IDirect3DDevice3	DrawIndexedPrimitiveVB	35	stdcall	24	stub	-	fixed result DDERR_UNSUPPORTED: no vertex buffers
+IDirect3DDevice3	ComputeSphereVisibility	36	stdcall	24	stub	-	fixed result D3D_OK; every sphere visible
+IDirect3DDevice3	GetTexture	37	stdcall	12	implemented	-	d3d3 Device
+IDirect3DDevice3	SetTexture	38	stdcall	12	implemented	0x006A889C	d3d3 Device
+IDirect3DDevice3	GetTextureStageState	39	stdcall	16	implemented	-	d3d3 Device
+IDirect3DDevice3	SetTextureStageState	40	stdcall	16	implemented	0x0069D9B9	d3d3 Device: two stages; called on the boot to the CD-key prompt
+IDirect3DDevice3	ValidateDevice	41	stdcall	8	implemented	0x0069DE3C	d3d3 Device: one pass, or the first operation or argument the Gpu cannot draw; called on the boot to the CD-key prompt
+IDirect3DTexture2	QueryInterface	0	stdcall	12	implemented	-	d3d3 Texture: one per surface; its surface's interfaces too
+IDirect3DTexture2	AddRef	1	stdcall	4	implemented	-	d3d3 Texture
+IDirect3DTexture2	Release	2	stdcall	4	implemented	-	d3d3 Texture
+IDirect3DTexture2	GetHandle	3	stdcall	12	implemented	-	d3d3 Texture
+IDirect3DTexture2	PaletteChanged	4	stdcall	12	stub	-	fixed result D3D_OK: palette changes reach the Gpu when made
+IDirect3DTexture2	Load	5	stdcall	8	implemented	-	d3d3 Texture: pixels level by level, colour key and palette
+IDirect3DViewport3	QueryInterface	0	stdcall	12	implemented	-	d3d3 Viewport
+IDirect3DViewport3	AddRef	1	stdcall	4	implemented	-	d3d3 Viewport
+IDirect3DViewport3	Release	2	stdcall	4	implemented	-	d3d3 Viewport
+IDirect3DViewport3	Initialize	3	stdcall	8	stub	-	fixed result DDERR_ALREADYINITIALIZED
+IDirect3DViewport3	GetViewport	4	stdcall	8	implemented	-	d3d3 Viewport
+IDirect3DViewport3	SetViewport	5	stdcall	8	implemented	-	d3d3 Viewport: the extents become a clip volume
+IDirect3DViewport3	TransformVertices	6	stdcall	20	stub	-	fixed result DDERR_UNSUPPORTED
+IDirect3DViewport3	LightElements	7	stdcall	12	stub	-	fixed result DDERR_UNSUPPORTED: no lighting
+IDirect3DViewport3	SetBackground	8	stdcall	8	implemented	-	d3d3 Viewport: kept; Clear clears to black
+IDirect3DViewport3	GetBackground	9	stdcall	12	implemented	-	d3d3 Viewport
+IDirect3DViewport3	SetBackgroundDepth	10	stdcall	8	stub	-	fixed result DDERR_UNSUPPORTED
+IDirect3DViewport3	GetBackgroundDepth	11	stdcall	12	stub	-	fixed result D3D_OK, no depth surface
+IDirect3DViewport3	Clear	12	stdcall	16	implemented	-	d3d3 Viewport: through the device
+IDirect3DViewport3	AddLight	13	stdcall	8	stub	-	fixed result DDERR_UNSUPPORTED: no lighting
+IDirect3DViewport3	DeleteLight	14	stdcall	8	stub	-	fixed result DDERR_UNSUPPORTED: no lighting
+IDirect3DViewport3	NextLight	15	stdcall	16	stub	-	fixed result DDERR_NOTFOUND: no lights
+IDirect3DViewport3	GetViewport2	16	stdcall	8	implemented	-	d3d3 Viewport
+IDirect3DViewport3	SetViewport2	17	stdcall	8	implemented	-	d3d3 Viewport; called on the boot to the CD-key prompt
+IDirect3DViewport3	SetBackgroundDepth2	18	stdcall	8	stub	-	fixed result DDERR_UNSUPPORTED
+IDirect3DViewport3	GetBackgroundDepth2	19	stdcall	12	stub	-	fixed result D3D_OK, no depth surface
+IDirect3DViewport3	Clear2	20	stdcall	28	implemented	-	d3d3 Viewport: through the device, on the Gpu in a scene, as fills outside one; called on the boot to the CD-key prompt
+IDirectDraw	QueryInterface	0	stdcall	12	implemented	-	ddraw4 DirectDraw: IDirectDraw, 2 and 4 share one object and count; IDirect3D3 from the d3d3 module; called on the boot to the CD-key prompt
+IDirectDraw	AddRef	1	stdcall	4	implemented	-	ddraw4 DirectDraw: one count for every interface
+IDirectDraw	Release	2	stdcall	4	implemented	-	ddraw4 DirectDraw: one count for every interface; lives while surfaces remain; called on the boot to the CD-key prompt
+IDirectDraw	Compact	3	stdcall	4	stub	-	fixed result DD_OK
+IDirectDraw	CreateClipper	4	stdcall	16	implemented	-	ddraw4 DirectDraw
+IDirectDraw	CreatePalette	5	stdcall	20	implemented	-	ddraw4 DirectDraw: 8-bit palettes; fewer bits are DDERR_UNSUPPORTED
+IDirectDraw	CreateSurface	6	stdcall	16	implemented	-	ddraw4 DirectDraw: primary with up to 3 back buffers, plain, texture with mipmaps, 16-bit z-buffer; no overlays; called on the boot to the CD-key prompt
+IDirectDraw	DuplicateSurface	7	stdcall	12	stub	-	fixed result DDERR_UNSUPPORTED
+IDirectDraw	EnumDisplayModes	8	stdcall	20	implemented	-	ddraw4 DirectDraw: classic and listed modes up to the desktop, at 8, 16 and 32 bits; called on the boot to the CD-key prompt
+IDirectDraw	EnumSurfaces	9	stdcall	20	stub	-	fixed result DD_OK; enumerates nothing
+IDirectDraw	FlipToGDISurface	10	stdcall	4	stub	-	fixed result DD_OK
+IDirectDraw	GetCaps	11	stdcall	12	implemented	-	ddraw4 DirectDraw: what the module serves, driver and emulation alike; called on the boot to the CD-key prompt
+IDirectDraw	GetDisplayMode	12	stdcall	8	implemented	-	ddraw4 DirectDraw: the mode set, 640x480x16 before any; called on the boot to the CD-key prompt
+IDirectDraw	GetFourCCCodes	13	stdcall	12	stub	-	fixed result DD_OK, no codes
+IDirectDraw	GetGDISurface	14	stdcall	8	implemented	-	ddraw4 DirectDraw: the primary
+IDirectDraw	GetMonitorFrequency	15	stdcall	8	implemented	-	ddraw4 DirectDraw: the mode's refresh rate
+IDirectDraw	GetScanLine	16	stdcall	8	stub	-	fixed result DD_OK, line 0
+IDirectDraw	GetVerticalBlankStatus	17	stdcall	8	stub	-	fixed result DD_OK, not in the blank
+IDirectDraw	Initialize	18	stdcall	8	stub	-	fixed result DDERR_ALREADYINITIALIZED
+IDirectDraw	RestoreDisplayMode	19	stdcall	4	stub	-	fixed result DD_OK
+IDirectDraw	SetCooperativeLevel	20	stdcall	12	implemented	-	ddraw4 DirectDraw; called on the boot to the CD-key prompt
+IDirectDraw	SetDisplayMode	21	stdcall	16	implemented	-	ddraw4 DirectDraw: sets the window mode and the Gpu back buffer
+IDirectDraw	WaitForVerticalBlank	22	stdcall	12	stub	-	fixed result DD_OK without waiting; DDERR_UNSUPPORTED for DDWAITVB_BLOCKBEGINEVENT
+IDirectDraw2	QueryInterface	0	stdcall	12	implemented	-	ddraw4 DirectDraw: IDirectDraw, 2 and 4 share one object and count; IDirect3D3 from the d3d3 module; called on the boot to the CD-key prompt
+IDirectDraw2	AddRef	1	stdcall	4	implemented	-	ddraw4 DirectDraw: one count for every interface
+IDirectDraw2	Release	2	stdcall	4	implemented	-	ddraw4 DirectDraw: one count for every interface; lives while surfaces remain; called on the boot to the CD-key prompt
+IDirectDraw2	Compact	3	stdcall	4	stub	-	fixed result DD_OK
+IDirectDraw2	CreateClipper	4	stdcall	16	implemented	-	ddraw4 DirectDraw
+IDirectDraw2	CreatePalette	5	stdcall	20	implemented	-	ddraw4 DirectDraw: 8-bit palettes; fewer bits are DDERR_UNSUPPORTED
+IDirectDraw2	CreateSurface	6	stdcall	16	implemented	-	ddraw4 DirectDraw: primary with up to 3 back buffers, plain, texture with mipmaps, 16-bit z-buffer; no overlays; called on the boot to the CD-key prompt
+IDirectDraw2	DuplicateSurface	7	stdcall	12	stub	-	fixed result DDERR_UNSUPPORTED
+IDirectDraw2	EnumDisplayModes	8	stdcall	20	implemented	-	ddraw4 DirectDraw: classic and listed modes up to the desktop, at 8, 16 and 32 bits; called on the boot to the CD-key prompt
+IDirectDraw2	EnumSurfaces	9	stdcall	20	stub	-	fixed result DD_OK; enumerates nothing
+IDirectDraw2	FlipToGDISurface	10	stdcall	4	stub	-	fixed result DD_OK
+IDirectDraw2	GetCaps	11	stdcall	12	implemented	-	ddraw4 DirectDraw: what the module serves, driver and emulation alike; called on the boot to the CD-key prompt
+IDirectDraw2	GetDisplayMode	12	stdcall	8	implemented	-	ddraw4 DirectDraw: the mode set, 640x480x16 before any; called on the boot to the CD-key prompt
+IDirectDraw2	GetFourCCCodes	13	stdcall	12	stub	-	fixed result DD_OK, no codes
+IDirectDraw2	GetGDISurface	14	stdcall	8	implemented	-	ddraw4 DirectDraw: the primary
+IDirectDraw2	GetMonitorFrequency	15	stdcall	8	implemented	-	ddraw4 DirectDraw: the mode's refresh rate
+IDirectDraw2	GetScanLine	16	stdcall	8	stub	-	fixed result DD_OK, line 0
+IDirectDraw2	GetVerticalBlankStatus	17	stdcall	8	stub	-	fixed result DD_OK, not in the blank
+IDirectDraw2	Initialize	18	stdcall	8	stub	-	fixed result DDERR_ALREADYINITIALIZED
+IDirectDraw2	RestoreDisplayMode	19	stdcall	4	stub	-	fixed result DD_OK
+IDirectDraw2	SetCooperativeLevel	20	stdcall	12	implemented	-	ddraw4 DirectDraw; called on the boot to the CD-key prompt
+IDirectDraw2	SetDisplayMode	21	stdcall	24	implemented	-	ddraw4 DirectDraw: sets the window mode and the Gpu back buffer
+IDirectDraw2	WaitForVerticalBlank	22	stdcall	12	stub	-	fixed result DD_OK without waiting; DDERR_UNSUPPORTED for DDWAITVB_BLOCKBEGINEVENT
+IDirectDraw2	GetAvailableVidMem	23	stdcall	16	stub	-	fixed result DD_OK, 256 MB total, 192 MB free
+IDirectDraw4	QueryInterface	0	stdcall	12	implemented	0x006A7F9A	ddraw4 DirectDraw: IDirectDraw, 2 and 4 share one object and count; IDirect3D3 from the d3d3 module; called on the boot to the CD-key prompt
+IDirectDraw4	AddRef	1	stdcall	4	implemented	-	ddraw4 DirectDraw: one count for every interface
+IDirectDraw4	Release	2	stdcall	4	implemented	0x006A7CFD	ddraw4 DirectDraw: one count for every interface; lives while surfaces remain; called on the boot to the CD-key prompt
+IDirectDraw4	Compact	3	stdcall	4	stub	-	fixed result DD_OK
+IDirectDraw4	CreateClipper	4	stdcall	16	implemented	0x006A82FE	ddraw4 DirectDraw
+IDirectDraw4	CreatePalette	5	stdcall	20	implemented	0x006B4AFC	ddraw4 DirectDraw: 8-bit palettes; fewer bits are DDERR_UNSUPPORTED
+IDirectDraw4	CreateSurface	6	stdcall	16	implemented	0x006A8205	ddraw4 DirectDraw: primary with up to 3 back buffers, plain, texture with mipmaps, 16-bit z-buffer; no overlays; called on the boot to the CD-key prompt
+IDirectDraw4	DuplicateSurface	7	stdcall	12	stub	-	fixed result DDERR_UNSUPPORTED
+IDirectDraw4	EnumDisplayModes	8	stdcall	20	implemented	-	ddraw4 DirectDraw: classic and listed modes up to the desktop, at 8, 16 and 32 bits; called on the boot to the CD-key prompt
+IDirectDraw4	EnumSurfaces	9	stdcall	20	stub	-	fixed result DD_OK; enumerates nothing
+IDirectDraw4	FlipToGDISurface	10	stdcall	4	stub	0x006A8514	fixed result DD_OK
+IDirectDraw4	GetCaps	11	stdcall	12	implemented	-	ddraw4 DirectDraw: what the module serves, driver and emulation alike; called on the boot to the CD-key prompt
+IDirectDraw4	GetDisplayMode	12	stdcall	8	implemented	0x006A7E19	ddraw4 DirectDraw: the mode set, 640x480x16 before any; called on the boot to the CD-key prompt
+IDirectDraw4	GetFourCCCodes	13	stdcall	12	stub	-	fixed result DD_OK, no codes
+IDirectDraw4	GetGDISurface	14	stdcall	8	implemented	-	ddraw4 DirectDraw: the primary
+IDirectDraw4	GetMonitorFrequency	15	stdcall	8	implemented	-	ddraw4 DirectDraw: the mode's refresh rate
+IDirectDraw4	GetScanLine	16	stdcall	8	stub	-	fixed result DD_OK, line 0
+IDirectDraw4	GetVerticalBlankStatus	17	stdcall	8	stub	-	fixed result DD_OK, not in the blank
+IDirectDraw4	Initialize	18	stdcall	8	stub	-	fixed result DDERR_ALREADYINITIALIZED
+IDirectDraw4	RestoreDisplayMode	19	stdcall	4	stub	0x006B44D7	fixed result DD_OK
+IDirectDraw4	SetCooperativeLevel	20	stdcall	12	implemented	0x006A7CF4	ddraw4 DirectDraw; called on the boot to the CD-key prompt
+IDirectDraw4	SetDisplayMode	21	stdcall	24	implemented	0x006A819C	ddraw4 DirectDraw: sets the window mode and the Gpu back buffer; called on the boot to the CD-key prompt
+IDirectDraw4	WaitForVerticalBlank	22	stdcall	12	stub	-	fixed result DD_OK without waiting; DDERR_UNSUPPORTED for DDWAITVB_BLOCKBEGINEVENT
+IDirectDraw4	GetAvailableVidMem	23	stdcall	16	stub	-	fixed result DD_OK, 256 MB total, 192 MB free
+IDirectDraw4	GetSurfaceFromDC	24	stdcall	12	implemented	-	ddraw4 DirectDraw: the surface whose GetDC handed out the DC
+IDirectDraw4	RestoreAllSurfaces	25	stdcall	4	stub	-	fixed result DD_OK: nothing is lost
+IDirectDraw4	TestCooperativeLevel	26	stdcall	4	stub	-	fixed result DD_OK
+IDirectDraw4	GetDeviceIdentifier	27	stdcall	12	stub	-	fixed result DD_OK, a generic display adapter with ids 0
+IDirectDrawClipper	QueryInterface	0	stdcall	12	implemented	-	ddraw4 Clipper
+IDirectDrawClipper	AddRef	1	stdcall	4	implemented	-	ddraw4 Clipper
+IDirectDrawClipper	Release	2	stdcall	4	implemented	-	ddraw4 Clipper
+IDirectDrawClipper	GetClipList	3	stdcall	16	implemented	-	ddraw4 Clipper: the list set, else the window's client area as the display mode
+IDirectDrawClipper	GetHWnd	4	stdcall	8	implemented	-	ddraw4 Clipper
+IDirectDrawClipper	Initialize	5	stdcall	12	stub	-	fixed result DDERR_ALREADYINITIALIZED
+IDirectDrawClipper	IsClipListChanged	6	stdcall	8	stub	-	fixed result DD_OK, unchanged
+IDirectDrawClipper	SetClipList	7	stdcall	12	implemented	-	ddraw4 Clipper
+IDirectDrawClipper	SetHWnd	8	stdcall	12	implemented	-	ddraw4 Clipper
+IDirectDrawPalette	QueryInterface	0	stdcall	12	implemented	-	ddraw4 Palette
+IDirectDrawPalette	AddRef	1	stdcall	4	implemented	-	ddraw4 Palette
+IDirectDrawPalette	Release	2	stdcall	4	implemented	-	ddraw4 Palette
+IDirectDrawPalette	GetCaps	3	stdcall	8	implemented	-	ddraw4 Palette
+IDirectDrawPalette	GetEntries	4	stdcall	20	implemented	-	ddraw4 Palette
+IDirectDrawPalette	Initialize	5	stdcall	16	stub	-	fixed result DDERR_ALREADYINITIALIZED
+IDirectDrawPalette	SetEntries	6	stdcall	20	implemented	-	ddraw4 Palette: an 8-bit primary showing it is shown again
+IDirectDrawSurface3	QueryInterface	0	stdcall	12	implemented	-	ddraw4 Surface: IDirectDrawSurface to 4 share one object and count; IDirect3DTexture2 from the d3d3 module; called on the boot to the CD-key prompt
+IDirectDrawSurface3	AddRef	1	stdcall	4	implemented	-	ddraw4 Surface: one count for every interface; called on the boot to the CD-key prompt
+IDirectDrawSurface3	Release	2	stdcall	4	implemented	-	ddraw4 Surface: back buffers and mipmap levels live as long as their root; called on the boot to the CD-key prompt
+IDirectDrawSurface3	AddAttachedSurface	3	stdcall	8	implemented	-	ddraw4 Surface; called on the boot to the CD-key prompt
+IDirectDrawSurface3	AddOverlayDirtyRect	4	stdcall	8	stub	-	fixed result DDERR_UNSUPPORTED: no overlays
+IDirectDrawSurface3	Blt	5	stdcall	24	implemented	-	ddraw4 Surface: colour fill, SRCCOPY, BLACKNESS, WHITENESS, stretch, source key; DDBLTFX effects and destination keys are DDERR_UNSUPPORTED
+IDirectDrawSurface3	BltBatch	6	stdcall	16	stub	-	fixed result DDERR_UNSUPPORTED
+IDirectDrawSurface3	BltFast	7	stdcall	24	implemented	-	ddraw4 Surface
+IDirectDrawSurface3	DeleteAttachedSurface	8	stdcall	12	implemented	-	ddraw4 Surface
+IDirectDrawSurface3	EnumAttachedSurfaces	9	stdcall	12	implemented	-	ddraw4 Surface
+IDirectDrawSurface3	EnumOverlayZOrders	10	stdcall	16	stub	-	fixed result DD_OK; no overlays
+IDirectDrawSurface3	Flip	11	stdcall	12	implemented	-	ddraw4 Surface: copies the back buffer to the front and presents it; called on the boot to the CD-key prompt
+IDirectDrawSurface3	GetAttachedSurface	12	stdcall	12	implemented	-	ddraw4 Surface; called on the boot to the CD-key prompt
+IDirectDrawSurface3	GetBltStatus	13	stdcall	8	stub	-	fixed result DD_OK: blits finish at once
+IDirectDrawSurface3	GetCaps	14	stdcall	8	implemented	-	ddraw4 Surface
+IDirectDrawSurface3	GetClipper	15	stdcall	8	implemented	-	ddraw4 Surface
+IDirectDrawSurface3	GetColorKey	16	stdcall	12	implemented	-	ddraw4 Surface
+IDirectDrawSurface3	GetDC	17	stdcall	8	implemented	-	ddraw4 Surface: a DC on the host copy, drawn by the boot platform's GDI
+IDirectDrawSurface3	GetFlipStatus	18	stdcall	8	stub	-	fixed result DD_OK: flips finish at once
+IDirectDrawSurface3	GetOverlayPosition	19	stdcall	12	stub	-	fixed result DDERR_UNSUPPORTED: no overlays
+IDirectDrawSurface3	GetPalette	20	stdcall	8	implemented	-	ddraw4 Surface
+IDirectDrawSurface3	GetPixelFormat	21	stdcall	8	implemented	-	ddraw4 Surface
+IDirectDrawSurface3	GetSurfaceDesc	22	stdcall	8	implemented	-	ddraw4 Surface; called on the boot to the CD-key prompt
+IDirectDrawSurface3	Initialize	23	stdcall	12	stub	-	fixed result DDERR_ALREADYINITIALIZED
+IDirectDrawSurface3	IsLost	24	stdcall	4	stub	-	fixed result DD_OK: the Gpu keeps every texture
+IDirectDrawSurface3	Lock	25	stdcall	20	implemented	-	ddraw4 Surface: the host copy, read back from the Gpu when it drew; called on the boot to the CD-key prompt
+IDirectDrawSurface3	ReleaseDC	26	stdcall	8	implemented	-	ddraw4 Surface
+IDirectDrawSurface3	Restore	27	stdcall	4	stub	-	fixed result DD_OK: nothing is lost
+IDirectDrawSurface3	SetClipper	28	stdcall	8	implemented	-	ddraw4 Surface
+IDirectDrawSurface3	SetColorKey	29	stdcall	12	implemented	-	ddraw4 Surface: a key range uses its low value
+IDirectDrawSurface3	SetOverlayPosition	30	stdcall	12	stub	-	fixed result DDERR_UNSUPPORTED: no overlays
+IDirectDrawSurface3	SetPalette	31	stdcall	8	implemented	-	ddraw4 Surface
+IDirectDrawSurface3	Unlock	32	stdcall	8	implemented	-	ddraw4 Surface: uploads what the lock may have changed; called on the boot to the CD-key prompt
+IDirectDrawSurface3	UpdateOverlay	33	stdcall	24	stub	-	fixed result DDERR_UNSUPPORTED: no overlays
+IDirectDrawSurface3	UpdateOverlayDisplay	34	stdcall	8	stub	-	fixed result DDERR_UNSUPPORTED: no overlays
+IDirectDrawSurface3	UpdateOverlayZOrder	35	stdcall	12	stub	-	fixed result DDERR_UNSUPPORTED: no overlays
+IDirectDrawSurface3	GetDDInterface	36	stdcall	8	implemented	-	ddraw4 Surface
+IDirectDrawSurface3	PageLock	37	stdcall	8	stub	-	fixed result DD_OK
+IDirectDrawSurface3	PageUnlock	38	stdcall	8	stub	-	fixed result DD_OK
+IDirectDrawSurface3	SetSurfaceDesc	39	stdcall	12	stub	-	fixed result DDERR_UNSUPPORTED
+IDirectDrawSurface4	QueryInterface	0	stdcall	12	implemented	-	ddraw4 Surface: IDirectDrawSurface to 4 share one object and count; IDirect3DTexture2 from the d3d3 module; called on the boot to the CD-key prompt
+IDirectDrawSurface4	AddRef	1	stdcall	4	implemented	-	ddraw4 Surface: one count for every interface; called on the boot to the CD-key prompt
+IDirectDrawSurface4	Release	2	stdcall	4	implemented	0x006A6F06	ddraw4 Surface: back buffers and mipmap levels live as long as their root; called on the boot to the CD-key prompt
+IDirectDrawSurface4	AddAttachedSurface	3	stdcall	8	implemented	-	ddraw4 Surface; called on the boot to the CD-key prompt
+IDirectDrawSurface4	AddOverlayDirtyRect	4	stdcall	8	stub	-	fixed result DDERR_UNSUPPORTED: no overlays
+IDirectDrawSurface4	Blt	5	stdcall	24	implemented	0x006A730F	ddraw4 Surface: colour fill, SRCCOPY, BLACKNESS, WHITENESS, stretch, source key; DDBLTFX effects and destination keys are DDERR_UNSUPPORTED
+IDirectDrawSurface4	BltBatch	6	stdcall	16	stub	-	fixed result DDERR_UNSUPPORTED
+IDirectDrawSurface4	BltFast	7	stdcall	24	implemented	-	ddraw4 Surface
+IDirectDrawSurface4	DeleteAttachedSurface	8	stdcall	12	implemented	-	ddraw4 Surface
+IDirectDrawSurface4	EnumAttachedSurfaces	9	stdcall	12	implemented	-	ddraw4 Surface
+IDirectDrawSurface4	EnumOverlayZOrders	10	stdcall	16	stub	-	fixed result DD_OK; no overlays
+IDirectDrawSurface4	Flip	11	stdcall	12	implemented	-	ddraw4 Surface: copies the back buffer to the front and presents it; called on the boot to the CD-key prompt
+IDirectDrawSurface4	GetAttachedSurface	12	stdcall	12	implemented	-	ddraw4 Surface; called on the boot to the CD-key prompt
+IDirectDrawSurface4	GetBltStatus	13	stdcall	8	stub	-	fixed result DD_OK: blits finish at once
+IDirectDrawSurface4	GetCaps	14	stdcall	8	implemented	-	ddraw4 Surface
+IDirectDrawSurface4	GetClipper	15	stdcall	8	implemented	-	ddraw4 Surface
+IDirectDrawSurface4	GetColorKey	16	stdcall	12	implemented	-	ddraw4 Surface
+IDirectDrawSurface4	GetDC	17	stdcall	8	implemented	-	ddraw4 Surface: a DC on the host copy, drawn by the boot platform's GDI
+IDirectDrawSurface4	GetFlipStatus	18	stdcall	8	stub	-	fixed result DD_OK: flips finish at once
+IDirectDrawSurface4	GetOverlayPosition	19	stdcall	12	stub	-	fixed result DDERR_UNSUPPORTED: no overlays
+IDirectDrawSurface4	GetPalette	20	stdcall	8	implemented	0x006A70DE	ddraw4 Surface
+IDirectDrawSurface4	GetPixelFormat	21	stdcall	8	implemented	-	ddraw4 Surface
+IDirectDrawSurface4	GetSurfaceDesc	22	stdcall	8	implemented	-	ddraw4 Surface; called on the boot to the CD-key prompt
+IDirectDrawSurface4	Initialize	23	stdcall	12	stub	-	fixed result DDERR_ALREADYINITIALIZED
+IDirectDrawSurface4	IsLost	24	stdcall	4	stub	0x006A854D	fixed result DD_OK: the Gpu keeps every texture
+IDirectDrawSurface4	Lock	25	stdcall	20	implemented	0x006A6F85	ddraw4 Surface: the host copy, read back from the Gpu when it drew; called on the boot to the CD-key prompt
+IDirectDrawSurface4	ReleaseDC	26	stdcall	8	implemented	-	ddraw4 Surface
+IDirectDrawSurface4	Restore	27	stdcall	4	stub	0x006A6F99	fixed result DD_OK: nothing is lost
+IDirectDrawSurface4	SetClipper	28	stdcall	8	implemented	-	ddraw4 Surface
+IDirectDrawSurface4	SetColorKey	29	stdcall	12	implemented	-	ddraw4 Surface: a key range uses its low value
+IDirectDrawSurface4	SetOverlayPosition	30	stdcall	12	stub	-	fixed result DDERR_UNSUPPORTED: no overlays
+IDirectDrawSurface4	SetPalette	31	stdcall	8	implemented	-	ddraw4 Surface
+IDirectDrawSurface4	Unlock	32	stdcall	8	implemented	0x006A7002	ddraw4 Surface: uploads what the lock may have changed; called on the boot to the CD-key prompt
+IDirectDrawSurface4	UpdateOverlay	33	stdcall	24	stub	-	fixed result DDERR_UNSUPPORTED: no overlays
+IDirectDrawSurface4	UpdateOverlayDisplay	34	stdcall	8	stub	-	fixed result DDERR_UNSUPPORTED: no overlays
+IDirectDrawSurface4	UpdateOverlayZOrder	35	stdcall	12	stub	-	fixed result DDERR_UNSUPPORTED: no overlays
+IDirectDrawSurface4	GetDDInterface	36	stdcall	8	implemented	-	ddraw4 Surface
+IDirectDrawSurface4	PageLock	37	stdcall	8	stub	-	fixed result DD_OK
+IDirectDrawSurface4	PageUnlock	38	stdcall	8	stub	-	fixed result DD_OK
+IDirectDrawSurface4	SetSurfaceDesc	39	stdcall	12	stub	-	fixed result DDERR_UNSUPPORTED
+IDirectDrawSurface4	SetPrivateData	40	stdcall	20	implemented	-	Ddraw4Guest.cpp: bytes; an interface pointer is DDERR_UNSUPPORTED
+IDirectDrawSurface4	GetPrivateData	41	stdcall	16	implemented	-	Ddraw4Guest.cpp
+IDirectDrawSurface4	FreePrivateData	42	stdcall	8	implemented	-	Ddraw4Guest.cpp
+IDirectDrawSurface4	GetUniquenessValue	43	stdcall	8	implemented	-	ddraw4 Surface: changes with the content
+IDirectDrawSurface4	ChangeUniquenessValue	44	stdcall	4	implemented	-	ddraw4 Surface
 IDirectInputA	QueryInterface	0	stdcall	12	implemented	-	src/hle/dinput: its own IID and the base COM IID only; the game never asks for 2A or 7A
 IDirectInputA	AddRef	1	stdcall	4	implemented	-	src/hle/dinput: DirectInput::AddRef
 IDirectInputA	Release	2	stdcall	4	implemented	0x0040141A	src/hle/dinput: DirectInput::Release
