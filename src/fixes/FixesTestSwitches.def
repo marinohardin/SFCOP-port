@@ -1,0 +1,16 @@
+/* A switch list in the form of switches.def, for FixesTest.cpp: a build switch in each position
+ * and a runtime rules change. */
+
+#ifndef SFCOP_FIX_BUILD_fix_test_def_on
+#define SFCOP_FIX_BUILD_fix_test_def_on 1
+#endif
+#define SFCOP_FIX_fix_test_def_on() SFCOP_FIX_POSITION(SFCOP_FIX_BUILD_fix_test_def_on)
+SFCOP_FIX_SWITCH(fix_test_def_on, Build, 1, Project, "a build switch, default on")
+
+#ifndef SFCOP_FIX_BUILD_fix_test_def_off
+#define SFCOP_FIX_BUILD_fix_test_def_off 0
+#endif
+#define SFCOP_FIX_fix_test_def_off() SFCOP_FIX_POSITION(SFCOP_FIX_BUILD_fix_test_def_off)
+SFCOP_FIX_SWITCH(fix_test_def_off, Build, 0, Project, "a build switch, default off")
+
+SFCOP_FIX_SWITCH(fix_test_def_rules, Runtime, 0, Community, "a rules change, default off")
