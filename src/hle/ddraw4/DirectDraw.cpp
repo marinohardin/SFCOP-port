@@ -4,6 +4,7 @@
 #include "hle/ddraw4/Surface.h"
 
 #include <algorithm>
+#include <map>
 #include <utility>
 
 namespace sfcop::hle::ddraw4 {
@@ -15,8 +16,23 @@ namespace {
 
 constexpr std::uint32_t kVideoMemoryTotal = 256u << 20;
 constexpr std::uint32_t kVideoMemoryFree = 192u << 20;
+
 constexpr std::uint32_t kMaxBackBuffers = 3;
 constexpr std::uint32_t kDdwaitvbBlockBeginEvent = 0x00000002;
+
+DirectDraw::PresentHook g_presentHook = nullptr;
+
+// The DirectDraw object that made each Gpu's back buffer last. A Gpu has one back buffer, so the
+// owner is per Gpu: objects on other Gpus never see each other.
+std::map<const platform::Gpu *, const DirectDraw *> &displayOwners() {
+    static std::map<const platform::Gpu *, const DirectDraw *> owners;
+    return owners;
+}
+
+const DirectDraw *displayOwner(const platform::Gpu &gpu) {
+    const auto found = displayOwners().find(&gpu);
+    return found == displayOwners().end() ? nullptr : found->second;
+}
 
 // The resolutions the original's display drivers offered on every card, which the game's options
 // expect to find.
@@ -74,6 +90,7 @@ HResult DirectDraw::SetDisplayMode(std::uint32_t width, std::uint32_t height,
         return back.Code() == Error::kInvalidArgument ? kDdErrInvalidMode : fromError(back.Code());
     }
     displayTexture_ = back.Value();
+    displayOwners()[&gpu_] = this;
     mode_ = DisplayModeState{width, height, bitsPerPixel, refreshRate != 0 ? refreshRate : 60};
     return kDdOk;
 }
@@ -362,7 +379,11 @@ HResult DirectDraw::GetDeviceIdentifier(std::uint32_t, DeviceIdentifier &out) co
 }
 
 platform::Result<platform::TextureId> DirectDraw::DisplayTexture() {
-    if (!displayTexture_.Valid()) {
+    const DirectDraw *owner = displayOwner(gpu_);
+    if (owner != nullptr && owner != this) {
+        return Error::kWrongState; // another object's back buffer: never taken lazily
+    }
+    if (!displayTexture_.Valid() || owner != this) {
         const PixelFormat format =
             mode_.bitsPerPixel == 8 ? PixelFormat::kXrgb8888 : PrimaryFormat();
         platform::Result<platform::TextureId> back =
@@ -371,8 +392,23 @@ platform::Result<platform::TextureId> DirectDraw::DisplayTexture() {
             return back.Code();
         }
         displayTexture_ = back.Value();
+        displayOwners()[&gpu_] = this;
     }
     return displayTexture_;
+}
+
+bool DirectDraw::OwnsDisplay() const {
+    return displayOwner(gpu_) == this && displayTexture_.Valid();
+}
+
+DirectDraw::~DirectDraw() {
+    if (displayOwner(gpu_) == this) {
+        displayOwners().erase(&gpu_);
+    }
+}
+
+void DirectDraw::ForgetDisplayOwners() {
+    displayOwners().clear();
 }
 
 PixelFormat DirectDraw::PrimaryFormat() const {
@@ -403,7 +439,18 @@ HResult DirectDraw::PresentPrimary(Surface &primary) {
         }
     }
     const platform::Status presented = gpu_.Present();
-    return presented.Ok() ? kDdOk : fromError(presented.Code());
+    if (!presented.Ok()) {
+        return fromError(presented.Code());
+    }
+    ++counts_.presents;
+    if (g_presentHook != nullptr) {
+        g_presentHook(*this);
+    }
+    return kDdOk;
+}
+
+void DirectDraw::SetPresentHook(PresentHook hook) {
+    g_presentHook = hook;
 }
 
 void DirectDraw::SurfaceGone(Surface &surface) {

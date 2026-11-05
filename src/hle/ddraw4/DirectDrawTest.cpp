@@ -362,4 +362,49 @@ TEST_CASE("pixel formats map to the Gpu's and back") {
     CHECK(fromError(Error::kOutOfResources) == kDdErrOutOfVideoMemory);
 }
 
+TEST_CASE("each Gpu's display has its own owner") {
+    Rig first;
+    Rig second; // another Gpu and Window, and a DirectDraw object of its own
+    REQUIRE(first.dd->SetDisplayMode(800, 600, 16, 0, 0) == kDdOk);
+    CHECK(first.dd->OwnsDisplay());
+    CHECK_FALSE(second.dd->OwnsDisplay());
+    // The other Gpu's owner is no reason to refuse this object its display.
+    CHECK(second.dd->DisplayTexture().Ok());
+    CHECK(second.dd->OwnsDisplay());
+    CHECK(first.dd->OwnsDisplay());
+    CHECK(first.gpu.log.Count("ConfigureBackBuffer") == 1);
+    CHECK(second.gpu.log.Count("ConfigureBackBuffer") == 1);
+}
+
+TEST_CASE("a second DirectDraw object never takes the display lazily") {
+    // The game makes a DirectDraw object with a primary and never sets a mode on it, then makes
+    // the one it plays with. Asking the first for the display makes no back buffer.
+    Rig rig;
+    Surface *early = rig.Create(test::primaryDesc());
+    DirectDraw *game = new DirectDraw(rig.gpu, rig.window, rig.memory);
+    REQUIRE(game->SetDisplayMode(800, 600, 16, 0, 0) == kDdOk);
+    CHECK(rig.gpu.log.Count("ConfigureBackBuffer") == 1);
+    CHECK(game->OwnsDisplay());
+    CHECK_FALSE(rig.dd->OwnsDisplay());
+
+    const platform::Result<platform::TextureId> taken = rig.dd->DisplayTexture();
+    CHECK_FALSE(taken.Ok());
+    CHECK(taken.Code() == Error::kWrongState);
+    test::writePixels16(*early, std::vector<std::uint16_t>(640 * 480, 7)); // presents nothing
+    CHECK(rig.gpu.log.Count("ConfigureBackBuffer") == 1);
+    CHECK(rig.gpu.log.Count("Present") == 0);
+    CHECK(game->OwnsDisplay());
+
+    const platform::Result<platform::TextureId> shown = game->DisplayTexture();
+    REQUIRE(shown.Ok());
+    CHECK(shown.Value() == platform::TextureId{1});
+    CHECK(rig.gpu.log.Count("ConfigureBackBuffer") == 1);
+
+    game->Release(); // the display has no owner now: the early object may make its own
+    CHECK(rig.dd->DisplayTexture().Ok());
+    CHECK(rig.dd->OwnsDisplay());
+    CHECK(rig.gpu.log.Count("ConfigureBackBuffer") == 2);
+    early->Release();
+}
+
 } // namespace sfcop::hle::ddraw4
