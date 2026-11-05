@@ -8,8 +8,9 @@
 # each run gets a fresh APFS clone of SRC (cp -Rc), so no run sees what an earlier one wrote;
 # without -s, @GAME@ is not allowed.
 #
-# With -t EPOCH (macOS), run i starts with its wall clock at EPOCH + (i - 1) * STEP seconds
-# (-T, default 0): tools/fakeclock.c is built into LOGDIR and loaded into COMMAND. The game seeds
+# With -t EPOCH (macOS), run i starts with the time of day the game reads at EPOCH + (i - 1) * STEP
+# seconds (-T, default 0): tools/fakeclock.c, which shifts time() and gettimeofday() but not the
+# clocks that waits use, is built into LOGDIR and loaded into COMMAND. The game seeds
 # its random numbers from the clock, and the first draws pick the space background the boot
 # loads, so a time of day reproduces a boot exactly.
 #

@@ -9,6 +9,10 @@
 #include <cstdlib>
 #include <cstring>
 
+#if !defined(_WIN32)
+#include <sys/time.h>
+#endif
+
 namespace sfcop::platform {
 namespace {
 
@@ -78,6 +82,25 @@ TEST_CASE("the host UTC calendar time and Unix time agree") {
     // 1970-01-04 was a Sunday, so the weekday follows from the day count.
     CHECK(utc.weekday == static_cast<std::uint8_t>((daysFromCivil(utc.year, utc.month, utc.day) + 4) % 7));
 }
+
+#if !defined(_WIN32)
+// Two readings of the same clock, taken a moment apart, must agree: the expected value is the
+// gettimeofday() read, not a wall time written by hand, because no fixed time can be expected.
+TEST_CASE("the host wall clock reads gettimeofday, to the second") {
+    auto clock = makeClock();
+    timeval tv{};
+    gettimeofday(&tv, nullptr);
+    const std::int64_t unix = clock->UnixTime().Value();
+    CHECK(unix >= static_cast<std::int64_t>(tv.tv_sec) - 1);
+    CHECK(unix <= static_cast<std::int64_t>(tv.tv_sec) + 1);
+    const CivilTime utc = clock->Now(TimeZone::kUtc).Value();
+    const std::int64_t fromCivil =
+        daysFromCivil(utc.year, utc.month, utc.day) * 86400 + utc.hour * 3600 + utc.minute * 60 +
+        utc.second;
+    CHECK(fromCivil >= static_cast<std::int64_t>(tv.tv_sec) - 1);
+    CHECK(fromCivil <= static_cast<std::int64_t>(tv.tv_sec) + 1);
+}
+#endif
 
 TEST_CASE("a zero sleep returns at once") {
     auto clock = makeClock();

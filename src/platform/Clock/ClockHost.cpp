@@ -1,5 +1,5 @@
 // Clock's host backend (makeClock): std::chrono's steady clock for the ticks and the counter, the
-// system clock for the wall time, and the calendar conversion of one file per platform
+// platform file's wall-time read (wallNow) for the time of day, and the calendar conversion of one file per platform
 // (ClockHost_<platform>.cpp), which differ only in how the C library is asked for local time.
 //
 // The counter runs at 10 MHz, the frequency 64-bit Windows reports for QueryPerformanceFrequency;
@@ -9,6 +9,7 @@
 #include "platform/Clock/Clock.h"
 
 #include <chrono>
+#include <cstdint>
 #include <ctime>
 #include <thread>
 
@@ -18,6 +19,11 @@ namespace clockhost {
 // The platform file's half: `seconds` (Unix time) as a calendar time in `zone`; false if the
 // C library cannot convert it.
 bool civilFromUnix(std::time_t seconds, TimeZone zone, std::tm &out);
+// The platform file's other half: the wall time as Unix seconds and the milliseconds past them.
+// It is read from gettimeofday (GetSystemTimeAsFileTime on Windows), not from std::chrono's
+// system clock, which libc++ also uses for the deadlines of timed waits: a tool that shifts the
+// time of day (tools/fakeclock.c) must not shift those.
+void wallNow(std::int64_t &seconds, std::int32_t &millis);
 } // namespace clockhost
 
 namespace {
@@ -42,13 +48,11 @@ public:
     Result<std::uint64_t> CounterFrequency() override { return kCounterFrequency; }
 
     Result<CivilTime> Now(TimeZone zone) override {
-        const auto now = std::chrono::system_clock::now();
-        const auto sinceEpoch = now.time_since_epoch();
-        const auto seconds = std::chrono::floor<std::chrono::seconds>(sinceEpoch);
-        const auto millis =
-            std::chrono::duration_cast<std::chrono::milliseconds>(sinceEpoch - seconds).count();
+        std::int64_t seconds = 0;
+        std::int32_t millis = 0;
+        clockhost::wallNow(seconds, millis);
         std::tm parts{};
-        if (!clockhost::civilFromUnix(static_cast<std::time_t>(seconds.count()), zone, parts)) {
+        if (!clockhost::civilFromUnix(static_cast<std::time_t>(seconds), zone, parts)) {
             return Error::kIoError;
         }
         CivilTime civil;
@@ -64,9 +68,10 @@ public:
     }
 
     Result<std::int64_t> UnixTime() override {
-        return static_cast<std::int64_t>(std::chrono::floor<std::chrono::seconds>(
-                                             std::chrono::system_clock::now().time_since_epoch())
-                                             .count());
+        std::int64_t seconds = 0;
+        std::int32_t millis = 0;
+        clockhost::wallNow(seconds, millis);
+        return seconds;
     }
 
     Status Sleep(std::uint32_t milliseconds) override {
