@@ -3,6 +3,7 @@ import os
 import re
 import stat
 import subprocess
+import time
 import sys
 
 import pytest
@@ -36,15 +37,19 @@ alive)  printf '\n=== watchdog at 12.001 s ===\n' >&2; exit 3 ;;
 esac
 '''
 
-# Prints the epoch seconds it sees through time() and clock_gettime(), the way the boot reads
-# the clock.
+# Prints the epoch seconds it sees through time(), gettimeofday() and clock_gettime(): the fake
+# clock shifts the first two, the ones the game's time of day comes from, and leaves the third,
+# which libc++ builds the deadlines of timed waits from.
 CLOCK_READER = r'''
 #include <stdio.h>
+#include <sys/time.h>
 #include <time.h>
 int main(void) {
     struct timespec ts;
+    struct timeval tv;
     clock_gettime(CLOCK_REALTIME, &ts);
-    printf("%ld %ld\n", (long)time(NULL), (long)ts.tv_sec);
+    gettimeofday(&tv, NULL);
+    printf("%ld %ld %ld\n", (long)time(NULL), (long)tv.tv_sec, (long)ts.tv_sec);
     return 0;
 }
 '''
@@ -135,4 +140,6 @@ def test_t_sets_each_runs_clock(tmp_path):
     for i, want in ((1, 991988400), (2, 991992000)):
         seen = [int(x) for x in (logs / ('run_%d.out' % i)).read_text().split()]
         # The offset is fixed just before the run starts; allow for the seconds a start takes.
-        assert len(seen) == 2 and all(want <= s <= want + 5 for s in seen), (i, seen)
+        assert len(seen) == 3 and all(want <= s <= want + 5 for s in seen[:2]), (i, seen)
+        # clock_gettime is left at the kernel's time, so timed waits keep their real deadlines.
+        assert abs(seen[2] - time.time()) < 60, (i, seen)
