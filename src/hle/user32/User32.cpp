@@ -163,6 +163,9 @@ void User32::activate(std::uint32_t hwnd) {
         Send(top, kWmActivateApp, 1, 0);
     }
     windows_.SetActive(top);
+    // The clicks the queue held while no window was active came before this window: Windows
+    // would not have delivered them to it.
+    queue_.ClearPending();
     Send(top, kWmActivate, kWaActive, previous);
     if (windows_.IsWindow(top) && windows_.TopLevelOf(windows_.Focus()) != top) {
         SetFocus(top);

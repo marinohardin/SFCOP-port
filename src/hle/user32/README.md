@@ -41,8 +41,15 @@ is not), reads the cursor with `GetCursorPos` every frame, and draws everything 
   `GetKeyState` answers from the queue, `GetAsyncKeyState` from `Input` now.
 - **Activation.** Showing a top-level window activates it (`WM_ACTIVATEAPP`, `WM_ACTIVATE`,
   `WM_SETFOCUS`), except for the `SW_SHOWNOACTIVATE` family. The platform window losing focus
-  deactivates the active window and forgets the keys held; regaining it reactivates that window. The
-  close box posts `WM_CLOSE` to the active window.
+  deactivates the active window and forgets the keys held; regaining it reactivates that window. A
+  focus event while a window is already active announces nothing. A mouse button that arrives while
+  no window is active (macOS may report the click before the focus) is held, and when the focus
+  comes Windows' click-activation sequence follows: `WM_MOUSEACTIVATE`, `WM_ACTIVATEAPP`,
+  `WM_ACTIVATE` with `WA_CLICKACTIVE`, `WM_SETFOCUS`, then a `WM_MOUSEMOVE` to the click and the
+  button. A held click is dropped when the focus is lost again or when `ShowWindow` activates a
+  window, and a held button-up without its down is never kept. With `--trace`, the first focus and
+  button events and the queue's reaction are logged by kind and order only. The close box posts
+  `WM_CLOSE` to the active window.
 - **The screen** is the game's display: the platform window's logical size, which follows
   DirectDraw's display mode (640x480 until a window says otherwise), at 32 bits. `SetWindowPos`
   changes only the game's view of its rectangle; the platform window's size is DirectDraw's.
