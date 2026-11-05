@@ -133,3 +133,90 @@ jobs:
             ${{ env.SFCOP_BUILD_DIR }}/sfcop_tests.exe
             ${{ env.SFCOP_BUILD_DIR }}/logs/configure.log
             ${{ env.SFCOP_BUILD_DIR }}/logs/tests.log
+
+  # The replay oracle on the three presets (DESIGN §5.10, §7.4): the lifted client of each
+  # preset's build plays the oracle's input headless, on a copy of the runner's prepared data
+  # folder, and the traces are compared pairwise and with oracle/expected/
+  # (oracle/presets/README.md). Runs after the builds, one preset at a time at nice 19, and only
+  # for a pull request that touches game/, src/ or the oracle's own runner, driver, trace tools or
+  # this workflow. The logic (which paths, what each exit means, the warnings) is
+  # oracle/presets/ci.py, tested in tests/test_oracle_presets.py.
+  #
+  # Runner variables, set by the owner and never printed:
+  #   SFCOP_ORACLE_DATA     the prepared data folder (a stored key). Unset: the job warns and skips.
+  #   SFCOP_ORACLE_MODULES  the modules root for the skirmish: <root>/<preset>/OracleSkirmish/, each
+  #                         translated on that preset's toolchain. Unset: the skirmish step skips.
+  # A preset without a lifted client skips with a ::warning:: naming it and why. The menu path is
+  # compared today; the skirmish step runs when oracle/driver/skirmish.steps exists, the modules
+  # are there and the client has A2's --logs flag. Traces (hashes of behaviour, nothing of the
+  # retail files) are kept for 7 days.
+  oracle:
+    name: oracle (all presets)
+    needs: build
+    runs-on: [self-hosted, sfcop-mac]
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Does this pull request touch what the oracle judges
+        id: gate
+        shell: bash
+        run: |
+          set -eu
+          run=$(git diff --name-only HEAD^1 HEAD | python3 -I oracle/presets/ci.py gate)
+          if [ "$run" = no ]; then
+            echo "::notice::skip: the oracle on the presets: nothing under game/, src/ or the oracle's runner changed"
+          elif [ -z "${SFCOP_ORACLE_DATA:-}" ]; then
+            echo "::warning::skip: the oracle on the presets did not run: SFCOP_ORACLE_DATA is not set on this runner (the owner sets it to the prepared data folder)"
+            run=no
+          fi
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+          root="${SFCOP_CI_BUILD_ROOT:-$RUNNER_TOOL_CACHE/sfcop-build}/$RUNNER_NAME"
+          traces="$RUNNER_TEMP/oracle-traces"
+          rm -rf "$traces"; mkdir -p "$traces"
+          echo "BUILD_ROOT=$root" >> "$GITHUB_ENV"
+          echo "TRACES=$traces" >> "$GITHUB_ENV"
+
+      - name: The menu path on each preset
+        if: steps.gate.outputs.run == 'yes'
+        timeout-minutes: 15
+        shell: bash
+        run: python3 -I oracle/presets/ci.py run MenuPath menu --build-root "$BUILD_ROOT" --traces "$TRACES" --env-file "$GITHUB_ENV"
+
+      - name: Compare the menu path
+        if: steps.gate.outputs.run == 'yes'
+        timeout-minutes: 2
+        shell: bash
+        run: python3 -I oracle/presets/ci.py compare MenuPath menu --traces "$TRACES" --ran "${RAN_MENUPATH:-}" --expected oracle/expected
+
+      # 20 minutes per preset (the client's watchdog is 15); lower both to what A2 measures.
+      - name: The oracle skirmish on each preset
+        if: steps.gate.outputs.run == 'yes' && hashFiles('oracle/driver/skirmish.steps') != ''
+        timeout-minutes: 60
+        shell: bash
+        run: |
+          if [ -z "${SFCOP_ORACLE_MODULES:-}" ]; then
+            echo "::warning::skip: the oracle skirmish did not run: SFCOP_ORACLE_MODULES is not set on this runner"
+            echo "RAN_ORACLESKIRMISH=" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          python3 -I oracle/presets/ci.py run OracleSkirmish skirmish --build-root "$BUILD_ROOT" --traces "$TRACES" --env-file "$GITHUB_ENV"
+
+      - name: Compare the skirmish
+        if: steps.gate.outputs.run == 'yes' && hashFiles('oracle/driver/skirmish.steps') != ''
+        timeout-minutes: 2
+        shell: bash
+        run: python3 -I oracle/presets/ci.py compare OracleSkirmish skirmish --traces "$TRACES" --ran "${RAN_ORACLESKIRMISH:-}" --expected oracle/expected
+
+      - name: Keep the traces for 7 days
+        if: steps.gate.outputs.run == 'yes' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oracle-traces-pr${{ github.event.pull_request.number }}
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            ${{ env.TRACES }}/**/*.trace
+            ${{ env.TRACES }}/**/*.timings
