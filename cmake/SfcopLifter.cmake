@@ -38,12 +38,17 @@ set(SFCOP_EXE_SHA256 "${SFCOP_FOUND_EXE_SHA256}")
 # Number of lifted .c files: fixed, so the build knows their names before the lift runs.
 set(SFCOP_LIFT_FILES 64)
 # Functions whose entry calls the guest host's sfcop_mark(va), which logs "[mark] reached ...":
-# WinMain, and the function that shows the CD-key prompt (src/app/guest/GuestGame.cpp).
+# WinMain, the function that shows the CD-key prompt, the main menu (the entry of
+# tState_Namespace_Setup::tState_SelectGame, the "Select Game" screen) and Setup (the entry of
+# tState_Namespace_Setup::tState_Setup, the Single Player screen) (src/app/guest/GuestGame.cpp).
 set(SFCOP_MARK_WINMAIN 0x0069A840)
 set(SFCOP_MARK_CDKEY_PROMPT 0x00484102)
+set(SFCOP_MARK_MENU 0x0047B8F7)
+set(SFCOP_MARK_SETUP 0x0047BC9C)
 set(SFCOP_LIFT_EXTRA_MARKS "" CACHE STRING
     "More guest addresses to mark, comma-separated (diagnostics: each logs when first reached)")
-set(SFCOP_LIFT_MARKS "${SFCOP_MARK_WINMAIN},${SFCOP_MARK_CDKEY_PROMPT}")
+set(SFCOP_LIFT_MARKS
+    "${SFCOP_MARK_WINMAIN},${SFCOP_MARK_CDKEY_PROMPT},${SFCOP_MARK_MENU},${SFCOP_MARK_SETUP}")
 if(SFCOP_LIFT_EXTRA_MARKS)
     string(APPEND SFCOP_LIFT_MARKS ",${SFCOP_LIFT_EXTRA_MARKS}")
 endif()

@@ -1,0 +1,20 @@
+# Native client (sfcop --input; oracle/driver/run_native.sh): boot past the key prompt to the main
+# menu and click SINGLE PLAYER, which opens Setup (the Single Player screen). Needs a data folder
+# with a stored key.
+#
+# Coordinates are the game's display pixels. The menus run in an 800x600 display mode with the
+# 640x480 menu centred, the same space as the Wine driver's client area, so (237, 232) here is
+# (237, 232) in skirmish.steps. waitmark is the native player's own: the Wine driver refuses it.
+
+window 60 Starfleet Command
+
+# --- the main menu, "Select Game"
+# 60 s until the boot time is fixed: a boot to the menu takes 12 to 23 s here, and the 10 s the
+# plan asks for is open (src/app/input/README.md, "Proof runs").
+waitmark 60 Select Game
+sleep 500
+
+# --- SINGLE PLAYER: Setup, the Single Player screen; a click that does not take fails the run
+click 237 232
+waitmark 10 Setup
+sleep 2000

@@ -85,7 +85,7 @@ const Flag kFlags[] = {
          o.oracleTrace = v;
          return true;
      }},
-    {"--input", "SCRIPT", "the input script the oracle plays; needs --oracle",
+    {"--input", "SCRIPT", "play the steps file SCRIPT into the game (--oracle needs it)",
      [](ClientOptions &o, const std::string &v, std::string &) {
          o.inputScript = v;
          return true;
@@ -223,9 +223,6 @@ ParseResult parseCommandLine(const std::vector<std::string> &args,
     const ClientOptions &options = result.options;
     if (options.oracleTrace && !options.inputScript) {
         return failWith("--oracle needs --input SCRIPT as well");
-    }
-    if (options.inputScript && !options.oracleTrace) {
-        return failWith("--input is only for an oracle run; it needs --oracle TRACE as well");
     }
     return result;
 }
