@@ -25,18 +25,20 @@
     {
       "name": "windows-x64",
       "inherits": "base",
-      "displayName": "Windows x64 (cross toolchain: stub until Wave 2)",
+      "displayName": "Windows x64 (clang for x86_64-windows-msvc, lld-link, MSVC CRT; cross from macOS)",
       "toolchainFile": "${sourceDir}/cmake/toolchains/windows-x64.cmake"
     },
     {
       "name": "linux-x64",
       "inherits": "base",
-      "displayName": "Linux x64 (cross toolchain: stub until Wave 2)",
+      "displayName": "Linux x64 (clang, ld.lld, Steam Runtime 3 sysroot; cross from macOS)",
       "toolchainFile": "${sourceDir}/cmake/toolchains/linux-x64.cmake"
     }
   ],
   "buildPresets": [
-    { "name": "macos-arm64", "configurePreset": "macos-arm64", "jobs": 4 }
+    { "name": "macos-arm64", "configurePreset": "macos-arm64", "jobs": 4 },
+    { "name": "windows-x64", "configurePreset": "windows-x64", "jobs": 4 },
+    { "name": "linux-x64", "configurePreset": "linux-x64", "jobs": 4 }
   ],
   "testPresets": [
     {
@@ -44,6 +46,20 @@
       "configurePreset": "macos-arm64",
       "output": { "outputOnFailure": true },
       "execution": { "jobs": 4, "noTestsAction": "error" }
+    },
+    {
+      "name": "windows-x64",
+      "displayName": "Windows x64 tests under Wine (cmake/toolchains/run-windows.sh)",
+      "configurePreset": "windows-x64",
+      "output": { "outputOnFailure": true },
+      "execution": { "jobs": 1, "noTestsAction": "error", "timeout": 900 }
+    },
+    {
+      "name": "linux-x64",
+      "displayName": "Linux x64 tests in a linux/amd64 container (cmake/toolchains/run-linux.sh)",
+      "configurePreset": "linux-x64",
+      "output": { "outputOnFailure": true },
+      "execution": { "jobs": 1, "noTestsAction": "error", "timeout": 900 }
     }
   ]
 }
