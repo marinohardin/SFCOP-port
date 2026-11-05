@@ -1,0 +1,14 @@
+# Test cases a cross preset is known to fail, kept out of the CI verdict by run-tests.sh. Each line names its entry in cmake/toolchains/README.md, "Known failures" (symptom, where, suspected cause, owner). A line goes when its fix lands; run-tests.sh says when a listed case passes. Columns: preset, test case, entry, one-line reason.
+preset	test case	entry	reason
+linux-x64	host transport: a non-blocking connect finishes as writable and is accepted	KF-1	a second connect() on a connected socket returns 0 on Linux where the test expects an error
+linux-x64	loopback: a non-blocking connect ends writable and SO_ERROR reads 0	KF-1	the same connect() result reaches the winsock module, which returns 0 instead of WSAEISCONN
+linux-x64	host transport: calls in the wrong state fail with the documented errors	KF-2	send() on a TCP socket that never connected fails with EPIPE on Linux, ENOTCONN on macOS
+linux-x64	names cross the bridge as Latin-1 or UTF-16	KF-3	an upper-case Latin-1 name does not find its lower-case file on a case-sensitive file system
+windows-x64	the host file system makes a relative path absolute against the current folder	KF-4	the host file system returns backslash-separated paths where the test expects '/'
+windows-x64	startup accepts the fixture install, creates the data folder and remembers the install	KF-4	the same separator difference in the folders startup records
+windows-x64	shot names sort by elapsed time and a shot is written to its folder	KF-5	removing the shot folder fails with a sharing violation
+windows-x64	names cross the bridge as Latin-1 or UTF-16	KF-6	the name does not reach the Windows host file API as the same file
+windows-x64	WIN32_FIND_DATAA and W are written field by field	KF-6	the found name of a non-ASCII file is not written back as Latin-1 and UTF-16
+windows-x64	a rename replaces a file but not a directory, and needs its source and target parent	KF-7	under Wine on a case-insensitive volume, a listing after a case-only rename keeps the old case
+windows-x64	a stack size the system refuses fails the start	KF-8	under Wine a stack size past the end of the range starts the thread anyway
+windows-x64	relative mode holds the position and reports motion only	KF-9	under Wine the dummy video driver delivers no relative-motion event
