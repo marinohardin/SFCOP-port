@@ -5,13 +5,16 @@
 #include <doctest/doctest.h>
 
 #include <thread>
+#include <vector>
 
 namespace sfcop::guest {
 
 TEST_CASE("the pump reads the window's events on the thread that bound it") {
     platform::WindowMock window;
     int closes = 0;
-    EventPump pump(window, [&] { ++closes; });
+    EventPump pump(window, [&](const platform::WindowEvent &event) {
+        closes += event.type == platform::WindowEventType::kCloseRequested ? 1 : 0;
+    });
     pump.BindToCallingThread();
     platform::WindowEvent close;
     close.type = platform::WindowEventType::kCloseRequested;
@@ -22,10 +25,31 @@ TEST_CASE("the pump reads the window's events on the thread that bound it") {
     CHECK(closes == 1);
 }
 
+TEST_CASE("the pump hands every event on, in order") {
+    platform::WindowMock window;
+    std::vector<platform::WindowEventType> seen;
+    EventPump pump(window, [&](const platform::WindowEvent &event) { seen.push_back(event.type); });
+    pump.BindToCallingThread();
+    for (const auto type : {platform::WindowEventType::kFocusGained,
+                            platform::WindowEventType::kKeyDown,
+                            platform::WindowEventType::kCloseRequested}) {
+        platform::WindowEvent event;
+        event.type = type;
+        window.pendingEvents.push_back(event);
+    }
+
+    CHECK(pump.Pump());
+    REQUIRE(seen.size() == 3);
+    CHECK(seen[0] == platform::WindowEventType::kFocusGained);
+    CHECK(seen[1] == platform::WindowEventType::kKeyDown);
+    CHECK(seen[2] == platform::WindowEventType::kCloseRequested);
+    CHECK(window.pendingEvents.empty());
+}
+
 TEST_CASE("the pump does nothing on another thread") {
     platform::WindowMock window;
     int closes = 0;
-    EventPump pump(window, [&] { ++closes; });
+    EventPump pump(window, [&](const platform::WindowEvent &) { ++closes; });
     pump.BindToCallingThread();
     platform::WindowEvent close;
     close.type = platform::WindowEventType::kCloseRequested;
@@ -44,7 +68,7 @@ TEST_CASE("the pump does nothing on another thread") {
 
 TEST_CASE("an unbound pump does nothing") {
     platform::WindowMock window;
-    EventPump pump(window, {});
+    EventPump pump(window, nullptr);
     CHECK_FALSE(pump.Pump());
     CHECK(window.log.Count("PumpEvents") == 0);
 }

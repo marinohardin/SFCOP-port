@@ -143,7 +143,8 @@ label, and `python3 src/hle/gen_surface.py --check` must still pass.
 **Handle types.** A module that gives the game handles through win32hle's handle table claims a
 type number here, so that two modules never share one: `kernel` 24 (files) and 25 (find
 handles); `registry` claims none (keys are the module's own guest integers); `kernel32rt` 26
-(threads, events, mutexes, semaphores, timers). The next module
+(threads, events, mutexes, semaphores, timers); `user32` 27 (windows), 28 (menus) and 29 (hooks);
+`gdi32` 30 (device contexts) and 31 (bitmaps, fonts, brushes, pens). The next module
 takes the next free number and adds its line in the same pull request as its shims.
 
 ## Writing a COM layout
