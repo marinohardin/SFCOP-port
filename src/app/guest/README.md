@@ -41,8 +41,11 @@ The game's own threads stay as they are. `CreateThread` starts a `Threads` threa
 call (a wait, `Sleep`, a held critical section, stopping a multimedia timer) gives it up for its
 length. The thread that calls `Run()` is the game's main thread and the platform's: the window's
 events are pumped there whenever the game's message queue runs empty (`PeekMessage`,
-`GetMessage`; from any other guest thread the call does not read the window), and `Window`'s close request is posted to the game's window as `WM_CLOSE`. A main
-thread blocked in a long wait does not pump.
+`GetMessage`; from any other guest thread the call does not read the window). The pump is the one
+place the `Window` is drained: each event goes to the user32 module's message queue
+(`hle::user32::AttachHost`, called once in `Run()` before guest code), which turns keys, the mouse,
+focus and the close box into the game's messages (`WM_CLOSE` included). A main thread blocked in a
+long wait does not pump.
 
 ## The working directory
 
@@ -112,7 +115,7 @@ the brief's "all three presets" is not met and cannot be yet. The Linux backend 
 | Guest tests (`ctest`) | 16 of 16 pass; the uncaught throw reports `0xE06D7363, C++ type .H` and ends with `abnormal program termination` |
 | Headless boot, clock 15:38 (`space21`), watchdog 60 s | the CD-key prompt at 10.1 s; exit 0; 1230 of 2048 shim slots in use |
 | Install unchanged | after a headless boot on a clone of the install, `find -newer` the stamp lists 0 files |
-| Windowed boot (`--windowed --watchdog 60 --shots DIR --shot-every 5`), same clock | the window opens, the CD-key prompt mark at 10.1 s, the watchdog at 60 s reports the goal reached, exit 0; 11 shots of 640x480, all uniformly black |
+| Windowed boot (`--windowed --watchdog 60 --shots DIR --shot-every 5`), same clock | the window opens, the CD-key prompt mark at 10.1 s, the watchdog at 60 s reports the goal reached, exit 0; 11 shots of 640x480, all uniformly black at the time (the shot path picked a DirectDraw object that did not own the display and reconfigured the back buffer; fixed by X1 #44, after which shots show the presented frame) |
 | Headless boot, clock 15:30 (`space20`, a truncated and an empty texture), `--trace` | three `tErrInfo` throws, each unwound and caught by the game's own texture loader (`sub_006A62F0`, `sub_006A5A20`); the boot goes on to the CD-key prompt (traced); exit 0 |
 | Presets `windows-x64`, `linux-x64` | configure; nothing is built until their toolchains land (Wave 2 A5) |
 
@@ -120,10 +123,10 @@ What each proof exercises. Headless: the Clock and Threads backends, the kernel3
 timers, TLS, exceptions, heap, time), the DirectInput wiring, the exception dispatcher on the
 game's own throws. Windowed, in addition: `Window` and `Gpu` opened and attached, the DirectDraw
 and Direct3D modules on them (`SetDisplayMode`, surfaces, 5,903 `BeginScene`/`Clear2`/`Flip`
-cycles), the pump on the main thread, and the screenshot path. What the windowed run does not
-show is the prompt itself: the game draws it as a dialog (`DialogBoxIndirectParamA`, USER32/GDI,
-answered by pcrecomp's win32hle, which does not draw to the `Gpu`), so the back buffer is only
-cleared. That is the USER32 and GDI rows' owner's work, not this host's.
+cycles), the pump on the main thread, and the screenshot path. The prompt is a screen the game
+draws itself through DirectDraw (there is no dialog on the boot path); with the USER32 module
+(B10) it takes the mouse and keyboard, and with a key already stored in the data directory the
+boot goes on to the main menu.
 
 The 15:30 boot is the one `src/app/boot/results/README.md` lists as stopping at an uncaught
 `tErrInfo`: the boot platform had no guest exception handling. The excerpt of its trace:
@@ -146,8 +149,8 @@ The boots, from the repository root, with `GAME` a writable copy of the install 
 
 ## TEMPORARY
 
-- `sfcop_spike_unowned` (CMake) builds the spike's `misc_stubs.c` for the USER32, GDI32, COMDLG32
-  and KERNEL32 rows no module owns yet, and for `hle/ddraw4`'s hand-off of
+- `sfcop_spike_unowned` (CMake) builds the spike's `misc_stubs.c` for the three KERNEL32 rows no
+  module owns yet (`MapViewOfFileEx`, `OpenFileMappingA`, `WinExec`), and for `hle/ddraw4`'s hand-off of
   `DirectDrawCreateClipper` in a headless run; it goes at gate G1 with `src/app/boot/`.
 - A headless run leaves DirectDraw to pcrecomp's own (`hle/ddraw4`'s hand-off while no guest host
   is set): the stub Gpu lists no display mode, and the game stops without one.
