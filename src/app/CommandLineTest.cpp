@@ -84,7 +84,7 @@ TEST_CASE("--fix sets named fixes on or off, in order, each name once") {
     requireError({"--fix"}, "--fix needs NAME=on|off");
 }
 
-TEST_CASE("--oracle and --input go together") {
+TEST_CASE("--oracle needs --input; --input alone plays a script with no trace") {
     const ParseResult result = parse({"--oracle", "skirmish.trace", "--input", "skirmish.input",
                                       "--headless", "--watchdog", "120"});
     REQUIRE(result.outcome == ParseOutcome::kRun);
@@ -94,8 +94,10 @@ TEST_CASE("--oracle and --input go together") {
     CHECK(result.options.watchdogSeconds == 120);
 
     requireError({"--oracle", "skirmish.trace"}, "--oracle needs --input SCRIPT as well");
-    requireError({"--input", "skirmish.input"},
-                 "--input is only for an oracle run; it needs --oracle TRACE as well");
+    const ParseResult menuRun = parse({"--input", "menu.steps", "--windowed"});
+    REQUIRE(menuRun.outcome == ParseOutcome::kRun);
+    CHECK(*menuRun.options.inputScript == "menu.steps");
+    CHECK_FALSE(menuRun.options.oracleTrace.has_value());
     requireError({"--oracle"}, "--oracle needs TRACE");
     requireError({"--oracle", "a.trace", "--input"}, "--input needs SCRIPT");
 }
@@ -169,7 +171,7 @@ TEST_CASE("--help lists every flag of DESIGN 6.8 and every exit code") {
              "  --fullscreen ",
              "  --fix NAME=on|off ",
              "  --oracle TRACE ",
-             "  --input SCRIPT ",
+             "  --input SCRIPT        play the steps file SCRIPT into the game (--oracle needs it)\n",
              "  --headless ",
              "  --watchdog S ",
              "  --help, -h ",

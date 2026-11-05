@@ -3,6 +3,8 @@
 //   sfcop [--install DIR] [--data DIR] [--windowed|--fullscreen] [--fix NAME=on|off]
 //         [--oracle TRACE --input SCRIPT --headless --watchdog S]
 //
+// --input may be given alone: a script with no trace is a menu run. --oracle needs --input.
+//
 // One table in CommandLine.cpp holds every flag; parsing and `--help` both read it. A value is
 // given as `--flag VALUE` or `--flag=VALUE`. Parsing checks form only: whether a folder exists
 // or a fix is known is for the code that uses the value.

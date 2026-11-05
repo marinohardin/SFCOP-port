@@ -100,7 +100,8 @@ endif()
 target_include_directories(sfcop_guest PRIVATE "${CMAKE_SOURCE_DIR}/src" "${CMAKE_SOURCE_DIR}/src/app/guest"
     ${SFCOP_RECOMP_INCLUDES})
 target_compile_definitions(sfcop_guest PRIVATE ${SFCOP_RECOMP_DEFINITIONS}
-    SFCOP_MARK_WINMAIN=${SFCOP_MARK_WINMAIN}u SFCOP_MARK_CDKEY_PROMPT=${SFCOP_MARK_CDKEY_PROMPT}u)
+    SFCOP_MARK_WINMAIN=${SFCOP_MARK_WINMAIN}u SFCOP_MARK_CDKEY_PROMPT=${SFCOP_MARK_CDKEY_PROMPT}u
+    SFCOP_MARK_MENU=${SFCOP_MARK_MENU}u SFCOP_MARK_SETUP=${SFCOP_MARK_SETUP}u)
 target_compile_options(sfcop_guest PRIVATE -fno-strict-aliasing -fwrapv)
 sfcop_strict_warnings(sfcop_guest)
 # The lifted code's headers come from the lift.

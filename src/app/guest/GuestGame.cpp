@@ -10,11 +10,13 @@
 //    constant (set bit 0 of the guard at 0x00C8193C, then atexit(0x004BD431)): one of the
 //    duplicate initialisers MSVC emits for a guarded static. The lifted 0x004014A9 runs in its
 //    place. B9's override table (override.h) is asked first.
-// 3. The marks the lift puts at the entry of WinMain and of the CD-key prompt; reaching the
-//    prompt is what a --watchdog run counts as success.
+// 3. The marks the lift puts at the entry of WinMain, of the CD-key prompt, of the main menu
+//    ("Select Game", tState_SelectGame) and of Setup (tState_Setup, the Single Player screen one
+//    click further); reaching the prompt or the menu is what a --watchdog run counts as success.
 #include "GuestHost.h"
 #include "hle/kernel32rt/Runtime.h"
 #include "app/guest/override.h"
+#include "app/input/Marks.h"
 
 extern "C" {
 #include "win32hle.h"
@@ -33,6 +35,8 @@ constexpr std::uint32_t kOsSpecificModule = 0x7FF00000u;
 constexpr std::uint32_t kMissedConstructor = 0x0059644Au;
 constexpr std::uint32_t kWinMain = SFCOP_MARK_WINMAIN;
 constexpr std::uint32_t kCdKeyPrompt = SFCOP_MARK_CDKEY_PROMPT;
+constexpr std::uint32_t kMenu = SFCOP_MARK_MENU;
+constexpr std::uint32_t kSetup = SFCOP_MARK_SETUP;
 
 void osInterlockedCompareExchange() { // cdecl (destination, exchange, comparand)
     const std::uint32_t destination = A32(0), exchange = A32(1), comparand = A32(2);
@@ -79,12 +83,15 @@ extern "C" void sfcop_mark(uint32_t address) {
         }
         if (slot == 0) {
             slot = address;
-            std::fprintf(stderr, "[mark] reached 0x%08X%s at %.3f s\n", address,
-                         address == sfcop::guest::kWinMain        ? " (WinMain)"
-                         : address == sfcop::guest::kCdKeyPrompt ? " (CD-key prompt)"
-                                                                 : "",
-                         sfcop::guest::Elapsed());
-            if (address == sfcop::guest::kCdKeyPrompt) {
+            const char *name = address == sfcop::guest::kWinMain        ? "WinMain"
+                               : address == sfcop::guest::kCdKeyPrompt ? "CD-key prompt"
+                               : address == sfcop::guest::kMenu        ? "Select Game"
+                               : address == sfcop::guest::kSetup       ? "Setup"
+                                                                       : "";
+            std::fprintf(stderr, "[mark] reached 0x%08X%s%s%s at %.3f s\n", address,
+                         *name ? " (" : "", name, *name ? ")" : "", sfcop::guest::Elapsed());
+            sfcop::app::input::NoteMark(address, name);
+            if (address == sfcop::guest::kCdKeyPrompt || address == sfcop::guest::kMenu) {
                 sfcop::guest::ReachedGoal();
             }
             return;
