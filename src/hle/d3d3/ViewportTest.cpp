@@ -90,6 +90,7 @@ TEST_CASE("a viewport clears only through the device it was added to") {
     REQUIRE(device->AddViewport(viewport) == kDdOk);
     CHECK(viewport->AttachedDevice() == device);
     rig.gpu.createTextureResult = platform::TextureId{5};
+    REQUIRE(rig.back->GpuTexture().Ok()); // the texture is made at the first Gpu use
     CHECK(viewport->Clear({{0, 0, 8, 8}}, kClearTarget) == kDdOk);
     CHECK(rig.gpu.log.Calls().back() == "Fill(5, 0, 0, 8, 8, 0)"); // Clear is opaque black
     device->Release();
@@ -126,6 +127,7 @@ TEST_CASE("Clear2 with no rectangles clears the whole viewport") {
     REQUIRE(device->AddViewport(viewport) == kDdOk);
     REQUIRE(device->SetCurrentViewport(viewport) == kDdOk);
     rig.gpu.createTextureResult = platform::TextureId{5};
+    REQUIRE(rig.back->GpuTexture().Ok()); // the texture is made at the first Gpu use
     CHECK(viewport->Clear2({}, kClearTarget, 0xFF0000FF, 1.0f, 0) == kDdOk);
     CHECK(rig.gpu.log.Calls().back() == "Fill(5, 100, 50, 200, 100, 31)");
     // Inside a scene the Gpu records one Clear over the viewport's rectangle.

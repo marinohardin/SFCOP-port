@@ -98,7 +98,7 @@ TEST_CASE("a handle outlives its view while the surface lives") {
     device->Release();
 }
 
-TEST_CASE("Load copies the pixels on the Gpu and the colour key of a matching texture") {
+TEST_CASE("Load copies the pixels and the colour key of a matching texture") {
     D3dRig rig;
     rig.gpu.createTextureResult = platform::TextureId{3};
     ddraw4::Surface *fromSurface = makeTextureSurface(rig, 4, PixelFormat::kRgb565);
@@ -116,13 +116,40 @@ TEST_CASE("Load copies the pixels on the Gpu and the colour key of a matching te
     rig.gpu.createTextureResult = platform::TextureId{4};
     rig.gpu.log.Clear();
     CHECK(to->Load(from) == kDdOk);
+    // Both host copies are current: the copy is made there, and the texture gets it at its use.
+    CHECK(rig.gpu.log.Calls().empty());
+    CHECK(ddraw4::test::readPixels16(*toSurface) == std::vector<std::uint16_t>(16, 0x1234));
+    CHECK(toSurface->GpuTexture().Ok());
     CHECK(rig.gpu.log.Calls() == test::Calls{"CreateTexture(4, 4, 0)", "SetColorKey(4, 63519)",
-                                             "WriteTexture(4, 0, 0, 0, 4, 4, 8)",
-                                             "Blit(3, 4, false)"});
+                                             "WriteTexture(4, 0, 0, 0, 4, 4, 8)"});
     ddraw4::ColorKey got;
     CHECK(toSurface->GetColorKey(ddraw4::kDdckeySrcBlt, got) == kDdOk);
     CHECK(got.low == 0xF81Fu);
     CHECK(to->Load(nullptr) == ddraw4::kDdErrInvalidParams);
+    from->Release();
+    to->Release();
+}
+
+TEST_CASE("Load copies the pixels on the Gpu from a texture the Gpu drew") {
+    D3dRig rig;
+    rig.gpu.createTextureResult = platform::TextureId{3};
+    ddraw4::Surface *fromSurface = makeTextureSurface(rig, 4, PixelFormat::kRgb565);
+    ddraw4::Surface *toSurface = makeTextureSurface(rig, 4, PixelFormat::kRgb565);
+    ddraw4::ColorKey key{0xF81F, 0xF81F};
+    REQUIRE(fromSurface->SetColorKey(ddraw4::kDdckeySrcBlt, &key) == kDdOk);
+    REQUIRE(fromSurface->GpuTexture().Ok());
+    fromSurface->MarkGpuWritten(); // a scene drew into it: its host copy is stale
+    Texture *from = new Texture(*fromSurface);
+    Texture *to = new Texture(*toSurface);
+    fromSurface->Release();
+    toSurface->Release();
+
+    rig.gpu.createTextureResult = platform::TextureId{4};
+    rig.gpu.log.Clear();
+    CHECK(to->Load(from) == kDdOk);
+    CHECK(rig.gpu.log.Calls() == test::Calls{"CreateTexture(4, 4, 0)", "SetColorKey(4, 63519)",
+                                             "WriteTexture(4, 0, 0, 0, 4, 4, 8)",
+                                             "Blit(3, 4, false)"});
     from->Release();
     to->Release();
 }

@@ -22,9 +22,7 @@ const TlVertex kTriangle[4] = {
 // Gives the back buffer texture 5 and the z-buffer texture 6.
 void giveTextures(D3dRig &rig) {
     rig.gpu.createTextureResult = TextureId{5};
-    ddraw4::SurfaceDesc locked;
-    REQUIRE(rig.back->Lock(nullptr, locked, 0) == kDdOk);
-    REQUIRE(rig.back->Unlock() == kDdOk);
+    REQUIRE(rig.back->GpuTexture().Ok()); // a surface's texture is made at its first Gpu use
     rig.gpu.createTextureResult = TextureId{6};
     ddraw4::BltFx fx;
     fx.fillColor = 0xFFFF;

@@ -40,6 +40,7 @@ struct Rig {
 
     Rig() {
         destroyed().clear();
+        DirectDraw::ForgetDisplayOwners();
         ComObject::SetDestroyHook(&recordDestroyed);
         dd = new DirectDraw(gpu, window, memory); // the reference DirectDrawCreate hands out
     }
