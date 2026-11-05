@@ -1243,6 +1243,13 @@ void k_TerminateProcess() { // (process, code)
 // ---- module handles ----
 
 void k_LoadLibraryA() { // (name)
+    if (MissionModules().Handles(guestString(A32(0)))) { // a mission script: its native module
+        const std::uint32_t handle = MissionModules().Load(guestString(A32(0)));
+        if (handle == 0) {
+            hle_set_last_error(kErrorModNotFound);
+        }
+        RET(handle, 1);
+    }
     if (const auto handle = runtime().BuiltIns().Find(guestString(A32(0)))) {
         RET(*handle, 1);
     }
@@ -1260,6 +1267,13 @@ void k_GetModuleHandleA() { // (name): NULL names the exe, which win32hle's row 
 
 void k_GetProcAddress() { // (module, name)
     const std::uint32_t module = A32(0), name = A32(1);
+    if (MissionModules().Owns(module)) { // by name only, as the built-in modules
+        const std::uint32_t address = name >= 0x10000u ? MissionModules().Export(module, guestString(name)) : 0;
+        if (address == 0) {
+            hle_set_last_error(kErrorProcNotFound);
+        }
+        RET(address, 2);
+    }
     if (!runtime().BuiltIns().IsBuiltIn(module)) {
         handOn("GetProcAddress", 2, 0);
         return;
@@ -1275,6 +1289,10 @@ void k_GetProcAddress() { // (module, name)
 }
 
 void k_FreeLibrary() { // (module): a built-in module stays
+    if (MissionModules().Owns(A32(0))) {
+        MissionModules().Free(A32(0));
+        RET(1, 1);
+    }
     if (runtime().BuiltIns().IsBuiltIn(A32(0))) {
         RET(1, 1);
     }

@@ -41,4 +41,22 @@ private:
     std::map<std::uint32_t, std::map<std::string, std::uint32_t, std::less<>>> exports_;
 };
 
+// DLLs the client makes on demand from files: the game's mission scripts (".scr"), which the
+// native mission modules answer. LoadLibraryA, GetProcAddress and FreeLibrary ask it first for a
+// name it handles or a handle it owns. Called with the guest machine held.
+class ModuleProvider {
+public:
+    virtual ~ModuleProvider() = default;
+    virtual bool Handles(std::string_view name) const = 0;
+    // The module's handle, or 0 when it cannot be loaded (the provider logs why).
+    virtual std::uint32_t Load(std::string_view name) = 0;
+    virtual bool Owns(std::uint32_t handle) const = 0;
+    // The guest address of an export by name, or 0.
+    virtual std::uint32_t Export(std::uint32_t handle, std::string_view function) = 0;
+    virtual void Free(std::uint32_t handle) = 0;
+};
+
+// The client's provider, defined by src/app/scripts/loader/GuestModules.cpp.
+ModuleProvider &MissionModules();
+
 } // namespace sfcop::hle::kernel32rt
