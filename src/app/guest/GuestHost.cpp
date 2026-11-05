@@ -10,6 +10,7 @@
 #include "hle/kernel/KernelBridge.h"
 #include "hle/kernel32rt/Runtime.h"
 #include "hle/registry/RegistryBridge.h"
+#include "hle/user32/User32.h"
 
 extern "C" {
 #include "pe_loader.h"
@@ -49,7 +50,6 @@ namespace sfcop::guest {
 namespace {
 
 constexpr std::uint32_t kImageBase = 0x00400000u;
-constexpr std::uint32_t kWmClose = 0x0010u;
 
 auto g_start = std::chrono::steady_clock::now(); // set by Run()
 std::atomic<bool> g_reachedGoal{false};
@@ -198,6 +198,7 @@ void setUpStaticTls(const pe_image &image) {
 // Run() reads the window's events (GuestPump.h).
 
 EventPump *g_pump = nullptr;
+std::atomic<bool> g_stopping{false}; // the run is ending (onExit): the user32 module's waits end
 const Options *g_options = nullptr;
 ShotSchedule *g_shotSchedule = nullptr;
 
@@ -230,6 +231,26 @@ void takeShot() {
     }
 }
 
+// DirectDraw's display texture, for USER32's dialogs.
+std::optional<hle::user32::DisplayTarget> displayTarget() {
+    for (hle::ddraw4::ComObject *host :
+         hle::ddraw4::GuestViews::Instance().Hosts(hle::ddraw4::GuestInterface::kDirectDraw)) {
+        auto *draw = static_cast<hle::ddraw4::DirectDraw *>(host);
+        if (draw->Primary() == nullptr) {
+            continue;
+        }
+        const auto texture = draw->DisplayTexture();
+        if (!texture.Ok()) {
+            continue;
+        }
+        const hle::ddraw4::DisplayModeState &mode = draw->Mode();
+        return hle::user32::DisplayTarget{texture.Value(), mode.width, mode.height,
+                                          mode.bitsPerPixel == 8 ? platform::PixelFormat::kXrgb8888
+                                                                 : draw->PrimaryFormat()};
+    }
+    return std::nullopt;
+}
+
 void pump() {
     if (g_pump->Pump()) {
         sfcop_dinput_pump();
@@ -248,6 +269,7 @@ void pump() {
 // Nothing of the Store needs flushing here: it never buffers in user space (every Write goes
 // straight to the operating system), so a file the game wrote is complete when this runs.
 void onExit(int code) {
+    g_stopping = true;
     std::fflush(stdout);
     std::fflush(stderr);
     std::_Exit(code == 0 ? 0 : 1);
@@ -304,11 +326,10 @@ void ReachedGoal() {
 int Run(const Options &options, Components &components) {
     g_start = std::chrono::steady_clock::now();
     g_components = &components;
-    EventPump eventPump(components.window, [] {
-        // As Windows does for the close box: the game's window gets WM_CLOSE.
-        if (const uint32_t window = hle_first_hwnd()) {
-            hle_post_message(window, kWmClose, 0, 0);
-        }
+    // The one drain of the Window: each event goes to the user32 module's message queue, which
+    // makes the close box a WM_CLOSE to the active window, and keys and the mouse their messages.
+    EventPump eventPump(components.window, [](const platform::WindowEvent &event) {
+        hle::user32::DeliverEvent(event);
     });
     eventPump.BindToCallingThread(); // the game's main thread is this one
     g_pump = &eventPump;
@@ -392,6 +413,15 @@ int Run(const Options &options, Components &components) {
     // guest range, before any guest code runs.
     sfcop_guest_load_objects();
     hle_set_pump_hook(pump);
+    // The user32 module holds the components for the life of this function, which never returns
+    // to its caller before the process ends. Once, before any guest code: a second attach, or a
+    // USER32 row before it, fails the run.
+    if (!hle::user32::AttachHost(hle::user32::Host{&components.window, &components.input,
+                                                   &components.gpu, pump,
+                                                   options.headless ? nullptr : displayTarget,
+                                                   [] { return g_stopping.load(); }})) {
+        return 1;
+    }
     hle_on_exit = onExit;
     if (options.watchdogSeconds != 0) {
         const unsigned seconds = options.watchdogSeconds;

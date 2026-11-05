@@ -4,8 +4,9 @@
 
 namespace sfcop::guest {
 
-EventPump::EventPump(platform::Window &window, std::function<void()> closeRequested)
-    : window_(window), closeRequested_(std::move(closeRequested)) {}
+EventPump::EventPump(platform::Window &window,
+                     std::function<void(const platform::WindowEvent &)> onEvent)
+    : window_(window), onEvent_(std::move(onEvent)) {}
 
 void EventPump::BindToCallingThread() {
     mainThread_ = std::this_thread::get_id();
@@ -24,8 +25,8 @@ bool EventPump::Pump() {
         if (!event.Ok() || !event.Value()) {
             break;
         }
-        if (event.Value()->type == platform::WindowEventType::kCloseRequested && closeRequested_) {
-            closeRequested_();
+        if (onEvent_) {
+            onEvent_(*event.Value());
         }
     }
     return true;

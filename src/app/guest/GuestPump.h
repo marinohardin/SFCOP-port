@@ -4,6 +4,10 @@
 // event queue may be read from the main thread only (SDL on macOS requires it, platform/Window).
 // The pump records the thread that bound it and does nothing on any other.
 //
+// This is the one place the Window is drained. Each event it reads goes to one sink, in order: the
+// user32 module's message queue (hle/user32), which turns keys, mouse, focus and the close box
+// into the messages the game reads.
+//
 // No lifted code in this file: it is built into the tests too.
 #pragma once
 
@@ -16,8 +20,8 @@ namespace sfcop::guest {
 
 class EventPump {
 public:
-    // `closeRequested` runs, on the bound thread, for each close request the window reports.
-    EventPump(platform::Window &window, std::function<void()> closeRequested);
+    // `onEvent` runs, on the bound thread, for each event the window reports.
+    EventPump(platform::Window &window, std::function<void(const platform::WindowEvent &)> onEvent);
 
     // Makes the calling thread the one that pumps. Once, from Run().
     void BindToCallingThread();
@@ -28,7 +32,7 @@ public:
 
 private:
     platform::Window &window_;
-    std::function<void()> closeRequested_;
+    std::function<void(const platform::WindowEvent &)> onEvent_;
     std::thread::id mainThread_{};
     bool bound_ = false;
 };

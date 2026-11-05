@@ -8,11 +8,11 @@ ADVAPI32.DLL	RegOpenKeyExA	-	stdcall	20	implemented	0x0043497A	hle/registry Regi
 ADVAPI32.DLL	RegQueryValueExA	-	stdcall	24	implemented	0x0040FBB3	hle/registry Registry.cpp: REG_DWORD, REG_SZ, REG_BINARY; ERROR_MORE_DATA with the size
 ADVAPI32.DLL	RegSetValueExA	-	stdcall	24	implemented	0x006E231F	hle/registry Registry.cpp: REG_DWORD, REG_SZ, REG_BINARY
 ADVAPI32.DLL	ReportEventA	-	stdcall	36	stub	0x00710842	hle/registry Registry.cpp: TRUE for an open source; the report is not kept
-COMDLG32.DLL	CommDlgExtendedError	-	stdcall	0	stub-spike	0x0062FEDE	P1-2 misc_stubs.c: fixed result 0
-COMDLG32.DLL	GetOpenFileNameA	-	stdcall	4	stub-spike	0x00630495	P1-2 misc_stubs.c: fixed result FALSE (cancelled)
-COMDLG32.DLL	GetOpenFileNameW	-	stdcall	4	stub-spike	0x0062FDD6	P1-2 misc_stubs.c: fixed result FALSE (cancelled)
-COMDLG32.DLL	GetSaveFileNameA	-	stdcall	4	stub-spike	0x00630C55	P1-2 misc_stubs.c: fixed result FALSE (cancelled)
-COMDLG32.DLL	GetSaveFileNameW	-	stdcall	4	stub-spike	0x00630856	P1-2 misc_stubs.c: fixed result FALSE (cancelled)
+COMDLG32.DLL	CommDlgExtendedError	-	stdcall	0	stub	0x0062FEDE	hle/user32 User32Guest.cpp: no error (the file dialogs are never opened)
+COMDLG32.DLL	GetOpenFileNameA	-	stdcall	4	stub	0x00630495	hle/user32 User32Guest.cpp: cancelled; the game opens no file dialog on its way to the menus
+COMDLG32.DLL	GetOpenFileNameW	-	stdcall	4	stub	0x0062FDD6	hle/user32 User32Guest.cpp: cancelled, as GetOpenFileNameA
+COMDLG32.DLL	GetSaveFileNameA	-	stdcall	4	stub	0x00630C55	hle/user32 User32Guest.cpp: cancelled, as GetOpenFileNameA
+COMDLG32.DLL	GetSaveFileNameW	-	stdcall	4	stub	0x00630856	hle/user32 User32Guest.cpp: cancelled, as GetOpenFileNameA
 DBGHELP.DLL	StackWalk	-	stdcall	36	stub	0x007121FE	hle/kernel32rt Kernel32rtGuest.cpp: fixed result 0 (no frame: lifted code has no x86 frames)
 DBGHELP.DLL	SymFunctionTableAccess	-	stdcall	8	stub	0x007121EF	hle/kernel32rt Kernel32rtGuest.cpp: fixed result 0
 DBGHELP.DLL	SymGetLineFromAddr	-	stdcall	16	stub	0x0071259F	hle/kernel32rt Kernel32rtGuest.cpp: fixed result 0
@@ -27,28 +27,28 @@ DDRAW.DLL	DirectDrawCreateClipper	-	stdcall	12	implemented	0x006B46E4	ddraw4 Cli
 DDRAW.DLL	DirectDrawEnumerateA	-	stdcall	8	implemented	0x006B79D5	Ddraw4Guest.cpp: the one display device; without a guest host, the boot platform's (TEMPORARY); called on the boot to the CD-key prompt
 DINPUT.DLL	DirectInputCreateA	-	stdcall	16	implemented	0x0040142E	src/hle/dinput: DirectInput::Create; versions 0x0300 to 0x0700 (the game passes 0x0700 and a null hinst); called on the boot to the CD-key prompt
 DSOUND.DLL	DirectSoundCreate	1	stdcall	12	implemented	0x006413C4	src/hle/ds3d: opens Audio at 44100 Hz stereo; DSERR_NODRIVER when it does not open
-GDI32.DLL	BitBlt	-	stdcall	36	implemented-spike	0x006B2C37	win32hle gdidc.c
-GDI32.DLL	CreateCompatibleDC	-	stdcall	4	implemented-spike	0x006B2606	win32hle gdidc.c
-GDI32.DLL	CreateDIBSection	-	stdcall	24	implemented-spike	0x006B3100	win32hle gdi32.c
-GDI32.DLL	CreateFontA	-	stdcall	56	implemented-spike	0x00629CB7	win32hle gdidc.c
-GDI32.DLL	DeleteDC	-	stdcall	4	implemented-spike	0x006B26EF	win32hle gdidc.c
-GDI32.DLL	DeleteObject	-	stdcall	4	implemented-spike	0x00629B15	win32hle gdidc.c
-GDI32.DLL	ExtTextOutA	-	stdcall	32	implemented-spike	0x00629BD8	P1-2 misc_stubs.c
-GDI32.DLL	GetDeviceCaps	-	stdcall	8	implemented-spike	0x00629C7D	win32hle gdi32.c
-GDI32.DLL	GetDIBColorTable	-	stdcall	16	stub-spike	0x006B263C	P1-2 misc_stubs.c: fixed result 0
-GDI32.DLL	GetStockObject	-	stdcall	4	implemented-spike	0x00401502	win32hle gdidc.c; called on the boot to the CD-key prompt
-GDI32.DLL	GetSystemPaletteEntries	-	stdcall	16	stub-spike	0x006B3052	win32hle gdidc.c: fixed result 0
-GDI32.DLL	GetTextExtentPoint32A	-	stdcall	16	implemented-spike	0x006B4E27	win32hle gdidc.c
-GDI32.DLL	GetTextMetricsA	-	stdcall	8	implemented-spike	0x00629E37	win32hle gdidc.c
-GDI32.DLL	PatBlt	-	stdcall	24	implemented-spike	0x006B4DE3	win32hle gdidc.c
-GDI32.DLL	SelectObject	-	stdcall	8	implemented-spike	0x00629B81	win32hle gdidc.c
-GDI32.DLL	SetBkColor	-	stdcall	8	implemented-spike	0x00401520	win32hle gdidc.c; called on the boot to the CD-key prompt
-GDI32.DLL	SetBkMode	-	stdcall	8	implemented-spike	0x00629B92	win32hle gdidc.c
-GDI32.DLL	SetDIBColorTable	-	stdcall	16	implemented-spike	0x006B2796	win32hle gdidc.c
-GDI32.DLL	SetTextAlign	-	stdcall	8	implemented-spike	0x00401517	win32hle gdidc.c; called on the boot to the CD-key prompt
-GDI32.DLL	SetTextColor	-	stdcall	8	implemented-spike	0x0040152C	win32hle gdidc.c; called on the boot to the CD-key prompt
-GDI32.DLL	StretchBlt	-	stdcall	44	implemented-spike	0x006B2E02	win32hle gdidc.c
-GDI32.DLL	TextOutA	-	stdcall	20	implemented-spike	0x0040155C	win32hle gdidc.c; called on the boot to the CD-key prompt
+GDI32.DLL	BitBlt	-	stdcall	36	implemented	0x006B2C37	hle/gdi32 Gdi.cpp: the ROP3 table; a DirectDraw surface's DC: win32hle's row
+GDI32.DLL	CreateCompatibleDC	-	stdcall	4	implemented	0x006B2606	hle/gdi32 Gdi.cpp
+GDI32.DLL	CreateDIBSection	-	stdcall	24	implemented	0x006B3100	hle/gdi32 Gdi.cpp: 8, 16, 24, 32 bits, BI_RGB and BI_BITFIELDS, bits in guest memory
+GDI32.DLL	CreateFontA	-	stdcall	56	implemented	0x00629CB7	hle/gdi32 Font.cpp: this module's 6x8 font, scaled by the height
+GDI32.DLL	DeleteDC	-	stdcall	4	implemented	0x006B26EF	hle/gdi32 Gdi.cpp
+GDI32.DLL	DeleteObject	-	stdcall	4	implemented	0x00629B15	hle/gdi32 Gdi.cpp
+GDI32.DLL	ExtTextOutA	-	stdcall	32	implemented	0x00629BD8	hle/gdi32 Gdi.cpp
+GDI32.DLL	GetDeviceCaps	-	stdcall	8	implemented	0x00629C7D	hle/gdi32 Gdi.cpp: the screen at 32 bits
+GDI32.DLL	GetDIBColorTable	-	stdcall	16	implemented	0x006B263C	hle/gdi32 Gdi.cpp
+GDI32.DLL	GetStockObject	-	stdcall	4	implemented	0x00401502	hle/gdi32 Gdi.cpp
+GDI32.DLL	GetSystemPaletteEntries	-	stdcall	16	implemented	0x006B3052	hle/gdi32 Gdi.cpp: the twenty static colours
+GDI32.DLL	GetTextExtentPoint32A	-	stdcall	16	implemented	0x006B4E27	hle/gdi32 Font.cpp
+GDI32.DLL	GetTextMetricsA	-	stdcall	8	implemented	0x00629E37	hle/gdi32 Font.cpp
+GDI32.DLL	PatBlt	-	stdcall	24	implemented	0x006B4DE3	hle/gdi32 GdiDraw.cpp
+GDI32.DLL	SelectObject	-	stdcall	8	implemented	0x00629B81	hle/gdi32 Gdi.cpp
+GDI32.DLL	SetBkColor	-	stdcall	8	implemented	0x00401520	hle/gdi32 Gdi.cpp
+GDI32.DLL	SetBkMode	-	stdcall	8	implemented	0x00629B92	hle/gdi32 Gdi.cpp
+GDI32.DLL	SetDIBColorTable	-	stdcall	16	implemented	0x006B2796	hle/gdi32 Gdi.cpp
+GDI32.DLL	SetTextAlign	-	stdcall	8	implemented	0x00401517	hle/gdi32 Gdi.cpp
+GDI32.DLL	SetTextColor	-	stdcall	8	implemented	0x0040152C	hle/gdi32 Gdi.cpp
+GDI32.DLL	StretchBlt	-	stdcall	44	implemented	0x006B2E02	hle/gdi32 GdiDraw.cpp: point sampling, mirrored for a negative extent
+GDI32.DLL	TextOutA	-	stdcall	20	implemented	0x0040155C	hle/gdi32 GdiDraw.cpp: this module's font
 KERNEL32.DLL	CloseHandle	-	stdcall	4	implemented	0x00619116	hle/kernel Files.cpp for its file handles; any other handle goes to win32hle kernel32_ext.c; called on the boot to the CD-key prompt
 KERNEL32.DLL	CompareStringA	-	stdcall	24	implemented-spike	0x0074B92A	win32hle kernel32_crt.c
 KERNEL32.DLL	CompareStringW	-	stdcall	24	stub-spike	0x0074B90D	win32hle kernel32_crt.c: fixed result 0, last error ERROR_CALL_NOT_IMPLEMENTED
@@ -247,80 +247,80 @@ MSS32.DLL	_AIL_waveOutOpen@16	-	stdcall	16	implemented	0x0050EF6E	src/hle/miles:
 OLE32.DLL	CoCreateInstance	-	stdcall	20	implemented-spike	0x0061678A	win32hle ole32.c
 OLE32.DLL	CoInitialize	-	stdcall	4	stub-spike	0x0061179F	win32hle ole32.c: fixed result S_OK; called on the boot to the CD-key prompt
 OLE32.DLL	CoUninitialize	-	stdcall	0	implemented-spike	0x006100E6	win32hle ole32.c
-USER32.DLL	AdjustWindowRect	-	stdcall	12	stub-spike	0x00699980	win32hle user32.c: fixed result 1; called on the boot to the CD-key prompt
-USER32.DLL	AppendMenuA	-	stdcall	16	implemented-spike	0x00629D2F	win32hle user32.c
-USER32.DLL	BeginPaint	-	stdcall	8	implemented-spike	0x00629DD3	win32hle user32.c; called on the boot to the CD-key prompt
-USER32.DLL	CallNextHookEx	-	stdcall	16	stub-spike	0x006996C9	win32hle user32.c: fixed result 0
-USER32.DLL	CallWindowProcA	-	stdcall	20	implemented-spike	0x0069EDA9	win32hle user32.c; called on the boot to the CD-key prompt
-USER32.DLL	ChangeDisplaySettingsA	-	stdcall	8	stub-spike	0x006B9079	P1-2 misc_stubs.c: fixed result 0
-USER32.DLL	CheckMenuItem	-	stdcall	12	implemented-spike	0x00629D3A	win32hle user32.c
-USER32.DLL	ClientToScreen	-	stdcall	8	implemented-spike	0x006B4217	win32hle user32.c
-USER32.DLL	CloseClipboard	-	stdcall	0	stub-spike	0x004D3833	win32hle user32.c: fixed result 1
-USER32.DLL	CreateWindowExA	-	stdcall	48	implemented-spike	0x00629CEB	win32hle user32.c; called on the boot to the CD-key prompt
-USER32.DLL	DefWindowProcA	-	stdcall	16	implemented-spike	0x00629C35	win32hle user32.c; called on the boot to the CD-key prompt
-USER32.DLL	DeleteMenu	-	stdcall	12	implemented-spike	0x00629D1F	win32hle user32.c
-USER32.DLL	DestroyWindow	-	stdcall	4	implemented-spike	0x00629B04	win32hle user32.c
-USER32.DLL	DialogBoxIndirectParamA	-	stdcall	20	implemented-spike	0x006AACD1	win32hle user32.c
-USER32.DLL	DispatchMessageA	-	stdcall	4	implemented-spike	0x00699A40	win32hle user32.c; called on the boot to the CD-key prompt
-USER32.DLL	DrawMenuBar	-	stdcall	4	stub-spike	0x0069AA73	win32hle user32.c: fixed result 1
-USER32.DLL	EmptyClipboard	-	stdcall	0	implemented-spike	0x004D388D	win32hle user32.c
-USER32.DLL	EndDialog	-	stdcall	8	implemented-spike	0x006AAD75	win32hle user32.c
-USER32.DLL	EndPaint	-	stdcall	8	implemented-spike	0x00629DDF	win32hle user32.c; called on the boot to the CD-key prompt
-USER32.DLL	EnumDisplaySettingsA	-	stdcall	12	implemented-spike	0x006B90C7	P1-2 misc_stubs.c
-USER32.DLL	FillRect	-	stdcall	12	implemented-spike	0x0040150E	win32hle gdidc.c; called on the boot to the CD-key prompt
-USER32.DLL	FindWindowA	-	stdcall	8	implemented-spike	0x00699865	win32hle user32.c; called on the boot to the CD-key prompt
-USER32.DLL	GetActiveWindow	-	stdcall	0	implemented-spike	0x0062A0C2	win32hle user32.c
-USER32.DLL	GetAsyncKeyState	-	stdcall	4	implemented-spike	0x00699670	win32hle user32.c
-USER32.DLL	GetClientRect	-	stdcall	8	implemented-spike	0x004014FA	win32hle user32.c; called on the boot to the CD-key prompt
-USER32.DLL	GetClipboardData	-	stdcall	4	implemented-spike	0x004D37F8	win32hle user32.c
-USER32.DLL	GetCursorPos	-	stdcall	4	implemented-spike	0x0069ABB8	win32hle user32.c; called on the boot to the CD-key prompt
-USER32.DLL	GetDC	-	stdcall	4	implemented-spike	0x004014EB	win32hle gdidc.c; called on the boot to the CD-key prompt
-USER32.DLL	GetDesktopWindow	-	stdcall	0	stub-spike	0x006B25F4	win32hle user32.c: fixed result 0x0000FFF0u
-USER32.DLL	GetKeyState	-	stdcall	4	implemented-spike	0x0069AC12	win32hle user32.c
-USER32.DLL	GetMenu	-	stdcall	4	implemented-spike	0x0069AA4C	win32hle user32.c; called on the boot to the CD-key prompt
-USER32.DLL	GetMessageA	-	stdcall	16	implemented-spike	0x00699A78	win32hle user32.c
-USER32.DLL	GetSystemMenu	-	stdcall	8	stub-spike	0x00629D07	P1-2 misc_stubs.c: fixed result 0
-USER32.DLL	GetSystemMetrics	-	stdcall	4	implemented-spike	0x0062A0C8	win32hle user32.c
-USER32.DLL	GetUpdateRect	-	stdcall	12	implemented-spike	0x00629DBF	win32hle user32.c; called on the boot to the CD-key prompt
-USER32.DLL	GetWindowLongA	-	stdcall	8	implemented-spike	0x00699CF1	win32hle user32.c; called on the boot to the CD-key prompt
-USER32.DLL	GetWindowRect	-	stdcall	8	implemented-spike	0x0069A8BE	win32hle user32.c; called on the boot to the CD-key prompt
-USER32.DLL	InvalidateRect	-	stdcall	12	implemented-spike	0x00699FEA	win32hle user32.c
-USER32.DLL	IsIconic	-	stdcall	4	stub-spike	0x0069A49A	P1-2 misc_stubs.c: fixed result 0; called on the boot to the CD-key prompt
-USER32.DLL	IsWindow	-	stdcall	4	implemented-spike	0x0069A488	win32hle user32.c; called on the boot to the CD-key prompt
-USER32.DLL	LoadCursorA	-	stdcall	8	implemented-spike	0x0062A08D	win32hle user32.c; called on the boot to the CD-key prompt
-USER32.DLL	LoadMenuA	-	stdcall	8	implemented-spike	0x0069994A	win32hle user32.c; called on the boot to the CD-key prompt
-USER32.DLL	MapVirtualKeyA	-	stdcall	8	implemented-spike	0x0069A325	win32hle user32.c
-USER32.DLL	MessageBeep	-	stdcall	4	stub-spike	0x00735C26	win32hle user32.c: fixed result 1
-USER32.DLL	MessageBoxA	-	stdcall	16	implemented-spike	0x0069305D	win32hle user32.c
-USER32.DLL	OffsetRect	-	stdcall	12	implemented-spike	0x006B3AE1	win32hle user32.c
-USER32.DLL	OpenClipboard	-	stdcall	4	stub-spike	0x004D37EC	win32hle user32.c: fixed result 1
-USER32.DLL	PeekMessageA	-	stdcall	20	implemented-spike	0x00699A99	win32hle user32.c; called on the boot to the CD-key prompt
-USER32.DLL	PostMessageA	-	stdcall	16	implemented-spike	0x0069AB63	win32hle user32.c; called on the boot to the CD-key prompt
-USER32.DLL	PostQuitMessage	-	stdcall	4	implemented-spike	0x00699DDF	win32hle user32.c
-USER32.DLL	RedrawWindow	-	stdcall	16	implemented-spike	0x006A8534	win32hle user32.c
-USER32.DLL	RegisterClassA	-	stdcall	4	implemented-spike	0x0062A0AD	win32hle user32.c; called on the boot to the CD-key prompt
-USER32.DLL	ReleaseDC	-	stdcall	8	implemented-spike	0x00401566	win32hle gdidc.c; called on the boot to the CD-key prompt
-USER32.DLL	ScreenToClient	-	stdcall	8	implemented-spike	0x0069ABD1	win32hle user32.c; called on the boot to the CD-key prompt
-USER32.DLL	SendMessageA	-	stdcall	16	implemented-spike	0x00629BAA	win32hle user32.c
-USER32.DLL	SetActiveWindow	-	stdcall	4	implemented-spike	0x0062A14E	win32hle user32.c
-USER32.DLL	SetClipboardData	-	stdcall	8	implemented-spike	0x004D3896	win32hle user32.c
-USER32.DLL	SetCursor	-	stdcall	4	implemented-spike	0x0069EEE7	win32hle user32.c
-USER32.DLL	SetFocus	-	stdcall	4	implemented-spike	0x0040C456	win32hle user32.c; called on the boot to the CD-key prompt
-USER32.DLL	SetForegroundWindow	-	stdcall	4	implemented-spike	0x0069A493	win32hle user32.c
-USER32.DLL	SetMenu	-	stdcall	8	implemented-spike	0x0069AA66	win32hle user32.c
-USER32.DLL	SetRect	-	stdcall	20	implemented-spike	0x0069D305	win32hle user32.c; called on the boot to the CD-key prompt
-USER32.DLL	SetWindowLongA	-	stdcall	12	implemented-spike	0x0069D7CE	win32hle user32.c; called on the boot to the CD-key prompt
-USER32.DLL	SetWindowPos	-	stdcall	28	implemented-spike	0x00629D67	win32hle user32.c; called on the boot to the CD-key prompt
-USER32.DLL	SetWindowsHookExA	-	stdcall	16	implemented-spike	0x00699711	win32hle user32.c; called on the boot to the CD-key prompt
-USER32.DLL	SetWindowTextA	-	stdcall	8	implemented-spike	0x0069A9C4	win32hle user32.c; called on the boot to the CD-key prompt
-USER32.DLL	ShowCursor	-	stdcall	4	implemented-spike	0x0040BD07	win32hle user32.c; called on the boot to the CD-key prompt
-USER32.DLL	ShowWindow	-	stdcall	8	implemented-spike	0x0062A134	win32hle user32.c; called on the boot to the CD-key prompt
-USER32.DLL	SystemParametersInfoA	-	stdcall	16	implemented-spike	0x00699758	P1-2 misc_stubs.c
-USER32.DLL	TranslateMessage	-	stdcall	4	implemented-spike	0x00699A3A	win32hle user32.c; called on the boot to the CD-key prompt
-USER32.DLL	UnhookWindowsHookEx	-	stdcall	4	implemented-spike	0x00699795	win32hle user32.c
-USER32.DLL	UpdateWindow	-	stdcall	4	implemented-spike	0x0062A13E	win32hle user32.c; called on the boot to the CD-key prompt
-USER32.DLL	VkKeyScanA	-	stdcall	4	implemented-spike	0x0069ADA7	P1-2 misc_stubs.c
-USER32.DLL	wsprintfA	-	varargs	0	implemented-spike	0x0062A70E	win32hle user32.c
+USER32.DLL	AdjustWindowRect	-	stdcall	12	implemented	0x00699980	hle/user32 WindowManager.cpp: this module's frame sizes
+USER32.DLL	AppendMenuA	-	stdcall	16	implemented	0x00629D2F	hle/user32 WindowManager.cpp: menus as bookkeeping
+USER32.DLL	BeginPaint	-	stdcall	8	implemented	0x00629DD3	hle/user32 User32.cpp: validates; a DC on the screen
+USER32.DLL	CallNextHookEx	-	stdcall	16	stub	0x006996C9	hle/user32 User32Guest.cpp: 0; hooks are recorded, never called
+USER32.DLL	CallWindowProcA	-	stdcall	20	implemented	0x0069EDA9	hle/user32 User32.cpp: the game's procedure or this module's
+USER32.DLL	ChangeDisplaySettingsA	-	stdcall	8	stub	0x006B9079	hle/user32 User32Guest.cpp: accepted unchanged; the display mode is DirectDraw's (hle/ddraw4)
+USER32.DLL	CheckMenuItem	-	stdcall	12	implemented	0x00629D3A	hle/user32 WindowManager.cpp
+USER32.DLL	ClientToScreen	-	stdcall	8	implemented	0x006B4217	hle/user32 WindowManager.cpp
+USER32.DLL	CloseClipboard	-	stdcall	0	implemented	0x004D3833	hle/user32 WindowManager.cpp
+USER32.DLL	CreateWindowExA	-	stdcall	48	implemented	0x00629CEB	hle/user32 User32.cpp: WM_NCCREATE, WM_CREATE, WM_SIZE, WM_MOVE, then shown and activated for WS_VISIBLE; called on the boot
+USER32.DLL	DefWindowProcA	-	stdcall	16	implemented	0x00629C35	hle/user32 User32.cpp
+USER32.DLL	DeleteMenu	-	stdcall	12	implemented	0x00629D1F	hle/user32 WindowManager.cpp
+USER32.DLL	DestroyWindow	-	stdcall	4	implemented	0x00629B04	hle/user32 User32.cpp: WM_DESTROY parent first, WM_NCDESTROY child first
+USER32.DLL	DialogBoxIndirectParamA	-	stdcall	20	implemented	0x006AACD1	hle/user32 Dialog.cpp, User32.cpp: drawn with this project's GDI through the Presenter; when nothing can be shown the first enabled push button is pressed
+USER32.DLL	DispatchMessageA	-	stdcall	4	implemented	0x00699A40	hle/user32 User32.cpp
+USER32.DLL	DrawMenuBar	-	stdcall	4	stub	0x0069AA73	hle/user32 User32Guest.cpp: nothing drawn; menus are bookkeeping
+USER32.DLL	EmptyClipboard	-	stdcall	0	implemented	0x004D388D	hle/user32 WindowManager.cpp
+USER32.DLL	EndDialog	-	stdcall	8	implemented	0x006AAD75	hle/user32 User32.cpp
+USER32.DLL	EndPaint	-	stdcall	8	implemented	0x00629DDF	hle/user32 User32.cpp
+USER32.DLL	EnumDisplaySettingsA	-	stdcall	12	implemented	0x006B90C7	hle/user32 User32.cpp: 640x480 to 1600x1200 at 16 and 32 bits
+USER32.DLL	FillRect	-	stdcall	12	implemented	0x0040150E	hle/user32 gdi32 Gdi.cpp; a DirectDraw surface's DC: win32hle's row
+USER32.DLL	FindWindowA	-	stdcall	8	implemented	0x00699865	hle/user32 WindowManager.cpp
+USER32.DLL	GetActiveWindow	-	stdcall	0	implemented	0x0062A0C2	hle/user32 WindowManager.cpp
+USER32.DLL	GetAsyncKeyState	-	stdcall	4	implemented	0x00699670	hle/user32 User32.cpp: the Input component, now
+USER32.DLL	GetClientRect	-	stdcall	8	implemented	0x004014FA	hle/user32 WindowManager.cpp
+USER32.DLL	GetClipboardData	-	stdcall	4	implemented	0x004D37F8	hle/user32 WindowManager.cpp: the memory handle SetClipboardData was given
+USER32.DLL	GetCursorPos	-	stdcall	4	implemented	0x0069ABB8	hle/user32 MessageQueue.cpp: the platform mouse scaled to the screen; called every frame of the CD-key prompt
+USER32.DLL	GetDC	-	stdcall	4	implemented	0x004014EB	hle/user32 User32.cpp: a DC on the screen (a window's GDI drawing is not shown)
+USER32.DLL	GetDesktopWindow	-	stdcall	0	implemented	0x006B25F4	hle/user32 User32Guest.cpp: a constant window, the screen's rectangle
+USER32.DLL	GetKeyState	-	stdcall	4	implemented	0x0069AC12	hle/user32 MessageQueue.cpp: from the messages queued
+USER32.DLL	GetMenu	-	stdcall	4	implemented	0x0069AA4C	hle/user32 WindowManager.cpp
+USER32.DLL	GetMessageA	-	stdcall	16	implemented	0x00699A78	hle/user32 User32.cpp: waits, pumping, giving the machine up between pumps
+USER32.DLL	GetSystemMenu	-	stdcall	8	implemented	0x00629D07	hle/user32 WindowManager.cpp
+USER32.DLL	GetSystemMetrics	-	stdcall	4	implemented	0x0062A0C8	hle/user32 User32.cpp: the screen and this module's frame sizes
+USER32.DLL	GetUpdateRect	-	stdcall	12	implemented	0x00629DBF	hle/user32 WindowManager.cpp
+USER32.DLL	GetWindowLongA	-	stdcall	8	implemented	0x00699CF1	hle/user32 WindowManager.cpp
+USER32.DLL	GetWindowRect	-	stdcall	8	implemented	0x0069A8BE	hle/user32 WindowManager.cpp
+USER32.DLL	InvalidateRect	-	stdcall	12	implemented	0x00699FEA	hle/user32 WindowManager.cpp
+USER32.DLL	IsIconic	-	stdcall	4	implemented	0x0069A49A	hle/user32 WindowManager.cpp: the platform window's minimised state
+USER32.DLL	IsWindow	-	stdcall	4	implemented	0x0069A488	hle/user32 WindowManager.cpp
+USER32.DLL	LoadCursorA	-	stdcall	8	implemented	0x0062A08D	hle/user32 User32Guest.cpp: a handle the game only hands back
+USER32.DLL	LoadMenuA	-	stdcall	8	stub	0x0069994A	hle/user32 WindowManager.cpp: an empty menu; the resource's items are not loaded
+USER32.DLL	MapVirtualKeyA	-	stdcall	8	implemented	0x0069A325	hle/user32 Keys.cpp: a US layout
+USER32.DLL	MessageBeep	-	stdcall	4	stub	0x00735C26	hle/user32 User32Guest.cpp: silent
+USER32.DLL	MessageBoxA	-	stdcall	16	implemented	0x0069305D	hle/user32 User32.cpp: a dialog; when nothing can be shown its first button is answered (Retry at most 3 times, then Cancel)
+USER32.DLL	OffsetRect	-	stdcall	12	implemented	0x006B3AE1	hle/user32 User32Guest.cpp
+USER32.DLL	OpenClipboard	-	stdcall	4	implemented	0x004D37EC	hle/user32 WindowManager.cpp
+USER32.DLL	PeekMessageA	-	stdcall	20	implemented	0x00699A99	hle/user32 User32.cpp, MessageQueue.cpp: pumps the Window, then the host; called every frame on the boot
+USER32.DLL	PostMessageA	-	stdcall	16	implemented	0x0069AB63	hle/user32 MessageQueue.cpp
+USER32.DLL	PostQuitMessage	-	stdcall	4	implemented	0x00699DDF	hle/user32 MessageQueue.cpp
+USER32.DLL	RedrawWindow	-	stdcall	16	implemented	0x006A8534	hle/user32 User32Guest.cpp: RDW_INVALIDATE, RDW_UPDATENOW
+USER32.DLL	RegisterClassA	-	stdcall	4	implemented	0x0062A0AD	hle/user32 WindowManager.cpp
+USER32.DLL	ReleaseDC	-	stdcall	8	implemented	0x00401566	hle/user32 User32.cpp; a DirectDraw surface's DC: win32hle's row
+USER32.DLL	ScreenToClient	-	stdcall	8	implemented	0x0069ABD1	hle/user32 WindowManager.cpp
+USER32.DLL	SendMessageA	-	stdcall	16	implemented	0x00629BAA	hle/user32 User32.cpp
+USER32.DLL	SetActiveWindow	-	stdcall	4	implemented	0x0062A14E	hle/user32 User32.cpp: WM_ACTIVATE, WM_ACTIVATEAPP
+USER32.DLL	SetClipboardData	-	stdcall	8	implemented	0x004D3896	hle/user32 WindowManager.cpp: keeps the game's memory handle
+USER32.DLL	SetCursor	-	stdcall	4	implemented	0x0069EEE7	hle/user32 WindowManager.cpp
+USER32.DLL	SetFocus	-	stdcall	4	implemented	0x0040C456	hle/user32 User32.cpp
+USER32.DLL	SetForegroundWindow	-	stdcall	4	implemented	0x0069A493	hle/user32 User32.cpp: activates
+USER32.DLL	SetMenu	-	stdcall	8	implemented	0x0069AA66	hle/user32 WindowManager.cpp
+USER32.DLL	SetRect	-	stdcall	20	implemented	0x0069D305	hle/user32 User32Guest.cpp
+USER32.DLL	SetWindowLongA	-	stdcall	12	implemented	0x0069D7CE	hle/user32 WindowManager.cpp: subclassing through GWL_WNDPROC
+USER32.DLL	SetWindowPos	-	stdcall	28	implemented	0x00629D67	hle/user32 User32.cpp: the game's rectangle; the platform window's size follows DirectDraw
+USER32.DLL	SetWindowsHookExA	-	stdcall	16	stub	0x00699711	hle/user32 WindowManager.cpp: recorded, never called (the game's low-level keyboard hook only keeps the task-switch keys from Windows)
+USER32.DLL	SetWindowTextA	-	stdcall	8	implemented	0x0069A9C4	hle/user32 WindowManager.cpp: the active window's text is the platform window's title
+USER32.DLL	ShowCursor	-	stdcall	4	implemented	0x0040BD07	hle/user32 WindowManager.cpp: the platform cursor while the count is not negative
+USER32.DLL	ShowWindow	-	stdcall	8	implemented	0x0062A134	hle/user32 User32.cpp
+USER32.DLL	SystemParametersInfoA	-	stdcall	16	implemented	0x00699758	hle/user32 User32Marshal.cpp: SPI_GETWORKAREA, SPI_SETSCREENSAVERRUNNING, SPI_GETSCREENSAVEACTIVE, SPI_GETMOUSESPEED, SPI_GETMOUSE; any other action fails with ERROR_INVALID_PARAMETER
+USER32.DLL	TranslateMessage	-	stdcall	4	implemented	0x00699A3A	hle/user32 MessageQueue.cpp: WM_CHAR from a US layout
+USER32.DLL	UnhookWindowsHookEx	-	stdcall	4	implemented	0x00699795	hle/user32 WindowManager.cpp
+USER32.DLL	UpdateWindow	-	stdcall	4	implemented	0x0062A13E	hle/user32 User32Guest.cpp
+USER32.DLL	VkKeyScanA	-	stdcall	4	implemented	0x0069ADA7	hle/user32 Keys.cpp: a US layout
+USER32.DLL	wsprintfA	-	varargs	0	implemented	0x0062A70E	hle/user32 User32Guest.cpp: on win32hle's guest formatter
 WINMM.DLL	timeGetTime	-	stdcall	0	implemented	0x004C4DF7	hle/kernel32rt Time.cpp on Clock; called on the boot to the CD-key prompt
 WINMM.DLL	timeKillEvent	-	stdcall	4	implemented	0x00637B5B	hle/kernel32rt Timers.cpp: stops without the machine lock
 WINMM.DLL	timeSetEvent	-	stdcall	20	implemented	0x006379DE	hle/kernel32rt Timers.cpp: one Threads thread per timer; called on the boot to the CD-key prompt
