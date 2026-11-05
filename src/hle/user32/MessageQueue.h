@@ -24,6 +24,7 @@
 #include <functional>
 #include <optional>
 #include <utility>
+#include <vector>
 
 namespace sfcop::hle::user32 {
 
@@ -90,16 +91,35 @@ public:
     std::uint32_t SetCapture(std::uint32_t hwnd) { return std::exchange(capture_, hwnd); }
     std::uint32_t Capture() const { return capture_; }
 
+    // ClearPending: the clicks held for an activation that came another way (ShowWindow).
+    void ClearPending() { pending_.clear(); }
+
+    // --trace: one line for each of the first platform focus and button events and the queue's
+    // reaction to it (kinds and order only: no positions, no text). Unset: nothing is traced.
+    void SetTrace(std::function<void(const char *)> trace) { trace_ = std::move(trace); }
+
     std::size_t Size() const { return posted_.size(); }
 
 private:
     void key(const platform::InputEvent &input, bool down);
     void mouse(const platform::InputEvent &input, std::uint32_t message, HostSize host);
+    void postMouse(std::uint32_t target, std::uint32_t message, std::uint32_t keys,
+                   std::int32_t x, std::int32_t y);
     void activation(bool gained);
+    void trace(const char *line);
     void setKey(std::uint32_t vk, bool down);
     bool down(std::uint32_t vk) const { return (keys_[vk & 0xFF] & 0x80) != 0; }
     std::uint32_t mouseKeys() const;
     std::uint32_t keyTarget() const;
+
+    struct PendingClick {
+        std::uint32_t message, keys;
+        std::int32_t x, y;
+    };
+    std::vector<PendingClick> pending_; // buttons that came before any window was active
+
+    std::function<void(const char *)> trace_;
+    std::size_t traced_ = 0;
 
     WindowManager &windows_;
     std::function<std::uint32_t()> now_;

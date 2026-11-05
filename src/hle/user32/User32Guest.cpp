@@ -167,6 +167,10 @@ User32 &user() {
         if (host.gpu != nullptr && host.display) {
             created->SetPresenter(makeGpuPresenter(*host.gpu, host.display));
         }
+        if (win32hle_trace) {
+            created->Queue().SetTrace(
+                [](const char *line) { std::fprintf(stderr, "[user32] %s\n", line); });
+        }
         // The pump's events from here on (and those it kept so far) reach the queue.
         SetEventSink([created](const platform::WindowEvent &event) {
             created->OnWindowEvent(event);

@@ -14,6 +14,28 @@ constexpr std::uint32_t kVkF10 = 0x79;
 constexpr std::uint32_t kAnyWindow = 0;
 constexpr std::uint32_t kThreadMessages = 0xFFFFFFFFu; // PeekMessage's hWnd -1
 constexpr std::uint32_t kAltContext = 1u << 29;
+// A click that comes before its window is active waits for the activation. Eight is far more than
+// a person makes in the moment between the platform's button and focus events (a double click is
+// four); the cap only stops a window that never activates from growing the list.
+constexpr std::size_t kMaxPendingClicks = 8;
+constexpr std::size_t kMaxTraceLines = 40; // --trace: the first events only, never the whole run
+
+bool isButtonDown(std::uint32_t message) {
+    return message == kWmLButtonDown || message == kWmRButtonDown || message == kWmMButtonDown;
+}
+
+std::uint32_t buttonMask(std::uint32_t message) {
+    switch (message) {
+    case kWmLButtonDown:
+    case kWmLButtonUp:
+        return kMkLButton;
+    case kWmRButtonDown:
+    case kWmRButtonUp:
+        return kMkRButton;
+    default:
+        return kMkMButton;
+    }
+}
 
 std::uint32_t packPoint(std::int32_t x, std::int32_t y) {
     return (static_cast<std::uint32_t>(x) & 0xFFFFu) | (static_cast<std::uint32_t>(y) << 16);
@@ -34,6 +56,13 @@ bool inRange(std::uint32_t message, std::uint32_t first, std::uint32_t last) {
 
 MessageQueue::MessageQueue(WindowManager &windows, std::function<std::uint32_t()> now)
     : windows_(windows), now_(std::move(now)) {}
+
+void MessageQueue::trace(const char *line) {
+    if (trace_ && traced_ < kMaxTraceLines) {
+        ++traced_;
+        trace_(line);
+    }
+}
 
 void MessageQueue::Post(std::uint32_t hwnd, std::uint32_t message, std::uint32_t wParam,
                         std::uint32_t lParam) {
@@ -59,9 +88,11 @@ void MessageQueue::Feed(const platform::WindowEvent &event, HostSize host) {
         }
         break;
     case WindowEventType::kFocusGained:
+        trace("event focus-gained");
         activation(true);
         break;
     case WindowEventType::kFocusLost:
+        trace("event focus-lost");
         activation(false);
         break;
     case WindowEventType::kKeyDown:
@@ -91,6 +122,7 @@ void MessageQueue::Feed(const platform::WindowEvent &event, HostSize host) {
         default:
             return; // the extra buttons: no message the game reads
         }
+        trace(pressed ? "event button-down" : "event button-up");
         setKey(vk, pressed);
         mouse(event.input, message, host);
         break;
@@ -115,19 +147,51 @@ void MessageQueue::Feed(const platform::WindowEvent &event, HostSize host) {
 void MessageQueue::activation(bool gained) {
     if (gained) {
         std::uint32_t target = windows_.Active();
-        if (target == 0 && windows_.IsWindow(lastActive_)) {
+        if (target != 0) {
+            // ShowWindow already activated it: the platform's first focus event comes after the
+            // window is up. Announcing the activation again would hand the game a second
+            // WM_ACTIVATEAPP/WM_ACTIVATE/WM_SETFOCUS after a click that came before it.
+            trace("  focus-gained: a window is already active, nothing announced");
+            return;
+        }
+        if (windows_.IsWindow(lastActive_)) {
             target = lastActive_;
         }
         if (target == 0) {
             return; // no window yet: the first ShowWindow activates
         }
+        // When a button is what activates the window, Windows sends WM_MOUSEACTIVATE first (the
+        // default answer, MA_ACTIVATE, lets it through), then WM_ACTIVATE with WA_CLICKACTIVE,
+        // then the button. The platform reports the click either side of the focus event, so a
+        // held button down stands for the click that activates.
+        const auto clicked = std::find_if(pending_.begin(), pending_.end(), [](const PendingClick &c) {
+            return isButtonDown(c.message);
+        });
+        const bool byClick = clicked != pending_.end();
+        if (byClick) {
+            Post(target, kWmMouseActivate, windows_.TopLevelOf(target),
+                 kHtClient | (clicked->message << 16));
+        }
         windows_.SetActive(target);
         Post(target, kWmActivateApp, 1, 0);
-        Post(target, kWmActivate, kWaActive, 0);
+        Post(target, kWmActivate, byClick ? kWaClickActive : kWaActive, 0);
         windows_.SetFocus(target);
         Post(target, kWmSetFocus, 0, 0);
+        trace(byClick ? "  focus-gained: window activated by the held click, click replayed"
+                      : "  focus-gained: window activated");
+        for (const PendingClick &click : pending_) {
+            if (isButtonDown(click.message)) {
+                // Windows delivers the move to the click's position ahead of the button.
+                postMouse(target, kWmMouseMove, click.keys & ~buttonMask(click.message), click.x,
+                          click.y);
+            }
+            postMouse(target, click.message, click.keys, click.x, click.y);
+        }
+        pending_.clear();
         return;
     }
+    // A click held for an activation that did not come is not for the next one.
+    pending_.clear();
     const std::uint32_t active = windows_.Active();
     if (active == 0) {
         return;
@@ -181,11 +245,31 @@ void MessageQueue::mouse(const platform::InputEvent &input, std::uint32_t messag
     }
     const std::uint32_t target = capture_ != 0 ? capture_ : windows_.Active();
     if (target == 0) {
+        // A click into a window that is not active yet: some platforms report the button before
+        // the focus. Windows activates the window and then delivers the click, so the button is
+        // kept (its position and key state as it was) and posted once the window is active.
+        // A button-up is kept only for a held down of the same button; the moves are dropped (the
+        // cursor itself is already updated, and the click carries its own position).
+        const bool up = message != kWmMouseMove && !isButtonDown(message);
+        const bool heldDown =
+            std::any_of(pending_.begin(), pending_.end(),
+                        [message](const PendingClick &c) { return c.message + 1 == message; });
+        if (message != kWmMouseMove && (!up || heldDown) && pending_.size() < kMaxPendingClicks) {
+            pending_.push_back(PendingClick{message, mouseKeys(), cursorX_, cursorY_});
+            trace("  button: no window active, held for the activation");
+        } else {
+            trace("  mouse: no window active, dropped");
+        }
         return;
     }
+    postMouse(target, message, mouseKeys(), cursorX_, cursorY_);
+}
+
+void MessageQueue::postMouse(std::uint32_t target, std::uint32_t message, std::uint32_t keys,
+                             std::int32_t x, std::int32_t y) {
     std::int32_t originX = 0, originY = 0;
     windows_.ClientOrigin(target, originX, originY);
-    Post(target, message, mouseKeys(), packPoint(cursorX_ - originX, cursorY_ - originY));
+    Post(target, message, keys, packPoint(x - originX, y - originY));
 }
 
 void MessageQueue::setKey(std::uint32_t vk, bool isDown) {

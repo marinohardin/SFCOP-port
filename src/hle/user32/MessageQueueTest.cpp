@@ -358,4 +358,158 @@ TEST_CASE("The module never drains the Window itself: only the host's pump does"
     CHECK(rig.window.log.Count("PollEvent") == 0);
 }
 
+namespace {
+
+platform::WindowEvent focusEvent(platform::WindowEventType type) {
+    platform::WindowEvent event;
+    event.type = type;
+    return event;
+}
+
+// The game's window made, then the application loses the focus: the state a first click finds.
+std::uint32_t unfocusedGameWindow(test::Rig &rig) {
+    const std::uint32_t hwnd = rig.GameWindow();
+    rig.Drain();
+    rig.Event(focusEvent(platform::WindowEventType::kFocusLost));
+    rig.Drain();
+    return hwnd;
+}
+
+} // namespace
+
+TEST_CASE("A first click into an unfocused window: focus, move, down, up") {
+    test::Rig rig;
+    const std::uint32_t hwnd = unfocusedGameWindow(rig);
+    rig.Event(focusEvent(platform::WindowEventType::kFocusGained));
+    rig.Mouse(WindowEventType::kMouseMove, 300, 200);
+    rig.Mouse(WindowEventType::kMouseButtonDown, 300, 200);
+    rig.Mouse(WindowEventType::kMouseButtonUp, 300, 200);
+    const std::vector<Message> got = rig.Drain();
+    const std::uint32_t at = (200u << 16) | 300u;
+    REQUIRE(got.size() == 6);
+    CHECK(got[0].message == kWmActivateApp);
+    CHECK(got[1].message == kWmActivate);
+    CHECK(got[2].message == kWmSetFocus);
+    CHECK(got[3].message == kWmMouseMove);
+    CHECK(got[3].lParam == at);
+    CHECK(got[4].message == kWmLButtonDown);
+    CHECK(got[4].wParam == kMkLButton);
+    CHECK(got[4].lParam == at);
+    CHECK(got[4].hwnd == hwnd);
+    CHECK(got[5].message == kWmLButtonUp);
+    std::int32_t x = 0, y = 0;
+    rig.user.CursorPos(x, y);
+    CHECK(x == 300);
+    CHECK(y == 200);
+}
+
+TEST_CASE("A first click into an unfocused window: button down before focus gained") {
+    test::Rig rig;
+    const std::uint32_t hwnd = unfocusedGameWindow(rig);
+    rig.Mouse(WindowEventType::kMouseMove, 300, 200);
+    rig.Mouse(WindowEventType::kMouseButtonDown, 300, 200);
+    rig.Event(focusEvent(platform::WindowEventType::kFocusGained));
+    rig.Mouse(WindowEventType::kMouseButtonUp, 300, 200);
+    const std::vector<Message> got = rig.Drain();
+    const std::uint32_t at = (200u << 16) | 300u;
+    // As Windows does for a click that activates: WM_MOUSEACTIVATE, the activation by click, the
+    // move to the click, the button, then the release.
+    REQUIRE(got.size() == 7);
+    CHECK(got[0].message == kWmMouseActivate);
+    CHECK(got[0].wParam == hwnd);
+    CHECK(got[0].lParam == ((kWmLButtonDown << 16) | kHtClient));
+    CHECK(got[1].message == kWmActivateApp);
+    CHECK(got[2].message == kWmActivate);
+    CHECK(got[2].wParam == kWaClickActive);
+    CHECK(got[3].message == kWmSetFocus);
+    CHECK(got[4].message == kWmMouseMove);
+    CHECK(got[4].wParam == 0);
+    CHECK(got[4].lParam == at);
+    CHECK(got[5].message == kWmLButtonDown);
+    CHECK(got[5].hwnd == hwnd);
+    CHECK(got[5].wParam == kMkLButton);
+    CHECK(got[5].lParam == at);
+    CHECK(got[6].message == kWmLButtonUp);
+    CHECK(got[6].wParam == 0);
+    std::int32_t x = 0, y = 0;
+    rig.user.CursorPos(x, y);
+    CHECK(x == 300);
+    CHECK(y == 200);
+    // ScreenToClient: the window is at the origin, so the client point is the click point.
+    rig.user.Windows().ClientOrigin(hwnd, x, y);
+    CHECK(300 - x == 300);
+    CHECK(200 - y == 200);
+}
+
+TEST_CASE("A focus gained after a click makes the same sequence as one before it") {
+    // Down, up, then focus: the whole click was held; the focus replays it in order.
+    test::Rig rig;
+    unfocusedGameWindow(rig);
+    rig.Mouse(WindowEventType::kMouseButtonDown, 10, 20);
+    rig.Mouse(WindowEventType::kMouseButtonUp, 10, 20);
+    rig.Event(focusEvent(platform::WindowEventType::kFocusGained));
+    const std::vector<Message> got = rig.Drain();
+    REQUIRE(got.size() == 7);
+    CHECK(got[4].message == kWmMouseMove);
+    CHECK(got[5].message == kWmLButtonDown);
+    CHECK(got[6].message == kWmLButtonUp);
+}
+
+TEST_CASE("A click held for an activation is dropped when the focus is lost again") {
+    test::Rig rig;
+    unfocusedGameWindow(rig);
+    rig.Mouse(WindowEventType::kMouseButtonDown, 10, 20);
+    rig.Event(focusEvent(platform::WindowEventType::kFocusLost));
+    rig.Event(focusEvent(platform::WindowEventType::kFocusGained));
+    const std::vector<Message> got = rig.Drain();
+    REQUIRE(got.size() == 3); // the activation alone
+    CHECK(got[1].message == kWmActivate);
+    CHECK(got[1].wParam == kWaActive);
+}
+
+TEST_CASE("A button-up with no held down is not replayed") {
+    test::Rig rig;
+    unfocusedGameWindow(rig);
+    rig.Mouse(WindowEventType::kMouseButtonUp, 10, 20);
+    rig.Event(focusEvent(platform::WindowEventType::kFocusGained));
+    CHECK(rig.Drain().size() == 3);
+}
+
+TEST_CASE("A click before the window exists is not replayed after ShowWindow and a focus change") {
+    test::Rig rig;
+    rig.Mouse(WindowEventType::kMouseButtonDown, 50, 60); // no window yet
+    rig.Mouse(WindowEventType::kMouseButtonUp, 50, 60);
+    rig.user.Pump();
+    rig.GameWindow(); // ShowWindow activates it and drops what was held
+    rig.Drain();
+    rig.Event(focusEvent(platform::WindowEventType::kFocusLost));
+    rig.Event(focusEvent(platform::WindowEventType::kFocusGained));
+    const std::vector<Message> got = rig.Drain();
+    for (const Message &m : got) {
+        CHECK(m.message != kWmLButtonDown);
+        CHECK(m.message != kWmLButtonUp);
+        CHECK(m.message != kWmMouseMove);
+    }
+    CHECK(got.size() == 6); // inactive: 3; active again: 3
+}
+
+TEST_CASE("A focus event after the window is already active announces nothing") {
+    test::Rig rig;
+    const std::uint32_t hwnd = rig.GameWindow(); // ShowWindow made it active
+    rig.Drain();
+    REQUIRE(rig.user.Windows().Active() == hwnd);
+    rig.Mouse(WindowEventType::kMouseMove, 300, 200);
+    rig.Mouse(WindowEventType::kMouseButtonDown, 300, 200);
+    platform::WindowEvent gained;
+    gained.type = WindowEventType::kFocusGained;
+    rig.Event(gained);
+    rig.Mouse(WindowEventType::kMouseButtonUp, 300, 200);
+    const std::vector<Message> got = rig.Drain();
+    REQUIRE(got.size() == 3);
+    CHECK(got[0].message == kWmMouseMove);
+    CHECK(got[1].message == kWmLButtonDown);
+    CHECK(got[1].lParam == ((200u << 16) | 300u));
+    CHECK(got[2].message == kWmLButtonUp);
+}
+
 } // namespace sfcop::hle::user32

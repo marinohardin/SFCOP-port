@@ -64,6 +64,7 @@ constexpr std::uint32_t kMkMButton = 0x0010;
 // WM_ACTIVATE states.
 constexpr std::uint32_t kWaInactive = 0;
 constexpr std::uint32_t kWaActive = 1;
+constexpr std::uint32_t kWaClickActive = 2;
 
 // WM_SYSCOMMAND.
 constexpr std::uint32_t kScClose = 0xF060;
