@@ -143,6 +143,7 @@ This section is the project's memory. It starts short. Every time an agent break
 
 - **A contract pull request that renames or removes a symbol, file or table checks every open package branch for that name before it is merged** (`git grep` across `origin/wp/*`), and the merge order is written down. Reason: #25 renamed the spike's `sfcop_hle_*` tables while B2 was coding against them; the merged develop did not link until #34, and the CI build job did not catch it because it does not run the lift.
 - **Merging a pull request that adds `// FUNCTION:` annotations regenerates `game/manifest.tsv` and `src/app/guest/override.cpp` in the same merge window** (`python3 tools/manifest.py`), or the next check on develop fails at `tests/test_manifest.py`. Reason: #27 merged after #23 without regenerating; #33 repaired it.
+- **A pull request that changes code under `src/hle/`, `src/app/` or `src/platform/` is merged only after a windowed boot of its branch has been shown reaching the stage `develop` reached before it, named in the pull request** (the key prompt, or the main menu with a first click acting when the integrator's test data directory is passed), with the evidence in the description: the owner's run, or a screen capture or `--shots` image. Headless boots alone are not the standard; documentation and test-only changes are exempt. Reason: B2's module merged with a menu that froze and B6's host with a key prompt that never drew, because gate G1 and the merge standard checked headless boots only; the owner found both.
 
 ## Original work
 
