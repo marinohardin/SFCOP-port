@@ -25,12 +25,25 @@ each entry does.
 
 A surface has two copies: the host copy the game locks, in memory the game can address, and a
 Gpu texture. Each knows whether it is current. `Lock` makes the host copy current (reading the
-texture back only when the Gpu drew into it since), and `Unlock` uploads the area the lock could
-have changed. `Blt` and `BltFast` run on the Gpu when both surfaces have textures and on the host
-copy otherwise. A colour fill also fills a host copy that was current, so that the 2D screens,
-which mostly fill, lock and blit, never read back. The primary is shown by `Flip`, which copies the
-first back buffer to the front (the back buffer keeps its content) and presents it, or, for a
-primary without back buffers, after each write.
+texture back only when the Gpu drew into it since), and `Unlock` marks the area the lock could
+have changed. Nothing is uploaded there: the marked areas merge into one rectangle, uploaded once
+at the surface's next Gpu use (a bind, a draw, a Gpu blit from it, `Flip`), so a menu frame that
+locks its back buffer three times costs one upload, not one per `Unlock`. A Gpu fill or an
+unkeyed Gpu blit covering the whole marked area drops it instead of uploading it. `Blt` and
+`BltFast` run on the host copy when both host copies are current and share a format, and on the
+Gpu otherwise. A colour fill also fills a host copy that was current, so that the 2D screens,
+which mostly fill, lock and blit, never read back; a Direct3D target (a surface whose texture is
+a render target) is filled on the Gpu, so the clear before a scene costs no upload. The primary
+is shown by `Flip`, which copies the first back buffer to the front (the back buffer keeps its
+content) and presents it: on the Gpu when the back buffer is a Direct3D target, on the host copy
+when the game only draws in 2D with both host copies current. A primary without back buffers is
+presented after each write. A host write made while a scene draws into a surface (between
+`BeginScene` and `EndScene`) is uploaded when the scene's drawing is recorded, over the pixels
+drawn so far: where a host write and a draw overlap, the host write wins.
+
+The game makes two DirectDraw objects. Only the one that set the display mode owns its Gpu's back
+buffer (`DirectDraw::OwnsDisplay`; the owner is kept per Gpu); another object never configures it, so it cannot replace the
+game's frame with a black one. Screenshots (`--shots`) read the presented frame of the owner.
 
 ## The guest layer
 
@@ -73,13 +86,14 @@ stack bytes) and `tests/test_hle_ddraw_tables.py` runs it, with `framediff.py --
 
 ## Proof run
 
-Pending B1 (the SDL backends) and B6 (the guest runtime). The temporary boot host registers the
-spike's tables ahead of the modules, so it never reaches these tables; the frame diff runs through
-the guest runtime's host at gate G1. With both, the proof run is:
+With `SFCOP_DDRAW4_STATS=1` in the environment the module prints, once a second, the frames it
+presented and the surface uploads (`WriteTexture` calls) it made:
 
-    tools/boot_probe.sh --shots A --shot-every 2 --headless --watchdog 60      # with these tables
-    tools/boot_probe.sh --shots B --shot-every 2 --headless --watchdog 60      # without
+    SFCOP_DDRAW4_STATS=1 build/sfcop --install GAME --data DATA --windowed --shots SHOTS --shot-every 5
+
+On the main menu this reads `[ddraw4] 60.0 fps, 60.0 uploads/s`: one upload of the back buffer
+per frame, which the game redraws whole each frame (before deferral, one upload per `Unlock`,
+about 1,300 a second). The shots in `SHOTS` are the frames presented, and match a capture of the
+window. Two such shot directories, A and B, compare with:
+
     python3 src/hle/ddraw4/tools/framediff.py A B
-
-The boot host's `--shots` reads the boot platform's primary, so the run with these tables needs
-a capture of this module's frames first (`DirectDraw::DisplayTexture`, read back).

@@ -30,6 +30,12 @@ bool inside(const RectL &rect, const RectL &bounds) {
            rect.right <= bounds.right && rect.bottom <= bounds.bottom;
 }
 
+// Whether `outer` holds all of `inner`.
+bool contains(const RectL &outer, const RectL &inner) {
+    return inner.left >= outer.left && inner.top >= outer.top && inner.right <= outer.right &&
+           inner.bottom <= outer.bottom;
+}
+
 RectL unite(const RectL &a, const RectL &b) {
     return RectL{std::min(a.left, b.left), std::min(a.top, b.top), std::max(a.right, b.right),
                  std::max(a.bottom, b.bottom)};
@@ -576,6 +582,7 @@ platform::Result<platform::TextureId> Surface::ensureTexture() {
             return made.Code();
         }
         texture_ = made.Value();
+        renderTarget_ = desc.renderTarget;
         // The new texture's content is undefined: every level uploads its host copy.
         markHostWritten(bounds());
         for (Surface *member : chain_) {
@@ -607,6 +614,7 @@ platform::Status Surface::flush() {
                                      static_cast<std::uint32_t>(desc_.pitch));
     if (written.Ok()) {
         dirty_ = false;
+        owner_.CountUpload();
     }
     return written;
 }
@@ -632,7 +640,15 @@ platform::Result<platform::TextureId> Surface::GpuTexture() {
 }
 
 void Surface::MarkGpuWritten() {
-    dirty_ = false; // what the Gpu drew replaces what the host copy had not uploaded
+    // Host writes made since the last flush (a Lock inside a scene) are uploaded first, over the
+    // pixels the Gpu has drawn. DirectDraw applies writes in call order and the surface keeps no
+    // per-write order, so one rule is used: a host write wins where it overlaps a draw. It is
+    // right for the usual order (draw, then lock to overlay text) and loses nothing elsewhere;
+    // dropping the dirt, as before, lost every write that was not flushed by a later Gpu use.
+    if (dirty_) {
+        (void)flush(); // on a refusal the Gpu has no copy of it to be stale against
+    }
+    dirty_ = false;
     hostCurrent_ = false;
     ++uniqueness_;
 }
@@ -663,16 +679,10 @@ void Surface::markHostWritten(const RectL &area) {
 }
 
 HResult Surface::afterWrite() {
-    if (role_ == SurfaceRole::kZBuffer) {
-        return kDdOk;
-    }
-    // Upload now, so that the pixels are on the Gpu when it next uses the texture. A failure
-    // keeps them in the host copy for the next attempt.
-    if (!GpuTexture().Ok()) {
-        return kDdOk;
-    }
-    // A primary shows what is written to it, until the game starts flipping a chain: after the
-    // first Flip, Flip presents and direct writes to the front do not.
+    // Nothing is uploaded here: the changed area waits in dirtyArea_ for the next flush, which
+    // comes when the Gpu next uses the texture (the header). A primary shows what is written to
+    // it, until the game starts flipping a chain: after the first Flip, Flip presents and direct
+    // writes to the front do not.
     if (role_ == SurfaceRole::kPrimary && !(isFlipFront() && flipped_)) {
         (void)owner_.PresentPrimary(*this);
     }
@@ -680,14 +690,23 @@ HResult Surface::afterWrite() {
 }
 
 HResult Surface::fill(const RectL &area, std::uint32_t value) {
-    if (level_ == 0) {
+    // The Gpu fills a Direct3D target (the clear before a scene then costs no upload), a surface
+    // it drew into since, and a z-buffer, whose pixels it never takes from the host; a current
+    // host copy is filled too. Any other surface takes the fill in its host copy, uploaded with
+    // the rest of the frame's changes at the next flush.
+    if (level_ == 0 && (!hostCurrent_ || format_ == PixelFormat::kDepth16 || isGpuTarget())) {
         const bool hostWasCurrent = hostCurrent_;
-        platform::Result<platform::TextureId> texture = GpuTexture();
+        // A current host copy gets the same fill, so what it has not uploaded yet needs no
+        // flush first: the next flush uploads it, fill included, and drops it if the fill
+        // covered it all.
+        platform::Result<platform::TextureId> texture =
+            hostWasCurrent ? ensureTexture() : GpuTexture();
         if (texture.Ok() && owner_.Device().Fill(texture.Value(), toRect(area), value).Ok()) {
             if (hostWasCurrent) {
-                // Filling the host copy too keeps it current, so that the game's next Lock (it
-                // clears, then draws its 2D on top) needs no read from the Gpu.
-                fillOnHost(area, value);
+                fillOnHost(area, value); // keeps the host copy current for the next Lock
+                if (dirty_ && contains(area, dirtyArea_)) {
+                    dirty_ = false;
+                }
                 ++uniqueness_;
             } else {
                 MarkGpuWritten();
@@ -705,10 +724,21 @@ HResult Surface::copy(Surface &source, const RectL &sourceArea, const RectL &are
                       std::optional<std::uint32_t> key, bool keyOverride) {
     const bool converts = source.format_ == PixelFormat::kIndexed8 &&
                           format_ != PixelFormat::kIndexed8 && format_ != PixelFormat::kDepth16;
-    if (&source != this && level_ == 0 && source.level_ == 0 && format_ != PixelFormat::kDepth16 &&
-        (source.format_ == format_ || converts)) {
+    // Two current host copies of one format copy on the host: the 2D screens lock, blit and lock
+    // again many times a frame, and a Gpu blit there would cost an upload of the destination
+    // before it and a read back at the next Lock. A Direct3D target as the source (the back
+    // buffer at Flip) copies on the Gpu: its texture is flushed once and the frame is not
+    // uploaded a second time through the destination.
+    const bool onHost = hostCurrent_ && source.hostCurrent_ && source.format_ == format_ &&
+                        format_ != PixelFormat::kDepth16 && !source.isGpuTarget();
+    if (!onHost && &source != this && level_ == 0 && source.level_ == 0 &&
+        format_ != PixelFormat::kDepth16 && (source.format_ == format_ || converts)) {
         platform::Result<platform::TextureId> from = source.GpuTexture();
-        platform::Result<platform::TextureId> to = GpuTexture();
+        // A blit without a key replaces every pixel of `area`: what the destination has not
+        // uploaded there is not uploaded first (the game writes the front between Flips, and
+        // the next Flip covers it all).
+        const bool replacesDirty = !key && dirty_ && contains(area, dirtyArea_);
+        platform::Result<platform::TextureId> to = replacesDirty ? ensureTexture() : GpuTexture();
         if (from.Ok() && to.Ok()) {
             platform::Gpu &gpu = owner_.Device();
             if (keyOverride) {
@@ -725,6 +755,9 @@ HResult Surface::copy(Surface &source, const RectL &sourceArea, const RectL &are
                 (void)gpu.SetColorKey(from.Value(), source.gpuSourceKey());
             }
             if (copied.Ok()) {
+                if (replacesDirty) {
+                    dirty_ = false; // the blit covered it: nothing to upload under the result
+                }
                 MarkGpuWritten();
                 return afterWrite();
             }

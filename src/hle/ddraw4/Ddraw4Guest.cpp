@@ -16,6 +16,9 @@
 #include "hle/ddraw4/Palette.h"
 #include "hle/ddraw4/Surface.h"
 
+#include <chrono>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <iterator>
 #include <map>
@@ -35,6 +38,38 @@ using GI = GuestInterface;
 GuestViews &views() {
     return GuestViews::Instance();
 }
+
+// The proof run's rate line (README.md, "Proof run"): with SFCOP_DDRAW4_STATS set, once a second,
+// the frames presented and the surface uploads in that second. The deltas are kept across calls,
+// and the counters belong to one object, so only the object that owns the display reports.
+void reportRates(const DirectDraw &draw) {
+    if (!draw.OwnsDisplay()) {
+        return;
+    }
+    using Clock = std::chrono::steady_clock;
+    static Clock::time_point since = Clock::now();
+    static DirectDraw::Counts last;
+    const Clock::time_point now = Clock::now();
+    const double seconds = std::chrono::duration<double>(now - since).count();
+    if (seconds < 1.0) {
+        return;
+    }
+    const DirectDraw::Counts &counts = draw.Counted();
+    std::fprintf(stderr, "[ddraw4] %.1f fps, %.1f uploads/s\n",
+                 static_cast<double>(counts.presents - last.presents) / seconds,
+                 static_cast<double>(counts.uploads - last.uploads) / seconds);
+    std::fflush(stderr);
+    last = counts;
+    since = now;
+}
+
+[[maybe_unused]] const bool g_ratesReported = [] {
+    const char *wanted = std::getenv("SFCOP_DDRAW4_STATS");
+    if (wanted != nullptr && *wanted != '\0' && *wanted != '0') {
+        DirectDraw::SetPresentHook(&reportRates);
+    }
+    return true;
+}();
 
 // Runs `Method` and returns its result to the guest, purging `kStackBytes` (the row's
 // stack_bytes) of arguments.

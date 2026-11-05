@@ -209,7 +209,7 @@ void takeShot() {
     for (hle::ddraw4::ComObject *host :
          hle::ddraw4::GuestViews::Instance().Hosts(hle::ddraw4::GuestInterface::kDirectDraw)) {
         auto *draw = static_cast<hle::ddraw4::DirectDraw *>(host);
-        if (draw->Primary() == nullptr) {
+        if (draw->Primary() == nullptr || !draw->OwnsDisplay()) {
             continue;
         }
         const hle::ddraw4::DisplayModeState &mode = draw->Mode();
@@ -236,7 +236,7 @@ std::optional<hle::user32::DisplayTarget> displayTarget() {
     for (hle::ddraw4::ComObject *host :
          hle::ddraw4::GuestViews::Instance().Hosts(hle::ddraw4::GuestInterface::kDirectDraw)) {
         auto *draw = static_cast<hle::ddraw4::DirectDraw *>(host);
-        if (draw->Primary() == nullptr) {
+        if (draw->Primary() == nullptr || !draw->OwnsDisplay()) {
             continue;
         }
         const auto texture = draw->DisplayTexture();

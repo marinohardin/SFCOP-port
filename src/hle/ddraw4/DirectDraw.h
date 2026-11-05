@@ -109,8 +109,16 @@ public:
     const DisplayModeState &Mode() const { return mode_; }
     std::uint32_t CooperativeWindow() const { return cooperativeWindow_; }
 
-    // The back buffer at the current mode, made on first call after a mode change.
+    // The back buffer at the current mode, made on first call after a mode change. The Gpu has
+    // one back buffer: only SetDisplayMode takes it from another DirectDraw object, so while
+    // another object owns the display (OwnsDisplay()) this is kWrongState and nothing is made.
     platform::Result<platform::TextureId> DisplayTexture();
+
+    // Whether the Gpu's back buffer is this object's: it made the back buffer last, at
+    // SetDisplayMode or its first draw, so the display shows what this object presents and its
+    // DisplayTexture() holds the frame last presented. The game may make more than one DirectDraw
+    // object; the host reads the display only from the one that owns it.
+    bool OwnsDisplay() const;
 
     // The format the primary surface has in the current mode.
     platform::PixelFormat PrimaryFormat() const;
@@ -125,8 +133,27 @@ public:
     void SurfaceGone(Surface &surface);
     void PaletteChanged(Palette &palette);
 
+    // What reached the Gpu since the object was made, for the proof run's rate line
+    // (README.md, "Proof run"): uploads of surface pixels (WriteTexture) and presents.
+    struct Counts {
+        std::uint64_t uploads = 0;
+        std::uint64_t presents = 0;
+    };
+    const Counts &Counted() const { return counts_; }
+
+    // Forgets which object owns each Gpu's display (tests only: a rig that leaked an object).
+    static void ForgetDisplayOwners();
+
+    // Called after every present, with this object (nullptr: none). The guest shims set it.
+    using PresentHook = void (*)(const DirectDraw &draw);
+    static void SetPresentHook(PresentHook hook);
+
 private:
-    ~DirectDraw() override = default;
+    friend class Surface; // counts its uploads (CountUpload)
+
+    void CountUpload() { ++counts_.uploads; }
+
+    ~DirectDraw() override;
 
     HResult createPrimary(const SurfaceDesc &desc, Surface **out);
 
@@ -138,6 +165,7 @@ private:
     std::uint32_t cooperativeFlags_ = 0;
     platform::TextureId displayTexture_; // zero until made for the current mode
     Surface *primary_ = nullptr;
+    Counts counts_;
 };
 
 } // namespace sfcop::hle::ddraw4

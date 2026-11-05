@@ -3,11 +3,16 @@
 //
 // A surface keeps its pixels twice: in host memory the game can lock (PixelMemory), and in a Gpu
 // texture that blits, Direct3D and the display use. Each copy knows whether it is current. Lock
-// and GetDC bring the host copy up to date (a Gpu read) and mark the locked area changed; Unlock
-// and ReleaseDC upload the changed area. Blt and BltFast run on the Gpu when both surfaces have a
-// texture and on the host copy otherwise (the same surface on both sides, a mipmap level, a
-// texture the Gpu refused). Textures are made on first use, so a surface the game only locks
-// costs no Gpu memory.
+// and GetDC bring the host copy up to date (a Gpu read) and mark the locked area changed. Nothing
+// is uploaded at Unlock or ReleaseDC: the changed areas merge into one rectangle, uploaded once at
+// the surface's next Gpu use (a bind, a draw, a Gpu blit, Flip). Invariant: a texture-backed
+// surface's Gpu copy is stale between a host write and the next flush, so every Gpu use goes
+// through GpuTexture(), which flushes. A Gpu fill or unkeyed Gpu blit that covers the whole
+// changed area drops it instead. Blt and BltFast run on the Gpu when both surfaces have a texture
+// and on the host copy otherwise (two current host copies of one format, the same surface on both
+// sides, a mipmap level, a texture the Gpu refused); a Direct3D target is filled on the Gpu and is
+// the Gpu side of a copy from it. Textures are made on first use, so a surface the game only
+// locks costs no Gpu memory.
 //
 // The primary surface's texture is the display's back buffer at 16 and 32 bits (DirectDraw.h).
 // Flip copies the first back buffer to the primary and presents; the back buffer keeps its
@@ -50,7 +55,7 @@ public:
     // rectangle outside the surface.
     HResult Lock(const RectL *rect, SurfaceDesc &out, std::uint32_t flags);
 
-    // Uploads what the lock may have changed. DDERR_NOTLOCKED if not locked.
+    // Marks what the lock may have changed, for the next flush. DDERR_NOTLOCKED if not locked.
     HResult Unlock();
 
     // DDBLT_COLORFILL, the BLACKNESS, WHITENESS and SRCCOPY raster operations, stretching, and the
@@ -87,7 +92,7 @@ public:
     // DDERR_DCALREADYCREATED if a DC is out, DDERR_SURFACEBUSY while locked.
     HResult GetDC(SurfaceDesc &out);
 
-    // Uploads what GDI drew. DDERR_NODC if no DC is out.
+    // Marks what GDI drew, for the next flush. DDERR_NODC if no DC is out.
     HResult ReleaseDC();
 
     HResult GetSurfaceDesc(SurfaceDesc &out) const;
@@ -127,8 +132,8 @@ public:
     // The attached z-buffer, or nullptr.
     Surface *ZBuffer() const;
 
-    // The surface's texture with the host copy's changes uploaded. The texture is made on the
-    // first call; a mipmap level answers with its root's texture.
+    // The surface's texture with the host copy's changes uploaded (the one place they are). The
+    // texture is made on the first call; a mipmap level answers with its root's texture.
     platform::Result<platform::TextureId> GpuTexture();
 
     // Records that the Gpu drew into the texture, so the host copy is stale.
@@ -153,6 +158,8 @@ private:
 
     RectL bounds() const;
     bool isFlipFront() const;
+    // Whether the surface has its own texture and Direct3D can draw into it.
+    bool isGpuTarget() const { return texture_.Valid() && renderTarget_; }
     platform::Result<platform::TextureId> ensureTexture();
     platform::Status flush();
     void markHostWritten(const RectL &area);
@@ -178,6 +185,7 @@ private:
     std::vector<Surface *> added_; // AddAttachedSurface's, each holding one reference
     platform::TextureId texture_;  // own texture (never the display's), zero until made
     platform::TextureId display_;  // the display texture the primary last drew into
+    bool renderTarget_ = false;    // texture_ was made as a render target
     bool hostCurrent_ = true;      // the host copy has the latest pixels
     bool dirty_ = false;           // the host copy has pixels the Gpu has not seen
     RectL dirtyArea_;
