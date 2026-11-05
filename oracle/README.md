@@ -33,6 +33,9 @@ oracle elsewhere", covers CrossOver, another Wine build, or a Windows PC.
 | `driver/oracle_input.c`, `driver/build.sh` | Win32 helper that clicks through the menus from a steps file, runs in the same prefix |
 | `driver/skirmish.steps` | The click path. **Uncalibrated placeholders** until the menu has been seen |
 | `driver/probe/probe.steps` | No-input probe: lists the windows the driver can see |
+| `driver/menu.steps` | Native client: boot past the key prompt to the main menu and click SINGLE PLAYER (`driver/README.md`) |
+| `driver/run_native.sh` | Plays a steps file into the native client (`sfcop --input`) with a prepared data folder whose path comes from configuration and is never printed (`driver/README.md`) |
+| `driver/README.md` | Steps files, the two drivers that play them, and the native runner |
 | `oracle.sh [label]` | Everything: build both, install, run twice (`<label>-1`, `<label>-2`), compare |
 | `run_oracle.sh [label]` | One oracle run: install `.scr`, start game and driver, wait for `END`, kill, normalise, hash. Output `traces/<label>/` |
 | `normalize_trace.sh` | Drops `#` lines, CRLF, trailing blanks |
