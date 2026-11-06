@@ -27,6 +27,7 @@ TEST_CASE("an empty command line runs with every default") {
     CHECK(result.exitCode() == 0);
     CHECK_FALSE(result.options.installDir.has_value());
     CHECK_FALSE(result.options.dataDir.has_value());
+    CHECK_FALSE(result.options.logsDir.has_value());
     CHECK(result.options.window == WindowMode::kDefault);
     CHECK(result.options.fixes.empty());
     CHECK_FALSE(result.options.oracleTrace.has_value());
@@ -50,6 +51,14 @@ TEST_CASE("--data takes a folder") {
     CHECK(*parse({"--data", "/home/testcaptain/sfcop"}).options.dataDir ==
           "/home/testcaptain/sfcop");
     requireError({"--data"}, "--data needs DIR");
+}
+
+TEST_CASE("--logs takes a folder, given once") {
+    CHECK(*parse({"--logs", "/tmp/oracle-run"}).options.logsDir == "/tmp/oracle-run");
+    CHECK(*parse({"--logs=/tmp/oracle-run"}).options.logsDir == "/tmp/oracle-run");
+    CHECK_FALSE(parse({"--data", "/d"}).options.logsDir.has_value());
+    requireError({"--logs"}, "--logs needs DIR");
+    requireError({"--logs", "/a", "--logs", "/b"}, "--logs is given twice");
 }
 
 TEST_CASE("--windowed and --fullscreen choose the window mode and exclude each other") {
@@ -167,6 +176,7 @@ TEST_CASE("--help lists every flag of DESIGN 6.8 and every exit code") {
     for (const char *line : {
              "  --install DIR ",
              "  --data DIR ",
+             "  --logs DIR ",
              "  --windowed ",
              "  --fullscreen ",
              "  --fix NAME=on|off ",

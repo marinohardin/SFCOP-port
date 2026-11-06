@@ -25,6 +25,7 @@
 \********************************************************************************************************/
 
 #include <windows.h>
+#include <string.h>
 #include "OracleConfig.h"
 #include "OracleRecorder.h"
 #include "OracleSeed.h"
@@ -34,17 +35,14 @@ namespace
 	const int32 kSentinelInt = 0x7EEEEEEE;
 	const float kSentinelFloat = -98765.4375f;
 
-	//	The systems whose current value is requested every sample.
+	//	The systems whose current value is requested every sample: the group hard points, which every
+	//	ship has.  The game answers kGetHealthOfSystem by indexing the ship's table of system groups with
+	//	the hard point and calling the group found there, so a single system's hard point (a shield,
+	//	the bridge, armor) reads a null entry and ends the game; only the groups are answered.
 	const eSystemHardPoint kSampledSystems[] =
 	{
-		kShieldOneHardPoint,
-		kShieldTwoHardPoint,
-		kShieldThreeHardPoint,
-		kShieldFourHardPoint,
-		kShieldFiveHardPoint,
-		kShieldSixHardPoint,
+		kShieldGroupHardPoint,
 		kHullGroupHardPoint,
-		kArmorHardPoint,
 		kEngineGroupHardPoint,
 	};
 }
@@ -275,6 +273,17 @@ tOracleRecorder::mFinish( const char* Reason )
 		fprintf( fTrace, "END %d %s\n", fSample, Reason );
 		fclose( fTrace );
 		fTrace = NULL;
+	}
+
+	//
+	//	The mission has no victory condition of its own, so nothing would end it: once END is on disk,
+	//	the human team's game is over, as a script's victory state ends it (the SDK's templates call
+	//	gScriptInterface.mSetGameStatus), and the game shows its end screen.  Not on teardown.
+	//
+	if( strcmp( Reason, "aborted" ) != 0 )
+	{
+		gScriptInterface.mSetGameStatus( kTeam1, kPlayerWins );
+		fMissionInfo->mCheckForMissionEnd();
 	}
 }
 

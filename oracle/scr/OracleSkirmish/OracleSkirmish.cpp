@@ -37,7 +37,10 @@ void tOracleSkirmish::mScriptSpecs( tMissionSpec* Specs )
 	Specs->fMissionTitle = Messages[kMissionTitle_msg];
 	Specs->fMissionDescription = Messages[kDescription_msg];
 	Specs->fHelpTags = Messages[kHelpTags_msg];
-	Specs->fMissionType = kSkirmishMission;
+	//	The game's Select Skirmish screen lists the missions of type kHistoricalMission for the
+	//	player's race (the script database query at 0x00481C98 asks for type 4); kSkirmishMission is
+	//	not listed there, so the mission would never be selectable.
+	Specs->fMissionType = kHistoricalMission;
 	Specs->fPlayerRace = kSpecAnyRace;
 	Specs->fNumShips = kMissSpecOneShip;
 	Specs->fMenuStates = kDisableCustomSkirmish | kDisableAllTags;	// ships and sides are fixed by the script
@@ -49,7 +52,7 @@ void tOracleSkirmish::mScriptSpecs( tMissionSpec* Specs )
 												kTrue,
 												kPlayableTeam,
 												kMinChance,
-												kSpecPlayableRace,
+												kSpecFed,
 												kAnyRace,
 												typeid( tOracleTeam ),
 												kTagA );
@@ -60,7 +63,7 @@ void tOracleSkirmish::mScriptSpecs( tMissionSpec* Specs )
 												kTrue,
 												kNPCTeam,
 												kMaxChance,
-												kSpecPlayableRace,
+												kSpecKling,
 												kAnyRace,
 												typeid( tOracleTeam ),
 												kTagB );
