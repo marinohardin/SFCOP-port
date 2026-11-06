@@ -13,6 +13,7 @@ mappings are B6's rows and are not here.
 | `Ini.cpp` | The `.ini` profile calls |
 | `Text.h`, `Text.cpp` | The game's ANSI (Latin-1) and UTF-16 strings, and the Win32 buffer answers |
 | `KernelBridge.h`, `KernelBridge.cpp` | The module as the C shim calls it, one per process, behind a lock |
+| `LogsStore.h`, `LogsStore.cpp` | A Store whose per-user `logs/` lives in a folder of its own (the client's `--logs DIR`); `sfcop_hle_kernel_attach_logs` attaches the module on it |
 | `KernelGuest.c` | The guest shims, `sfcop_hle_kernel[]` (built only with the lift) |
 | `*Test.cpp`, `KernelTestFolders.h`, `KernelTestStores.h` | Doctests; `KernelTestFolders.h` makes an install and a per-user folder for a test, `KernelTestStores.h` a Store that records or throws |
 | `KernelBridgeTesting.h` | Test-only: attaches the bridge to a Store the test built |

@@ -54,6 +54,11 @@ const Flag kFlags[] = {
          o.dataDir = v;
          return true;
      }},
+    {"--logs", "DIR", "where the files the game writes beside its exe land (default: logs/ under the data folder)",
+     [](ClientOptions &o, const std::string &v, std::string &) {
+         o.logsDir = v;
+         return true;
+     }},
     {"--windowed", "", "play in a window",
      [](ClientOptions &o, const std::string &, std::string &e) {
          return applyWindowMode(o, WindowMode::kWindowed, e);

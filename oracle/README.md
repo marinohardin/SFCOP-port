@@ -126,8 +126,10 @@ reference and a candidate run.
 
 `scr/OracleSkirmish/`, built against the SDK headers in `OP API - R2.1/Scripts`:
 
-- `kSkirmishMission`, two teams. Team 1 is the human's slot (`kPlayableTeam`, tag A), team 2 is AI
-  only (`kNPCTeam`, tag B), at war with each other.
+- `kHistoricalMission` (the type the game's Select Skirmish list is built from; a
+  `kSkirmishMission` is not listed there), two teams. Team 1 is the human's slot (`kPlayableTeam`,
+  tag A, Federation), team 2 is AI only (`kNPCTeam`, tag B, Klingon), at war with each other; the
+  races are pinned by the spec so that nothing is drawn before the generators are pinned.
 - Fixed ships, not the ones picked on the setup screen (`mCreateNewShip` is empty, custom skirmish
   disabled): team 1 `F-CA` (Federation CA, BPV 125) at map letter G, team 2 `K-D7` (Klingon D7, BPV
   126) at map letter H, `kNoShipOptions` so there is no random start offset.
@@ -161,9 +163,10 @@ END <sample> <reason>
   the enemy ship (a float, the finest position signal the API has), and the script-side status bits
   (destroyed, captured, disengaged...).
 - **E** records: every event, in arrival order. Damage events (`kNotifyDamage`, `00000080`) carry the
-  hostile ship and damage type. Shield and hull values arrive as `kNotifyShipSystemUpdate`
-  (`01000000`) replies to the requests made each sample for shields 1-6, hull group, armor and engine
-  group (`mGetHealthOfSystem`).
+  hostile ship and damage type. Shield, hull and engine values arrive as `kNotifyShipSystemUpdate`
+  (`01000000`) replies to the requests made each sample for the shield, hull and engine groups
+  (`mGetHealthOfSystem`; the game answers it only for a group hard point: a single system's, such as
+  one shield or armor, reads a null entry of the ship's group table and ends the game).
 - Ships are named by script custom ID (`c101`, `c201`), not by the game's entity ID, so the trace
   does not depend on entity numbering.
 - Floats are printed with `%.9g`, which round-trips a 32-bit float exactly.
@@ -211,7 +214,10 @@ sources of variation:
 5. **Timer semantics.** Whether a turn timer repeats is undocumented; the recorder kills and re-arms
    it on every tick, which is correct either way. Whether fractional turns (1/32) are honoured is
    unverified; the header records the value.
-6. **Excluded from the hash:** `#` lines (addresses, entity IDs, races chosen on the setup screen),
+6. **The teams' races** are pinned by the spec (`kSpecFed`, `kSpecKling`): with a choice of races
+   the game drew each team's race before the script pinned the generators, and the draw changed
+   the AI's behaviour from run to run.
+7. **Excluded from the hash:** `#` lines (addresses, entity IDs, races chosen on the setup screen),
    CRLF, trailing blanks.
 
 ## Comparing two runs

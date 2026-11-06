@@ -22,6 +22,11 @@ extern "C" {
 /* The install (read-only) and the per-user folder, absolute host paths in UTF-8. The per-user
  * folder is created when missing. Replaces any earlier attachment and closes what it held. */
 void sfcop_hle_kernel_attach(const char *installDir, const char *userDir);
+/* The same with the per-user `logs/` folder placed at `logsDir` (the client's --logs DIR;
+ * LogsStore.h): every .txt and .log the game writes beside the exe lands there. NULL or empty is
+ * the plain attachment. */
+void sfcop_hle_kernel_attach_logs(const char *installDir, const char *userDir,
+                                  const char *logsDir);
 void sfcop_hle_kernel_detach(void);
 int sfcop_hle_kernel_attached(void);
 /* The per-user folder the client uses when no --data is given (src/app/DataDir.h) into `out`;

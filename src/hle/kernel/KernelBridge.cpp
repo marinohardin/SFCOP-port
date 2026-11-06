@@ -4,6 +4,7 @@
 #include "app/DataDir.h"
 #include "app/HostPlatform.h"
 #include "hle/kernel/Kernel.h"
+#include "hle/kernel/LogsStore.h"
 #include "hle/kernel/Text.h"
 #include "platform/Store/Store.h"
 
@@ -173,17 +174,29 @@ bool fillName(const std::string &utf8, void *buffer, std::uint32_t size, int wid
 extern "C" {
 
 void sfcop_hle_kernel_attach(const char *installDir, const char *userDir) {
+    sfcop_hle_kernel_attach_logs(installDir, userDir, nullptr);
+}
+
+void sfcop_hle_kernel_attach_logs(const char *installDir, const char *userDir,
+                                  const char *logsDir) {
     std::lock_guard<std::mutex> guard(lock());
     Attached &state = attached();
     state.kernel.reset();
     state.store.reset();
     try {
-        std::string user = userDir != nullptr ? userDir : "";
+        const std::string install = installDir != nullptr ? installDir : "";
+        const std::string user = userDir != nullptr ? userDir : "";
+        const std::string logs = logsDir != nullptr ? logsDir : "";
+        std::error_code ignored;
         if (!user.empty()) {
-            std::error_code ignored;
             std::filesystem::create_directories(user, ignored);
         }
-        state.store = sfcop::platform::makeStore(installDir != nullptr ? installDir : "", user);
+        state.store = sfcop::platform::makeStore(install, user);
+        if (!logs.empty()) {
+            std::filesystem::create_directories(logs, ignored);
+            state.store = std::make_unique<sfcop::hle::kernel::LogsStore>(
+                std::move(state.store), sfcop::platform::makeStore(install, logs));
+        }
         state.kernel = std::make_unique<Kernel>(*state.store);
     } catch (...) {
         // Left detached: every call then fails as a missing path would.

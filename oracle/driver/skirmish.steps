@@ -1,34 +1,49 @@
-# Menu path from launch to the oracle mission, for oracle_input.exe.
+# Menu path from launch to the oracle mission, for both drivers: oracle_input.exe into the
+# original under Wine, and the native client (sfcop --input; oracle/driver/run_native.sh).
 #
-# PARTLY CALIBRATED. Seen so far (oracle/baseline/C_after_key, 2026-11-03): the main menu
-# ("Select Game") is up 15 s after launch; it is a 640x480 screen centred in the 800x600 window.
-# SINGLE PLAYER is at (237,232). The screens after it have not been seen: the game has crashed at
-# start-up in every boot since (oracle/BASELINE.md, "After the CD key").
-# Known: the game's window is class "SFC", title "Starfleet Command", 800x600 client area at the
-# top-left of the Wine desktop (oracle_input "list", 2026-11-02). Coordinates are client pixels.
-# The driver's "shot" is black under Wine (GDI cannot read the DirectDraw/GL surface): calibrate
-# with ORACLE_SHOTS=10 oracle/run_oracle.sh <label>, which saves oracle/shot.sh captures of the Mac
-# window, while that window is on the visible Space.
+# This file is an input of the oracle (its name is the trace header's `input`), so it uses only
+# the steps both drivers play: window, sleep, click, waitfile. Waits are by the clock and sized
+# for the slower of the two: the main menu ("Select Game") is up 15 s after launch under Wine
+# (oracle/baseline/C_after_key, 2026-11-03) and 18 to 42 s on the native build (the boot time is
+# an open integrator item), so the first click waits 50 s. A change here changes the trace's
+# input: say why in the commit.
 #
-# Intended path (from the menu state names in StarFleetOP.exe: tState_Skirmish, SETUP_SKIRMISH):
-#   main menu -> Skirmish -> mission list: "!Oracle Skirmish" (sorts first) -> Start/Launch
-# The script fixes ships, sides, map and positions, so nothing on the setup screen matters.
+# Coordinates are the game's display pixels: an 800x600 display with the 640x480 menu centred,
+# the same space as the Wine driver's client area and the native window's logical size.
+# Calibrated on the native build, 2026-11-05, with window captures of each screen (A2's pull
+# request): Select Game -> Single Player -> Select Skirmish -> the mission, which PLAY GAME starts
+# at once (no further screen; the script fixes ships, map and positions).
 
 window 120 Starfleet Command
-sleep 15000
+sleep 50000
 
-# --- main menu: SINGLE PLAYER
+# --- main menu, "Select Game": SINGLE PLAYER opens the Single Player screen
 click 237 232
-sleep 5000
+sleep 8000
 
-# --- single player screen: Skirmish button
-# click X Y
-# sleep 5000
+# --- Single Player: SKIRMISH opens Select Skirmish, whose list fills as the missions load
+click 400 190
+sleep 8000
 
-# --- skirmish screen: pick the first mission in the list, then start
-# click X Y
-# sleep 2000
-# click X Y
+# --- Select Skirmish: the first row of the list; "!Oracle Skirmish" sorts first
+click 135 347
+sleep 3000
 
-# The game writes OracleTrace.txt once the mission has started.
+# --- PLAY GAME starts the mission
+click 655 443
+
+# The game writes OracleTrace.txt once the mission has started (next to the exe under Wine; the
+# native client looks the name up in its logs folder).
 waitfile 300 C:\Games\SFCOP\OracleTrace.txt
+
+# --- the mission runs 20 turns, about 12 minutes, writes END and ends itself; the Mission
+# Debriefing screen then waits for DONE, which returns to the main menu. These steps are for a
+# plain native run (--input alone), which plays the file to its end. An oracle run on the native
+# client (--oracle, --record-trace) exits at END, before them. Under Wine, oracle/run_oracle.sh
+# stops the game as soon as the log has its END record (or at ORACLE_TIMEOUT, default 1800 s, which
+# is longer than boot plus mission), so the driver never reaches them there either; they cost
+# nothing on a recording, and the driver would play them (its `sleep` takes any whole number of
+# milliseconds) if the game were left running.
+sleep 1200000
+click 655 496
+sleep 10000
