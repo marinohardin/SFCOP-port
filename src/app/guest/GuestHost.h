@@ -42,6 +42,8 @@ struct Components {
 struct Options {
     std::string installDir; // the verified install; mapped as drive C: and never written
     std::string dataDir;    // the per-user folder: settings, saves, logs
+    std::string logsDir;    // non-empty: where the game's .txt and .log files land instead of
+                            // logs/ under dataDir (--logs; hle/kernel LogsStore.h)
     std::string exeName = "StarFleetOP.exe";
     std::string arguments;  // after the exe's name on the guest's command line
     std::string title = "Starfleet Command: Orion Pirates";

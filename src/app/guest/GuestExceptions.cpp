@@ -183,6 +183,9 @@ void onFault(int signal, siginfo_t *info, void *context) {
             t_inFault = true;
             const std::uint32_t parameters[2] = {AccessViolationFlag(faultAccess(context)),
                                                  static_cast<std::uint32_t>(address - base)};
+            std::fprintf(stderr, "[eh] access violation: %s of guest 0x%08X in sub_%08X at %.3f s\n",
+                         parameters[0] != 0 ? "write" : "read", parameters[1], g_cur_func,
+                         Elapsed());
             RaiseFromHost(kAccessViolation, 2, parameters);
             std::fprintf(stderr, "[eh] a handler continued after an access violation at 0x%08X in "
                                  "sub_%08X; lifted code cannot retry the access\n",

@@ -24,7 +24,7 @@ One per line; `#` as the first non-blank character makes a comment.
 | `click <x> <y>` | move, down, up in three frames | `SetCursorPos`, down, up |
 | `key <vk>` | down, up in two frames | `keybd_event` down, up |
 | `shot <file>` | skipped, with a log line; `--shots` takes the native captures | GDI capture |
-| `waitfile <timeout_s> <path>` | waits for the file; a Windows path (`C:\...\Name.txt`) is looked up by its last name in the data folder, where the game's files are written; a relative path is taken from the data folder | waits for the file |
+| `waitfile <timeout_s> <path>` | waits for the file; a Windows path (`C:\...\Name.txt`) is looked up by its last name in the logs folder (`--logs DIR`, else `logs/` under the data folder), where the game writes its `.txt` and `.log` files, then in the data folder; a relative path is taken from the data folder | waits for the file |
 | `list` | skipped, with a log line | prints the windows |
 | `waitmark <timeout_s> <mark>` | waits for a mark of the lift, by name (`WinMain`, `CD-key prompt`, `Select Game` the main menu, `Setup` the Single Player screen) or 0x address (any mark `SFCOP_LIFT_EXTRA_MARKS` added) | refused: the driver stops with that line's number |
 | `frames <n>` | waits n frames | refused, as above |

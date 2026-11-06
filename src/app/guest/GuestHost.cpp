@@ -286,7 +286,8 @@ std::uint32_t watchdog(unsigned seconds) {
 
 void attachModules(const Options &options, Components &c) {
     hle::kernel32rt::Runtime::Instance().Attach(c.threads, c.clock);
-    sfcop_hle_kernel_attach(options.installDir.c_str(), options.dataDir.c_str());
+    sfcop_hle_kernel_attach_logs(options.installDir.c_str(), options.dataDir.c_str(),
+                                 options.logsDir.empty() ? nullptr : options.logsDir.c_str());
     sfcop_hle_registry_attach(options.dataDir.c_str());
     // The stub Gpu of a headless run lists no display mode, and the game stops without one: a
     // headless run leaves DirectDraw to pcrecomp's own, which the module hands the call to while

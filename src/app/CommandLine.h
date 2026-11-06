@@ -1,9 +1,11 @@
 // The native client's command line (DESIGN §6.8):
 //
-//   sfcop [--install DIR] [--data DIR] [--windowed|--fullscreen] [--fix NAME=on|off]
+//   sfcop [--install DIR] [--data DIR] [--logs DIR] [--windowed|--fullscreen] [--fix NAME=on|off]
 //         [--oracle TRACE --input SCRIPT --headless --watchdog S]
 //
 // --input may be given alone: a script with no trace is a menu run. --oracle needs --input.
+// --logs DIR names the folder where the files the game writes beside its exe land (its .txt and
+// .log files); without it they go to logs/ under the data folder (src/hle/kernel/README.md).
 //
 // One table in CommandLine.cpp holds every flag; parsing and `--help` both read it. A value is
 // given as `--flag VALUE` or `--flag=VALUE`. Parsing checks form only: whether a folder exists
@@ -27,6 +29,7 @@ struct FixSetting {
 struct ClientOptions {
     std::optional<std::string> installDir;
     std::optional<std::string> dataDir;
+    std::optional<std::string> logsDir;
     WindowMode window = WindowMode::kDefault;
     // In command-line order, each name at most once.
     std::vector<FixSetting> fixes;
