@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <utility>
 
 namespace sfcop::hle::user32 {
@@ -18,10 +19,16 @@ constexpr std::uint32_t kAltContext = 1u << 29;
 // a person makes in the moment between the platform's button and focus events (a double click is
 // four); the cap only stops a window that never activates from growing the list.
 constexpr std::size_t kMaxPendingClicks = 8;
-constexpr std::size_t kMaxTraceLines = 40; // --trace: the first events only, never the whole run
+// --trace: the first events only, never the whole run. Enough for the first focus, a few dozen
+// clicks and what the game polled between them.
+constexpr std::size_t kMaxTraceLines = 400;
 
 bool isButtonDown(std::uint32_t message) {
     return message == kWmLButtonDown || message == kWmRButtonDown || message == kWmMButtonDown;
+}
+
+bool isButtonUp(std::uint32_t message) {
+    return message == kWmLButtonUp || message == kWmRButtonUp || message == kWmMButtonUp;
 }
 
 std::uint32_t buttonMask(std::uint32_t message) {
@@ -61,6 +68,16 @@ void MessageQueue::trace(const char *line) {
     if (trace_ && traced_ < kMaxTraceLines) {
         ++traced_;
         trace_(line);
+    }
+}
+
+// A platform event's line carries the queue's clock, so that a press and its release can be
+// told apart from a click that arrived in one pump.
+void MessageQueue::traceEvent(const char *kind) {
+    if (trace_ && traced_ < kMaxTraceLines) {
+        char line[64];
+        std::snprintf(line, sizeof line, "%s at %u ms", kind, now_());
+        trace(line);
     }
 }
 
@@ -122,7 +139,7 @@ void MessageQueue::Feed(const platform::WindowEvent &event, HostSize host) {
         default:
             return; // the extra buttons: no message the game reads
         }
-        trace(pressed ? "event button-down" : "event button-up");
+        traceEvent(pressed ? "event button-down" : "event button-up");
         setKey(vk, pressed);
         mouse(event.input, message, host);
         break;
@@ -262,6 +279,9 @@ void MessageQueue::mouse(const platform::InputEvent &input, std::uint32_t messag
         }
         return;
     }
+    if (message != kWmMouseMove) {
+        trace(isButtonDown(message) ? "  button-down posted" : "  button-up posted");
+    }
     postMouse(target, message, mouseKeys(), cursorX_, cursorY_);
 }
 
@@ -318,6 +338,11 @@ std::optional<Message> MessageQueue::Peek(std::uint32_t hwnd, std::uint32_t firs
         const Message found = *it;
         if (remove) {
             posted_.erase(it);
+            if (isButtonDown(found.message)) {
+                trace("  peek: button-down taken");
+            } else if (isButtonUp(found.message)) {
+                trace("  peek: button-up taken");
+            }
         }
         return found;
     }

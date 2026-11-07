@@ -47,9 +47,15 @@ is not), reads the cursor with `GetCursorPos` every frame, and draws everything 
   comes Windows' click-activation sequence follows: `WM_MOUSEACTIVATE`, `WM_ACTIVATEAPP`,
   `WM_ACTIVATE` with `WA_CLICKACTIVE`, `WM_SETFOCUS`, then a `WM_MOUSEMOVE` to the click and the
   button. A held click is dropped when the focus is lost again or when `ShowWindow` activates a
-  window, and a held button-up without its down is never kept. With `--trace`, the first focus and
-  button events and the queue's reaction are logged by kind and order only. The close box posts
-  `WM_CLOSE` to the active window.
+  window, and a held button-up without its down is never kept. The close box posts `WM_CLOSE` to the active window.
+- **Tracing input.** With `--trace`, or with `SFCOP_USER32_TRACE=1` alone (the per-call trace
+  slows the game to about 56 frames per second, which changes what a click meets), the queue
+  logs the first 400 lines of: each platform focus and button event with the queue's clock, the
+  queue's reaction to it (posted, held for the activation, dropped), each button message
+  `PeekMessageA` hands out, and each change in what `GetKeyState` or `GetAsyncKeyState` answers
+  for a mouse button. Kinds and order only: no positions, no text. In play the game reads the
+  mouse only through the button messages, drained each frame by a `PeekMessageA` loop; it never
+  calls `GetAsyncKeyState`, and `GetKeyState` only for keyboard keys (X4, 2026-11-06).
 - **The screen** is the game's display: the platform window's logical size, which follows
   DirectDraw's display mode (640x480 until a window says otherwise), at 32 bits. `SetWindowPos`
   changes only the game's view of its rectangle; the platform window's size is DirectDraw's.

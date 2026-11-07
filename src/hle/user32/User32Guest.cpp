@@ -167,7 +167,10 @@ User32 &user() {
         if (host.gpu != nullptr && host.display) {
             created->SetPresenter(makeGpuPresenter(*host.gpu, host.display));
         }
-        if (win32hle_trace) {
+        // --trace, or SFCOP_USER32_TRACE=1 for the queue's lines alone (the per-call trace slows
+        // the game enough to change what a click meets).
+        const char *queueTrace = std::getenv("SFCOP_USER32_TRACE");
+        if (win32hle_trace || (queueTrace != nullptr && std::strcmp(queueTrace, "1") == 0)) {
             created->Queue().SetTrace(
                 [](const char *line) { std::fprintf(stderr, "[user32] %s\n", line); });
         }

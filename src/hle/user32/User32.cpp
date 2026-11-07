@@ -617,6 +617,27 @@ bool User32::ReleaseDC(std::uint32_t, std::uint32_t dc) {
 
 // ---- input ----
 
+// --trace: a polled mouse button's answer, when it differs from the row's last answer for that
+// button (one line per change, not per frame).
+void User32::tracePolled(const char *row, std::uint32_t vk, bool isDown, std::uint8_t &answered) {
+    const std::uint8_t bit = static_cast<std::uint8_t>(1u << (vk & 0x07));
+    if (((answered & bit) != 0) == isDown) {
+        return;
+    }
+    answered = static_cast<std::uint8_t>(isDown ? (answered | bit) : (answered & ~bit));
+    char line[64];
+    std::snprintf(line, sizeof line, "  poll: %s button %s", row, isDown ? "down" : "up");
+    queue_.Trace(line);
+}
+
+std::uint16_t User32::KeyState(std::uint32_t vk) {
+    const std::uint16_t state = queue_.KeyState(vk);
+    if (vk == kVkLButton || vk == kVkRButton || vk == kVkMButton) {
+        tracePolled("GetKeyState", vk, (state & 0x8000) != 0, keyAnswered_);
+    }
+    return state;
+}
+
 std::uint16_t User32::AsyncKeyState(std::uint32_t vk) {
     bool isDown = false;
     if (vk == kVkLButton || vk == kVkRButton || vk == kVkMButton) {
@@ -626,6 +647,7 @@ std::uint16_t User32::AsyncKeyState(std::uint32_t vk) {
                                                    : platform::MouseButton::kMiddle;
             isDown = mouse.Value().buttons[static_cast<std::size_t>(button)];
         }
+        tracePolled("GetAsyncKeyState", vk, isDown, asyncAnswered_);
     } else {
         platform::Scancode usages[2] = {};
         const int count = usagesOfVk(vk, usages);
