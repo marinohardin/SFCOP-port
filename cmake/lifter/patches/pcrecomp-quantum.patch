@@ -1,0 +1,109 @@
+--- a/runtime/win32hle/host_lite.c
++++ b/runtime/win32hle/host_lite.c
+@@ -62,7 +62,9 @@
+  * nested depth without that is how another thread's registers end up in this
+  * one's lifted code.) Every import is a yield point when another thread is
+  * waiting (shim_entry), as every native call is under native32, and so is
+- * every RECOMP_YIELD_EVERY-th loop back-edge (recomp_yield_hook). */
++ * every RECOMP_YIELD_EVERY-th loop back-edge (recomp_yield_hook); an import
++ * or a back edge hands the machine over only once the running thread's
++ * quantum is used up (hle_preempt, below). */
+ /* Letting a waiter in: sched_yield gives the CPU up on a real OS; in a
+  * browser's worker it returns at once, so the thread took the lock straight
+  * back and a timer thread never ran (the game then waited forever for a tick
+@@ -79,6 +81,26 @@
+ static volatile int      g_waiters;     /* threads blocked in mach_take */
+ static volatile unsigned g_owner_gen;   /* bumped on every take */
+ 
++/* Windows lets a running thread keep the processor until it blocks, gives it
++ * up (Sleep(0), SwitchToThread) or uses up its quantum. Handing the machine
++ * over at every import while another thread waited switched threads at
++ * nearly every import: a thread holding a lock that another spins on with no
++ * import in its loop was switched out mid-section, and the spinning thread
++ * then ran its loop until a back edge handed the machine back. An import or
++ * a back edge now hands the machine over only once the running thread has
++ * passed a quantum of hand-over points (imports and back-edge hooks) since it
++ * took the machine; a wait, a Sleep and Sleep(0) still hand it over at once.
++ * The quantum is counted in the guest's own steps, never in host time. A loop
++ * that has run RECOMP_YIELD_EVERY back edges without calling a single import
++ * is spinning (or computing) on its own: on the multiprocessor machines the
++ * game ran on, the thread it waits for ran meanwhile, so that back edge hands
++ * the machine to a waiter at once, inside the quantum or not. */
++#ifndef HLE_QUANTUM_POINTS
++#define HLE_QUANTUM_POINTS 1024u        /* about 0.3 to 1 ms of the game's imports here */
++#endif
++unsigned hle_quantum_points = HLE_QUANTUM_POINTS;  /* a test sets its own */
++static unsigned g_points;               /* hand-over points since the last take */
++
+ extern volatile unsigned hle_dbg_takes;
+ int hle_debug_waiters(void) { return g_waiters; }
+ static void mach_take(void) {
+@@ -86,6 +108,7 @@
+     pthread_mutex_lock(&g_mach);
+     __sync_fetch_and_sub(&g_waiters, 1);
+     g_owner_gen++;
++    g_points = 0;
+     hle_dbg_takes++;
+ }
+ 
+@@ -197,6 +220,16 @@
+     hle_block_end();
+ }
+ 
++/* A hand-over point that is not a wait (an import, a loop's back edge): the
++ * machine goes to a waiting thread only once this one has used up its
++ * quantum. */
++volatile unsigned hle_dbg_preempts;
++void hle_preempt(void) {
++    if (++g_points < hle_quantum_points || !g_waiters || !g_ms.depth) return;
++    hle_dbg_preempts++;
++    hle_yield();
++}
++
+ /* ------------------------------------------------------------- dispatch
+  * recomp_lookup searches the generated dispatch table (declared extern in
+  * recomp_types.h; defined by the lifted program, or the selftest). */
+@@ -251,9 +284,13 @@
+  * entered through shim_entry: the lookup and the call are back to back on the
+  * thread that holds the machine, so the index passes through a global. */
+ static volatile uint32_t g_pending_shim;
++/* This thread's imports, and their count at its last back-edge hook: per
++ * thread, so that another thread's imports never hide a spin. */
++static __thread unsigned g_imports, g_imports_at_hook;
+ static void shim_entry(void) {
+     uint32_t i = g_pending_shim;
+-    if (g_waiters) hle_yield();
++    g_imports++;
++    hle_preempt();
+     g_last_import_va = g_shim[i].va;                     /* again: the thread that ran meanwhile set its own */
+     g_cur_import = g_shim[i].name;
+     g_shim[i].fn();
+@@ -312,8 +349,12 @@
+     return eax;
+ }
+ 
+-/* Loops in lifted code hand the machine over too (RECOMP_BACKEDGE). */
+-static void yield_hook(void) { hle_yield(); }
++/* Loops in lifted code hand the machine over too (RECOMP_BACKEDGE): at once
++ * when no import ran since the last hook, else once the quantum is used up. */
++static void yield_hook(void) {
++    if (g_imports == g_imports_at_hook) { g_points++; hle_yield(); } else hle_preempt();
++    g_imports_at_hook = g_imports;
++}
+ __attribute__((constructor)) static void install_yield_hook(void) { recomp_yield_hook = yield_hook; }
+ 
+ /* ---------------------------------------------------------- handles
+--- a/runtime/win32hle/win32hle.h
++++ b/runtime/win32hle/win32hle.h
+@@ -147,6 +147,11 @@
+ void  hle_block_end(void);
+ /* Inside a shim: hand the machine to a waiting thread, if any. */
+ void  hle_yield(void);
++/* A hand-over point that is not a wait (an import, a loop's back edge): gives
++ * the machine to a waiting thread only once this one has passed
++ * hle_quantum_points of them since it took the machine (host_lite.c). */
++void  hle_preempt(void);
++extern unsigned hle_quantum_points;
+ 
+ /* ---- user32 message queue, host-callable ----
+  * So the optional SDL present/input layer can inject translated events, and a
