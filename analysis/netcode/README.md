@@ -8,12 +8,17 @@ Network-layer analysis of `StarFleetOP.exe` 2.5.5.2.
 | [`directplay_names.csv`](directplay_names.csv) | `address,name,evidence` for the integrator to import into the shared Ghidra project |
 | [`ghidra/DpDump.java`](ghidra/DpDump.java) | Read-only dump of the wrapper region: functions, indirect calls, vtables, EH records, decompiled C |
 | [`ghidra/DpUsers.java`](ghidra/DpUsers.java) | Read-only scan for every function that reaches the wrapper object and the wrapper slots it calls |
-| [`ghidra/run.sh`](ghidra/run.sh) | Runs both scripts headless and refreshes `results/` |
+| [`dynaverse.md`](dynaverse.md) | N1: which transport a Dynaverse mission's combat session uses (DESIGN §12.6) |
+| [`ghidra/DvMission.java`](ghidra/DvMission.java) | Read-only call-graph walks between named regions, forward and backward, for `dynaverse.md` |
+| [`ghidra/run.sh`](ghidra/run.sh) | Runs the three scripts headless and refreshes `results/` |
 | `results/eh.tsv` | `tDirectPlayError` throw sites and catch handlers |
 | `results/vtables.tsv` | The wrapper vtable (0x007B64A8) and its abstract base (0x007B654C), 41 slots each |
 | `results/refchain.tsv` | References to the DirectPlay GUIDs and the `tDirectPlayError` type descriptor |
 | `results/users_vcalls.tsv` | Functions that reach the wrapper, the slots they call, and their callers |
 | `results/region_vcalls.tsv` | Every indirect call in the wrapper region, with its slot |
+| `results/dynaverse_rpaths.tsv` | Shortest caller chains from each source region down to `tNetControl`'s host, join, connect-by-address and enumerate entries |
+| `results/dynaverse_paths.tsv` | Shortest call chains from the mission controller and the RunCampaign state into each region |
+| `results/dynaverse_edges.tsv` | Every direct edge from those two regions into another region |
 
 ## How the names CSV was made
 
@@ -43,8 +48,8 @@ Needs Ghidra 12.2 and the shared program export at `work/ghidra/StarFleetOP_2552
 analysis/netcode/ghidra/run.sh
 ```
 
-It imports the export into a private project under `work/directplay/` (once) and runs both scripts
-with `-readOnly`, so neither the shared project nor the private copy is changed. It takes about four
-minutes with a 6 GB heap and four cores. Raw output (all TSVs and the decompiled pseudocode) is
+It imports the export into a private project under `work/directplay/` (once) and runs the scripts
+with `-readOnly`, so neither the shared project nor the private copy is changed. It takes about two to
+four minutes with a 6 GB heap and four cores. Raw output (all TSVs and the decompiled pseudocode) is
 written to `work/directplay/dump/`; only the address tables above are copied into `results/`.
 Override `GHIDRA_HOME`, `SHARED` or `WORK` in the environment to use other locations.
