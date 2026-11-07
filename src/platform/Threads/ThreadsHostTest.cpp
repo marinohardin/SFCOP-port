@@ -14,6 +14,12 @@
 #include <vector>
 
 namespace sfcop::platform {
+
+namespace threadshost {
+// ThreadsHost.cpp: how many times the backend has woken its waiters since the process began.
+std::uint64_t wakeUps();
+} // namespace threadshost
+
 namespace {
 
 bool timingTestsSkipped() {
@@ -184,6 +190,146 @@ TEST_CASE("a host mutex is recursive and owned by one thread") {
         ThreadOptions{});
     CHECK(waitOne(*threads, taker.Value(), kForever) == WaitOutcome::kSignaled);
     CHECK(threads->GetExitCode(taker.Value()).Value() == 0u);
+}
+
+// Windows enters and leaves a critical section nobody else wants without waking any thread, and
+// the game does so tens of thousands of times a second. A take, a release, a set and a reset with
+// no waiter on that object wake no waiter.
+TEST_CASE("taking and releasing host objects nobody waits on wakes no waiter") {
+    auto threads = makeThreads();
+    Waitable mutex = threads->MakeMutex(false, "").Value().handle;
+    Waitable flag = event(*threads, true, false);
+    Waitable count = threads->MakeSemaphore(0, 10, "").Value().handle;
+    const std::uint64_t before = threadshost::wakeUps();
+    for (int i = 0; i < 100; i++) {
+        REQUIRE(waitOne(*threads, mutex, 0) == WaitOutcome::kSignaled);
+        REQUIRE(threads->ReleaseMutex(mutex).Ok());
+    }
+    CHECK(threads->SetEvent(flag).Ok());
+    CHECK(threads->ResetEvent(flag).Ok());
+    CHECK(threads->ReleaseSemaphore(count, 1).Ok());
+    CHECK(waitOne(*threads, count, 0) == WaitOutcome::kSignaled);
+    CHECK(threadshost::wakeUps() - before == 0u);
+}
+
+// A thread waiting on one object is woken by a change to that object, not by every change to
+// another: here the waiter is blocked on its event while the main thread churns a mutex, and the
+// event's set is what ends the wait.
+TEST_CASE("a host waiter wakes when its own object changes while another object churns") {
+    auto threads = makeThreads();
+    Waitable mutex = threads->MakeMutex(false, "").Value().handle;
+    Waitable go = event(*threads, false, false);
+    Waitable ready = event(*threads, false, false);
+    Result<Waitable> waiter = threads->StartThread(
+        [&] {
+            if (!threads->SetEvent(ready).Ok()) {
+                return 1u;
+            }
+            return waitOne(*threads, go, kForever) == WaitOutcome::kSignaled ? 0u : 2u;
+        },
+        ThreadOptions{});
+    REQUIRE(waiter.Ok());
+    CHECK(waitOne(*threads, ready, kForever) == WaitOutcome::kSignaled);
+    for (int i = 0; i < 1000; i++) {
+        REQUIRE(waitOne(*threads, mutex, 0) == WaitOutcome::kSignaled);
+        REQUIRE(threads->ReleaseMutex(mutex).Ok());
+    }
+    CHECK(threads->SetEvent(go).Ok());
+    CHECK(waitOne(*threads, waiter.Value(), kForever) == WaitOutcome::kSignaled);
+    CHECK(threads->GetExitCode(waiter.Value()).Value() == 0u);
+}
+
+namespace {
+// Takes and releases `mutex` `times` times on this thread: changes to an object no waiter is on.
+void churn(Threads &threads, Waitable mutex, int times) {
+    for (int i = 0; i < times; i++) {
+        REQUIRE(waitOne(threads, mutex, 0) == WaitOutcome::kSignaled);
+        REQUIRE(threads.ReleaseMutex(mutex).Ok());
+    }
+}
+} // namespace
+
+// The waiter blocks on a mutex this thread owns; another mutex churns; the owner's release of the
+// first is what ends the wait.
+TEST_CASE("a host waiter on a mutex is woken by its release while another mutex churns") {
+    auto threads = makeThreads();
+    Waitable held = threads->MakeMutex(true, "").Value().handle;
+    Waitable other = threads->MakeMutex(false, "").Value().handle;
+    Waitable ready = event(*threads, false, false);
+    Result<Waitable> waiter = threads->StartThread(
+        [&] {
+            if (!threads->SetEvent(ready).Ok()) {
+                return 1u;
+            }
+            if (waitOne(*threads, held, kForever) != WaitOutcome::kSignaled) {
+                return 2u;
+            }
+            return threads->ReleaseMutex(held).Ok() ? 0u : 3u;
+        },
+        ThreadOptions{});
+    REQUIRE(waiter.Ok());
+    CHECK(waitOne(*threads, ready, kForever) == WaitOutcome::kSignaled);
+    churn(*threads, other, 1000);
+    CHECK(waitOne(*threads, waiter.Value(), 0) == WaitOutcome::kTimedOut); // still blocked
+    CHECK(threads->ReleaseMutex(held).Ok());
+    CHECK(waitOne(*threads, waiter.Value(), kForever) == WaitOutcome::kSignaled);
+    CHECK(threads->GetExitCode(waiter.Value()).Value() == 0u);
+}
+
+TEST_CASE("a host waiter on a semaphore is woken by its release while a mutex churns") {
+    auto threads = makeThreads();
+    Waitable count = threads->MakeSemaphore(0, 1, "").Value().handle;
+    Waitable other = threads->MakeMutex(false, "").Value().handle;
+    Waitable ready = event(*threads, false, false);
+    Result<Waitable> waiter = threads->StartThread(
+        [&] {
+            if (!threads->SetEvent(ready).Ok()) {
+                return 1u;
+            }
+            return waitOne(*threads, count, kForever) == WaitOutcome::kSignaled ? 0u : 2u;
+        },
+        ThreadOptions{});
+    REQUIRE(waiter.Ok());
+    CHECK(waitOne(*threads, ready, kForever) == WaitOutcome::kSignaled);
+    churn(*threads, other, 1000);
+    CHECK(waitOne(*threads, waiter.Value(), 0) == WaitOutcome::kTimedOut);
+    CHECK(threads->ReleaseSemaphore(count, 1).Value() == 0); // the count before the release
+    CHECK(waitOne(*threads, waiter.Value(), kForever) == WaitOutcome::kSignaled);
+    CHECK(threads->GetExitCode(waiter.Value()).Value() == 0u);
+    CHECK(waitOne(*threads, count, 0) == WaitOutcome::kTimedOut); // the waiter took the one
+}
+
+// A wait for all on {mutex, event} blocks on both objects. Setting the event alone does not end
+// it (the mutex is still owned here); another mutex churns; the mutex's release ends it, and the
+// waiter then owns the mutex and the event is still set (manual reset).
+TEST_CASE("a host wait for all on a mutex and an event ends when the last of them is released") {
+    auto threads = makeThreads();
+    Waitable held = threads->MakeMutex(true, "").Value().handle;
+    Waitable flag = event(*threads, true, false);
+    Waitable other = threads->MakeMutex(false, "").Value().handle;
+    Waitable ready = event(*threads, false, false);
+    Result<Waitable> waiter = threads->StartThread(
+        [&] {
+            if (!threads->SetEvent(ready).Ok()) {
+                return 1u;
+            }
+            const Waitable both[2] = {held, flag};
+            Result<WaitResult> got = threads->Wait(both, 2, WaitMode::kAll, kForever);
+            if (!got.Ok() || got.Value().outcome != WaitOutcome::kSignaled) {
+                return 2u;
+            }
+            return threads->ReleaseMutex(held).Ok() ? 0u : 3u;
+        },
+        ThreadOptions{});
+    REQUIRE(waiter.Ok());
+    CHECK(waitOne(*threads, ready, kForever) == WaitOutcome::kSignaled);
+    CHECK(threads->SetEvent(flag).Ok());
+    churn(*threads, other, 1000);
+    CHECK(waitOne(*threads, waiter.Value(), 0) == WaitOutcome::kTimedOut); // the mutex is still owned
+    CHECK(threads->ReleaseMutex(held).Ok());
+    CHECK(waitOne(*threads, waiter.Value(), kForever) == WaitOutcome::kSignaled);
+    CHECK(threads->GetExitCode(waiter.Value()).Value() == 0u);
+    CHECK(waitOne(*threads, flag, 0) == WaitOutcome::kSignaled);
 }
 
 TEST_CASE("a host mutex whose owner thread ends is abandoned to the next waiter") {
