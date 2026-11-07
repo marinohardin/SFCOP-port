@@ -20,11 +20,13 @@ bool EventPump::Pump() {
         return false;
     }
     static_cast<void>(window_.PumpEvents());
+    frameEnded_ = true;
     for (;;) {
         auto event = window_.PollEvent();
         if (!event.Ok() || !event.Value()) {
             break;
         }
+        frameEnded_ = false;
         if (onEvent_) {
             onEvent_(*event.Value());
         }

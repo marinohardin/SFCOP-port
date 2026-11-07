@@ -2,7 +2,9 @@
 
 #include "app/ExitCodes.h"
 #include "app/Sha256.h"
+#include "platform/Clock/FixedStepClock.h"
 
+#include <cstdio>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -233,6 +235,23 @@ std::optional<std::string> sha256OfFile(const std::string &path) {
         hash.update(chunk, static_cast<std::size_t>(in.gcount()));
     }
     return Sha256::toHex(hash.finish());
+}
+
+std::optional<std::uint32_t> fixedStepOf(std::optional<std::uint32_t> flagMicroseconds,
+                                         bool oracleRun) {
+    if (flagMicroseconds) {
+        return flagMicroseconds;
+    }
+    if (oracleRun) {
+        return platform::kDefaultFixedStepMicroseconds;
+    }
+    return std::nullopt;
+}
+
+std::string millisecondsText(std::uint32_t microseconds) {
+    char text[24];
+    std::snprintf(text, sizeof text, "%u.%03u", microseconds / 1000, microseconds % 1000);
+    return text;
 }
 
 } // namespace sfcop::app::oracle

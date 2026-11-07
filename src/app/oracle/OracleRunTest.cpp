@@ -222,3 +222,18 @@ TEST_CASE("the exe hash is sha256sum's and the commit comes from git or reads un
 }
 
 } // namespace sfcop::app::oracle
+
+TEST_CASE("an oracle run takes the default fixed step, --fixed-step any run its own") {
+    using sfcop::app::oracle::fixedStepOf;
+    CHECK(fixedStepOf(std::nullopt, true) == 16667u);
+    CHECK_FALSE(fixedStepOf(std::nullopt, false));
+    CHECK(fixedStepOf(20000u, false) == 20000u);
+    CHECK(fixedStepOf(20000u, true) == 20000u);
+}
+
+TEST_CASE("a fixed step prints as milliseconds with three decimals") {
+    using sfcop::app::oracle::millisecondsText;
+    CHECK(millisecondsText(16667) == "16.667");
+    CHECK(millisecondsText(20000) == "20.000");
+    CHECK(millisecondsText(1) == "0.001");
+}

@@ -47,6 +47,14 @@ place the `Window` is drained: each event goes to the user32 module's message qu
 focus and the close box into the game's messages (`WM_CLOSE` included). A main thread blocked in a
 long wait does not pump.
 
+A turn of the pump that read no event from the `Window` is a frame: the game's message queue is
+then empty and the game runs one. `Options::onFrame`, when the client sets it, is called on the
+main thread after each such turn; `--oracle`, `--record-trace` and `--fixed-step` advance the
+fixed-step clock there (`platform/Clock/FixedStepClock.h`) and then fire the multimedia timers it
+has made due (`hle/kernel32rt/Timers.h`). `EventPump::FrameEnded()` is the rule. A turn that read an event, the
+operating system's or an input script's, is not one, so the events only a window receives (shown,
+exposed, focus) do not change the count of frames.
+
 ## The working directory
 
 The process runs from the per-user data folder, never the install, which is never written. The

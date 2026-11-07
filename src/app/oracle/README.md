@@ -39,6 +39,53 @@ names that tree through its hash list), run with `python3` through the shell; `S
 and `SFCOP_PYTHON` override them. The translated missions come from `$SFCOP_MISSION_MODULES`
 (`tools/scr2native/README.md`).
 
+## The fixed step
+
+The simulation integrates frame time, so a run on the wall clock gives a different trace each time
+(the proof runs below, before the fixed step). `--oracle` and `--record-trace` therefore run the
+game on a fixed-step clock (`platform/Clock/FixedStepClock.h`), and `--fixed-step MS` puts any run
+on one, for diagnosis; the client says so on stderr: `[clock] fixed step, 16.667 ms per frame`.
+
+- `GetTickCount`, `timeGetTime`, `QueryPerformanceCounter` and `QueryPerformanceFrequency` answer
+  from it (kernel32rt's `Time`): ticks and counter start at 0, the counter runs at 10 MHz.
+- They grow by the step once per frame: a turn of the guest host's pump that read no event from
+  the window (`src/app/guest/README.md`, "Threads"), after which `PeekMessageA` finds the queue
+  empty and the game runs a frame. A turn that read an event is not a frame, so the window's own
+  events (shown, exposed, focus) leave a windowed and a headless run with the same count.
+- A `Sleep` on the game's main thread grows them by the milliseconds asked (and sleeps that long),
+  so the game's own waits end. A `Sleep` on another thread only sleeps: those threads run as the
+  scheduler lets them, and counting their waits would bring the wall clock back.
+- 10,000 reads on the main thread with no growth move them by 1 ms, so a loop that waits for
+  time to pass without pumping or sleeping ends instead of hanging. Each such step is counted and
+  the oracle prints the count at `END`: `[clock] F frames, S spin steps, T ms on the game's clock`.
+  A run with spin steps is deterministic only as far as the number of reads is.
+- The time of day (`GetLocalTime`, `GetSystemTime`, `time()`) stays the host's, which the boot
+  probe's fake clock shifts. Timed waits (`WaitForSingleObject` with a timeout) stay on the
+  kernel's real clock.
+- The multimedia timers (`timeSetEvent`) start no thread: they fall due by the fixed-step clock
+  and fire on the main thread right after the frame's step, the earliest due first
+  (`hle/kernel32rt/Timers.h`); the oracle prints how many at `END`:
+  `[clock] multimedia timers on frames, N callbacks on frames`.
+
+**The input script's time moves onto the fixed step too.** Under `--oracle` the script's `sleep`
+steps and the timeouts of its waits (`src/app/input/`) are timed by the client's clock, which is
+then the fixed-step clock: `ScriptedWindow` gives the player `Ticks()` once per pump turn, so
+`sleep 50000` is 50 s of the game's clock (3,000 frames at the default step, fewer when the game
+sleeps or spins), however long the host takes. `oracle_input.exe`, the Wine driver, is a process of its own and times its steps by the
+wall clock (`GetTickCount` is not replaced in it). So when a native trace is compared with a Wine
+trace, a step's time is a delivery order, not a time: each run plays the same steps in the same
+order, and a click reaches the game at the frame where its screen is up, but not at the same frame
+in both. The traces agree only from samples the clicks no longer reach: the oracle mission's
+samples begin after `PLAY GAME`, and the script fixes ships, map and positions, so a frame or a
+hundred more spent on a menu does not change them. A step file whose clicks land during the
+mission would make the two traces part at that click.
+
+**The default step is 16.667 ms** (1000/60, to the microsecond, the unit `--fixed-step` takes).
+The original's typical frame on a recording machine is not known (no original trace exists yet,
+DESIGN §12.9), so the step is the brief's fallback, 60 frames a second, which is also the rate the
+native menu settles at on the host clock. Whatever the step, the original under
+Wine is recorded with the same one (`oracle/driver/README.md`, "The fixed step under Wine").
+
 ## In `scripts/check.sh`
 
 The replay oracle block plays every `oracle/expected/<mission>/<input>.trace` on
@@ -97,5 +144,54 @@ difference at tick 0`. A first attempt of the check ended with exit 2: the guest
 folder the working directory, so the relative expected-trace path no longer named a file when
 `compare.py` ran; every path the oracle uses is now made absolute before the game starts
 (`absoluteFrom`).
+
+### On the fixed step
+
+The same machine and setup, the lifted build of the fixed-step branch, `--fixed-step` at its
+default (16.667 ms), headless, `--record-trace`, one run at a time. With the clock pinned a run is
+also much shorter: the mission's 640 samples take 43,650 frames (about 728 s on the game's clock)
+and 4 to 5 minutes of real time headless (13 windowed, where frames are presented), against 13 headless before.
+
+| Run | Mode | END | Exit | Tick lines (SHA-256 of the 641 `tick<TAB>hash` lines) |
+| --- | --- | --- | --- | --- |
+| `h1` | `--headless --record-trace` | 220 s | 0 | `18fd7cefaa2c4d602d7d111988849899e4374d157d9cbb72070eee5970078a46` |
+| `h2` | `--headless --oracle h1 --record-trace` | 279 s | 4 (tick 3) | `fd455f8a719da2f4ab4a10adc12ef1eaa02a3a962ba35ba5a7f062250e91ccff` |
+| `w1` | `--windowed --oracle h1 --record-trace` | 756 s | 4 (tick 3) | `cdba757473d5847f246a12c2aa7dd98b6fefd8f0c3e476fedc084cc93936ad9d` |
+
+Five more headless runs of the same binary gave the same two tick sequences and no third:
+`18fd7cef...` twice and `fd455f8a...` three times. A run of an earlier build, whose busy-wait
+guard took a million reads instead of 10,000 (65 minutes to `END`), gave `fd455f8a...` too, so the
+guard's count does not choose between them. Every run on the fixed step agrees with every
+other up to sample 2; the two sequences part at sample 3, in the floats (the distance is
+`318.271606` in one and `318.271637` in the other), by a hair where the runs on the wall clock
+parted at sample 1 by far more. The windowed run `w1` follows `h2`'s sequence through sample 497 and
+parts from it at sample 498 in one field, the damage of `c101` (`5.83333397` against `0`; every
+position the same). These runs are of the build before the timers moved onto frames.
+
+The main thread's clock is the same in both: a diagnostic build that logged every 50th frame's
+reading, every sleep and every spin step gave the same lines, line for line, up to `END`, in two
+runs that gave the two different sequences. The game starts a periodic multimedia timer of 25 ms
+(`timeSetEvent`, procedure `0x00637BA0`) at boot, whose callback ran on its own thread by the
+kernel's real clock and read the clock about once per frame in the mission, so it was the first
+suspect. **The experiment does not confirm it.** With the timers on frames (above), two headless
+runs and a windowed one, the build of `9d72611` plus the timers:
+
+| Run | Mode | Exit | Callbacks on frames | Tick lines |
+| --- | --- | --- | --- | --- |
+| `h1` | `--headless --record-trace` | 0 | (not printed by that build) | `18fd7cefaa2c4d602d7d111988849899e4374d157d9cbb72070eee5970078a46` |
+| `h2` | `--headless --oracle h1` | 4 (tick 3) | (not printed) | `fd455f8a719da2f4ab4a10adc12ef1eaa02a3a962ba35ba5a7f062250e91ccff` |
+| `w1` | `--windowed --oracle h1` | 4 (tick 3) | (not printed) | `874300c7164927b7123d878a65d5a203993c69a7acf8be2a3f6498c616e93d35` |
+| `h3` | `--headless --record-trace` | 0 | 30,689 (767,236 ms / 25) | `fd455f8a719da2f4ab4a10adc12ef1eaa02a3a962ba35ba5a7f062250e91ccff` |
+
+The headless runs give the same two sequences as before the change, parting at sample 3 in the
+same field (`dist` of `c101` and `c201`, `318.271637` in `h1` against `318.271606` in `h2`, every
+grid position the same), and `w1` follows `h2` to sample 25 and parts at 26 in `dist` again
+(`315.039459` against `315.039642`). The timer's callbacks now land on the same frames in every
+run, so they are not what parts them; the change stays, as one source fewer. The cause is
+unconfirmed. The next candidates are the C runtime's `srand` sites seeded from the host
+(`oracle/README.md`, "Determinism assumptions" 1): from `time(NULL)` (`0x005098C9`, `0x006C2267`,
+`0x006DE5BB`), which under `--oracle` is still the host's time of day, and from
+`GetCurrentThreadId()` (`0x0073325F`); a seed taken at a different second would move the ships
+within their grid cells, which is what `dist` shows with every grid position equal.
 
 The captures of each screen, taken by window id with `screencapture -l`, are in the pull request.
