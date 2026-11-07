@@ -186,3 +186,20 @@ else()
                    "no CTest test sfcop_guest_tests); run `cmake --build ${CMAKE_BINARY_DIR} --target "
                    "sfcop_ehtest_lift`, then configure again")
 endif()
+
+# The machine's hand-over rule (cmake/lifter/patches/pcrecomp-quantum.patch): pcrecomp's
+# host_lite.c from the clone and the test's own stubs, no lifted program. The CTest test
+# sfcop_machine_quantum_tests.
+add_library(sfcop_machine_quantum_host OBJECT "${_sfcop_win32hle}/host_lite.c")
+target_include_directories(sfcop_machine_quantum_host PRIVATE "${_sfcop_win32hle}"
+    "${SFCOP_PCRECOMP_DIR}/runtime/recomp32")
+target_compile_definitions(sfcop_machine_quantum_host PRIVATE ${SFCOP_RECOMP_DEFINITIONS})
+target_compile_options(sfcop_machine_quantum_host PRIVATE -w -fno-strict-aliasing -fwrapv)
+add_executable(sfcop_machine_quantum_tests
+    "${CMAKE_SOURCE_DIR}/src/app/guest/tests/MachineQuantumTest.cpp")
+target_include_directories(sfcop_machine_quantum_tests PRIVATE "${_sfcop_win32hle}"
+    "${SFCOP_PCRECOMP_DIR}/runtime/recomp32")
+target_compile_definitions(sfcop_machine_quantum_tests PRIVATE ${SFCOP_RECOMP_DEFINITIONS})
+target_link_libraries(sfcop_machine_quantum_tests PRIVATE sfcop_machine_quantum_host sfcop_doctest
+    pthread)
+add_test(NAME sfcop_machine_quantum_tests COMMAND sfcop_machine_quantum_tests --no-version)
