@@ -9,7 +9,7 @@ that is not about files.
 | File | What it holds |
 |---|---|
 | `Kernel32rt.h` | Win32 constants, `Answer` (a value and the last error it sets), `Object` |
-| `Sync.*` | `CreateThread`'s thread, events, mutexes, semaphores and waits on `Threads` |
+| `Sync.*` | `CreateThread`'s thread, events, mutexes, semaphores and waits on `Threads`; the three `Create*` rows and `OpenMutexA` read `fix_hle_named_objects` through it (an empty name is no name; off, one shared object per kind) |
 | `CriticalSections.*` | A `CRITICAL_SECTION` by its guest address, as a recursive `Threads` mutex |
 | `ThreadLocal.*` | `TlsAlloc`, `TlsGetValue`, `TlsSetValue` on `Threads`' slots |
 | `Time.*` | Tick count, performance counter, `SYSTEMTIME` and `FILETIME` on `Clock` |

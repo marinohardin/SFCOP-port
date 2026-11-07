@@ -1,5 +1,6 @@
 #include "hle/kernel32rt/Sync.h"
 
+#include "fixes/fixes.h"
 #include "platform/Threads/ThreadsMock.h"
 
 #include <doctest/doctest.h>
@@ -225,6 +226,117 @@ TEST_CASE("CloseHandle gives the Threads handle back once") {
     sync.Close(event);
     sync.Close(event);
     CHECK(threads.log.Calls() == std::vector<std::string>{"Close(2)"});
+}
+
+// fix_hle_named_objects, set by the test and put back as it was when the test ends.
+struct NamedObjectsFix {
+    explicit NamedObjectsFix(bool on) : before_(fixes::current()) {
+        fixes::Settings settings;
+        if (!on) {
+            REQUIRE(settings.applyCommandLine({"fix_hle_named_objects=off"}).empty());
+        }
+        fixes::install(settings);
+    }
+    ~NamedObjectsFix() { fixes::install(before_); }
+
+private:
+    fixes::Settings before_; // what the process had installed, put back whatever it was
+};
+
+TEST_CASE("fix on: an empty name reaches Threads unchanged, so each object is its own") {
+    NamedObjectsFix fix(true);
+    ThreadsMock threads;
+    Sync sync(threads);
+    Object event, mutex, semaphore, opened;
+    sync.MakeEvent(false, false, "", event);
+    sync.MakeMutex(false, "", mutex);
+    sync.MakeSemaphore(0, 1, "", semaphore);
+    sync.OpenMutex("", opened);
+    CHECK(threads.log.Calls() ==
+          std::vector<std::string>{"MakeEvent(false, false, \"\")", "MakeMutex(false, \"\")",
+                                   "MakeSemaphore(0, 1, \"\")", "Open(\"\")"});
+}
+
+TEST_CASE("fix off: an empty name is one reserved name per kind that no game name can equal") {
+    NamedObjectsFix fix(false);
+    ThreadsMock threads;
+    threads.openResult = Waitable{7};
+    Sync sync(threads);
+    Object event, mutex, semaphore, opened;
+    sync.MakeEvent(false, false, "", event);
+    sync.MakeMutex(false, "", mutex);
+    sync.MakeSemaphore(0, 1, "", semaphore);
+    sync.OpenMutex("", opened);
+    CHECK(threads.log.Calls() ==
+          std::vector<std::string>{"MakeEvent(false, false, \"\\EmptyNameEvent\")",
+                                   "MakeMutex(false, \"\\EmptyNameMutex\")",
+                                   "MakeSemaphore(0, 1, \"\\EmptyNameSemaphore\")",
+                                   "Open(\"\\EmptyNameMutex\")"});
+    // A real name is never changed.
+    threads.log.Clear();
+    sync.MakeEvent(false, false, "Real", event);
+    CHECK(threads.log.Calls() == std::vector<std::string>{"MakeEvent(false, false, \"Real\")"});
+}
+
+// Through the real Threads backend: whether signalling one empty-named object reaches another.
+TEST_CASE("empty-named events: distinct with the fix on, one object with it off") {
+    for (const bool on : {true, false}) {
+        NamedObjectsFix fix(on);
+        const auto threads = platform::makeThreads();
+        Sync sync(*threads);
+        Object first, second;
+        REQUIRE(sync.MakeEvent(true, false, "", first).value == 1);
+        const Answer again = sync.MakeEvent(true, false, "", second);
+        REQUIRE(again.value == 1);
+        CHECK(sync.SetEvent(first).value == 1);
+        const Answer woke = sync.Wait({&second}, false, 0);
+        if (on) {
+            CHECK(again.lastError == kErrorSuccess);
+            CHECK(woke.value == kWaitTimeout); // the second event was not signalled
+        } else {
+            CHECK(again.lastError == kErrorAlreadyExists);
+            CHECK(woke.value == kWaitObject0); // the same object
+        }
+        sync.Close(first);
+        sync.Close(second);
+    }
+}
+
+TEST_CASE("fix off: OpenMutexA of an empty name does not open an empty-named event") {
+    NamedObjectsFix fix(false);
+    const auto threads = platform::makeThreads();
+    Sync sync(*threads);
+    Object event, opened;
+    REQUIRE(sync.MakeEvent(false, false, "", event).value == 1);
+    // The reserved key is one per kind, so no mutex of that name exists: not found, never the event.
+    const Answer refused = sync.OpenMutex("", opened);
+    CHECK(refused.value == 0);
+    CHECK(refused.lastError == kErrorFileNotFound);
+    sync.Close(event);
+}
+
+TEST_CASE("empty-named mutexes and semaphores: distinct with the fix on, one object with it off") {
+    for (const bool on : {true, false}) {
+        NamedObjectsFix fix(on);
+        const auto threads = platform::makeThreads();
+        Sync sync(*threads);
+        Object m1, m2, s1, s2;
+        sync.MakeMutex(false, "", m1);
+        const Answer m = sync.MakeMutex(false, "", m2);
+        sync.MakeSemaphore(0, 2, "", s1);
+        const Answer s = sync.MakeSemaphore(0, 2, "", s2);
+        CHECK(m.lastError == (on ? kErrorSuccess : kErrorAlreadyExists));
+        CHECK(s.lastError == (on ? kErrorSuccess : kErrorAlreadyExists));
+        Object opened;
+        CHECK(sync.OpenMutex("", opened).value == (on ? 0u : 1u));
+        if (!on) {
+            sync.Close(opened);
+        }
+        sync.Close(m1);
+        sync.Close(m2);
+        sync.Close(s1);
+        sync.Close(s2);
+    }
 }
 
 } // namespace

@@ -1,5 +1,7 @@
 #include "hle/kernel32rt/Sync.h"
 
+#include "fixes/fixes.h"
+
 #include <utility>
 
 namespace sfcop::hle::kernel32rt {
@@ -10,6 +12,19 @@ using platform::Error;
 using platform::ThreadPriority;
 using platform::WaitMode;
 using platform::WaitOutcome;
+
+// fix_hle_named_objects: an empty name is no name, as on Windows, so each such object is its own.
+// With the fix off the empty name is a name like any other and every such object of a kind is one
+// shared object (the diagnosis position). The shared object is kept under a reserved key, one per
+// kind, whose first character is a backslash: Windows forbids it in an object name, so the game
+// cannot pass a name that collides with it. `key` holds the string `name` is replaced by.
+std::string_view effectiveName(std::string_view name, const char *reserved, std::string &key) {
+    if (!name.empty() || fixes::isEnabled("fix_hle_named_objects")) {
+        return name;
+    }
+    key = reserved;
+    return key;
+}
 
 Answer failed(std::uint32_t error, std::uint32_t value = 0) {
     return Answer{value, error};
@@ -138,10 +153,14 @@ Answer Sync::Make(Kind kind, std::string_view name, platform::Result<platform::C
 
 Answer Sync::MakeEvent(bool manualReset, bool initiallySignaled, std::string_view name,
                        Object &out) {
+    std::string key;
+    name = effectiveName(name, "\\EmptyNameEvent", key);
     return Make(Kind::kEvent, name, threads_.MakeEvent(manualReset, initiallySignaled, name), out);
 }
 
 Answer Sync::MakeMutex(bool initiallyOwned, std::string_view name, Object &out) {
+    std::string key;
+    name = effectiveName(name, "\\EmptyNameMutex", key);
     return Make(Kind::kMutex, name, threads_.MakeMutex(initiallyOwned, name), out);
 }
 
@@ -150,11 +169,15 @@ Answer Sync::MakeSemaphore(std::int32_t initialCount, std::int32_t maximumCount,
     if (maximumCount <= 0 || initialCount < 0 || initialCount > maximumCount) {
         return failed(kErrorInvalidParameter);
     }
+    std::string key;
+    name = effectiveName(name, "\\EmptyNameSemaphore", key);
     return Make(Kind::kSemaphore, name, threads_.MakeSemaphore(initialCount, maximumCount, name),
                 out);
 }
 
 Answer Sync::OpenMutex(std::string_view name, Object &out) {
+    std::string key;
+    name = effectiveName(name, "\\EmptyNameMutex", key);
     {
         std::lock_guard<std::mutex> hold(lock_);
         const auto known = kinds_.find(name);
