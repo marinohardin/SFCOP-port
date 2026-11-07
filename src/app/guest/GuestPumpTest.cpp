@@ -73,4 +73,25 @@ TEST_CASE("an unbound pump does nothing") {
     CHECK(window.log.Count("PumpEvents") == 0);
 }
 
+TEST_CASE("a turn that read no event ends a frame, one that read an event does not, and another thread's call changes nothing") {
+    platform::WindowMock window;
+    EventPump pump(window, [](const platform::WindowEvent &) {});
+    CHECK_FALSE(pump.FrameEnded()); // no turn yet
+    pump.BindToCallingThread();
+    CHECK(pump.Pump());
+    CHECK(pump.FrameEnded());
+    platform::WindowEvent focus;
+    focus.type = platform::WindowEventType::kFocusGained;
+    window.pendingEvents.push_back(focus);
+    CHECK(pump.Pump());
+    CHECK_FALSE(pump.FrameEnded());
+    CHECK(pump.Pump());
+    CHECK(pump.FrameEnded());
+    bool pumped = true;
+    std::thread other([&] { pumped = pump.Pump(); });
+    other.join();
+    CHECK_FALSE(pumped);
+    CHECK(pump.FrameEnded());
+}
+
 } // namespace sfcop::guest

@@ -135,6 +135,27 @@ TEST_CASE("--watchdog takes whole seconds from 0 to 86400") {
                                       "(0, the default: never)\n") != std::string::npos);
 }
 
+TEST_CASE("--fixed-step takes milliseconds per frame, to the microsecond") {
+    CHECK_FALSE(parse({}).options.fixedStepMicroseconds);
+    CHECK(parse({"--fixed-step", "16.667"}).options.fixedStepMicroseconds == 16667u);
+    CHECK(parse({"--fixed-step=20"}).options.fixedStepMicroseconds == 20000u);
+    CHECK(parse({"--fixed-step", "0.001"}).options.fixedStepMicroseconds == 1u);
+    CHECK(parse({"--fixed-step", "1000"}).options.fixedStepMicroseconds == 1000000u);
+    CHECK(parse({"--fixed-step", "33.3"}).options.fixedStepMicroseconds == 33300u);
+    CHECK(parse({"--fixed-step", "5."}).options.fixedStepMicroseconds == 5000u);
+    const char *const kRange = "--fixed-step takes milliseconds above 0 and up to 1000, with at "
+                               "most three decimals, not '";
+    requireError({"--fixed-step", "0"}, std::string(kRange) + "0'");
+    requireError({"--fixed-step", "1000.001"}, std::string(kRange) + "1000.001'");
+    requireError({"--fixed-step", "16.6667"}, std::string(kRange) + "16.6667'");
+    requireError({"--fixed-step", "1.2.3"}, std::string(kRange) + "1.2.3'");
+    requireError({"--fixed-step", "."}, std::string(kRange) + ".'");
+    requireError({"--fixed-step", "-5"}, std::string(kRange) + "-5'");
+    requireError({"--fixed-step", "99999999999"}, std::string(kRange) + "99999999999'");
+    requireError({"--fixed-step"}, "--fixed-step needs MS");
+    requireError({"--fixed-step", "10", "--fixed-step", "20"}, "--fixed-step is given twice");
+}
+
 TEST_CASE("an unknown flag is bad input and is named") {
     requireError({"--bogus"}, "unknown flag '--bogus'");
     requireError({"--headless", "--bogus=3"}, "unknown flag '--bogus'");

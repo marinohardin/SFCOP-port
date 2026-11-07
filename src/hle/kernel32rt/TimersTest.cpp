@@ -1,10 +1,12 @@
 #include "hle/kernel32rt/Timers.h"
 
 #include "platform/Clock/ClockMock.h"
+#include "platform/Clock/FixedStepClock.h"
 #include "platform/Threads/ThreadsMock.h"
 
 #include <doctest/doctest.h>
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -159,6 +161,116 @@ TEST_CASE("timeSetEvent answers 0 when no thread can be started") {
     Timers timers(threads, clock);
     CHECK(timers.Start(10, true, [](std::uint32_t) {}) == 0);
     CHECK(threads.log.Count("Close") == 1); // the stop event
+}
+
+// On a fixed-step clock of 16.667 ms a frame (166,670 units), bound to the test's thread.
+
+TEST_CASE("on a fixed-step clock a timer starts no thread and fires from FireDue at the frames it falls due") {
+    ThreadsMock threads;
+    platform::FixedStepClock clock(nullptr, 166'670);
+    clock.BindToCallingThread();
+    Timers timers(threads, clock);
+    CHECK(timers.OnFrames());
+    std::vector<std::uint64_t> firedAt; // the frame of each call
+    const std::uint32_t id = timers.Start(25, true, [&](std::uint32_t which) {
+        CHECK(which == 1);
+        firedAt.push_back(clock.Frames());
+    });
+    CHECK(id == 1);
+    CHECK(threads.log.Calls().empty());
+    // Ticks after frames 1..6: 16, 33, 50, 66, 83, 100; due at 25, 50, 75, 100.
+    for (int frame = 1; frame <= 6; ++frame) {
+        clock.AdvanceFrame();
+        timers.FireDue();
+    }
+    CHECK(firedAt == std::vector<std::uint64_t>{2, 3, 5, 6});
+    CHECK(timers.FiredOnFrames() == 4);
+}
+
+TEST_CASE("on a fixed-step clock a periodic timer stalled for ten periods fires twice, then keeps its period") {
+    ThreadsMock threads;
+    platform::FixedStepClock clock(nullptr, 166'670);
+    clock.BindToCallingThread();
+    Timers timers(threads, clock);
+    int calls = 0;
+    timers.Start(25, true, [&](std::uint32_t) { ++calls; });
+    CHECK(clock.Sleep(300).Ok()); // the main thread sleeps: ticks 300
+    timers.FireDue();
+    CHECK(calls == 2); // due 25, then the catch-up tick; the next is due at 325
+    timers.FireDue();
+    CHECK(calls == 2);
+    CHECK(clock.Sleep(24).Ok()); // 324
+    timers.FireDue();
+    CHECK(calls == 2);
+    CHECK(clock.Sleep(1).Ok()); // 325
+    timers.FireDue();
+    CHECK(calls == 3);
+}
+
+TEST_CASE("on a fixed-step clock a one-shot fires once and leaves the table") {
+    ThreadsMock threads;
+    platform::FixedStepClock clock(nullptr, 166'670);
+    clock.BindToCallingThread();
+    Timers timers(threads, clock);
+    int calls = 0;
+    const std::uint32_t id = timers.Start(10, false, [&](std::uint32_t) { ++calls; });
+    timers.FireDue();
+    CHECK(calls == 0); // ticks 0, due 10
+    clock.AdvanceFrame();
+    timers.FireDue();
+    clock.AdvanceFrame();
+    timers.FireDue();
+    CHECK(calls == 1);
+    CHECK_FALSE(timers.Kill(id));
+}
+
+TEST_CASE("on a fixed-step clock the earlier due time fires first, and a tie goes to the lower id") {
+    ThreadsMock threads;
+    platform::FixedStepClock clock(nullptr, 166'670);
+    clock.BindToCallingThread();
+    Timers timers(threads, clock);
+    std::vector<std::uint32_t> order;
+    const auto note = [&](std::uint32_t which) { order.push_back(which); };
+    timers.Start(15, false, note); // id 1, due 15
+    timers.Start(5, false, note);  // id 2, due 5
+    timers.Start(15, false, note); // id 3, due 15
+    clock.AdvanceFrame();          // 16
+    timers.FireDue();
+    CHECK(order == std::vector<std::uint32_t>{2, 1, 3});
+}
+
+TEST_CASE("on a fixed-step clock a killed timer fires no more, and a callback may kill its own timer") {
+    ThreadsMock threads;
+    platform::FixedStepClock clock(nullptr, 166'670);
+    clock.BindToCallingThread();
+    Timers timers(threads, clock);
+    int first = 0, second = 0;
+    std::uint32_t own = 0;
+    const std::uint32_t killed = timers.Start(10, true, [&](std::uint32_t) { ++first; });
+    own = timers.Start(10, true, [&](std::uint32_t) {
+        ++second;
+        CHECK(timers.Kill(own));
+    });
+    CHECK(timers.Kill(killed));
+    for (int frame = 0; frame < 4; ++frame) {
+        clock.AdvanceFrame();
+        timers.FireDue();
+    }
+    CHECK(first == 0);
+    CHECK(second == 1);
+    CHECK(threads.log.Calls().empty());
+}
+
+TEST_CASE("on any other clock FireDue does nothing and the timer has its thread") {
+    ThreadsMock threads;
+    ClockMock clock;
+    Timers timers(threads, clock);
+    CHECK_FALSE(timers.OnFrames());
+    int calls = 0;
+    timers.Start(0, true, [&](std::uint32_t) { ++calls; });
+    timers.FireDue();
+    CHECK(calls == 0);
+    CHECK(threads.log.Count("StartThread") == 1);
 }
 
 } // namespace

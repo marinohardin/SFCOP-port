@@ -1,6 +1,7 @@
 #include "hle/kernel32rt/Timers.h"
 
 #include "hle/kernel32rt/Kernel32rt.h"
+#include "platform/Clock/FixedStepClock.h"
 
 #include <atomic>
 #include <utility>
@@ -13,6 +14,11 @@ struct Timers::Timer {
     platform::Waitable stop;
     platform::Waitable thread;
     std::atomic<std::uint32_t> threadId{0}; // Threads' id of the timer's thread, once it runs
+    // On frames only (no thread): when it falls due, and what it runs.
+    std::uint32_t due = 0;
+    std::uint32_t period = 0;
+    bool periodic = false;
+    Callback callback;
 };
 
 namespace {
@@ -25,7 +31,8 @@ std::uint32_t ticksOf(platform::Clock &clock) {
 } // namespace
 
 Timers::Timers(platform::Threads &threads, platform::Clock &clock)
-    : threads_(threads), clock_(clock) {}
+    : threads_(threads), clock_(clock),
+      onFrames_(dynamic_cast<platform::FixedStepClock *>(&clock) != nullptr) {}
 
 Timers::~Timers() {
     std::vector<std::uint32_t> ids;
@@ -41,6 +48,9 @@ Timers::~Timers() {
 }
 
 std::uint32_t Timers::Start(std::uint32_t delayMs, bool periodic, Callback callback) {
+    if (onFrames_) {
+        return StartOnFrames(delayMs, periodic, std::move(callback));
+    }
     auto stop = threads_.MakeEvent(true, false, {});
     if (!stop.Ok()) {
         return 0;
@@ -128,6 +138,12 @@ bool Timers::Kill(std::uint32_t id) {
         timer = found->second;
         timers_.erase(found);
     }
+    if (onFrames_) {
+        // Out of the table, so FireDue() runs it no more; a callback FireDue() is running now
+        // ends before this returns (from that callback itself, the lock is the caller's own).
+        std::lock_guard<std::recursive_mutex> wait(firing_);
+        return true;
+    }
     // The timer's own handles: none of these can fail while the timer is in the table.
     static_cast<void>(threads_.SetEvent(timer->stop));
     const auto self = threads_.CurrentThreadId();
@@ -138,6 +154,62 @@ bool Timers::Kill(std::uint32_t id) {
     static_cast<void>(threads_.Close(timer->thread));
     static_cast<void>(threads_.Close(timer->stop));
     return true;
+}
+
+std::uint32_t Timers::StartOnFrames(std::uint32_t delayMs, bool periodic, Callback callback) {
+    auto timer = std::make_shared<Timer>();
+    timer->period = delayMs == 0 ? 1u : delayMs;
+    timer->due = ticksOf(clock_) + delayMs;
+    timer->periodic = periodic;
+    timer->callback = std::move(callback);
+    std::lock_guard<std::mutex> hold(lock_);
+    timer->id = nextId_++;
+    if (nextId_ == 0) {
+        nextId_ = 1;
+    }
+    timers_[timer->id] = timer;
+    return timer->id;
+}
+
+void Timers::FireDue() {
+    if (!onFrames_) {
+        return;
+    }
+    // One clock reading for the whole call: every timer is judged at the same time, and a
+    // callback that reads the clock does not make a later one due in this frame.
+    const std::uint32_t now = ticksOf(clock_);
+    std::lock_guard<std::recursive_mutex> firing(firing_);
+    for (;;) {
+        std::shared_ptr<Timer> next;
+        {
+            std::lock_guard<std::mutex> hold(lock_);
+            for (const auto &entry : timers_) {
+                const Timer &timer = *entry.second;
+                if (static_cast<std::int32_t>(now - timer.due) < 0) {
+                    continue;
+                }
+                // The earliest due time first; the map's order (by id) breaks a tie.
+                if (!next || static_cast<std::int32_t>(timer.due - next->due) < 0) {
+                    next = entry.second;
+                }
+            }
+            if (!next) {
+                return;
+            }
+            if (next->periodic) {
+                // As the timer thread's rule: the next due time from the last, and after a
+                // stall of more than a period one catch-up tick now, not a call per period.
+                next->due += next->period;
+                if (static_cast<std::int32_t>(now - next->due) >= static_cast<std::int32_t>(next->period)) {
+                    next->due = now;
+                }
+            } else {
+                timers_.erase(next->id);
+            }
+        }
+        firedOnFrames_.fetch_add(1);
+        next->callback(next->id);
+    }
 }
 
 } // namespace sfcop::hle::kernel32rt

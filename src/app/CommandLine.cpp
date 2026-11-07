@@ -11,6 +11,47 @@ namespace sfcop::app {
 namespace {
 
 constexpr unsigned kMaxWatchdogSeconds = 86400;
+constexpr std::uint32_t kMaxFixedStepMicroseconds = 1'000'000;
+
+// "16.667" as 16667 microseconds: digits, then at most three after a point; 0 or more than
+// 1000 ms is refused.
+std::optional<std::uint32_t> parseMilliseconds(const std::string &text) {
+    std::uint64_t whole = 0;
+    std::uint64_t fraction = 0;
+    unsigned fractionDigits = 0;
+    bool point = false;
+    bool digits = false;
+    for (char c : text) {
+        if (c == '.' && !point) {
+            point = true;
+            continue;
+        }
+        if (c < '0' || c > '9') {
+            return std::nullopt;
+        }
+        digits = true;
+        if (point) {
+            if (++fractionDigits > 3) {
+                return std::nullopt;
+            }
+            fraction = fraction * 10 + static_cast<std::uint64_t>(c - '0');
+        } else {
+            whole = whole * 10 + static_cast<std::uint64_t>(c - '0');
+            if (whole > kMaxFixedStepMicroseconds / 1000) {
+                return std::nullopt;
+            }
+        }
+    }
+    while (fractionDigits < 3) {
+        fraction *= 10;
+        ++fractionDigits;
+    }
+    const std::uint64_t micros = whole * 1000 + fraction;
+    if (!digits || micros == 0 || micros > kMaxFixedStepMicroseconds) {
+        return std::nullopt;
+    }
+    return static_cast<std::uint32_t>(micros);
+}
 
 // Applies a flag's value to the options; returns false with `error` set when the value is
 // malformed. `value` is empty for a flag that takes none.
@@ -113,6 +154,19 @@ const Flag kFlags[] = {
              return false;
          }
          o.watchdogSeconds = static_cast<unsigned>(seconds);
+         return true;
+     }},
+    {"--fixed-step", "MS",
+     "advance the game's clock MS milliseconds per frame, not by the wall clock (--oracle and "
+     "--record-trace: 16.667)",
+     [](ClientOptions &o, const std::string &v, std::string &e) {
+         const std::optional<std::uint32_t> micros = parseMilliseconds(v);
+         if (!micros) {
+             e = "--fixed-step takes milliseconds above 0 and up to 1000, with at most three "
+                 "decimals, not '" + v + "'";
+             return false;
+         }
+         o.fixedStepMicroseconds = *micros;
          return true;
      }},
 };

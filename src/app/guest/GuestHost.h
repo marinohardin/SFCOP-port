@@ -23,6 +23,7 @@
 #include "platform/Window/Window.h"
 
 #include <cstdint>
+#include <functional>
 #include <string>
 
 namespace sfcop::guest {
@@ -55,6 +56,12 @@ struct Options {
     unsigned watchdogSeconds = 0; // 0: none; else the run ends then, 0 if the goal mark was reached
     std::string shotsDir;         // non-empty: a BMP of the display every shotEverySeconds (not headless)
     double shotEverySeconds = 5.0;
+    // Non-empty: called on the main thread after each turn of the pump that read no event from
+    // the Window, the turn after which PeekMessageA finds the queue empty and the game runs a
+    // frame. A turn that read an event (the OS's or an input script's) is not a frame, so events
+    // that only a window gets do not change the count. The fixed-step clock advances on it
+    // (platform/Clock/FixedStepClock.h).
+    std::function<void()> onFrame;
 };
 
 // Maps, binds and enters the game. Returns only for a dry run or when the exe cannot be mapped

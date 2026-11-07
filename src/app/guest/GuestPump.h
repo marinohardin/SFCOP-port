@@ -30,11 +30,19 @@ public:
     // when the calling thread is not the bound one or none is bound.
     bool Pump();
 
+    // The frame rule of the fixed-step clock (Options::onFrame): true when the bound thread's
+    // last Pump() read no event (another thread's call changes nothing; read it on the bound
+    // thread), the turn after which the game's PeekMessageA finds its
+    // queue empty and the game runs a frame. A turn that read an event does not count, so the
+    // events only a window gets (focus, exposure) leave a windowed and a headless run alike.
+    bool FrameEnded() const { return frameEnded_; }
+
 private:
     platform::Window &window_;
     std::function<void(const platform::WindowEvent &)> onEvent_;
     std::thread::id mainThread_{};
     bool bound_ = false;
+    bool frameEnded_ = false;
 };
 
 } // namespace sfcop::guest
