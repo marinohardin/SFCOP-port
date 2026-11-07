@@ -189,6 +189,48 @@ TEST_CASE("a handle reads, writes, seeks and sizes only as it was opened") {
     CHECK(game.InstallContent("data.bin") == "0123456789");
 }
 
+// The calls a model loader makes on a disk file it only reads (SetFilePointer and ReadFile in the
+// Win32 reference): each handle has its own file pointer; a read that crosses the end returns TRUE
+// with the bytes up to the end; moving the pointer past the end succeeds and returns the new
+// position, and a read there returns TRUE with 0 bytes, the end-of-file answer, not an error.
+TEST_CASE("a read-only disk file: positions per handle, reads short at the end, seeks past it") {
+    GameFolders game;
+    game.InstallFile("Assets/Models/test/test.mod", "MDLS0123456789");
+    Kernel &kernel = game.kernel;
+    std::uint32_t first = kernel.CreateFile("C:\\Assets\\Models\\test\\test.mod", kGenericRead, 1,
+                                            kOpenExisting, 0x80);
+    std::uint32_t second = kernel.CreateFile("C:\\Assets\\Models\\test\\test.mod", kGenericRead, 1,
+                                             kOpenExisting, 0x80);
+    REQUIRE(first != 0);
+    REQUIRE(second != 0);
+    REQUIRE(first != second);
+
+    char four[4];
+    std::uint32_t got = 0;
+    CHECK(kernel.ReadFile(first, four, 4, &got));
+    CHECK(std::string(four, got) == "MDLS");
+    CHECK(kernel.SetFilePointer(second, 10, nullptr, kFileBegin) == 10);
+    CHECK(kernel.ReadFile(first, four, 4, &got)); // the second handle's move did not move this one
+    CHECK(std::string(four, got) == "0123");
+    CHECK(kernel.SetFilePointer(first, 0, nullptr, kFileCurrent) == 8);
+
+    char eight[8];
+    CHECK(kernel.ReadFile(second, eight, 8, &got));
+    CHECK(got == 4);
+    CHECK(std::string(eight, got) == "6789");
+    CHECK(kernel.SetFilePointer(second, 0, nullptr, kFileCurrent) == 14);
+
+    CHECK(kernel.SetFilePointer(first, 1044270900, nullptr, kFileBegin) == 1044270900u);
+    CHECK(kernel.TakeLastError() == 0u);
+    got = 7;
+    CHECK(kernel.ReadFile(first, four, 4, &got));
+    CHECK(got == 0);
+    CHECK(kernel.SetFilePointer(first, 0, nullptr, kFileCurrent) == 1044270900u);
+    CHECK(kernel.GetFileSize(first, nullptr) == 14);
+    CHECK(kernel.CloseFile(first));
+    CHECK(kernel.CloseFile(second));
+}
+
 TEST_CASE("a file's time is set and read as a FILETIME") {
     GameFolders game;
     Kernel &kernel = game.kernel;
