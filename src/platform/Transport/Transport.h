@@ -73,18 +73,60 @@ struct SelectSet {
     std::vector<SocketId> errored;   // a non-blocking connect failed, or out-of-band data
 };
 
-// Phase 3: joining a peer by the session id the lobby gives (DESIGN §5.11, §5.12, §12.8). Left
-// abstract here; the NAT traversal and relay behind it are chosen in Phase 3.
+// Phase 3: reaching the other machines of a session by the names the lobby gives (DESIGN §5.11,
+// §5.12, §6.7, §12.8). The traversal is the project's own punch over this component's UDP
+// sockets, with the project's relay as the fallback; the wire is `src/net/RENDEZVOUS.md`. A
+// machine Bind()s once with the ticket the lobby issued, then ConnectToPeer() reaches a peer and
+// AcceptPeer() answers one reaching it. Each successful call hands out a UDP socket of this
+// Transport, owned by the caller, that talks to that one peer (directly or through the relay);
+// Send() and Receive() work on it, Close() ends it.
+//
+// Names: `sessionId` is the lobby's session id, 16 lowercase hexadecimal digits; a peer is named
+// `<session>:<peer>` with the peer id in 8 lowercase hexadecimal digits, and `<session>` alone
+// names the host (peer 1). Any other form is kInvalidArgument. The ticket is opaque, 36 bytes.
+//
+// Service answers (`RvError` in RENDEZVOUS.md) map to: kUnknownSession -> kNotFound;
+// kUnknownPeer -> kHostUnreachable; kBadTicket, kTicketExpired -> kAccessDenied; kFull,
+// kRateLimited -> kOutOfResources; kUnsupportedVersion -> kUnsupported; kUnknownBinding is
+// answered by binding again and never surfaces. No answer from the service within 500 ms of a
+// request is kTimedOut, whatever the call's own timeout.
+//
+// Threading: every method may be called from any thread; ConnectToPeer() and AcceptPeer() may
+// block at the same time on different threads. The implementation refreshes the binding on its
+// own until Unbind() or the Transport is destroyed. Two machines that ConnectToPeer() at each
+// other at once both succeed with one socket each, and neither call shows up in AcceptPeer().
 class Rendezvous {
 public:
     virtual ~Rendezvous() = default;
 
-    // Returns a UDP socket whose datagrams reach the peer that published `sessionId` (directly
-    // or through the relay), waiting up to `timeoutMs`. Send() and Receive() on it talk to that
-    // peer only. Errors: kUnsupported; kInvalidArgument for an empty id; kNotFound if the
-    // session is unknown; kTimedOut; kHostUnreachable if no path to the peer was found.
-    virtual Result<SocketId> ConnectToPeer(std::string_view sessionId,
+    // Registers this machine with the rendezvous service as `peerId` of `sessionId`, with the
+    // lobby's ticket, waiting up to `timeoutMs` for the service's answer. Calling it again
+    // replaces the binding (a renewed ticket, or a changed address). Errors: kUnsupported;
+    // kInvalidArgument for a malformed id, a zero peer id or a ticket of the wrong size;
+    // kAccessDenied if the service rejects the ticket (wrong or expired); kOutOfResources if the
+    // service is full or rate-limiting; kTimedOut if the service did not answer.
+    virtual Status Bind(std::string_view sessionId, std::uint32_t peerId,
+                        const std::uint8_t *ticket, std::size_t ticketBytes,
+                        std::uint32_t timeoutMs) = 0;
+
+    // Removes this machine's binding and stops its refresh. Sockets already handed out stay
+    // open. Errors: kUnsupported; kWrongState if not bound.
+    virtual Status Unbind() = 0;
+
+    // Returns a UDP socket whose datagrams reach the named peer (directly or through the relay),
+    // waiting up to `timeoutMs`. Errors: kUnsupported; kWrongState if not bound;
+    // kInvalidArgument for a malformed name, or a session other than the bound one; kNotFound if
+    // the service does not know the session; kTimedOut if the service did not answer;
+    // kHostUnreachable if the peer is not bound or no path to it was found in time, directly or
+    // relayed.
+    virtual Result<SocketId> ConnectToPeer(std::string_view peerName,
                                            std::uint32_t timeoutMs) = 0;
+
+    // Waits up to `timeoutMs` for a peer of the bound session to reach this machine and returns
+    // the UDP socket that talks to it. The peer's name is not reported here; it travels in the
+    // session layer's own messages. Errors: kUnsupported; kWrongState if not
+    // bound; kTimedOut if no peer arrived; kHostUnreachable if one tried and no path was found.
+    virtual Result<SocketId> AcceptPeer(std::uint32_t timeoutMs) = 0;
 };
 
 class Transport {

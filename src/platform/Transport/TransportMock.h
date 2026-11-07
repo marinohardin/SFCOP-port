@@ -21,11 +21,30 @@ struct MockDatagram {
 class RendezvousMock final : public Rendezvous {
 public:
     MockLog log;
+    Status bindResult;
+    Status unbindResult;
     Result<SocketId> connectResult = SocketId{100};
+    Result<SocketId> acceptResult = SocketId{101};
 
-    Result<SocketId> ConnectToPeer(std::string_view sessionId, std::uint32_t timeoutMs) override {
-        log.Record("ConnectToPeer", sessionId, timeoutMs);
+    Status Bind(std::string_view sessionId, std::uint32_t peerId, const std::uint8_t *,
+                std::size_t ticketBytes, std::uint32_t timeoutMs) override {
+        log.Record("Bind", sessionId, peerId, ticketBytes, timeoutMs);
+        return bindResult;
+    }
+
+    Status Unbind() override {
+        log.Record("Unbind");
+        return unbindResult;
+    }
+
+    Result<SocketId> ConnectToPeer(std::string_view peerName, std::uint32_t timeoutMs) override {
+        log.Record("ConnectToPeer", peerName, timeoutMs);
         return connectResult;
+    }
+
+    Result<SocketId> AcceptPeer(std::uint32_t timeoutMs) override {
+        log.Record("AcceptPeer", timeoutMs);
+        return acceptResult;
     }
 };
 
