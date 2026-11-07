@@ -9,6 +9,7 @@
  * handle-taking row given a handle the module did not make (a standard handle, a file another
  * module opened) is passed to win32hle's own row, which answers it as before.
  */
+#include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -116,6 +117,83 @@ static void trace_path_with(const char *row, const void *name, int wide, uint32_
 }
 static void trace_path(const char *row, const void *name, int wide, uint32_t result) {
     trace_path_with(row, name, wide, result, "");
+}
+
+/* With --trace (or pcrecomp's HLE_FILETRACE=1, which logs nothing else): every call on a file this
+ * module opened, by handle and thread, with the position it started at, so two runs' sequences on
+ * one file can be compared. A read shows a checksum of the bytes, never the bytes. The name is the
+ * file's last segment only. At most FILE_TRACE_LINES lines per handle, its close saying how many
+ * calls were not shown, and FILE_TRACE_TOTAL in the whole run (a mission start makes about 17,600),
+ * never the whole of a long run. */
+#define FILE_TRACE_SLOTS 256
+#define FILE_TRACE_LINES 400
+#define FILE_TRACE_TOTAL 20000
+static struct { uint32_t handle, calls; char name[40]; } g_file_trace[FILE_TRACE_SLOTS];
+static uint32_t g_file_trace_total;
+
+/* Counts a line against the run's cap; the first one past it says the trace stops. */
+static int file_trace_line(void) {
+    if (g_file_trace_total < FILE_TRACE_TOTAL) return ++g_file_trace_total, 1;
+    if (g_file_trace_total++ == FILE_TRACE_TOTAL)
+        fprintf(stderr, "[hle-kernel] file trace: %u lines, no more this run\n", FILE_TRACE_TOTAL);
+    return 0;
+}
+
+static int file_tracing(void) { return win32hle_trace || hle_filetrace(); }
+
+static void file_trace_open(uint32_t handle, const void *name, int wide) {
+    if (!file_tracing() || handle == INVALID_HANDLE) return;
+    char last[40] = "";
+    size_t n = 0;
+    for (size_t i = 0;; i++) {
+        uint32_t c = wide ? ((const uint16_t *)name)[i] : ((const unsigned char *)name)[i];
+        if (!c) break;
+        if (c == '\\' || c == '/' || c == ':') { n = 0; continue; }
+        if (n + 1 < sizeof last) last[n++] = c < 0x80 ? (char)c : '?';
+    }
+    last[n] = 0;
+    unsigned slot = (handle >> 2) % FILE_TRACE_SLOTS;
+    g_file_trace[slot].handle = handle;
+    g_file_trace[slot].calls = 0;
+    memcpy(g_file_trace[slot].name, last, sizeof last);
+}
+
+/* A traced handle's name, or NULL; counts the call, and *shown says it is under the handle's cap. */
+static const char *file_trace_name(uint32_t handle, int *shown) {
+    unsigned slot = (handle >> 2) % FILE_TRACE_SLOTS;
+    if (g_file_trace[slot].handle != handle) { *shown = 0; return NULL; }
+    *shown = g_file_trace[slot].calls++ < FILE_TRACE_LINES;
+    return g_file_trace[slot].name;
+}
+
+/* Where the next transfer on `id` starts, asked without changing the error the game will see. */
+static uint32_t file_position(uint32_t id) {
+    int32_t high = 0;
+    uint32_t low = sfcop_kernel_set_file_pointer(id, 0, &high, 1 /* FILE_CURRENT */);
+    uint32_t discarded;
+    (void)sfcop_kernel_take_error(&discarded);
+    return low;
+}
+
+static uint32_t checksum(const uint8_t *bytes, uint32_t n) {   /* FNV-1a, 32 bits */
+    uint32_t h = 2166136261u;
+    for (uint32_t i = 0; i < n; i++) h = (h ^ bytes[i]) * 16777619u;
+    return h;
+}
+
+static void file_trace(uint32_t handle, const char *row, uint32_t at, const char *fmt, ...)
+    __attribute__((format(printf, 4, 5)));
+static void file_trace(uint32_t handle, const char *row, uint32_t at, const char *fmt, ...) {
+    int shown = 0;
+    const char *name = file_trace_name(handle, &shown);
+    if (!name || !shown || !file_trace_line()) return;
+    char rest[96];
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(rest, sizeof rest, fmt, ap);
+    va_end(ap);
+    fprintf(stderr, "[hle-kernel] file 0x%x %s thread %u %s at %u %s\n", handle, name,
+            hle_thread_id(), row, at, rest);
 }
 
 /* ---- paths ---- */
@@ -234,6 +312,7 @@ static void create_file(int wide) {
     char how[48];
     snprintf(how, sizeof how, " access 0x%x disposition %u", A32(1), A32(4));
     trace_path_with(wide ? "CreateFileW" : "CreateFileA", APTR(0), wide, handle, how);
+    file_trace_open(handle, APTR(0), wide);
     RET(handle, 7);
 }
 static void k_CreateFileA(void) { create_file(0); }
@@ -262,8 +341,12 @@ static void k_ReadFile(void) {                  /* (handle, buffer, count, &read
     uint32_t id = file_of(A32(0));
     if (!id) { hand_on("ReadFile", 5, 0); return; }
     uint32_t read = 0;
+    uint32_t at = file_tracing() ? file_position(id) : 0;
     int ok = seek_overlapped(id, A32(4)) && sfcop_kernel_read_file(id, APTR(1), A32(2), &read);
     pass_error();
+    if (file_tracing())
+        file_trace(A32(0), "ReadFile", at, "want %u got %u sum 0x%08x%s -> %d", A32(2), read,
+                   checksum((const uint8_t *)APTR(1), read), A32(4) ? " overlapped" : "", ok);
     put32(A32(3), read);
     finish_overlapped(A32(4), read);
     RET(ok, 5);
@@ -285,8 +368,12 @@ static void k_SetFilePointer(void) {            /* (handle, distance, &distanceH
     if (!id) { hand_on("SetFilePointer", 4, 0xFFFFFFFFu); return; }
     uint32_t highVa = A32(2);
     int32_t high = highVa ? (int32_t)MEM32(highVa) : 0;
+    uint32_t at = file_tracing() ? file_position(id) : 0;
     uint32_t low = sfcop_kernel_set_file_pointer(id, (int32_t)A32(1), highVa ? &high : NULL, A32(3));
     pass_error();
+    if (file_tracing())
+        file_trace(A32(0), "SetFilePointer", at, "move %d%s method %u -> %u", (int32_t)A32(1),
+                   highVa ? " (high)" : "", A32(3), low);
     put32(highVa, (uint32_t)high);
     RET(low, 4);
 }
@@ -297,6 +384,7 @@ static void k_GetFileSize(void) {               /* (handle, &high) */
     uint32_t high = 0;
     uint32_t low = sfcop_kernel_get_file_size(id, &high);
     pass_error();
+    if (file_tracing()) file_trace(A32(0), "GetFileSize", file_position(id), "-> %u", low);
     put32(A32(1), high);
     RET(low, 2);
 }
@@ -346,7 +434,18 @@ static void k_GetFileType(void) {
 
 static void k_CloseHandle(void) {
     uint32_t handle = A32(0);
-    if (!file_of(handle)) { hand_on("CloseHandle", 1, 0); return; }
+    uint32_t id = file_of(handle);
+    if (!id) { hand_on("CloseHandle", 1, 0); return; }
+    if (file_tracing()) {
+        unsigned slot = (handle >> 2) % FILE_TRACE_SLOTS;
+        if (g_file_trace[slot].handle == handle && file_trace_line()) {   /* past the handle's cap */
+            uint32_t calls = g_file_trace[slot].calls;
+            fprintf(stderr, "[hle-kernel] file 0x%x %s thread %u CloseHandle at %u after %u calls, "
+                    "%u not shown\n", handle, g_file_trace[slot].name, hle_thread_id(),
+                    file_position(id), calls, calls > FILE_TRACE_LINES ? calls - FILE_TRACE_LINES : 0);
+            g_file_trace[slot].handle = 0;
+        }
+    }
     hle_handle_close(handle);                     /* the closer closes the module's file */
     pass_error();
     RET(1, 1);
