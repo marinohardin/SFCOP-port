@@ -43,7 +43,7 @@ It does not:
 | Performance | 60 frames per second at the display's native resolution on an M1 MacBook Pro, with a frame cap; the original's uncapped loop is not kept. Start to main menu in under 10 s from a warm disk |
 | Data | Every original data file is read unchanged, found in the player's install and verified against `analysis/results/retail_hashes.sha256`. Saves, settings and campaign files are written in formats the original reads |
 | Privacy | No telemetry. No network call without the player's action. The port stores no credential in plain text; the game's own key handling stays as the original did it |
-| Licensing | Undecided (§12.1). Until decided: dependencies are permissive only (SDL3 zlib, miniaudio public domain or MIT-0, NAT traversal library MIT or BSD); nothing derived from the WONAPI or GameSpy sources is included |
+| Licensing | Undecided (§12.1). Until decided: dependencies are permissive only (SDL3 zlib, miniaudio public domain or MIT-0); nothing derived from the WONAPI or GameSpy sources is included |
 | Machine | Development and CI on one MacBook Pro; builds at `-j4`; everything large on the external drive; at most eight agents at once |
 | Hosting cost | Lobby, relay and directory hosted for under 5 USD a month in total; how is decided in Phase 3 (§11) |
 
@@ -125,7 +125,7 @@ Three paths. (a) A decompiled mission compiles into the native build as source. 
 
 ### 5.10 Replay oracle
 
-A fixed skirmish mission (`oracle/scr/`) logs per-tick ship state through the scripting API; a driver runs it with scripted input and hashes the log. The trace recorded on the original is the expected value; the delinked exe and the native build must produce the same hash sequence, tick for tick, with no tolerance. Test: `scripts/check.sh` runs the oracle on every pull request that touches `game/` or `src/`. The original's trace is recorded on Windows or another Wine build until the Mac can record it.
+A fixed skirmish mission (`oracle/scr/`) logs per-tick ship state through the scripting API; a driver runs it with scripted input and hashes the log. The trace recorded on the original is the expected value; the delinked exe and the native build must produce the same hash sequence, tick for tick, with no tolerance. Under the oracle the game's tick count and performance counter advance a fixed step per frame (16.667 ms unless `--fixed-step MS` says otherwise), never by the wall clock, its multimedia timers fall due by that clock and fire on the main thread between frames, and the original under Wine is recorded with the same step (`oracle/driver/oracle_launch.exe`). Test: `scripts/check.sh` runs the oracle on every pull request that touches `game/` or `src/`. The original's trace is recorded on Windows or another Wine build until the Mac can record it.
 
 ### 5.11 Multiplayer session
 
@@ -181,11 +181,11 @@ The per-user data directory (§5.3) holds `settings/*.gf` and profiles in the or
 
 ### 6.7 Network protocol
 
-The on-wire format of a game session is the original's `tNetMsg` framing inside a transport envelope (`src/net/PROTOCOL.md`: version, session id, sequence, reliability flags, fragment index). The lobby service speaks a small versioned HTTPS API for the server list and session registration and a UDP rendezvous for NAT traversal; the relay forwards envelopes unchanged. Every message type is written down with its fields and version before any code consumes it.
+The on-wire format of a game session is the dplay module's session messages, which carry the original's `tNetMsg` bundles unchanged, inside a transport envelope (`src/net/PROTOCOL.md`: version, session id, source and destination peer, sequence, reliability flags, fragment index and count). The lobby service speaks a small versioned HTTPS API for the server list, session registration and rendezvous tickets (`src/net/LOBBY_API.md`), and a UDP rendezvous for NAT traversal whose port also carries the relay (`src/net/RENDEZVOUS.md`). The relay forwards envelopes unchanged. Every message type is written down with its fields and version before any code consumes it. The Transport contract's `Rendezvous` is the client's view of it: `Bind` with the lobby's ticket, `ConnectToPeer` and `AcceptPeer` for a socket to one peer, `Unbind`.
 
 ### 6.8 Command lines
 
-`sfcop [--install DIR] [--data DIR] [--windowed|--fullscreen] [--fix NAME=on|off] [--oracle TRACE --input SCRIPT --headless --watchdog S]`; `scr2native IN.scr -o OUT [--check]`; `sfcop-lobby`, `sfcop-relay` for the hosted services. Exit codes: 0 success, 2 bad input, 3 install verification failed, 4 oracle mismatch.
+`sfcop [--install DIR] [--data DIR] [--windowed|--fullscreen] [--fix NAME=on|off] [--oracle TRACE --input SCRIPT --headless --watchdog S] [--fixed-step MS]`; `scr2native IN.scr -o OUT [--check]`; `sfcop-lobby`, `sfcop-relay` for the hosted services. Exit codes: 0 success, 2 bad input, 3 install verification failed, 4 oracle mismatch.
 
 ### 6.9 Fix switches
 
@@ -206,7 +206,7 @@ src/hle/     the Win32 surface implemented on the platform components
 src/platform the components of §6.2 on SDL3, SDL GPU, miniaudio, sockets, the C++ runtime
 src/net/     transport, rendezvous, relay client (Phase 3)
 src/fixes/   fix switches
-third_party/ pinned SDL3, miniaudio, the NAT traversal library; nothing derived from WONAPI or GameSpy
+third_party/ pinned SDL3, miniaudio; nothing derived from WONAPI or GameSpy
 tools/       scr2native, the lifter driver, build helpers
 server/      lobby, relay and directory stand-ins (Phase 3 and 4)
 ```
@@ -245,7 +245,7 @@ Developer machines and the runner have the retail install; CI generates the lift
 
 ## 9. Security and privacy
 
-- **Who can do what.** The client is a single-player program with no accounts. The hosted lobby accepts registrations and lookups from any client speaking the current protocol version; it rate-limits by address and the owner can block an address. The relay forwards only between the two peers of a session it issued a token for. Stand-in directory and auth services do not reproduce Sierra's account system: a player is a name they type plus an id generated on their machine; the owner decides anything beyond that (§12.3).
+- **Who can do what.** The client is a single-player program with no accounts. The hosted lobby accepts registrations and lookups from any client speaking the current protocol version; it rate-limits by address and the owner can block an address. The relay forwards only between machines of one session that each hold a ticket the lobby issued for it. Stand-in directory and auth services do not reproduce Sierra's account system: a player is a name they type plus an id generated on their machine; the owner decides anything beyond that (§12.3).
 - **Secrets.** The hosted services' credentials (TLS certificates, the owner's admin token) live in environment files outside git on the host, or in GitHub repository secrets. The repository holds none, and no test fixture holds a real one.
 - **Never logged.** CD keys, the contents of the key store, player addresses beyond what the relay and lobby need to run (kept 7 days, then deleted), and anything from the player's install. Logs on the player's machine stay there (§5.16).
 - **Never committed.** Retail files or bytes, lifted code, the owner's private files, personal data, anything derived from the WONAPI or GameSpy sources. The hotspot check and the review read for these.
@@ -280,9 +280,9 @@ Expected total: 0 USD a month until Phase 3, then under 5 USD.
 | 12.3 | What the native client does at the key prompt and with the game's online key check once the original services are gone | Owner | Phase 3 lobby design | Open; until decided the native client behaves as the original |
 | 12.4 | Whether `game/` source compiles in both the VC6 mode and the guest mode with `game/port/types.h` alone (§7.2) | The C3 spike, then the owner | Replacing lifted functions in the native build; the "one source tree" claim | **Decided 2026-11-04:** the spike answered yes with constraints (`spike/guest-mode/REPORT.md`); the owner chose the alternative instead: each decompiled unit is compiled by VC6 and its object lifted into the native build (§7.2), so `game/` carries no guest-mode constructs. The object lifter landed as Wave 1 package B9 (#39); the guest-mode route is retired as a build and kept as the spike's record |
 | 12.5 | Whether the scripting library's source files, which the SDK ships to modders, may be committed, or must be copied from the player's install at build time | Owner | Script packages; the translator | Open; the build copies from the install until decided |
-| 12.6 | Which transport Dynaverse missions use: the DirectPlay wrapper or `nSwitch` | Analysis (`analysis/netcode/`) in Phase 3 | The Phase 4 transport design | Open |
+| 12.6 | Which transport Dynaverse missions use: the DirectPlay wrapper or `nSwitch` | Analysis (`analysis/netcode/`) in Phase 3 | The Phase 4 transport design | **Answered 2026-11-07 (N1, `analysis/netcode/dynaverse.md`):** the DirectPlay wrapper through `tNetControl`. `tState_RunCampaign` hosts or joins over TCP/IP, by connect-by-address to the host address in the server's `tMatchedMission`. nSwitch carries the matching and the results; during the mission the client has it cache Dynaverse messages, and (inferred, from static analysis) carries no combat traffic. A Phase 4 server writes the host's rendezvous name into that field |
 | 12.7 | Whether the lifted build's 53-bit floating point reproduces the original's traces | The oracle, once a trace exists | Any "functional" claim for simulation code in the native build | Open |
-| 12.8 | NAT traversal library (libjuice or GameNetworkingSockets) | Integrator, in the Phase 3 protocol document | Phase 3 transport package | Open |
+| 12.8 | NAT traversal: libjuice, GameNetworkingSockets, or the project's own punch over Transport | Integrator, in the Phase 3 protocol document | Phase 3 transport package | **Decided 2026-11-07:** the project's own punch over Transport, with its own relay (`src/net/RENDEZVOUS.md`, `NAT_LIBRARY.md`); no library. libjuice (pinned in `NAT_LIBRARY.md`) is the fallback if the punch fails N2's acceptance, taken by a contract change |
 | 12.9 | Which machine records the oracle (a Windows PC, CrossOver, another Wine build) | Owner | Every "functional" figure | Open |
 | 12.10 | Which community fixes default on and which are rules changes | Owner, reviewing `docs/FIXES.md` as it fills | Nothing until the fixes packages | Open |
 | 12.11 | Whether the decompilation and the modernization split into two repositories | Owner, at the reveal | Nothing before it | **Decided 2026-11-03:** one repository with the boundary of §7.1 enforced by the layout and the check; revisit at the reveal |

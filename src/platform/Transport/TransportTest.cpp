@@ -92,9 +92,18 @@ TEST_CASE("the transport mock hands out its rendezvous until told it has none") 
     Transport &transport = mock;
     Result<Rendezvous *> rendezvous = transport.GetRendezvous();
     REQUIRE(rendezvous.Ok());
-    CHECK(rendezvous.Value()->ConnectToPeer("TEST-SESSION-1", 5000).Value() == SocketId{100});
+    const std::uint8_t ticket[36] = {};
+    CHECK(rendezvous.Value()->Bind("5346434f50000001", 2, ticket, sizeof ticket, 500).Ok());
+    CHECK(rendezvous.Value()->ConnectToPeer("5346434f50000001", 5000).Value() == SocketId{100});
+    CHECK(rendezvous.Value()->AcceptPeer(5000).Value() == SocketId{101});
+    CHECK(rendezvous.Value()->Unbind().Ok());
     CHECK(mock.rendezvous.log.Calls() ==
-          std::vector<std::string>{"ConnectToPeer(\"TEST-SESSION-1\", 5000)"});
+          std::vector<std::string>{"Bind(\"5346434f50000001\", 2, 36, 500)",
+                                   "ConnectToPeer(\"5346434f50000001\", 5000)",
+                                   "AcceptPeer(5000)", "Unbind()"});
+    mock.rendezvous.bindResult = Error::kAccessDenied;
+    CHECK(rendezvous.Value()->Bind("5346434f50000001", 2, ticket, sizeof ticket, 500).Code() ==
+          Error::kAccessDenied);
     mock.rendezvousAvailable = false;
     CHECK(transport.GetRendezvous().Code() == Error::kUnsupported);
 }

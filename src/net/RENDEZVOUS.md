@@ -31,7 +31,7 @@ interoperability requirement with STUN, TURN or ICE, so the messages are only wh
 
 ## Names
 
-The Transport contract's `Rendezvous::ConnectToPeer(sessionId, timeoutMs)` takes a string. Its
+The Transport contract's `Rendezvous::ConnectToPeer(peerName, timeoutMs)` takes a string. Its
 forms are:
 
 | Form | Example | Reaches |

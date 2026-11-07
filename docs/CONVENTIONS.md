@@ -101,8 +101,8 @@ Branches follow §7.1. Commit scopes are the top-level directory or the componen
 
 - Declared in `third_party/INVENTORY.md` (name, version, licence, where used, why) and pinned there and in the build (`FetchContent` with a release URL and its SHA-256, or a commit hash, or a vendored copy). Only the integrator adds, removes or bumps one, in its own pull request labelled `contract-change`.
 - Permissive licences only until DESIGN §12.1 is decided: zlib, MIT, BSD, public domain. Nothing derived from the WONAPI or GameSpy sources, ever.
-- Current set: SDL3, miniaudio, doctest (tests), one NAT traversal library chosen in Phase 3 (DESIGN §12.8). Python tooling uses the standard library; a package it needs is recorded in the venv's requirements file under `tools/` and in the inventory.
-- A dependency is taken for a capability the project cannot reasonably write (a GPU abstraction, an audio engine, ICE), never for convenience.
+- Current set: SDL3, miniaudio, doctest (tests). NAT traversal is the project's own (DESIGN §12.8). Python tooling uses the standard library; a package it needs is recorded in the venv's requirements file under `tools/` and in the inventory.
+- A dependency is taken for a capability the project cannot reasonably write (a GPU abstraction, an audio engine), never for convenience.
 
 ## 6. Testing
 

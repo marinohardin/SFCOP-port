@@ -98,9 +98,10 @@ build it, whichever option is chosen:
 - **The lobby's credentials.** The session id and the ticket the lobby issued must reach the
   Rendezvous before it binds, for example a `Bind(sessionId, peerId, ticket)` call.
 
-The integrator makes that change in its own pull request.
+The integrator made that change in #60 (2026-11-07), which also decided DESIGN §12.8 for this
+recommendation.
 
-This departs from two documents. DESIGN §12.8 frames the choice as "libjuice or
+This departed from two documents, since changed by #60. DESIGN §12.8 frames the choice as "libjuice or
 GameNetworkingSockets", and CONVENTIONS §5 lists "one NAT traversal library chosen in Phase 3" in
 the dependency set and names ICE as a capability the project cannot reasonably write. The
 recommendation is that the project does not need ICE, only the subset above. The sentences to

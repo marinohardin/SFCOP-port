@@ -48,7 +48,7 @@ The open questions of DESIGN §12, with what each blocks here.
 | 12.5 | Scripting library sources: committed or copied from the install | Open (owner) | A3, C8 (the build copies until decided) |
 | 12.6 | Dynaverse mission transport | N1 analysis | V1 |
 | 12.7 | 53-bit floating point reproduces the traces | First oracle run on the native build | "functional" in the native build |
-| 12.8 | NAT traversal library | N1 | N2 |
+| 12.8 | NAT traversal: decided 2026-11-07, the project's own punch (#60) | N1 | N2 |
 | 12.9 | The oracle recording machine | Open (owner) | G2 and every "functional" figure |
 | 12.10 | Fix defaults | Owner, as `docs/FIXES.md` fills | Nothing before the fix packages |
 | 12.11 | One repository | Decided 2026-11-03 | Nothing |
@@ -245,14 +245,28 @@ A package consumes a contract through the file that declares it (§6 of DESIGN),
 
 **Gate G2.** A2's trace matches the original on macOS and A4 matches on the other two presets; every fix in `docs/FIXES.md` has tests in both positions; the owner has played a skirmish.
 
-### 6.5 Waves 3 to 5 (outline; detailed when Wave 2 closes)
+### 6.5 Wave 3 (stabilise, then network)
+
+Gate G2 passed with findings: traces differed between two runs of one binary, one mission start in three faulted, the boot took 12 to 33 s and clicks were lost in play. Wave 3 fixes those first (the T, X and K packages, named for their origin: timing, gate finding, kernel module), then starts the network with N1 to N4. N5, N6 and V1 to V3 move to Wave 4.
+
+| ID | Work package | Produces | Status |
+| --- | --- | --- | --- |
+| T1 | Fixed-step clock for oracle runs | `--fixed-step MS` and the clock under `--oracle`; the Wine driver recording with the same step (§5.10) | merged (#57); run-to-run determinism still open, follow-up T2 (random seeds) |
+| X3 | Model loader faults at mission start | The cause: a damaged `pca.mod` in the owner's install, repaired from the unpatched copy; file-layer traces | merged (#53) |
+| X4 | Every click reaches the game in play | Button-message and polled-mouse traces in `src/hle/user32/`; the loss did not reproduce | merged (#54) |
+| X5 | The spinning lock: slow boot and long frames | A count-based thread quantum in the lifter's host; per-object wake-ups in `src/platform/Threads/` | threads merged (#59); quantum open (#58) |
+| K1 | The kernel module reads `fix_hle_named_objects` | The fix switch read by `src/hle/kernel/` and tested both ways | merged (#55) |
+| N1 | Protocol documents (contract change) | `src/net/PROTOCOL.md`, `LOBBY_API.md`, `RENDEZVOUS.md`, `NAT_LIBRARY.md`; §12.6 and §12.8 answered | merged (#56) |
+| N2 | Transport with NAT traversal and relay fallback | `src/platform/Transport/` backend: the project's own punch and relay client on the `Rendezvous` contract | after this contract change |
+| N3 | Lobby service | `server/lobby/`, deploy script, health endpoint | after N1 |
+| N4 | Relay service | `server/relay/` | after N1 |
+
+**Gate G3:** two native clients behind symmetric NAT complete a match, with relay fallback under 5 s when traversal is blocked; it closes with N5 in Wave 4. Wave 3's own gate: identical traces across two runs, 20 of 20 mission starts, the menu under 10 s, every click acts, the protocol merged with N2 to N4 passing on a test network.
+
+### 6.6 Waves 4 and 5 (outline)
 
 | ID | Work package | Produces |
 | --- | --- | --- |
-| N1 | Protocol documents (contract change) | `src/net/PROTOCOL.md`, the lobby API, the rendezvous; the NAT library decision (§12.8); the Dynaverse mission transport finding (§12.6) |
-| N2 | Transport with NAT traversal and relay fallback | `src/platform/Transport/` backend over the chosen library |
-| N3 | Lobby service | `server/lobby/`, deploy script, health endpoint |
-| N4 | Relay service | `server/relay/` |
 | N5 | DirectPlay 4 HLE over the new transport | `src/hle/dplay/` session enumeration from the lobby, join through rendezvous |
 | N6 | Server list and chooser | Configuration shipped with the port; the `GameBrowser` fed from it |
 | V1 | Directory and auth stand-ins | `server/directory/`, `server/auth/`; the client's lookup pointed at them |
@@ -261,7 +275,7 @@ A package consumes a contract through the file that declares it (§6 of DESIGN),
 | M1 | Mod manager | `tools/modman/` or in the launcher |
 | L1 | Launcher and release | A signed launcher from the owner's account; the one-command build tool; the tag |
 
-**Gates G3 to G5.** G3: two native clients behind symmetric NAT complete a match, with relay fallback under 5 s when traversal is blocked. G4: a logon and one mission against the kit through the stand-ins. G5: the mod manager resolves a two-mod conflict by order; a release is tagged.
+**Gates G4 and G5.** G4: a logon and one mission against the kit through the stand-ins. G5: the mod manager resolves a two-mod conflict by order; a release is tagged.
 
 ## 7. Work package brief
 
