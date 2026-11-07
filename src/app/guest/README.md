@@ -39,7 +39,11 @@ calls `WinMain`. The host is built only with the lift and never compiles `game/`
 The game's own threads stay as they are. `CreateThread` starts a `Threads` thread for each, with a
 16 MB host stack; one machine lock lets one thread run guest code at a time, and every blocking
 call (a wait, `Sleep`, a held critical section, stopping a multimedia timer) gives it up for its
-length. The thread that calls `Run()` is the game's main thread and the platform's: the window's
+length. Imports and loop back edges are hand-over points too, as a processor quantum ends on
+Windows. A waiting thread gets the machine only once the running one has passed its quantum of
+them since it took the machine, a count of the guest's own steps, never host time. A loop that
+ran a back-edge interval without calling any import is spinning on a lock or a flag, and hands the
+machine over at once. The thread that calls `Run()` is the game's main thread and the platform's: the window's
 events are pumped there whenever the game's message queue runs empty (`PeekMessage`,
 `GetMessage`; from any other guest thread the call does not read the window). The pump is the one
 place the `Window` is drained: each event goes to the user32 module's message queue
@@ -110,6 +114,18 @@ Without the VC6 toolchain container or the lift, the target and the test are abs
 configuring says `sfcop_ehtest: skip: ...`; the doctests
 of `hle/kernel32rt` and of `Clock` and `Threads` run in `sfcop_tests` everywhere. Set
 `SFCOP_GUEST_TRACE=1` to trace a run of the test host.
+
+The machine's hand-over rule (Threads, above, and `cmake/lifter/patches/pcrecomp-quantum.patch`)
+has its own test, `tests/MachineQuantumTest.cpp`. It builds pcrecomp's `host_lite.c` from the clone
+and needs no lifted program. A thread keeps the machine through its quantum of imports while
+another waits. The import that ends the quantum hands the machine over, and a new quantum starts
+when the thread takes it back. A yield hands it over at once, and so does a back-edge hook with no
+import by its own thread since that thread's last hook. Every build with the lift has it as the
+CTest test `sfcop_machine_quantum_tests`. Without a build, the script below builds it against any
+clone:
+
+    ctest --test-dir <build> -R sfcop_machine_quantum_tests
+    sh src/app/guest/tests/run_machine_quantum.sh <pcrecomp clone> <build>/_deps/doctest-src <scratch dir>
 
 ## Results (macOS arm64, 2026-11-04, fix round 1)
 

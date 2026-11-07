@@ -73,7 +73,8 @@ else()
     find_package(Git REQUIRED)
     foreach(_p IN ITEMS pcrecomp-tib-hook pcrecomp-kernel32-unnamed-objects
                         pcrecomp-manual-lookup-hook pcrecomp-wsock32-select-accept
-                        pcrecomp-eh-landing-pads pcrecomp-mach-depth pcrecomp-div-fault)
+                        pcrecomp-eh-landing-pads pcrecomp-mach-depth pcrecomp-div-fault
+                        pcrecomp-quantum)
         execute_process(
             COMMAND "${GIT_EXECUTABLE}" -C "${SFCOP_PCRECOMP_DIR}" apply --reverse --check
                     "${CMAKE_SOURCE_DIR}/cmake/lifter/patches/${_p}.patch"
