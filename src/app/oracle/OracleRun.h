@@ -103,4 +103,12 @@ std::string commitOf(const std::string &sourceDir, const std::string &scratchDir
 // SHA-256 of a file, 64 lowercase hex digits; nothing when it cannot be read.
 std::optional<std::string> sha256OfFile(const std::string &path);
 
+// The fixed step a run's clock takes, in microseconds per frame (README.md, "The fixed step"):
+// --fixed-step's value when given; else the default step for an oracle run (--oracle or
+// --record-trace); else none, and the run keeps the host clock.
+std::optional<std::uint32_t> fixedStepOf(std::optional<std::uint32_t> flagMicroseconds,
+                                         bool oracleRun);
+// "16.667": microseconds as milliseconds with three decimals, for the log line.
+std::string millisecondsText(std::uint32_t microseconds);
+
 } // namespace sfcop::app::oracle

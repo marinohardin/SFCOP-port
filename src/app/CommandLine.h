@@ -1,9 +1,11 @@
 // The native client's command line (DESIGN §6.8):
 //
 //   sfcop [--install DIR] [--data DIR] [--logs DIR] [--windowed|--fullscreen] [--fix NAME=on|off]
-//         [--oracle TRACE --input SCRIPT --headless --watchdog S]
+//         [--oracle TRACE --input SCRIPT --headless --watchdog S] [--fixed-step MS]
 //
 // --input may be given alone: a script with no trace is a menu run. --oracle needs --input.
+// --fixed-step MS runs the game's clock at MS milliseconds per frame instead of the wall clock
+// (platform/Clock/FixedStepClock.h); --oracle and --record-trace imply it at the default step.
 // --logs DIR names the folder where the files the game writes beside its exe land (its .txt and
 // .log files); without it they go to logs/ under the data folder (src/hle/kernel/README.md).
 //
@@ -12,6 +14,7 @@
 // or a fix is known is for the code that uses the value.
 #pragma once
 
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -38,6 +41,9 @@ struct ClientOptions {
     bool headless = false;
     // 0 means no watchdog, as when the flag is absent.
     unsigned watchdogSeconds = 0;
+    // --fixed-step: the frame in whole microseconds (1 to 1,000,000; MS has at most three
+    // decimals).
+    std::optional<std::uint32_t> fixedStepMicroseconds;
     // The caller's extra flags (see ExtraFlag), verbatim and in order: "--name" and, for a flag
     // with a value, the value as the next element.
     std::vector<std::string> passThrough;

@@ -1,8 +1,11 @@
 #include "hle/kernel32rt/Time.h"
 
 #include "platform/Clock/ClockMock.h"
+#include "platform/Clock/FixedStepClock.h"
 
 #include <doctest/doctest.h>
+
+#include <memory>
 
 namespace sfcop::hle::kernel32rt {
 namespace {
@@ -101,6 +104,30 @@ TEST_CASE("a bias west of Greenwich is positive") {
     clock.local = CivilTime{2026, 11, 3, 2, 21, 0, 0, 0};
     Time time(clock);
     CHECK(time.BiasMinutes() == 300);
+}
+
+TEST_CASE("GetTickCount, timeGetTime and the performance counter answer from a fixed-step clock") {
+    auto inner = std::make_unique<ClockMock>();
+    ClockMock *mock = inner.get();
+    platform::FixedStepClock clock(std::move(inner), 166'670); // 16.667 ms per frame
+    clock.BindToCallingThread();
+    Time time(clock);
+    CHECK(time.TickCount() == 0u);
+    CHECK(time.Counter() == 0u);
+    CHECK(time.CounterFrequency() == 10'000'000u);
+    clock.AdvanceFrame();
+    clock.AdvanceFrame();
+    // GetTickCount and timeGetTime are both TickCount(): two frames are 33.334 ms.
+    CHECK(time.TickCount() == 33u);
+    CHECK(time.Counter() == 333'340u);
+    CHECK(clock.Sleep(10).Ok()); // Sleep(10) on the game's main thread
+    CHECK(time.TickCount() == 43u);
+    CHECK(time.Counter() == 433'340u);
+    // The time of day stays the inner clock's.
+    mock->nowResult = CivilTime{2026, 11, 4, 3, 15, 38, 0, 0};
+    CHECK(time.FileTimeNow() == 134382802800000000u);
+    CHECK(mock->log.Count("Ticks") == 0);
+    CHECK(mock->log.Count("Counter") == 0);
 }
 
 } // namespace

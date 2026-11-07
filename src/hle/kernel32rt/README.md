@@ -13,7 +13,7 @@ that is not about files.
 | `CriticalSections.*` | A `CRITICAL_SECTION` by its guest address, as a recursive `Threads` mutex |
 | `ThreadLocal.*` | `TlsAlloc`, `TlsGetValue`, `TlsSetValue` on `Threads`' slots |
 | `Time.*` | Tick count, performance counter, `SYSTEMTIME` and `FILETIME` on `Clock` |
-| `Timers.*` | `timeSetEvent` and `timeKillEvent`: one thread per timer |
+| `Timers.*` | `timeSetEvent` and `timeKillEvent`: one thread per timer; on a fixed-step clock none, and they fire from `FireDue()` on the main thread once per frame |
 | `VirtualMemory.*` | `VirtualAlloc`, `VirtualFree`, `VirtualQuery`: regions and the state of each page |
 | `Dispatcher.*` | `RaiseException`'s and `RtlUnwind`'s walk over the guest's `fs:[0]` chain |
 | `Modules.*` | DLLs the host provides itself (the game's `OSSpecific95/98.dll`) |

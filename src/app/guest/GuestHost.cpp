@@ -253,6 +253,9 @@ std::optional<hle::user32::DisplayTarget> displayTarget() {
 
 void pump() {
     if (g_pump->Pump()) {
+        if (g_pump->FrameEnded() && g_options->onFrame) {
+            g_options->onFrame();
+        }
         sfcop_dinput_pump();
         if (g_shotSchedule != nullptr && g_shotSchedule->Due(Elapsed())) {
             takeShot();

@@ -23,10 +23,12 @@
 #include "ExitCodes.h"
 #include "Startup.h"
 #include "guest/GuestHost.h"
+#include "hle/kernel32rt/Runtime.h"
 #include "input/Marks.h"
 #include "input/ScriptedGpu.h"
 #include "input/ScriptedWindow.h"
 #include "oracle/OracleRun.h"
+#include "platform/Clock/FixedStepClock.h"
 #include "sfcop_build_config.h"
 
 namespace {
@@ -98,6 +100,7 @@ struct OracleJob {
     std::string sourceDir;
     std::string scratchDir;
     unsigned deadlineSeconds = 0;
+    const sfcop::platform::FixedStepClock *fixedStep = nullptr; // the run's clock, if fixed
 };
 
 [[noreturn]] void endOracle(int code) {
@@ -125,6 +128,19 @@ void runOracle(const OracleJob &job) {
         endOracle(exitWhenEndDidNotCome());
     }
     std::fprintf(stderr, "[oracle] END at %.1f s\n", clockMs() / 1000.0);
+    if (job.fixedStep != nullptr) {
+        std::fprintf(stderr, "[clock] %llu frames, %llu spin steps, %u ms on the game's clock\n",
+                     static_cast<unsigned long long>(job.fixedStep->Frames()),
+                     static_cast<unsigned long long>(job.fixedStep->SpinSteps()),
+                     static_cast<unsigned>(job.fixedStep->Units() /
+                                           sfcop::platform::FixedStepClock::kUnitsPerMs));
+        sfcop::hle::kernel32rt::Runtime &runtime = sfcop::hle::kernel32rt::Runtime::Instance();
+        if (runtime.Attached()) {
+            std::fprintf(stderr, "[clock] multimedia timers %s, %llu callbacks on frames\n",
+                         runtime.TimerQueue().OnFrames() ? "on frames" : "on their threads",
+                         static_cast<unsigned long long>(runtime.TimerQueue().FiredOnFrames()));
+        }
+    }
     const std::optional<std::string> exe = sha256OfFile(job.exePath);
     if (!exe) {
         std::fprintf(stderr, "[oracle] cannot hash the exe\n");
@@ -250,6 +266,35 @@ int main(int argc, char **argv) {
     std::unique_ptr<platform::Store> store = platform::makeStore(options.installDir, options.dataDir);
     std::unique_ptr<platform::Transport> transport = platform::makeTransport();
     std::unique_ptr<platform::Clock> clock = platform::makeClock();
+    // --oracle, --record-trace and --fixed-step: the game's clock advances a fixed step per frame
+    // the pump counts (guest::Options::onFrame), so two runs read the same times
+    // (platform/Clock/FixedStepClock.h, oracle/README.md "The fixed step"). This thread is the
+    // game's main thread, the one whose sleeps count.
+    const sfcop::platform::FixedStepClock *fixedStep = nullptr;
+    if (const std::optional<std::uint32_t> step = app::oracle::fixedStepOf(
+            start.options.fixedStepMicroseconds, oracleJob.has_value());
+        step && clock) {
+        auto stepped = std::make_unique<platform::FixedStepClock>(
+            std::move(clock), platform::fixedStepQuantumFromMicroseconds(*step));
+        stepped->BindToCallingThread();
+        platform::FixedStepClock *advanced = stepped.get();
+        // After the step, the multimedia timers due by it fire here, on this thread
+        // (hle/kernel32rt/Timers.h: on a fixed-step clock they have no thread of their own).
+        options.onFrame = [advanced] {
+            advanced->AdvanceFrame();
+            hle::kernel32rt::Runtime &runtime = hle::kernel32rt::Runtime::Instance();
+            if (runtime.Attached()) {
+                runtime.TimerQueue().FireDue();
+            }
+        };
+        fixedStep = advanced;
+        clock = std::move(stepped);
+        std::fprintf(stderr, "[clock] fixed step, %s ms per frame\n",
+                     app::oracle::millisecondsText(*step).c_str());
+        if (oracleJob) {
+            oracleJob->fixedStep = fixedStep;
+        }
+    }
     std::unique_ptr<platform::Threads> threads = platform::makeThreads();
     if (!window || !gpu || !input || !audio || !store || !transport || !clock || !threads) {
         std::fprintf(stderr, "sfcop: a platform component could not be created\n");

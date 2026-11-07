@@ -1,0 +1,14 @@
+oracle_launch: fixed step 16.667 ms, 8 imports replaced
+frequency=10000000
+start tick=0 time=0 counter=0
+sleep5 tick=5 time=5 counter=50000
+frame1 tick=21 time=21 counter=216670
+frame2 tick=38 time=38 counter=383340
+message tick=38 time=38 counter=383340
+other tick=38 time=38 counter=383340
+spin reads=9989
+spun tick=39 time=39 counter=393340
+timer id=1 user=7 tick=72
+timer id=1 user=7 tick=89
+kill=0 again=11
+after tick=122 time=122 counter=1226690
