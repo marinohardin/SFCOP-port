@@ -3,9 +3,12 @@
 // chosen stack size in one file per platform (ThreadsHost_<platform>.cpp).
 //
 // One lock makes WaitForMultipleObjects' "all at once or none" simple and correct: a waiter tests
-// and takes every handle under the same lock, and every change that can satisfy a wait (an event
-// set, a mutex or semaphore released, a thread ended, a thread resumed) notifies all waiters. The
-// game has a handful of threads, so the cost of waking every waiter is small.
+// and takes every handle under the same lock. Each object counts the threads blocked on it, and a
+// change that can satisfy a wait (an event set, a mutex or semaphore released) wakes the waiters
+// only when that object has one; a thread ended or resumed always wakes them. A take never
+// satisfies another wait, so it wakes no one. The game enters and leaves its critical sections
+// (mutexes here) tens of thousands of times a second: as on Windows, those that nobody else wants
+// cost no wake-up of the threads blocked on something else.
 //
 // Thread ids: every thread that calls in gets a number of its own from one counter, starting at 1,
 // the first time it asks; a thread this component starts gets its number before its body runs, so
@@ -30,6 +33,10 @@ namespace threadshost {
 // The platform file's half: run `body` on a new detached thread whose stack is at least
 // `stackBytes` (0: the platform default). False if the system refuses the thread.
 bool startHostThread(std::function<void()> body, std::size_t stackBytes);
+
+// How many times the backend has woken its waiters since the process began (ThreadsHostTest).
+std::atomic<std::uint64_t> g_wakeUps{0};
+std::uint64_t wakeUps() { return g_wakeUps.load(); }
 } // namespace threadshost
 
 namespace {
@@ -68,6 +75,8 @@ struct Object {
     // Semaphore
     std::int32_t count = 0;
     std::int32_t maximum = 0;
+    // Threads blocked in a wait that includes this object.
+    std::uint32_t waiters = 0;
 };
 
 using ObjectPtr = std::shared_ptr<Object>;
@@ -82,6 +91,12 @@ struct State {
     // Every live mutex, to abandon those a thread still owns when it ends.
     std::vector<std::weak_ptr<Object>> mutexes;
 };
+
+// Under the lock: wakes every waiter, to look again at what it waits for.
+void wakeAll(State &state) {
+    threadshost::g_wakeUps.fetch_add(1);
+    state.changed.notify_all();
+}
 
 // Thread-local storage: a slot's generation changes when it is freed, which forgets every
 // thread's value for it at once. Values are kept per instance, keyed by its serial number.
@@ -125,7 +140,7 @@ public:
             thread->exitCode = code;
             thread->ended = true;
             AbandonMutexesOf(*state, thread->threadId);
-            state->changed.notify_all();
+            wakeAll(*state);
         };
         if (!threadshost::startHostThread(std::move(run), options.stackBytes)) {
             std::lock_guard<std::mutex> hold(state_->lock);
@@ -154,7 +169,7 @@ public:
             return Error::kInvalidHandle;
         }
         object->suspended = false;
-        state_->changed.notify_all();
+        wakeAll(*state_);
         return {};
     }
 
@@ -232,7 +247,9 @@ public:
         }
         const std::int32_t before = object->count;
         object->count += count;
-        state_->changed.notify_all();
+        if (object->waiters != 0) {
+            wakeAll(*state_);
+        }
         return before;
     }
 
@@ -255,8 +272,12 @@ public:
             return Error::kInvalidArgument;
         }
         const std::uint32_t me = currentId();
-        const auto deadline =
-            std::chrono::steady_clock::now() + std::chrono::milliseconds(timeoutMs.value_or(0));
+        // Read the clock only for a wait that can block for a time: a zero timeout (every
+        // EnterCriticalSection's first try) never needs it.
+        const bool timed = timeoutMs.has_value() && *timeoutMs != 0;
+        const auto deadline = timed ? std::chrono::steady_clock::now() +
+                                          std::chrono::milliseconds(*timeoutMs)
+                                    : std::chrono::steady_clock::time_point{};
         std::unique_lock<std::mutex> hold(state_->lock);
         std::vector<ObjectPtr> objects(count);
         for (std::size_t i = 0; i < count; i++) {
@@ -268,21 +289,28 @@ public:
         }
         for (;;) {
             if (std::optional<WaitResult> done = TryTake(objects, mode, me)) {
-                if (done->outcome != WaitOutcome::kTimedOut) {
-                    state_->changed.notify_all(); // a mutex taken or an event reset may matter
-                }
                 return *done;
             }
-            if (timeoutMs.has_value()) {
-                if (*timeoutMs == 0 ||
-                    state_->changed.wait_until(hold, deadline) == std::cv_status::timeout) {
-                    if (std::optional<WaitResult> late = TryTake(objects, mode, me)) {
-                        return *late;
-                    }
-                    return WaitResult{WaitOutcome::kTimedOut, 0};
-                }
+            if (timeoutMs.has_value() && *timeoutMs == 0) {
+                return WaitResult{WaitOutcome::kTimedOut, 0};
+            }
+            for (const ObjectPtr &object : objects) {
+                object->waiters++;
+            }
+            bool timedOut = false;
+            if (timed) {
+                timedOut = state_->changed.wait_until(hold, deadline) == std::cv_status::timeout;
             } else {
                 state_->changed.wait(hold);
+            }
+            for (const ObjectPtr &object : objects) {
+                object->waiters--;
+            }
+            if (timedOut) {
+                if (std::optional<WaitResult> late = TryTake(objects, mode, me)) {
+                    return *late;
+                }
+                return WaitResult{WaitOutcome::kTimedOut, 0};
             }
         }
     }
@@ -387,8 +415,8 @@ private:
             return Error::kInvalidHandle;
         }
         Status status = op(*object);
-        if (status.Ok()) {
-            state_->changed.notify_all();
+        if (status.Ok() && object->waiters != 0) {
+            wakeAll(*state_);
         }
         return status;
     }
