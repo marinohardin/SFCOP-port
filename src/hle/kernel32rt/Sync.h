@@ -44,7 +44,8 @@ public:
     // the name was taken by an object of the same kind (`out` then refers to it) and last error 0
     // otherwise; 0 with
     // ERROR_INVALID_HANDLE when the name belongs to another kind, ERROR_INVALID_PARAMETER for a
-    // semaphore's counts, ERROR_NOT_ENOUGH_MEMORY otherwise. An empty name makes an unnamed object.
+    // semaphore's counts, ERROR_NOT_ENOUGH_MEMORY otherwise. An empty name makes an unnamed
+    // object while fix_hle_named_objects is on; off, it is one shared object per kind.
     Answer MakeEvent(bool manualReset, bool initiallySignaled, std::string_view name, Object &out);
     Answer MakeMutex(bool initiallyOwned, std::string_view name, Object &out);
     Answer MakeSemaphore(std::int32_t initialCount, std::int32_t maximumCount,
