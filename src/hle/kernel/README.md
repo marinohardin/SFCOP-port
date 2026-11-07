@@ -51,6 +51,24 @@ Until the guest runtime attaches the module to the client's folders
 `C:` as the host maps it) and the per-user folder the client uses without `--data`
 (`src/app/DataDir.h`).
 
+## Tracing the calls on a file
+
+With `--trace`, or with `HLE_FILETRACE=1` in the environment (pcrecomp's switch, which adds only
+its own file-open lines), every call the game makes on a file this module opened is logged, one
+line each, so two runs' sequences on one file can be compared:
+
+```
+[hle-kernel] file 0x1f8 fca.mod thread 260 ReadFile at 404 want 512 got 512 sum 0x94fd83bc -> 1
+[hle-kernel] file 0x1f8 fca.mod thread 260 SetFilePointer at 916 move 876 method 0 -> 876
+[hle-kernel] file 0x1f8 fca.mod thread 260 CloseHandle at 115284 after 3897 calls, 3497 not shown
+```
+
+The handle, the file's last name segment (never its path), the thread, the row, the position
+the call started at, and its arguments and answer; a read shows an FNV-1a checksum of the bytes it
+returned, never the bytes. Asking the position does not change the error the game sees. At most
+400 lines per handle, whose `CloseHandle` line is shown past that and says how many were not, and
+20,000 in the whole run (a mission start makes about 17,600); the first line past that says so.
+
 ## The boot proof
 
 `boot_proof.sh BUILD OUT` runs the lift build's `sfcop --headless --watchdog 60` twice on a clone
