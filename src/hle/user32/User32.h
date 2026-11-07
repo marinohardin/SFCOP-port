@@ -190,7 +190,7 @@ public:
     // ---- input ----
     void CursorPos(std::int32_t &x, std::int32_t &y) const { queue_.Cursor(x, y); }
     std::uint16_t AsyncKeyState(std::uint32_t vk);
-    std::uint16_t KeyState(std::uint32_t vk) const { return queue_.KeyState(vk); }
+    std::uint16_t KeyState(std::uint32_t vk);
 
     // ---- the screen ----
     std::int32_t SystemMetric(std::uint32_t index) const;
@@ -208,6 +208,7 @@ private:
     bool presentDialog(const Dialog &dialog);
     std::int32_t answerUnseen(Dialog &dialog);
     void routeToDialog(Dialog &dialog, const Message &message);
+    void tracePolled(const char *row, std::uint32_t vk, bool isDown, std::uint8_t &answered);
 
     platform::Window &window_;
     platform::Input &input_;
@@ -221,6 +222,8 @@ private:
     std::unique_ptr<Presenter> presenter_;
     std::vector<std::unique_ptr<Dialog>> dialogs_; // innermost last
     HostSize hostSize_;
+    std::uint8_t asyncAnswered_ = 0; // --trace: the mouse buttons each polling row last answered
+    std::uint8_t keyAnswered_ = 0;   // down, one bit per virtual key
 };
 
 } // namespace sfcop::hle::user32

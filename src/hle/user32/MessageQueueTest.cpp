@@ -3,6 +3,9 @@
 
 #include <doctest/doctest.h>
 
+#include <string>
+#include <vector>
+
 namespace sfcop::hle::user32 {
 
 using platform::MouseButton;
@@ -510,6 +513,54 @@ TEST_CASE("A focus event after the window is already active announces nothing") 
     CHECK(got[1].message == kWmLButtonDown);
     CHECK(got[1].lParam == ((200u << 16) | 300u));
     CHECK(got[2].message == kWmLButtonUp);
+}
+
+TEST_CASE("--trace lists the button events, the messages taken and the polled answers, by kind") {
+    test::Rig rig;
+    std::vector<std::string> lines;
+    rig.user.Queue().SetTrace([&lines](const char *line) { lines.emplace_back(line); });
+    rig.GameWindow();
+    rig.Drain();
+    lines.clear();
+    rig.Mouse(WindowEventType::kMouseButtonDown, 10, 10);
+    rig.Mouse(WindowEventType::kMouseButtonUp, 10, 10);
+    const std::vector<Message> got = rig.Drain();
+    REQUIRE(got.size() == 2);
+    CHECK(rig.user.KeyState(kVkLButton) == 0x0001); // up now, toggled once
+    rig.input.mouse.buttons[0] = true;
+    CHECK(rig.user.AsyncKeyState(kVkLButton) == 0x8000);
+    CHECK(rig.user.AsyncKeyState(kVkLButton) == 0x8000); // the same answer: no second line
+    const std::vector<std::string> expected{
+        "event button-down at 1000 ms", "  button-down posted",
+        "event button-up at 1000 ms", "  button-up posted",
+        "  peek: button-down taken", "  peek: button-up taken",
+        "  poll: GetAsyncKeyState button down"};
+    CHECK(lines == expected);
+}
+
+TEST_CASE("--trace logs GetKeyState's answer for a held mouse button once per change") {
+    test::Rig rig;
+    std::vector<std::string> lines;
+    rig.user.Queue().SetTrace([&lines](const char *line) { lines.emplace_back(line); });
+    rig.GameWindow();
+    rig.Drain();
+    lines.clear();
+    rig.now = 2000;
+    rig.Mouse(WindowEventType::kMouseButtonDown, 10, 10); // the press, held across the polls
+    rig.Drain();
+    CHECK(rig.user.KeyState(kVkLButton) == 0x8001);
+    CHECK(rig.user.KeyState(kVkLButton) == 0x8001); // still down: no second line
+    CHECK(rig.user.KeyState(kVkRButton) == 0x0000); // another button, up: nothing to log
+    rig.now = 2100;
+    rig.Mouse(WindowEventType::kMouseButtonUp, 10, 10);
+    rig.Drain();
+    CHECK(rig.user.KeyState(kVkLButton) == 0x0001);
+    const std::vector<std::string> expected{
+        "event button-down at 2000 ms", "  button-down posted", "  peek: button-down taken",
+        "  poll: GetKeyState button down",
+        "event button-up at 2100 ms",   "  button-up posted",   "  peek: button-up taken",
+        "  poll: GetKeyState button up"};
+    CHECK(lines == expected);
 }
 
 } // namespace sfcop::hle::user32
