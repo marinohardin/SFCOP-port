@@ -94,9 +94,12 @@ public:
     // ClearPending: the clicks held for an activation that came another way (ShowWindow).
     void ClearPending() { pending_.clear(); }
 
-    // --trace: one line for each of the first platform focus and button events and the queue's
-    // reaction to it (kinds and order only: no positions, no text). Unset: nothing is traced.
+    // --trace: one line for each of the first platform focus and button events, the queue's
+    // reaction to it, the button messages PeekMessageA hands out and the polled calls' answers
+    // (kinds and order only: no positions, no text). Unset: nothing is traced.
     void SetTrace(std::function<void(const char *)> trace) { trace_ = std::move(trace); }
+    // A line from the rows that poll the mouse (User32), under the same cap.
+    void Trace(const char *line) { trace(line); }
 
     std::size_t Size() const { return posted_.size(); }
 
@@ -107,6 +110,7 @@ private:
                    std::int32_t x, std::int32_t y);
     void activation(bool gained);
     void trace(const char *line);
+    void traceEvent(const char *kind);
     void setKey(std::uint32_t vk, bool down);
     bool down(std::uint32_t vk) const { return (keys_[vk & 0xFF] & 0x80) != 0; }
     std::uint32_t mouseKeys() const;
