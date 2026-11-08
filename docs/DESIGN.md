@@ -233,6 +233,29 @@ One client process. The game's own threads (worker events, the sound service) st
 
 Developer machines and the runner have the retail install; CI generates the lifted bodies from it into the build directory (never into git), compiles the claimed units of `game/` with VC6 in the toolchain container and lifts their objects, and builds both targets. A unit whose source, headers, tools and exe-lift inputs are unchanged recompiles and re-lifts nothing; a machine without the install, pcrecomp or the toolchain container (the CI runner today) builds nothing lifted and runs the rest of `scripts/check.sh`. `scripts/check.sh` runs the Python tests, the hotspot check, the progress gate and the matched-set gate against the base branch, and the oracle for changes under `game/` or `src/`. A release of the native client is produced only by the owner (§12.2).
 
+### 7.5 Empires at War, a later second module
+
+Orion Pirates expands Star Trek Starfleet Command II: Empires at War (retail exe `StarFleet2.exe`, 2000). Decompiling it is a later project in this repository, as a second module beside `STARFLEETOP`. Until it starts, Orion Pirates 2.5.5.2 is the only target: no build, test, fixture, oracle trace or CI step uses the Empires at War exe, and no annotation names another module (`tools/manifest.py` refuses one).
+
+A comparison of the two exes (2026-11-08, by a script in the grind integrator's task directory `work/eaw-overlap/`, not committed; both exes carry the same compiler build in their Rich headers) measured Orion Pirates' game code, library code excluded, by bytes: 31% identical in Empires at War apart from addresses, 4% identical apart from structure offsets, 17% with small edits, 48% with no counterpart. The overlap is concentrated:
+
+| Area | Identical | Edited or offsets only | No counterpart |
+| --- | --- | --- | --- |
+| `Tiger/` | 81% | 10% | 9% |
+| `dmp3d/` | 42% | 29% | 29% |
+| The game proper (`Source/`, most of `unsorted/`) | 27% | 25% | 49% |
+| `Common/`, `Switch/`, `Meta/`, `Source/MetaClient/` | 0 to 3% | 0 to 8% | 90 to 99% |
+
+The identical figure is a lower bound: the comparison found Empires at War's function starts by heuristic. Both games' assertion paths agree with the split: the two libraries came from a project of their own in both builds, and each game's code from its own project folder.
+
+What follows now:
+
+- The grind decompiles shared code first (PLAN §6.3 row D). Because `game/` holds the original's code and nothing else (§7.1), every function it matches in `Tiger/`, `dmp3d/` and the shared game code is work already done for the second module.
+- Code outside `game/` names decompiled functions by original address (the manifest, the override table, override units), never by a path in `game/`. A pull request that moves files in `game/` updates every `#include` of them in the same pull request.
+- Feature work in `src/` and `server/` is for Orion Pirates; nothing in it waits for or serves the second module.
+
+What happens when the second module starts (§12.12): `Tiger/` and `dmp3d/` move to a tree shared by both modules, with one annotation per binary on each function they share (the harness then reads a stack of annotations above a function, and the manifest and the lifter key functions by module and address); each game's own code gets a tree of its own, because Orion Pirates' project is a fork of Empires at War's with about half its code changed; a function that changed between the two games has one copy per game.
+
 ## 8. Data and storage
 
 | State | Where | Identified by | Changes | Backup |
@@ -288,3 +311,4 @@ Expected total: 0 USD a month until Phase 3, then under 5 USD.
 | 12.9 | Which machine records the oracle (a Windows PC, CrossOver, another Wine build) | Owner | Every "functional" figure | Open |
 | 12.10 | Which community fixes default on and which are rules changes | Owner, reviewing `docs/FIXES.md` as it fills | Nothing until the fixes packages | Open |
 | 12.11 | Whether the decompilation and the modernization split into two repositories | Owner, at the reveal | Nothing before it | **Decided 2026-11-03:** one repository with the boundary of §7.1 enforced by the layout and the check; revisit at the reveal |
+| 12.12 | Empires at War as a second module (§7.5): which build is the target (the 2000 retail exe or a later official patch), and when `Tiger/` and `dmp3d/` move to the shared tree | Owner, when that work starts | The second module; nothing before it | Open; Orion Pirates is the only target until then |
