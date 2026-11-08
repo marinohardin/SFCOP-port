@@ -9,9 +9,15 @@
 //
 // Each TransportHost owns its own socket table; nothing is process-wide, so several transports
 // (the game's and, later, the peers of DESIGN §5.11) live side by side.
+//
+// makeTransport() wraps it in net::RendezvousTransport, which gives it its Rendezvous (one
+// implementation on the Transport contract for every platform, src/net/); TransportHost itself
+// answers GetRendezvous() with kUnsupported, and its own socket ids stay below bit 31, which the
+// wrapper keeps for the sockets it hands out.
 #if !defined(_WIN32)
 
-#include "platform/Transport/Transport.h"
+#include "net/RendezvousTransport.h"
+#include "platform/Transport/TransportHost.h"
 
 #include <arpa/inet.h>
 #include <fcntl.h>
@@ -980,7 +986,12 @@ private:
 
 } // namespace
 
-std::unique_ptr<Transport> makeTransport() { return std::make_unique<TransportHost>(); }
+std::unique_ptr<Transport> makeHostTransport() { return std::make_unique<TransportHost>(); }
+
+std::unique_ptr<Transport> makeTransport() {
+    return net::makeRendezvousTransport(makeHostTransport(),
+                                        net::rendezvousConfigFromEnvironment());
+}
 
 } // namespace sfcop::platform
 

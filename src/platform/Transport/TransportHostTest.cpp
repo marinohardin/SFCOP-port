@@ -1,5 +1,6 @@
 // The host sockets backend, on the loopback interface only: no test reaches another host.
 #include "platform/Transport/Transport.h"
+#include "platform/Transport/TransportHost.h"
 
 #include <doctest/doctest.h>
 
@@ -473,7 +474,8 @@ TEST_CASE("host transport: Resolve answers literals, localhost and this machine'
     REQUIRE(self.Ok());
     CHECK_FALSE(self.Value().empty());
 
-    CHECK(transport->GetRendezvous().Code() == Error::kUnsupported);
+    // The backend itself has no rendezvous; makeTransport()'s wrapper adds it.
+    CHECK(makeHostTransport()->GetRendezvous().Code() == Error::kUnsupported);
 }
 
 TEST_CASE("host transport: two transports keep separate socket tables") {
