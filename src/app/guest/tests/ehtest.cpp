@@ -289,6 +289,19 @@ static int case_divide(void) {
     return code == EXCEPTION_INT_DIVIDE_BY_ZERO && r == 0;
 }
 
+// A mission module's C runtime frees its TLS index when it detaches. The slots are 128; a
+// TlsFree that does not give its index back runs them out. This goes through the import table,
+// the way a module's TlsFree is resolved, so it fails if another table answers the name first.
+static int case_tls_free(void) {
+    for (int i = 0; i < 300; i++) {
+        DWORD index = TlsAlloc();
+        if (index == TLS_OUT_OF_INDEXES) return 0;
+        if (!TlsSetValue(index, (LPVOID)(i + 1))) return 0;
+        if (!TlsFree(index)) return 0;
+    }
+    return !TlsFree(9999); // an index that was never allocated is refused
+}
+
 int main(int argc, char **argv) {
     if (argc > 1 && !strcmp(argv[1], "uncaught")) {
         printf("ehtest: throwing an int nothing catches\n");
@@ -314,6 +327,7 @@ int main(int argc, char **argv) {
     check("access violation records a read and a write", case_fault_kind());
     check("throw across a system callback, lock depth unchanged", case_throw_across_callback());
     check("divide by zero caught by __except", case_divide());
+    check("TlsFree gives the index back, 300 alloc/free pairs", case_tls_free());
     printf("ehtest: %d failures\n", g_failures);
     return g_failures;
 }

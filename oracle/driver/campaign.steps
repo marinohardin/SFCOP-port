@@ -1,0 +1,150 @@
+# Single Player campaign path from launch to the first mission's combat, for the native client
+# (sfcop --input; oracle/driver/run_native.sh --steps). analysis/campaign/README.md is the finding
+# this file reproduces.
+#
+# Coordinates are the game's display pixels (an 800x600 display, the same space as
+# oracle/driver/skirmish.steps). Calibrated on the native build, 2026-11-07, with --shots captures
+# of each screen: Select Game -> Single Player -> Campaign Selector -> New Campaign (Federation) ->
+# the campaign's opening slides -> the campaign map, recentred -> one sector down -> Missions ->
+# Patrol -> Mission Briefing -> READY -> combat.
+#
+# The campaign is not the same from run to run (the ship's name and the sectors' contents are
+# drawn from the clock), and the map opens either on the player's sector or on its top-left
+# corner; the compass clicks below put the player's sector at the centre of the map view in both
+# cases, and moving one sector away offers a Patrol mission. A mouse moved over the window
+# during a windowed run can scroll the map away from that sector (the map scrolls at its edges):
+# leave the window alone, or run headless.
+
+window 120 Starfleet Command
+sleep 50000
+
+# --- main menu, "Select Game": SINGLE PLAYER opens the Single Player screen
+click 237 232
+sleep 8000
+
+# --- Single Player: CAMPAIGN opens the Campaign Selector (the saved campaigns)
+click 618 191
+sleep 8000
+
+# --- Campaign Selector: NEW GAME opens New Campaign
+click 398 445
+sleep 8000
+
+# --- New Campaign: Federation (third row of the list), then BEGIN NEW CAMPAIGN. The game then
+# reads every mission module a second time (MissionSpecEntry) before the slides come up.
+click 128 201
+sleep 2000
+click 617 440
+sleep 40000
+
+# --- the campaign's opening slides, CLICK TO CONTINUE; a click left over lands on the map's text
+# panel and does nothing
+click 400 550
+sleep 4000
+click 400 550
+sleep 4000
+click 400 550
+sleep 4000
+click 400 550
+sleep 4000
+click 400 550
+sleep 4000
+click 400 550
+sleep 4000
+click 400 550
+sleep 4000
+click 400 550
+sleep 6000
+
+# --- the map opens either on the player's sector or on its top-left corner. The compass
+# scrolls one sector per click and stops at the map's edge: north and west until the corner,
+# then six sectors south and eleven east puts the player's sector back at the centre.
+click 712 118
+sleep 2000
+click 712 118
+sleep 2000
+click 712 118
+sleep 2000
+click 712 118
+sleep 2000
+click 712 118
+sleep 2000
+click 712 118
+sleep 2000
+click 712 118
+sleep 2000
+click 685 145
+sleep 2000
+click 685 145
+sleep 2000
+click 685 145
+sleep 2000
+click 685 145
+sleep 2000
+click 685 145
+sleep 2000
+click 685 145
+sleep 2000
+click 685 145
+sleep 2000
+click 685 145
+sleep 2000
+click 685 145
+sleep 2000
+click 685 145
+sleep 2000
+click 685 145
+sleep 2000
+click 685 145
+sleep 2000
+click 712 172
+sleep 2000
+click 712 172
+sleep 2000
+click 712 172
+sleep 2000
+click 712 172
+sleep 2000
+click 712 172
+sleep 2000
+click 712 172
+sleep 2000
+click 737 145
+sleep 2000
+click 737 145
+sleep 2000
+click 737 145
+sleep 2000
+click 737 145
+sleep 2000
+click 737 145
+sleep 2000
+click 737 145
+sleep 2000
+click 737 145
+sleep 2000
+click 737 145
+sleep 2000
+click 737 145
+sleep 2000
+click 737 145
+sleep 2000
+click 737 145
+sleep 2000
+sleep 3000
+
+# --- the campaign map: the player's sector is at (412, 275); the one below it is (412, 365).
+# The ship moves there over the next game days, and MISSIONS lights up.
+click 412 365
+sleep 40000
+
+# --- MISSIONS opens the Mission Selector with one row, Patrol; ACCEPT loads its module and opens
+# the Mission Briefing
+click 48 277
+sleep 12000
+click 547 203
+sleep 10000
+
+# --- Mission Briefing: READY starts the mission (the module is loaded again for the tactical game)
+click 598 501
+sleep 60000

@@ -414,6 +414,9 @@ void k_InterlockedExchange() { // (target, value)
 void k_TlsAlloc() {
     RET(answer(runtime().Slots().Allocate()), 0);
 }
+void k_TlsFree() { // a mission module's C runtime, on detach (a boot trace: 90 TlsAlloc, 89 TlsFree)
+    RET(answer(runtime().Slots().Free(A32(0))), 1);
+}
 void k_TlsGetValue() {
     RET(answer(runtime().Slots().Get(A32(0))), 1);
 }
@@ -1369,6 +1372,9 @@ extern "C" const win32hle_shim sfcop_hle_kernel32rt[] = {
     {"InterlockedExchange", k::k_InterlockedExchange},
     // thread-local storage
     {"TlsAlloc", k::k_TlsAlloc},
+    // A mission module's import, not the game's (so no surface row): without it pcrecomp's own
+    // TlsFree answered and each module unload leaked one of Threads' 128 slots.
+    {"TlsFree", k::k_TlsFree},
     {"TlsGetValue", k::k_TlsGetValue},
     {"TlsSetValue", k::k_TlsSetValue},
     // the heap and virtual memory
