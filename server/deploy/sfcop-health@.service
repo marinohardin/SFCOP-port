@@ -1,0 +1,16 @@
+[Unit]
+Description=SFCOP health check of %i
+
+[Service]
+Type=oneshot
+User=sfcop
+Group=sfcop
+# The same environment file as the service: SFCOP_HEALTH_LISTEN or SFCOP_HEALTH_URL, and the
+# owner's SFCOP_ALERT_COMMAND.
+EnvironmentFile=/etc/sfcop/%i.env
+StateDirectory=sfcop
+ExecStart=/opt/sfcop/bin/sfcop-health-check %i
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true

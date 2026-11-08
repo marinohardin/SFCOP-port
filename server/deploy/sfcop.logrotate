@@ -1,0 +1,12 @@
+# Logs rotate daily and are deleted after 7 days (DESIGN §10, LOBBY_API.md "What is logged").
+# One file per service in /var/log/sfcop; copytruncate because the services keep the file open.
+/var/log/sfcop/*.log {
+    daily
+    rotate 7
+    maxage 7
+    missingok
+    notifempty
+    compress
+    delaycompress
+    copytruncate
+}
