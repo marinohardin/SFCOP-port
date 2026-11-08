@@ -74,11 +74,14 @@ struct Rig {
     platform::WindowMock window;
     platform::InputMock input;
     gdi32::HeapPixelMemory memory;
-    gdi32::Gdi gdi{memory, gdi32::countingHandles(), [] { return gdi32::ScreenInfo{}; }};
+    // The game's screen, as gdi32::guest::screen() answers it: 640x480 unless a test sets
+    // `screenSource` (the headless test reads it through gdi32::ReadScreen, as the game does).
+    std::function<gdi32::ScreenInfo()> screenSource = [] { return gdi32::ScreenInfo{}; };
+    gdi32::Gdi gdi{memory, gdi32::countingHandles(), [this] { return screenSource(); }};
     FakeGuest guest;
     std::uint32_t now = 1000;
-    User32 user{window, input, gdi, guest,
-                countingUserHandles([] { return gdi32::ScreenInfo{}; }), [this] { return now; }};
+    User32 user{window, input, gdi, guest, countingUserHandles([this] { return screenSource(); }),
+                [this] { return now; }};
 
     Rig() {
         // The game's procedures hand what they do not handle to DefWindowProcA, as the game's do.
