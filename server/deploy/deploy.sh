@@ -10,7 +10,7 @@
 #
 # What it does, in order, and all of it safe to run again:
 #   1. installs the build tools and curl and logrotate with apt;
-#   2. builds sfcop-lobby from server/ into /opt/sfcop/bin (no tests, so no download);
+#   2. builds sfcop-lobby and sfcop-relay from server/ into /opt/sfcop/bin (no tests, so no download);
 #   3. creates the sfcop system user, /etc/sfcop and /var/log/sfcop;
 #   4. creates /etc/sfcop/lobby.env from lobby.env.example the first time (mode 640) and, only if
 #      absent, the ticket key in /etc/sfcop/sfcop.env (mode 600), the file the relay shares;
@@ -19,8 +19,7 @@
 #      logrotate rule (daily, 7 days);
 #   6. with SFCOP_LOBBY_DOMAIN set, installs Caddy and a Caddyfile for that name;
 #   7. enables and starts the service and its health timer.
-# Services other than the lobby (the relay) add their own unit, env example and a line in the
-# SERVICES list below; the health check, the user, the log directory and the rotation are shared.
+# A service adds its own unit, env example and a name in the SERVICES list below; the health check, the user, the log directory and the rotation are shared.
 #
 # Secrets: the ticket key is written to sfcop.env and never printed. The owner's alert
 # command goes in the same file by hand.
@@ -42,8 +41,8 @@ logs=${SFCOP_LOGS:-/var/log/sfcop}
 unitdir=${SFCOP_UNIT_DIR:-/etc/systemd/system}
 builddir=${SFCOP_BUILD_DIR:-/var/lib/sfcop/build}
 
-# The services this script installs. N4 appends "relay" here with its unit and env example.
-SERVICES="lobby"
+# The services this script installs: each has sfcop-<name>.service and <name>.env.example here.
+SERVICES="lobby relay"
 
 if [ "$(id -u)" != 0 ]; then
     echo "deploy: run as root" >&2
@@ -64,6 +63,7 @@ mkdir -p "$builddir" "$prefix/bin"
 cmake -S "$root/server" -B "$builddir" -G Ninja -DCMAKE_BUILD_TYPE=Release -DSFCOP_SERVER_TESTS=OFF >/dev/null
 cmake --build "$builddir" -j2
 install -m 755 "$builddir/lobby/sfcop-lobby" "$prefix/bin/sfcop-lobby"
+install -m 755 "$builddir/relay/sfcop-relay" "$prefix/bin/sfcop-relay"
 install -m 755 "$here/sfcop-health-check.sh" "$prefix/bin/sfcop-health-check"
 
 echo "== user and directories"
@@ -75,8 +75,8 @@ install -d -m 750 -o sfcop -g sfcop "$logs"
 install -d -m 750 -o sfcop -g sfcop /var/lib/sfcop
 
 echo "== configuration"
-# The ticket key is shared with the relay, whose install.sh uses the same file and variable and
-# adds the key only if absent: so it is written here only if absent, 64 hex digits, mode 600.
+# The ticket key is shared by the lobby and the relay (one file, one variable): it is written
+# here only if absent, 64 hex digits, mode 600.
 shared=$etc/sfcop.env
 if grep -qs '^SFCOP_TICKET_KEY=[0-9a-fA-F]\{64\}$' "$shared"; then
     echo "kept the ticket key in $shared"
@@ -101,8 +101,15 @@ for s in $SERVICES; do
     cp "$here/$s.env.example" "$envfile"
     chown root:sfcop "$envfile"
     chmod 640 "$envfile"
-    echo "created $envfile (edit SFCOP_RENDEZVOUS_HOST and SFCOP_ALERT_COMMAND)"
+    echo "created $envfile (edit it: SFCOP_RENDEZVOUS_HOST in lobby.env, SFCOP_ALERT_COMMAND in either)"
 done
+
+# The relay's block list (one IPv4 address per line; systemctl reload sfcop-relay applies it).
+if [ ! -e "$etc/relay-blocklist.txt" ]; then
+    printf '# One IPv4 address per line; systemctl reload sfcop-relay applies a change.\n' > "$etc/relay-blocklist.txt"
+    chown root:sfcop "$etc/relay-blocklist.txt"
+    chmod 640 "$etc/relay-blocklist.txt"
+fi
 
 echo "== units and log rotation"
 install -d "$unitdir"
@@ -133,7 +140,7 @@ echo "== start"
 systemctl daemon-reload
 if grep -qs '^SFCOP_RENDEZVOUS_HOST=lobby.example.test' "$etc/lobby.env"; then
     echo "deploy: edit SFCOP_RENDEZVOUS_HOST in $etc/lobby.env (the relay's public name), then:"
-    echo "        systemctl enable --now sfcop-lobby.service sfcop-health@lobby.timer"
+    echo "        systemctl enable --now sfcop-lobby.service sfcop-relay.service sfcop-health@lobby.timer sfcop-health@relay.timer"
     exit 0
 fi
 for s in $SERVICES; do

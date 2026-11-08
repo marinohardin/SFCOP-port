@@ -13,13 +13,16 @@ tail -n 3 /tmp/deploy1.log
 
 echo "== what was installed"
 [ -x /opt/sfcop/bin/sfcop-lobby ] || fail "no binary"
+[ -x /opt/sfcop/bin/sfcop-relay ] || fail "no relay binary"
+[ "$(stat -c '%a %U:%G' /etc/sfcop/relay.env)" = "640 root:sfcop" ] || fail "relay env file mode/owner"
+[ "$(stat -c '%a' /var/log/sfcop)" = 750 ] || fail "log directory mode"
 [ -x /opt/sfcop/bin/sfcop-health-check ] || fail "no health check"
 [ "$(stat -c '%a %U:%G' /etc/sfcop/lobby.env)" = "640 root:sfcop" ] || fail "env file mode/owner: $(stat -c '%a %U:%G' /etc/sfcop/lobby.env)"
 [ "$(stat -c '%a %U' /etc/sfcop/sfcop.env)" = "600 root" ] || fail "shared env file mode/owner"
 grep -q '^SFCOP_TICKET_KEY=' /etc/sfcop/lobby.env && fail "the key is in lobby.env"
 key=$(sed -n 's/^SFCOP_TICKET_KEY=//p' /etc/sfcop/sfcop.env)
 [ "${#key}" = 64 ] || fail "ticket key is not 64 digits"
-for f in /etc/systemd/system/sfcop-lobby.service /etc/systemd/system/sfcop-health@.service \
+for f in /etc/systemd/system/sfcop-lobby.service /etc/systemd/system/sfcop-relay.service /etc/systemd/system/sfcop-health@.service \
          /etc/systemd/system/sfcop-health@.timer /etc/logrotate.d/sfcop; do
     [ -f "$f" ] || fail "missing $f"
 done
@@ -31,7 +34,7 @@ echo "ok"
 
 echo "== unit files verify"
 if apt-get install -y -qq --no-install-recommends systemd > /dev/null 2>&1 && command -v systemd-analyze > /dev/null; then
-    systemd-analyze verify /etc/systemd/system/sfcop-lobby.service 'sfcop-health@lobby.service' 'sfcop-health@lobby.timer' 2>&1 | tee /tmp/verify.out
+    systemd-analyze verify /etc/systemd/system/sfcop-lobby.service /etc/systemd/system/sfcop-relay.service 'sfcop-health@relay.service' 'sfcop-health@lobby.service' 'sfcop-health@lobby.timer' 2>&1 | tee /tmp/verify.out
     echo "systemd-analyze verify: no problems reported"
     grep -qi 'sfcop' /tmp/verify.out && grep -qiE 'error|invalid|bad|unknown' /tmp/verify.out && fail "systemd-analyze reported a problem"
 else
@@ -39,9 +42,9 @@ else
 fi
 
 echo "== deploy again changes nothing it should keep"
-before=$(sha256sum /etc/sfcop/lobby.env /etc/sfcop/sfcop.env)
+before=$(sha256sum /etc/sfcop/lobby.env /etc/sfcop/relay.env /etc/sfcop/sfcop.env)
 sh "$src/server/deploy/deploy.sh" --no-systemd > /tmp/deploy2.log 2>&1 || { tail -n 30 /tmp/deploy2.log; fail "second deploy.sh"; }
-[ "$before" = "$(sha256sum /etc/sfcop/lobby.env /etc/sfcop/sfcop.env)" ] || fail "second deploy rewrote an env file"
+[ "$before" = "$(sha256sum /etc/sfcop/lobby.env /etc/sfcop/relay.env /etc/sfcop/sfcop.env)" ] || fail "second deploy rewrote an env file"
 grep -q 'kept /etc/sfcop/lobby.env' /tmp/deploy2.log && grep -q 'kept the ticket key' /tmp/deploy2.log || fail "second deploy did not say it kept the env files"
 echo "ok"
 
@@ -94,6 +97,20 @@ pkill -TERM sfcop-lobby
 sleep 1
 check && fail "health check passed with the service down again"
 [ "$(wc -l < /tmp/alerts)" = 2 ] || fail "expected a second alert after recovery, got $(wc -l < /tmp/alerts)"
+echo "ok"
+
+echo "== the relay: run as sfcop, two peers and a stranger over loopback UDP, the lobby's removal call"
+runasr() { SFCOP_TICKET_KEY=$key su -p -s /bin/sh sfcop -c "set -a; . /etc/sfcop/relay.env; set +a; $*"; }
+runasr '/opt/sfcop/bin/sfcop-relay --blocklist /etc/sfcop/relay-blocklist.txt >> /var/log/sfcop/relay.log 2>&1 &'
+sleep 1
+python3 "$src/server/deploy/relay-peers.py" || { cat /var/log/sfcop/relay.log; fail "relay peers"; }
+echo "== the monitor sees the relay too"
+checkr() { runasr "/opt/sfcop/bin/sfcop-health-check relay" > /dev/null 2>&1; }
+checkr || fail "relay health check failed while up"
+pkill -TERM sfcop-relay
+sleep 1
+grep -q 'relay: stopped' /var/log/sfcop/relay.log || fail "relay did not stop cleanly"
+if grep -E '127\.0\.0\.1|5346434f50000001|SFCOP_TICKET_KEY' /var/log/sfcop/relay.log > /dev/null; then fail "the relay log names an address, a session or the key"; fi
 echo "ok"
 
 echo "container test: ok"

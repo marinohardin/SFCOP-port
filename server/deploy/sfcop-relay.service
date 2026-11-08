@@ -1,0 +1,34 @@
+[Unit]
+Description=SFCOP relay and rendezvous (UDP 47710, loopback HTTP 47711)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=sfcop
+Group=sfcop
+# The shared ticket key (root only: systemd reads it before dropping privileges), then the
+# relay's own settings.
+EnvironmentFile=/etc/sfcop/sfcop.env
+EnvironmentFile=/etc/sfcop/relay.env
+ExecStart=/opt/sfcop/bin/sfcop-relay --blocklist /etc/sfcop/relay-blocklist.txt
+# SIGHUP re-reads the block list.
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=2
+UMask=0027
+# Logs go to a file that logrotate keeps for 7 days (sfcop.logrotate); the directory is 0750.
+StandardOutput=append:/var/log/sfcop/relay.log
+StandardError=append:/var/log/sfcop/relay.log
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ReadWritePaths=/var/log/sfcop
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_INET AF_UNIX
+LockPersonality=true
+MemoryMax=128M
+
+[Install]
+WantedBy=multi-user.target

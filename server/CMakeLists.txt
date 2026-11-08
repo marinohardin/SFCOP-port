@@ -1,5 +1,5 @@
 # The hosted services (CONVENTIONS §2: server/ has one directory per service, each with its own
-# tests). Today: lobby/ (sfcop-lobby). It builds standalone, which is how tests/test_server.py and
+# tests). Today: lobby/ (sfcop-lobby) and relay/ (sfcop-relay). It builds standalone, which is how tests/test_server.py and
 # the deploy script build it:
 #
 #   cmake -S server -B <dir> -G Ninja && cmake --build <dir> && ctest --test-dir <dir>
@@ -41,5 +41,6 @@ if(SFCOP_SERVER_TESTS AND NOT TARGET sfcop_doctest)
     target_include_directories(sfcop_doctest SYSTEM INTERFACE "${_doctest_dir}")
 endif()
 
-# Every service is added here and nowhere else: N4 adds add_subdirectory(relay) below the lobby.
+# Every service is added here and nowhere else.
 add_subdirectory(lobby)
+add_subdirectory(relay)
