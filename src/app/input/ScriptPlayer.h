@@ -8,6 +8,8 @@
 //   click x y   is a mouse move to (x, y), a left button down and a left button up, each in a
 //               frame of its own;
 //   key vk      is the key down and the key up, each in a frame of its own;
+//   keydown vk, keyup vk   are the key down alone and the key up alone, one frame each; the
+//               key stays down for the steps between them;
 //   sleep, frames, window, waitfile, waitmark   wait (by the clock, by frames, or for a condition);
 //   shot, list  are the Wine driver's: skipped, with a log line.
 //

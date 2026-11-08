@@ -12,10 +12,16 @@
 //   waitfile <timeout_s> <path>    wait until the file exists
 //   list                           the Wine driver's window list; the native player skips it
 //
-// Two steps are the native player's own; the Wine driver refuses them, failing with their line:
+// Four steps are the native player's own; the Wine driver refuses them, failing with their line:
 //
 //   waitmark <timeout_s> <mark>    wait until the game reaches a mark (its name or 0x address)
 //   frames <n>                     wait n frames
+//   keydown <vk>                   press a virtual key and hold it
+//   keyup <vk>                     release a held virtual key
+//
+// A key held by keydown stays down for the steps after it, so `keydown 0x10`, `key 0x32`,
+// `keyup 0x10` types '@' (the guest's TranslateMessage reads Shift from the held keys when the
+// game takes the message; README.md, "Steps", says why a pause around each helps).
 //
 // Every wait with a timeout fails the run when it runs out (ScriptPlayer). Parsing checks form
 // and ranges only.
@@ -39,6 +45,8 @@ enum class StepKind : std::uint8_t {
     kList,
     kWaitMark,
     kFrames,
+    kKeyDown,
+    kKeyUp,
 };
 
 struct Step {
@@ -47,7 +55,7 @@ struct Step {
     std::uint32_t milliseconds = 0; // kSleep; the timeout of kWindow, kWaitFile and kWaitMark
     std::int32_t x = 0;           // kClick
     std::int32_t y = 0;
-    std::uint16_t virtualKey = 0; // kKey
+    std::uint16_t virtualKey = 0; // kKey, kKeyDown, kKeyUp
     std::uint32_t frames = 0;     // kFrames
     std::string text;             // kWindow's title, kShot's and kWaitFile's path, kWaitMark's mark
 };

@@ -32,6 +32,10 @@ std::string describeStep(const Step &step) {
         return "waitmark " + std::to_string(step.milliseconds / 1000) + " " + step.text;
     case StepKind::kFrames:
         return "frames " + std::to_string(step.frames);
+    case StepKind::kKeyDown:
+        return "keydown " + std::to_string(step.virtualKey);
+    case StepKind::kKeyUp:
+        return "keyup " + std::to_string(step.virtualKey);
     }
     return "?";
 }
@@ -135,8 +139,14 @@ bool ScriptPlayer::play(const Step &step, std::uint64_t frame, std::uint32_t now
         }
         return false;
     case StepKind::kClick:
-    case StepKind::kKey: {
-        const unsigned count = step.kind == StepKind::kClick ? 3 : 2;
+    case StepKind::kKey:
+    case StepKind::kKeyDown:
+    case StepKind::kKeyUp: {
+        // A click is three events and a key two; keydown and keyup are one each. Each event has
+        // a frame of its own.
+        const unsigned count = step.kind == StepKind::kClick ? 3
+                               : step.kind == StepKind::kKey ? 2
+                                                             : 1;
         if (emitted_ < count && lastInputFrame_ != frame) {
             if (step.kind == StepKind::kClick) {
                 static constexpr struct {
@@ -151,7 +161,8 @@ bool ScriptPlayer::play(const Step &step, std::uint64_t frame, std::uint32_t now
                                          step.y, nowMs));
             } else {
                 WindowEvent event;
-                const bool down = emitted_ == 0;
+                const bool down = step.kind == StepKind::kKeyDown ||
+                                  (step.kind == StepKind::kKey && emitted_ == 0);
                 event.type = down ? WindowEventType::kKeyDown : WindowEventType::kKeyUp;
                 event.timeMs = nowMs;
                 event.input.type = down ? InputEventType::kKeyDown : InputEventType::kKeyUp;
