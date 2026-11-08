@@ -7,7 +7,7 @@ oracle driver needs no human (DESIGN §5.10). The same file drives the original 
 | File | What it does |
 | --- | --- |
 | `InputScript.h` | Reads a steps file. The first unknown or malformed line refuses the whole file, naming its line; the client then exits 2 |
-| `ScriptPlayer.h` | Given the frame and `Clock::Ticks()`, returns the window events due. A click is a move, a left button down and a left button up, each in a frame of its own; a key is its down and its up |
+| `ScriptPlayer.h` | Given the frame and `Clock::Ticks()`, returns the window events due. A click is a move, a left button down and a left button up, each in a frame of its own; a key is its down and its up; a keydown or a keyup is that one event alone |
 | `ScriptedWindow.h` | The injection: a `Window` decorator around the real window, or the stub one headless |
 | `ScriptedGpu.h` | The client's `Gpu`, forwarded, except that attaching it to the wrapper attaches it to the real window: the SDL backend finds the operating system's window by the `Window` object's address, so a Gpu attached to the wrapper would find none |
 | `VirtualKeys.h` | The hand-written table from a steps file's Windows virtual key to the USB usage ID `Input` uses |
@@ -28,6 +28,16 @@ One per line; `#` as the first non-blank character makes a comment.
 | `list` | skipped, with a log line | prints the windows |
 | `waitmark <timeout_s> <mark>` | waits for a mark of the lift, by name (`WinMain`, `CD-key prompt`, `Select Game` the main menu, `Setup` the Single Player screen) or 0x address (any mark `SFCOP_LIFT_EXTRA_MARKS` added) | refused: the driver stops with that line's number |
 | `frames <n>` | waits n frames | refused, as above |
+| `keydown <vk>` | the key down alone, in one frame; the key stays down for the steps after it | refused, as above |
+| `keyup <vk>` | the key up alone, in one frame | refused, as above |
+
+`keydown` and `keyup` type a shifted character: `keydown 0x10`, `key 0x32`, `keyup 0x10` is `@`,
+because the guest's `TranslateMessage` reads Shift from the keys held down. It reads them when the
+game takes the key's message, not when the key was pressed, and a busy screen takes its messages
+some frames late: give it a pause before and after each of the three (`sleep 500` was enough on
+the Dynaverse login screen), or the Shift lands on a neighbouring key. The player keeps no
+record of the keys held, by design: a key left down stays down to the end of the run, a repeated
+`keydown` sends another key down, and a `keyup` of a key not held sends a key up all the same.
 
 `<vk>` is a decimal or `0x` hexadecimal Windows virtual key. The native parser refuses a key its
 table (`VirtualKeys.cpp`) lacks, naming the line, which is stricter than the Wine driver: that one

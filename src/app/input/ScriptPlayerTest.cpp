@@ -68,6 +68,74 @@ TEST_CASE("a key is its usage ID down, then up in the next frame") {
     CHECK(player.Finished());
 }
 
+TEST_CASE("keydown holds a key across the steps after it until keyup, one event a frame") {
+    // Shift+2, the '@' an email needs: Shift down, 2 down, 2 up, Shift up.
+    ScriptPlayer player = playerFor("keydown 0x10\nkey 0x32\nkeyup 0x10\n");
+    const auto shiftDown = player.Advance(20, 1000);
+    REQUIRE(shiftDown.size() == 1);
+    CHECK(shiftDown[0].type == WindowEventType::kKeyDown);
+    CHECK(shiftDown[0].input.type == InputEventType::kKeyDown);
+    CHECK(shiftDown[0].input.key == 0xE1);
+    CHECK(shiftDown[0].timeMs == 1000);
+    CHECK(player.Advance(20, 1001).empty()); // the same frame again: nothing more
+
+    const auto twoDown = player.Advance(21, 1017);
+    REQUIRE(twoDown.size() == 1);
+    CHECK(twoDown[0].type == WindowEventType::kKeyDown);
+    CHECK(twoDown[0].input.key == 0x1F);
+    const auto twoUp = player.Advance(22, 1033);
+    REQUIRE(twoUp.size() == 1);
+    CHECK(twoUp[0].type == WindowEventType::kKeyUp);
+    CHECK(twoUp[0].input.key == 0x1F);
+    CHECK_FALSE(player.Finished());
+
+    const auto shiftUp = player.Advance(23, 1050);
+    REQUIRE(shiftUp.size() == 1);
+    CHECK(shiftUp[0].type == WindowEventType::kKeyUp);
+    CHECK(shiftUp[0].input.type == InputEventType::kKeyUp);
+    CHECK(shiftUp[0].input.key == 0xE1);
+    CHECK(player.Finished());
+}
+
+TEST_CASE("the player keeps no held-key state: repeats and unmatched ups are sent as written") {
+    // keydown twice, then a keyup of a key never pressed, then a key left down at the end.
+    ScriptPlayer player = playerFor("keydown 0x41\nkeydown 0x41\nkeyup 0x42\nkeydown 0x43\n");
+    const auto first = player.Advance(1, 100);
+    REQUIRE(first.size() == 1);
+    CHECK(first[0].type == WindowEventType::kKeyDown);
+    CHECK(first[0].input.key == 0x04); // A
+    const auto second = player.Advance(2, 116);
+    REQUIRE(second.size() == 1);
+    CHECK(second[0].type == WindowEventType::kKeyDown);
+    CHECK(second[0].input.key == 0x04); // A again
+    const auto third = player.Advance(3, 133);
+    REQUIRE(third.size() == 1);
+    CHECK(third[0].type == WindowEventType::kKeyUp);
+    CHECK(third[0].input.key == 0x05); // B, never pressed
+    const auto fourth = player.Advance(4, 150);
+    REQUIRE(fourth.size() == 1);
+    CHECK(fourth[0].type == WindowEventType::kKeyDown);
+    CHECK(fourth[0].input.key == 0x06); // C
+    CHECK(player.Finished());
+    CHECK(player.Advance(5, 166).empty()); // C stays down: no key up is added at the end
+    CHECK(player.Advance(6, 183).empty());
+}
+
+TEST_CASE("keydown and keyup are logged as they start") {
+    std::vector<std::string> lines;
+    PlayerEnvironment environment;
+    environment.log = [&lines](const std::string &line) { lines.push_back(line); };
+    ScriptPlayer player = playerFor("keydown 16\nkeyup 16\n", std::move(environment));
+    // A step starts in the frame the one before it ended: keyup is logged in frame 1 and sends
+    // its key up in frame 2.
+    CHECK(player.Advance(1, 10).size() == 1);
+    CHECK(player.Advance(2, 26).size() == 1);
+    CHECK(player.Finished());
+    REQUIRE(lines.size() == 2);
+    CHECK(lines[0] == "line 1 at 10 ms, frame 1: keydown 16");
+    CHECK(lines[1] == "line 2 at 10 ms, frame 1: keyup 16");
+}
+
 TEST_CASE("sleep waits by the clock and frames by the frame count") {
     ScriptPlayer player = playerFor("sleep 50\nclick 1 2\nframes 3\nkey 13\n");
     CHECK(player.Advance(1, 1000).empty());
