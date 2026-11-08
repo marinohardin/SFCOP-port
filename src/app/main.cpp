@@ -43,7 +43,8 @@ const std::vector<sfcop::app::ExtraFlag> kClientFlags = {
     {"--shot-every", "S", "seconds between shots (default 5; with --shots)"},
     {"--record-trace", "OUT",
      "play the mission to END and write its trace to OUT, <dir>/<mission>/<input>.trace "
-     "(needs --input; --oracle compares as well)"},
+     "(needs --input; --oracle compares as well; the window is then read only when the game "
+     "peeks)"},
 };
 
 // Reads and checks the --input steps file; on a bad file prints why and returns nothing.
@@ -180,6 +181,9 @@ int main(int argc, char **argv) {
     options.dataDir = start.dataDir;
     options.logsDir = start.options.logsDir.value_or("");
     options.headless = start.options.headless;
+    // A scripted, recorded or headless run reads the window only when the game peeks, so its
+    // frames, which the steps files and traces count, are as they were (src/app/guest/README.md).
+    options.pumpDuringLoads = app::readsWindowDuringLoads(start.options);
     options.watchdogSeconds = start.options.watchdogSeconds;
     options.windowMode = start.options.window == WindowMode::kFullscreen
                              ? platform::WindowMode::kFullscreen

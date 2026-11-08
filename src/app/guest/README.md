@@ -8,7 +8,7 @@ calls `WinMain`. The host is built only with the lift and never compiles `game/`
 | File | What it does |
 |---|---|
 | `GuestHost.h`, `.cpp` | `Run()`: the modules attached to the components, the exe mapped and bound, static TLS, the event pump, the watchdog, the exit |
-| `GuestPump.h`, `.cpp` | The event pump, bound to the main thread: any other thread that peeks a message does not read the window's events |
+| `GuestPump.h`, `.cpp` | The event pump, bound to the main thread: any other thread that peeks a message does not read the window's events; its turns for a message and inside the game's calls, the frame rule, the gaps between turns |
 | `GuestShots.h`, `.cpp` | `--shots DIR --shot-every S`: the back buffer read through `Gpu::ReadTexture` into a 24-bit BMP (the format `framediff.py` reads) |
 | `FaultClass.h`, `.cpp` | Which hardware faults become guest exceptions: the pc must lie in lifted code (or a leaf memory routine it calls) |
 | `GuestExceptions.h`, `.cpp` | The landing pads the lift's code pushes and pops, the two transfers the lift calls (`_JumpToContinuation`, the `__except` call), and hardware faults raised as guest exceptions |
@@ -51,12 +51,61 @@ place the `Window` is drained: each event goes to the user32 module's message qu
 focus and the close box into the game's messages (`WM_CLOSE` included). A main thread blocked in a
 long wait does not pump.
 
-A turn of the pump that read no event from the `Window` is a frame: the game's message queue is
+**The pump inside the game's calls.** A load that never peeks (the boot's splash, the campaign's
+progress screen, a saved campaign's load) would leave the window's events unread for seconds, and
+macOS shows the busy cursor after about two. So, when the turns inside calls are on (below), the
+bind gives every import of the kernel, kernel32rt, registry, Miles, DirectSound3D and GDI modules,
+and every import no module owns, a row of its own that may run a turn of the pump inside the call:
+`EventPump::PumpInsideCall`, on the main thread only, once at least 50 ms have passed since the
+last turn of either kind. Each wrapped row of a module has a slot of its own (no lookup per call);
+an import no module owns still finds its row by name on every call (a string copy, a map find and
+a set insert), exactly as on develop, and pays the counter on top. On the main thread the clock is read before every 16th wrapped call, and before and after every row that may
+block by itself (`Sleep`, the waits, `LoadLibraryA`, `CopyFileA`, opening the sound device), so
+the millions of short calls a second the game makes in play pay a counter, not a clock read. When
+the turns are off and no gap trace is asked for, no row is wrapped and the bind is as it was.
+Such a turn reads the window's events and hands them to the user32 module's queue, nothing else:
+no frame, no DirectInput work, no shot, no call into the game. The game receives them at its next
+`PeekMessageA` or `GetMessageA`, in the order the window reported them, and the messages carry the
+time they were queued. Mouse moves the game has not read yet coalesce into the latest, as on
+Windows; buttons and keys are kept, so a click made during a load reaches the game when it next
+reads its queue, as on Windows (`hle/user32/README.md`). USER32's own rows pump already and are
+not wrapped; an import found through `GetProcAddress` runs without it.
+
+The wrappers rely on pcrecomp's shim registry (`runtime/win32hle/host_lite.c` at the pinned
+revision). A row's address is `SHIM_BASE + 16 * index`, indexes are handed out without a gap, so the
+bind finds the wrapper it has just registered by a binary search with `hle_name`, which answers null
+for an address no row has. `hle_resolve(name)` scans from the first row and returns the first match:
+the module's row, registered before the wrapper of the same name, still answers (that is why a
+`GetProcAddress` import runs unwrapped). The registry holds `MAX_SHIMS` = 2048 rows and cannot refuse
+one: `win32hle_register` ends the run ("too many shims") past it. So the bind registers a wrapper
+only while 128 rows stay free for the tables registered after the bind; an import that finds no room
+keeps its module's row (a line says so) and runs without the pump. With the turns on the registry
+holds 1,436 rows (1,230 without).
+
+The rule: the turns inside calls run only when `Options::pumpDuringLoads` is set, and never
+headless. `main.cpp` clears the flag for `--input`, `--oracle`, `--record-trace` and `--headless`
+(each says so in `--help`): an input script counts every read of the window as one of its frames
+(`app/input/ScriptedWindow.h`) and clicks after a number of them, and the oracle's traces count
+them too, so every scripted, recorded or headless run reads the window only when the game peeks,
+exactly as before. `--fixed-step` alone does not clear it: it is a clock mode, and the turns
+inside calls never count as frames. The rule is `app::readsWindowDuringLoads` (`CommandLine.h`).
+The proof of the turns inside calls is therefore a run driven by hand.
+For measuring, `SFCOP_PUMP_INSIDE_CALLS=0` turns them off for any run and `=1` on for any
+run, headless included (where it reads nothing and measures the cost), whatever the flag; a
+scripted run's frames then differ from develop's.
+
+`SFCOP_PUMP_TRACE=<ms>` logs each gap of at least that many milliseconds between two turns on the
+main thread (400 lines at most), with what the main thread spent it in: the wrapped rows it
+called, their counts and time (inclusive of what they called back), and the rest, the game's own
+code; and, at the end of the run, the counts of turns and the longest gap.
+
+A message turn of the pump that read no event from the `Window`, with no turn inside a call
+having read one since the message turn before it, is a frame: the game's message queue is
 then empty and the game runs one. `Options::onFrame`, when the client sets it, is called on the
 main thread after each such turn; `--oracle`, `--record-trace` and `--fixed-step` advance the
 fixed-step clock there (`platform/Clock/FixedStepClock.h`) and then fire the multimedia timers it
 has made due (`hle/kernel32rt/Timers.h`). `EventPump::FrameEnded()` is the rule. A turn that read an event, the
-operating system's or an input script's, is not one, so the events only a window receives (shown,
+operating system's or an input script's, is not one, and a turn inside a call never is, so the events only a window receives (shown,
 exposed, focus) do not change the count of frames.
 
 ## The working directory

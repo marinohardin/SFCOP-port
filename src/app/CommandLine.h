@@ -89,4 +89,11 @@ ParseResult parseCommandLine(int argc, const char *const *argv,
 // The text `--help` prints, generated from the flag table and the exit codes.
 std::string helpText(const std::vector<ExtraFlag> &extras = {});
 
+// Whether the guest host also reads the window inside the game's calls during its loads
+// (guest::Options::pumpDuringLoads). Not for a run whose frames a steps file or a trace counts
+// (--input, --oracle, or the client's --record-trace among the extra flags) or that has no window
+// (--headless): those read the window only when the game peeks. --fixed-step alone is a clock
+// mode and leaves it on.
+bool readsWindowDuringLoads(const ClientOptions &options);
+
 } // namespace sfcop::app

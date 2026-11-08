@@ -6,6 +6,7 @@ using sfcop::app::ExtraFlag;
 using sfcop::app::parseCommandLine;
 using sfcop::app::ParseOutcome;
 using sfcop::app::ParseResult;
+using sfcop::app::readsWindowDuringLoads;
 using sfcop::app::WindowMode;
 
 namespace {
@@ -240,7 +241,8 @@ TEST_CASE("--help lists every flag of DESIGN 6.8 and every exit code") {
              "  --fullscreen ",
              "  --fix NAME=on|off ",
              "  --oracle TRACE ",
-             "  --input SCRIPT        play the steps file SCRIPT into the game (--oracle needs it)\n",
+             "  --input SCRIPT        play the steps file SCRIPT into the game (--oracle needs it; the "
+             "window is then read only when the game peeks)\n",
              "  --headless ",
              "  --watchdog S ",
              "  --help, -h ",
@@ -254,6 +256,25 @@ TEST_CASE("--help lists every flag of DESIGN 6.8 and every exit code") {
     }
     CHECK(help.rfind("usage: sfcop [options]\n", 0) == 0);
     CHECK(help.find("other options:") == std::string::npos);
+}
+
+TEST_CASE("a run started by hand reads the window during loads; a scripted, recorded or headless one does not") {
+    const std::vector<ExtraFlag> extras = {{"--record-trace", "OUT", "record"}};
+    const auto reads = [&](std::vector<std::string> args) {
+        const ParseResult result = parseCommandLine(args, extras);
+        REQUIRE(result.outcome == ParseOutcome::kRun);
+        return readsWindowDuringLoads(result.options);
+    };
+    CHECK(reads({}));
+    CHECK(reads({"--windowed"}));
+    CHECK(reads({"--fixed-step", "16.667"})); // a clock mode, not a recording
+    CHECK_FALSE(reads({"--input", "menu.steps"}));
+    CHECK_FALSE(reads({"--input", "skirmish.steps", "--oracle", "a/b/skirmish.trace"}));
+    sfcop::app::ClientOptions oracleOnly; // the parser refuses --oracle without --input
+    oracleOnly.oracleTrace = "a/b/skirmish.trace";
+    CHECK_FALSE(readsWindowDuringLoads(oracleOnly));
+    CHECK_FALSE(reads({"--record-trace", "out/OracleSkirmish/skirmish.trace"}));
+    CHECK_FALSE(reads({"--headless"}));
 }
 
 TEST_CASE("--help lists the caller's extra flags under their own heading") {

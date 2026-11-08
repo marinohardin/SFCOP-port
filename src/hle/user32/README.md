@@ -32,6 +32,10 @@ is not), reads the cursor with `GetCursorPos` every frame, and draws everything 
   up, until the host is shutting down (`Host::stopping`), and then returns `WM_QUIT`.
 - **An early close.** A close request that arrives before any window exists is remembered, and the
   first window made gets the `WM_CLOSE`.
+- **Coalescing.** A mouse move that finds the last unread posted message to be a move to the same
+  window with the same buttons replaces it, as Windows does: a game that does not read its queue for
+  seconds (a load) gets one move, not thousands. Buttons and keys are never merged or dropped. The
+  queue holds at most 10,000 posted messages (Windows' default limit); `PostMessageA` fails beyond, and the host's own input is dropped there, with a line in the message trace (`posted queue full: message dropped`).
 - **Input.** Keys go to the focus window (the active window when nothing in it has the focus) as
   `WM_KEYDOWN`/`WM_KEYUP`, or `WM_SYSKEYDOWN`/`WM_SYSKEYUP` with Alt held and for F10, with the
   scan code, extended and transition bits in `lParam`. `TranslateMessage` makes `WM_CHAR` from a US
