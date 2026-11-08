@@ -58,6 +58,11 @@ struct Options {
     unsigned watchdogSeconds = 0; // 0: none; else the run ends then, 0 if the goal mark was reached
     std::string shotsDir;         // non-empty: a BMP of the display every shotEverySeconds (not headless)
     double shotEverySeconds = 5.0;
+    // Whether the window's events are also read inside the game's calls, so a long load keeps the
+    // window responsive (src/app/guest/README.md, "The pump inside the game's calls"). main.cpp
+    // clears it for --input, --oracle, --record-trace and --headless: those runs count frames,
+    // and their window is read only when the game peeks.
+    bool pumpDuringLoads = true;
     // Non-empty: called on the main thread after each turn of the pump that read no event from
     // the Window, the turn after which PeekMessageA finds the queue empty and the game runs a
     // frame. A turn that read an event (the OS's or an input script's) is not a frame, so events

@@ -49,7 +49,8 @@ public:
     // `now` is the message time (GetTickCount's clock).
     MessageQueue(WindowManager &windows, std::function<std::uint32_t()> now);
 
-    void Post(std::uint32_t hwnd, std::uint32_t message, std::uint32_t wParam,
+    // False, queuing nothing, once 10,000 messages wait (Windows' default limit).
+    bool Post(std::uint32_t hwnd, std::uint32_t message, std::uint32_t wParam,
               std::uint32_t lParam);
     // PostQuitMessage: WM_QUIT is returned once the posted messages are read.
     void PostQuit(std::int32_t code);

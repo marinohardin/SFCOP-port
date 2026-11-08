@@ -19,6 +19,9 @@ constexpr std::uint32_t kAltContext = 1u << 29;
 // a person makes in the moment between the platform's button and focus events (a double click is
 // four); the cap only stops a window that never activates from growing the list.
 constexpr std::size_t kMaxPendingClicks = 8;
+// Windows' own limit on a thread's posted messages (USERPostMessageLimit's default): a post beyond
+// it fails. Reached only if the game stopped reading its queue for good.
+constexpr std::size_t kMaxPosted = 10000;
 // --trace: the first events only, never the whole run. Enough for the first focus, a few dozen
 // clicks and what the game polled between them.
 constexpr std::size_t kMaxTraceLines = 400;
@@ -81,9 +84,14 @@ void MessageQueue::traceEvent(const char *kind) {
     }
 }
 
-void MessageQueue::Post(std::uint32_t hwnd, std::uint32_t message, std::uint32_t wParam,
+bool MessageQueue::Post(std::uint32_t hwnd, std::uint32_t message, std::uint32_t wParam,
                         std::uint32_t lParam) {
+    if (posted_.size() >= kMaxPosted) {
+        trace("posted queue full: message dropped"); // the host's own input too; bounded by the trace cap
+        return false;
+    }
     posted_.push_back(Message{hwnd, message, wParam, lParam, now_(), cursorX_, cursorY_});
+    return true;
 }
 
 void MessageQueue::PostQuit(std::int32_t code) {
@@ -289,7 +297,23 @@ void MessageQueue::postMouse(std::uint32_t target, std::uint32_t message, std::u
                              std::int32_t x, std::int32_t y) {
     std::int32_t originX = 0, originY = 0;
     windows_.ClientOrigin(target, originX, originY);
-    Post(target, message, keys, packPoint(x - originX, y - originY));
+    const std::uint32_t point = packPoint(x - originX, y - originY);
+    // As Windows does, a move that finds the game's last unread message to be a move to the same
+    // window with the same buttons replaces it: the game reads where the mouse is, not every step
+    // it took (a load that does not read its queue for seconds leaves one move, not thousands).
+    // Buttons and keys are never merged or dropped: a click made during a load reaches the game
+    // when it next reads its queue, as on Windows.
+    if (message == kWmMouseMove && !posted_.empty()) {
+        Message &last = posted_.back();
+        if (last.message == kWmMouseMove && last.hwnd == target && last.wParam == keys) {
+            last.lParam = point;
+            last.time = now_();
+            last.x = cursorX_;
+            last.y = cursorY_;
+            return;
+        }
+    }
+    Post(target, message, keys, point);
 }
 
 void MessageQueue::setKey(std::uint32_t vk, bool isDown) {
