@@ -1,0 +1,10 @@
+[Unit]
+Description=Check the health of SFCOP service %i every minute
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=1min
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target
