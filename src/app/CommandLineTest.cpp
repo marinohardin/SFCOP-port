@@ -68,7 +68,45 @@ TEST_CASE("--windowed and --fullscreen choose the window mode and exclude each o
                  "--windowed and --fullscreen cannot be given together");
     requireError({"--fullscreen", "--windowed"},
                  "--windowed and --fullscreen cannot be given together");
-    requireError({"--windowed=yes"}, "--windowed takes no value");
+    requireError({"--windowed=yes"},
+                 "--windowed takes a size WxH, each side 1 to 16384, not 'yes'");
+}
+
+TEST_CASE("--windowed WxH gives the window's first size, in either form; without it, none") {
+    const ParseResult bare = parse({"--windowed"});
+    REQUIRE(bare.outcome == ParseOutcome::kRun);
+    CHECK_FALSE(bare.options.windowSize.has_value());
+
+    const ParseResult spaced = parse({"--windowed", "1600x900", "--headless"});
+    REQUIRE(spaced.outcome == ParseOutcome::kRun);
+    REQUIRE(spaced.options.windowSize.has_value());
+    CHECK(spaced.options.windowSize->width == 1600);
+    CHECK(spaced.options.windowSize->height == 900);
+    CHECK(spaced.options.headless);
+
+    const ParseResult inlined = parse({"--windowed=800x500"});
+    REQUIRE(inlined.outcome == ParseOutcome::kRun);
+    REQUIRE(inlined.options.windowSize.has_value());
+    CHECK(inlined.options.windowSize->width == 800);
+    CHECK(inlined.options.windowSize->height == 500);
+
+    const ParseResult largest = parse({"--windowed", "16384x1"});
+    REQUIRE(largest.outcome == ParseOutcome::kRun);
+    REQUIRE(largest.options.windowSize.has_value());
+    CHECK(largest.options.windowSize->width == 16384);
+    CHECK(largest.options.windowSize->height == 1);
+
+    requireError({"--windowed", "0x600"},
+                 "--windowed takes a size WxH, each side 1 to 16384, not '0x600'");
+    requireError({"--windowed", "16385x600"},
+                 "--windowed takes a size WxH, each side 1 to 16384, not '16385x600'");
+    requireError({"--windowed", "800x"},
+                 "--windowed takes a size WxH, each side 1 to 16384, not '800x'");
+    requireError({"--windowed", "800X600"},
+                 "--windowed takes a size WxH, each side 1 to 16384, not '800X600'");
+    requireError({"--windowed="}, "--windowed needs [WxH] after '=', not an empty value");
+    requireError({"--fullscreen", "--windowed", "800x600"},
+                 "--windowed and --fullscreen cannot be given together");
 }
 
 TEST_CASE("--fix sets named fixes on or off, in order, each name once") {

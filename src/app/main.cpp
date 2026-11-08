@@ -184,6 +184,10 @@ int main(int argc, char **argv) {
     options.windowMode = start.options.window == WindowMode::kFullscreen
                              ? platform::WindowMode::kFullscreen
                              : platform::WindowMode::kWindowed;
+    if (start.options.windowSize) {
+        options.windowWidth = start.options.windowSize->width;
+        options.windowHeight = start.options.windowSize->height;
+    }
     std::optional<std::string> recordTrace;
     const std::vector<std::string> &extras = start.options.passThrough;
     for (std::size_t i = 0; i < extras.size(); ++i) {

@@ -55,9 +55,17 @@ void reportRates(const DirectDraw &draw) {
         return;
     }
     const DirectDraw::Counts &counts = draw.Counted();
-    std::fprintf(stderr, "[ddraw4] %.1f fps, %.1f uploads/s\n",
+    // The frame is the game's display mode; the window is its drawable size in pixels, which a
+    // resize changes while the frame, its surfaces and their uploads stay as they were.
+    platform::Result<platform::WindowState> window = draw.HostWindow().GetState();
+    const std::uint32_t windowW = window.Ok() ? window.Value().drawableWidth : 0;
+    const std::uint32_t windowH = window.Ok() ? window.Value().drawableHeight : 0;
+    std::fprintf(stderr, "[ddraw4] %.1f fps, %.1f uploads/s, frame %ux%u, window %ux%u\n",
                  static_cast<double>(counts.presents - last.presents) / seconds,
-                 static_cast<double>(counts.uploads - last.uploads) / seconds);
+                 static_cast<double>(counts.uploads - last.uploads) / seconds,
+                 static_cast<unsigned>(draw.Mode().width),
+                 static_cast<unsigned>(draw.Mode().height),
+                 static_cast<unsigned>(windowW), static_cast<unsigned>(windowH));
     std::fflush(stderr);
     last = counts;
     since = now;

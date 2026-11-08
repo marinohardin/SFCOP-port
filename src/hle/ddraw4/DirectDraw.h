@@ -15,6 +15,7 @@
 #include "platform/Gpu/Gpu.h"
 #include "platform/Window/Window.h"
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -164,6 +165,9 @@ private:
     std::uint32_t cooperativeWindow_ = 0;
     std::uint32_t cooperativeFlags_ = 0;
     platform::TextureId displayTexture_; // zero until made for the current mode
+    // The present filter last given to the Gpu (fix_smooth_scaled_frame), none before the first
+    // present.
+    std::optional<platform::TextureFilter> presentFilter_;
     Surface *primary_ = nullptr;
     Counts counts_;
 };
