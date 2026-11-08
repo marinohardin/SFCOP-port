@@ -246,8 +246,7 @@ bool User32::Post(std::uint32_t hwnd, std::uint32_t message, std::uint32_t wPara
     if (hwnd != 0 && !windows_.IsWindow(hwnd)) {
         return false;
     }
-    queue_.Post(hwnd, message, wParam, lParam);
-    return true;
+    return queue_.Post(hwnd, message, wParam, lParam);
 }
 
 Retrieved User32::Peek(std::uint32_t hwnd, std::uint32_t first, std::uint32_t last, bool remove) {

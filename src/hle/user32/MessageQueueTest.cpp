@@ -590,4 +590,68 @@ TEST_CASE("--trace logs GetKeyState's answer for a held mouse button once per ch
     CHECK(lines == expected);
 }
 
+TEST_CASE("Mouse moves the game has not read yet coalesce into the latest; buttons never do") {
+    Rig rig;
+    const std::uint32_t hwnd = rig.GameWindow();
+    rig.Drain();
+    rig.now = 2000;
+    rig.Mouse(WindowEventType::kMouseMove, 10, 20);
+    rig.Mouse(WindowEventType::kMouseMove, 11, 21);
+    rig.now = 2100;
+    rig.user.Pump(); // the two moves queue as one
+    rig.Mouse(WindowEventType::kMouseMove, 30, 40);
+    rig.Mouse(WindowEventType::kMouseButtonDown, 30, 40);
+    rig.Mouse(WindowEventType::kMouseButtonUp, 30, 40);
+    rig.Mouse(WindowEventType::kMouseMove, 50, 60);
+    rig.Mouse(WindowEventType::kMouseMove, 70, 80);
+    rig.now = 2200;
+    const std::vector<Message> got = rig.Drain();
+    REQUIRE(got.size() == 4);
+    CHECK(got[0].message == kWmMouseMove); // 10,20 then 11,21 then 30,40: one move, the last
+    CHECK(got[0].hwnd == hwnd);
+    CHECK(got[0].lParam == ((40u << 16) | 30u));
+    CHECK(got[0].time == 2200);
+    CHECK(got[1].message == kWmLButtonDown);
+    CHECK(got[1].lParam == ((40u << 16) | 30u));
+    CHECK(got[2].message == kWmLButtonUp);
+    CHECK(got[3].message == kWmMouseMove); // 50,60 then 70,80
+    CHECK(got[3].lParam == ((80u << 16) | 70u));
+}
+
+TEST_CASE("A move with a button held does not merge into a move without it") {
+    Rig rig;
+    rig.GameWindow();
+    rig.Drain();
+    rig.Mouse(WindowEventType::kMouseMove, 10, 10);
+    rig.Mouse(WindowEventType::kMouseButtonDown, 10, 10);
+    rig.Mouse(WindowEventType::kMouseMove, 20, 20);
+    rig.Mouse(WindowEventType::kMouseMove, 30, 30);
+    const std::vector<Message> got = rig.Drain();
+    REQUIRE(got.size() == 3);
+    CHECK(got[0].message == kWmMouseMove);
+    CHECK(got[0].wParam == 0);
+    CHECK(got[1].message == kWmLButtonDown);
+    CHECK(got[2].message == kWmMouseMove);
+    CHECK(got[2].wParam == 0x0001u); // MK_LBUTTON
+    CHECK(got[2].lParam == ((30u << 16) | 30u));
+}
+
+TEST_CASE("The queue holds at most 10,000 posted messages, as Windows' default limit") {
+    Rig rig;
+    const std::uint32_t hwnd = rig.GameWindow();
+    rig.Drain();
+    std::vector<std::string> lines;
+    rig.user.Queue().SetTrace([&lines](const char *line) { lines.emplace_back(line); });
+    for (std::uint32_t i = 0; i < 10000; ++i) {
+        REQUIRE(rig.user.Post(hwnd, 0x0400, i, 0));
+    }
+    CHECK(lines.empty());
+    CHECK_FALSE(rig.user.Post(hwnd, 0x0400, 10000, 0)); // PostMessageA fails
+    REQUIRE(lines.size() == 1);
+    CHECK(lines[0] == "posted queue full: message dropped");
+    CHECK(rig.user.Queue().Size() == 10000);
+    const Retrieved first = rig.user.Peek(0, 0, 0, true);
+    CHECK(first.message.wParam == 0);
+}
+
 } // namespace sfcop::hle::user32

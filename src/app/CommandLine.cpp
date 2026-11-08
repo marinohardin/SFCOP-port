@@ -168,17 +168,18 @@ const Flag kFlags[] = {
          o.fixes.push_back({name, state == "on"});
          return true;
      }},
-    {"--oracle", "TRACE", "run the replay oracle and compare with TRACE; needs --input",
+    {"--oracle", "TRACE", "run the replay oracle and compare with TRACE; needs --input (the window is then read only when the game peeks)",
      [](ClientOptions &o, const std::string &v, std::string &) {
          o.oracleTrace = v;
          return true;
      }},
-    {"--input", "SCRIPT", "play the steps file SCRIPT into the game (--oracle needs it)",
+    {"--input", "SCRIPT", "play the steps file SCRIPT into the game (--oracle needs it; the window is then read "
+     "only when the game peeks)",
      [](ClientOptions &o, const std::string &v, std::string &) {
          o.inputScript = v;
          return true;
      }},
-    {"--headless", "", "no window and no sound",
+    {"--headless", "", "no window and no sound (the window is read only when the game peeks)",
      [](ClientOptions &o, const std::string &, std::string &) {
          o.headless = true;
          return true;
@@ -369,6 +370,18 @@ std::string helpText(const std::vector<ExtraFlag> &extras) {
         out += "\n";
     }
     return out;
+}
+
+bool readsWindowDuringLoads(const ClientOptions &options) {
+    if (options.headless || options.inputScript || options.oracleTrace) {
+        return false;
+    }
+    for (const std::string &flag : options.passThrough) {
+        if (flag == "--record-trace" || flag.rfind("--record-trace=", 0) == 0) {
+            return false;
+        }
+    }
+    return true;
 }
 
 } // namespace sfcop::app

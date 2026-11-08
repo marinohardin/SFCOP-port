@@ -32,8 +32,20 @@ int sfcop_mss_silent = 0;
 // KERNEL32 rows no module owns yet, and for hle/ddraw4's hand-off of DirectDrawCreateClipper in a
 // headless run; they go when those rows' owners land, by gate G1.
 extern const win32hle_shim sfcop_spike_misc[];
+
+// The module tables whose rows the game calls during its loads (files, the registry, time, waits,
+// the heap, sound, fonts), in the order sfcop_register_hle_modules() registers them: the bind
+// runs the pump inside these rows (below). USER32's own rows run the pump themselves.
+extern const win32hle_shim sfcop_hle_ds3d[];
+extern const win32hle_shim sfcop_hle_gdi32[];
+extern const win32hle_shim sfcop_hle_kernel[];
+extern const win32hle_shim sfcop_hle_kernel32rt[];
+extern const win32hle_shim sfcop_hle_miles[];
+extern const win32hle_shim sfcop_hle_registry[];
 }
 
+#include <algorithm>
+#include <array>
 #include <atomic>
 #include <chrono>
 #include <cstdio>
@@ -43,6 +55,8 @@ extern const win32hle_shim sfcop_spike_misc[];
 #include <map>
 #include <set>
 #include <string>
+#include <thread>
+#include <utility>
 #include <vector>
 
 namespace sfcop::guest {
@@ -60,9 +74,103 @@ Components *g_components = nullptr;
 // The spike's stubs answer them where they have the row, else pcrecomp's win32hle. The bind gives
 // each a wrapper of its own that says so once, at its first call, then runs that row.
 
+// ---- the pump inside the game's calls ----
+//
+// A load that never peeks for a message still calls imports: the file rows, the registry, Sleep,
+// the heap. When the turns inside calls are on (or the gap trace is), the bind gives each import
+// of the tables above, and each unowned one, a row that runs a turn of the pump inside the call
+// (EventPump::PumpInsideCall, at most every kInsideCallMs, on the main thread only) before the
+// module's own row: at every kCallsPerTurnCheck-th such call on the main thread, and before and
+// after every row that may block. The turn only queues what the window reported; the game reads it
+// at its next peek. When neither is on, the bind is as it was: no row is wrapped. An import found
+// through GetProcAddress runs without it.
+
+constexpr std::uint32_t kInsideCallMs = 50;
+// The clock is read only every so many calls: the game makes millions of short calls a second
+// (critical sections) and none of them may pay a clock read each.
+constexpr std::uint32_t kCallsPerTurnCheck = 16;
+// The rows that may take long by themselves, around which the clock is always read.
+const std::set<std::string> kRowsThatMayBlock = {
+    "Sleep",          "SleepEx",           "WaitForSingleObject", "WaitForSingleObjectEx",
+    "WaitForMultipleObjects", "LoadLibraryA", "LoadLibraryExA",   "CopyFileA",
+    "_AIL_waveOutOpen@16"};
+
+bool g_wrapImports = false; // set by Run() before the bind
+void pumpInsideCall();      // with the pump, below
+
+// SFCOP_PUMP_TRACE=<ms>: each gap of at least that many milliseconds between two turns of the
+// pump on the main thread is logged with the imports the main thread spent it in (time inclusive
+// of what they called back), the rest being the game's own code. 400 lines at most.
+struct RowTime {
+    const char *name = nullptr;
+    std::uint64_t calls = 0;
+    std::uint64_t micros = 0;
+};
+bool g_gapTrace = false;
+std::thread::id g_mainThread;
+std::vector<RowTime *> g_touched; // the rows the main thread called since the last turn
+
+struct PumpedRow {
+    recomp_func_t row = nullptr;
+    bool mayBlock = false;
+    RowTime time;
+};
+
+void runInside(PumpedRow &pumped) {
+    if (std::this_thread::get_id() != g_mainThread) {
+        pumped.row();
+        return;
+    }
+    static std::uint32_t calls = 0;
+    if (pumped.mayBlock || ++calls >= kCallsPerTurnCheck) {
+        calls = 0;
+        pumpInsideCall();
+    }
+    if (g_gapTrace) {
+        const auto begun = std::chrono::steady_clock::now();
+        pumped.row();
+        if (pumped.time.calls++ == 0) {
+            g_touched.push_back(&pumped.time);
+        }
+        pumped.time.micros += static_cast<std::uint64_t>(
+            std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() -
+                                                                  begun)
+                .count());
+    } else {
+        pumped.row();
+    }
+    if (pumped.mayBlock) {
+        pumpInsideCall();
+    }
+}
+
+// The wrapped rows, and one function for each slot, so a call finds its row by index.
+constexpr std::size_t kMaxPumpedRows = 512; // the game imports 353 functions (DESIGN §6.1)
+std::array<PumpedRow, kMaxPumpedRows> g_pumpedRows;
+std::size_t g_pumpedCount = 0;
+
+template <std::size_t Slot> void pumpedRowAt() {
+    runInside(g_pumpedRows[Slot]);
+}
+
+template <std::size_t... Slot>
+constexpr std::array<recomp_func_t, sizeof...(Slot)> pumpedRowSlots(std::index_sequence<Slot...>) {
+    return {&pumpedRowAt<Slot>...};
+}
+
+const std::array<recomp_func_t, kMaxPumpedRows> kPumpedRowSlots =
+    pumpedRowSlots(std::make_index_sequence<kMaxPumpedRows>{});
+
+// The address of the row registered last: the registry numbers its rows from kShimBase.
+std::uint32_t lastShimAddress();
+bool shimRoomForWrapper();
+
+// ---- imports no module of this project answers ----
+
 struct UnownedRow {
     recomp_func_t row;
     const char *answeredBy;
+    PumpedRow pumped{};
 };
 
 std::map<std::string, UnownedRow> &unownedRows() {
@@ -81,7 +189,17 @@ void unownedRow() {
         std::fprintf(stderr, "[guest] %s: answered by %s (no module owns it)\n", name.c_str(),
                      row->second.answeredBy);
     }
-    row->second.row();
+    if (!g_wrapImports) {
+        row->second.row();
+        return;
+    }
+    PumpedRow &pumped = row->second.pumped;
+    if (pumped.row == nullptr) {
+        pumped.row = row->second.row;
+        pumped.mayBlock = kRowsThatMayBlock.count(name) != 0;
+        pumped.time.name = row->first.c_str();
+    }
+    runInside(pumped);
 }
 
 recomp_func_t rowIn(const win32hle_shim *table, const char *name) {
@@ -115,7 +233,43 @@ std::vector<std::string> &unansweredImports() {
 // the modules' rows and the game's built-ins.
 uint32_t resolveImport(const char *name) {
     if (const uint32_t address = hle_resolve(name)) {
-        return address;
+        if (!g_wrapImports) {
+            return address;
+        }
+        recomp_func_t row = nullptr;
+        for (const win32hle_shim *table :
+             {sfcop_hle_ds3d, sfcop_hle_gdi32, sfcop_hle_kernel, sfcop_hle_kernel32rt,
+              sfcop_hle_miles, sfcop_hle_registry}) {
+            if ((row = rowIn(table, name)) != nullptr) {
+                break;
+            }
+        }
+        if (row == nullptr) {
+            return address; // another module's row (or the game's own built-in)
+        }
+        static std::map<std::string, std::uint32_t> bound; // an import the exe names twice
+        if (const auto again = bound.find(name); again != bound.end()) {
+            return again->second;
+        }
+        if (g_pumpedCount == kMaxPumpedRows || !shimRoomForWrapper()) {
+            // The registry cannot refuse a row: past its limit it ends the run (host_lite.c,
+            // win32hle_register: "too many shims"). So the wrapper is not registered at all; the
+            // import keeps the module's own row, and the address is the right one.
+            std::fprintf(stderr, "[guest] %s runs without the pump: no slot left\n", name);
+            return address;
+        }
+        // A row of its own under the same name, so the name every trace and fault report sees is
+        // the import's; the bind takes its address, and hle_resolve still finds the module's.
+        auto *kept = new std::string(name); // kept for the run, as the registry keeps its names
+        PumpedRow &pumped = g_pumpedRows[g_pumpedCount];
+        pumped.row = row;
+        pumped.mayBlock = kRowsThatMayBlock.count(*kept) != 0;
+        pumped.time.name = kept->c_str();
+        auto *entry =
+            new win32hle_shim[2]{{kept->c_str(), kPumpedRowSlots[g_pumpedCount]}, {nullptr, nullptr}};
+        ++g_pumpedCount;
+        win32hle_register(entry);
+        return bound[name] = lastShimAddress();
     }
     UnownedRow unowned{rowIn(sfcop_spike_misc, name), "the spike's stubs"};
     if (unowned.row == nullptr) {
@@ -133,12 +287,40 @@ uint32_t resolveImport(const char *name) {
 
 // How many rows are registered, and the room pcrecomp's registry has (host_lite.c: MAX_SHIMS).
 // Each gets a synthetic address SHIM_BASE + 16 * index, so the next row's address says the count.
-constexpr std::uint32_t kShimBase = 0x7F000000u, kShimStep = 16u, kMaxShims = 2048u;
+constexpr std::uint32_t kShimBase = 0x7F000000u, kShimStep = 16u, kMaxShims = 2048u,
+                        kShimsKeptFree = 128u;
 
 std::uint32_t shimCount() {
     static const win32hle_shim probe[] = {{"sfcop.ShimCountProbe", nullptr}, {nullptr, nullptr}};
     win32hle_register(probe);
     return (hle_resolve(probe[0].name) - kShimBase) / kShimStep;
+}
+
+// The registry's rows are numbered without a gap, so the last is the highest address it names
+// (host_lite.c: win32hle_register and hle_resolve_or_stub give row i the address
+// SHIM_BASE + 16 * i with i = g_shim_n++, and hle_name answers NULL for an address no row has).
+// Called only with at least one row registered.
+std::uint32_t registeredShims() {
+    std::uint32_t low = 0, high = kMaxShims; // rows [0, low) are registered, [high, max) are not
+    while (low < high) {
+        const std::uint32_t middle = low + (high - low) / 2;
+        if (hle_name(kShimBase + kShimStep * middle) != nullptr) {
+            low = middle + 1;
+        } else {
+            high = middle;
+        }
+    }
+    return low;
+}
+
+std::uint32_t lastShimAddress() {
+    return kShimBase + kShimStep * (registeredShims() - 1);
+}
+
+// Room left for one more wrapper, with the rows pcrecomp's tables add after the bind (and the
+// warning below) still to come.
+bool shimRoomForWrapper() {
+    return registeredShims() + kShimsKeptFree < kMaxShims;
 }
 
 // ---- static TLS ----
@@ -263,6 +445,71 @@ void pump() {
     }
 }
 
+// Inside an import's row: the window's events only (no frame, no DirectInput, no shot), which
+// keeps the message order and the count of frames what they are without it.
+void pumpInsideCall() {
+    if (g_pump != nullptr) {
+        static_cast<void>(g_pump->PumpInsideCall());
+    }
+}
+
+// The gap trace (SFCOP_PUMP_TRACE): called at every turn on the main thread, it logs the gaps
+// of at least `threshold` ms and starts the next gap's count of rows.
+void traceGap(std::uint32_t threshold, const EventPump::Gap &gap) {
+    static unsigned lines = 0;
+    constexpr unsigned kMaxLines = 400;
+    if (gap.lengthMs >= threshold && lines < kMaxLines) {
+        ++lines;
+        std::sort(g_touched.begin(), g_touched.end(),
+                  [](const RowTime *a, const RowTime *b) { return a->micros > b->micros; });
+        std::uint64_t inRows = 0, calls = 0;
+        for (const RowTime *row : g_touched) {
+            inRows += row->micros;
+            calls += row->calls;
+        }
+        std::string top;
+        for (std::size_t i = 0; i < g_touched.size() && i < 5; ++i) {
+            char part[96];
+            std::snprintf(part, sizeof part, "%s%s %llux %llu ms", i == 0 ? "" : ", ",
+                          g_touched[i]->name,
+                          static_cast<unsigned long long>(g_touched[i]->calls),
+                          static_cast<unsigned long long>(g_touched[i]->micros / 1000));
+            top += part;
+        }
+        const std::uint64_t inRowsMs = inRows / 1000;
+        std::fprintf(stderr,
+                     "[pump] gap %llu ms ending at %.3f s (a turn %s): %llu calls to the rows "
+                     "above, %llu ms in them, %llu ms in the game's own code; %s\n",
+                     static_cast<unsigned long long>(gap.lengthMs), gap.endMs / 1000.0,
+                     gap.insideCall ? "inside a call" : "for a message",
+                     static_cast<unsigned long long>(calls),
+                     static_cast<unsigned long long>(inRowsMs),
+                     static_cast<unsigned long long>(gap.lengthMs > inRowsMs ? gap.lengthMs - inRowsMs
+                                                                             : 0),
+                     top.empty() ? "no import called" : top.c_str());
+    }
+    for (RowTime *row : g_touched) {
+        row->calls = 0;
+        row->micros = 0;
+    }
+    g_touched.clear();
+}
+
+void traceTotals() {
+    if (!g_gapTrace || g_pump == nullptr) {
+        return;
+    }
+    const EventPump::Counts &totals = g_pump->Totals();
+    std::fprintf(stderr,
+                 "[pump] %llu turns for a message, %llu inside calls (%llu events read there); "
+                 "longest gap %llu ms, ending at %.3f s\n",
+                 static_cast<unsigned long long>(totals.messageTurns),
+                 static_cast<unsigned long long>(totals.insideCallTurns),
+                 static_cast<unsigned long long>(totals.eventsInsideCalls),
+                 static_cast<unsigned long long>(totals.longest.lengthMs),
+                 totals.longest.endMs / 1000.0);
+}
+
 // ---- the end of the run ----
 //
 // As ExitProcess does, the process ends where it stands: the game's other threads are not
@@ -273,6 +520,7 @@ void pump() {
 // straight to the operating system), so a file the game wrote is complete when this runs.
 void onExit(int code) {
     g_stopping = true;
+    traceTotals();
     std::fflush(stdout);
     std::fflush(stderr);
     std::_Exit(code == 0 ? 0 : 1);
@@ -338,7 +586,29 @@ int Run(const Options &options, Components &components) {
         hle::user32::DeliverEvent(event);
     });
     eventPump.BindToCallingThread(); // the game's main thread is this one
+    g_mainThread = std::this_thread::get_id();
     g_pump = &eventPump;
+    // The pump inside the game's calls, so a load's window stays responsive (Options; never
+    // headless, whose stub window has nothing to read). For measuring, SFCOP_PUMP_INSIDE_CALLS=0
+    // turns it off and =1 on, whatever the flag and headless too, where it costs what it costs
+    // and reads nothing (a scripted run's frames then differ from develop's).
+    const char *insideCalls = std::getenv("SFCOP_PUMP_INSIDE_CALLS");
+    const bool forced = insideCalls != nullptr && (std::strcmp(insideCalls, "0") == 0 ||
+                                                  std::strcmp(insideCalls, "1") == 0);
+    const bool pumpInsideCalls = forced ? std::strcmp(insideCalls, "1") == 0
+                                        : options.pumpDuringLoads && !options.headless;
+    if (pumpInsideCalls) {
+        eventPump.EnableInsideCalls(kInsideCallMs);
+    }
+    g_wrapImports = pumpInsideCalls;
+    if (const char *trace = std::getenv("SFCOP_PUMP_TRACE"); trace != nullptr && *trace != 0) {
+        const auto threshold = static_cast<std::uint32_t>(std::strtoul(trace, nullptr, 10));
+        g_gapTrace = true;
+        g_wrapImports = true;
+        eventPump.SetGapTrace(0, [threshold](const EventPump::Gap &gap) { traceGap(threshold, gap); });
+        std::fprintf(stderr, "[pump] tracing gaps of %u ms or more; turns inside calls %s\n",
+                     threshold, pumpInsideCalls ? "on" : "off");
+    }
     g_options = &options;
     ShotSchedule shotSchedule(options.shotEverySeconds);
     if (!options.shotsDir.empty() && !options.headless) {
@@ -376,7 +646,7 @@ int Run(const Options &options, Components &components) {
                  unansweredImports().size() + static_cast<std::size_t>(unresolved));
     const std::uint32_t shims = shimCount();
     std::fprintf(stderr, "[guest] %u of %u shim slots in use\n", shims, kMaxShims);
-    if (shims + 128 > kMaxShims) {
+    if (shims + kShimsKeptFree > kMaxShims) {
         std::fprintf(stderr, "[guest] warning: fewer than 128 shim slots left\n");
     }
     std::map<std::string, std::string> lists; // by what answers them
