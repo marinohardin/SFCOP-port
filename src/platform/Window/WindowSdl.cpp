@@ -1,10 +1,14 @@
 // The Window backend on SDL3 (DESIGN §5.6, §5.7, §6.2): one SDL window, SDL's event queue read by
 // PumpEvents() alone, and the frame cap Gpu::Present() reads.
 //
-// Logical size: the game's pixels. In windowed mode the window is that many points; in
-// fullscreen the content is scaled to the display keeping its aspect, so mouse positions are
-// mapped back through the same letterbox. A user dragging the frame changes the drawable size,
-// not the logical size, and queues no kResized; only SetMode() changes the logical size.
+// Logical size: the game's pixels. In windowed mode the frame is that many points until it has a
+// size of its own: one given at Create() (windowWidth/windowHeight) or one the player dragged it
+// to. From then on SetMode() keeps the frame's size and changes only the logical size. Whenever
+// the frame and the logical size differ (fullscreen, a dragged or chosen frame), the content is
+// scaled into the frame keeping its aspect (presentRect(), Gpu::Present()'s letterbox), and mouse
+// positions are mapped back through the same letterbox, a position on a bar clamped to the
+// frame's edge. A user dragging the frame changes the drawable size, not the logical size, and
+// queues no kResized; only SetMode() changes the logical size.
 //
 // Fullscreen covers the display at its desktop mode. With SFCOP_FULLSCREEN=exclusive in the
 // environment, a display mode of exactly the requested size is switched to when the display
@@ -14,6 +18,7 @@
 // Event timestamps are SDL's (milliseconds since SDL was initialised), the origin a Clock on
 // SDL_GetTicks() shares.
 #include "platform/Window/Window.h"
+#include "platform/Gpu/Gpu.h"
 
 #include <SDL3/SDL.h>
 
@@ -99,7 +104,9 @@ public:
         if (window_ != nullptr) {
             return Error::kWrongState;
         }
-        if (!validSize(desc.width, desc.height)) {
+        const bool ownFrame = desc.windowWidth != 0 || desc.windowHeight != 0;
+        if (!validSize(desc.width, desc.height) ||
+            (ownFrame && !validSize(desc.windowWidth, desc.windowHeight))) {
             return Error::kInvalidArgument;
         }
         if (!videoReady_) {
@@ -112,11 +119,16 @@ public:
         if (envIs("SFCOP_WINDOW_HIDDEN", "1")) {
             flags |= SDL_WINDOW_HIDDEN;
         }
-        window_ = SDL_CreateWindow(desc.title.c_str(), static_cast<int>(desc.width),
-                                   static_cast<int>(desc.height), flags);
+        const std::uint32_t frameW = ownFrame ? desc.windowWidth : desc.width;
+        const std::uint32_t frameH = ownFrame ? desc.windowHeight : desc.height;
+        window_ = SDL_CreateWindow(desc.title.c_str(), static_cast<int>(frameW),
+                                   static_cast<int>(frameH), flags);
         if (window_ == nullptr) {
             return Error::kOutOfResources;
         }
+        frameKept_ = ownFrame && desc.mode == WindowMode::kWindowed;
+        setFrameW_ = static_cast<int>(frameW);
+        setFrameH_ = static_cast<int>(frameH);
         windowId_ = SDL_GetWindowID(window_);
         SDL_SetPointerProperty(SDL_GetWindowProperties(window_), kOwnerProperty,
                                static_cast<Window *>(this));
@@ -153,6 +165,9 @@ public:
         windowId_ = 0;
         resizePending_ = false;
         closeQueuedThisPump_ = false;
+        frameKept_ = false;
+        setFrameW_ = 0;
+        setFrameH_ = 0;
         mouseX_ = 0;
         mouseY_ = 0;
         residualX_ = 0.0f;
@@ -353,7 +368,11 @@ private:
             if (!SDL_SetWindowFullscreen(window_, false)) {
                 return false;
             }
-            SDL_SetWindowSize(window_, static_cast<int>(width), static_cast<int>(height));
+            if (!frameKept_) {
+                setFrameW_ = static_cast<int>(width);
+                setFrameH_ = static_cast<int>(height);
+                SDL_SetWindowSize(window_, setFrameW_, setFrameH_);
+            }
         } else {
             SDL_DisplayMode exact;
             const SDL_DisplayMode *chosen = nullptr;
@@ -414,13 +433,25 @@ private:
             outY = static_cast<std::int32_t>(std::floor(y));
             return;
         }
-        const float scale = (std::min)(pointW / logicalW, pointH / logicalH);
-        const float offsetX = (pointW - logicalW * scale) * 0.5f;
-        const float offsetY = (pointH - logicalH * scale) * 0.5f;
-        const float lx = std::clamp((x - offsetX) / scale, 0.0f, logicalW - 1.0f);
-        const float ly = std::clamp((y - offsetY) / scale, 0.0f, logicalH - 1.0f);
+        const Rect place = presentRect(static_cast<std::uint32_t>(logicalW),
+                                       static_cast<std::uint32_t>(logicalH),
+                                       static_cast<std::uint32_t>(pointW),
+                                       static_cast<std::uint32_t>(pointH));
+        // A side rounded to 0 (a window of a point or two) maps as if it were one point.
+        const float placeW = static_cast<float>((std::max)(place.width, std::uint32_t{1}));
+        const float placeH = static_cast<float>((std::max)(place.height, std::uint32_t{1}));
+        const float lx = std::clamp((x - static_cast<float>(place.x)) * logicalW / placeW, 0.0f,
+                                    logicalW - 1.0f);
+        const float ly = std::clamp((y - static_cast<float>(place.y)) * logicalH / placeH, 0.0f,
+                                    logicalH - 1.0f);
         outX = static_cast<std::int32_t>(std::floor(lx));
         outY = static_cast<std::int32_t>(std::floor(ly));
+    }
+
+    bool WindowedNow() const {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return state_.mode == WindowMode::kWindowed &&
+               (SDL_GetWindowFlags(window_) & SDL_WINDOW_FULLSCREEN) == 0;
     }
 
     float LogicalScale() const {
@@ -486,6 +517,20 @@ private:
                             event.window.timestamp);
                 if (sink_ != nullptr) {
                     sink_->OnFocusChanged(gained);
+                }
+            }
+            break;
+        case SDL_EVENT_WINDOW_RESIZED:
+            // A windowed frame now at a size this backend did not set is the player's (or the
+            // system's) choice, kept from now on. An event whose size is no longer the frame's is
+            // an echo of an earlier change and says nothing.
+            if (Ours(event.window.windowID) && WindowedNow()) {
+                int pointW = 0;
+                int pointH = 0;
+                SDL_GetWindowSize(window_, &pointW, &pointH);
+                if (event.window.data1 == pointW && event.window.data2 == pointH &&
+                    (pointW != setFrameW_ || pointH != setFrameH_)) {
+                    frameKept_ = true;
                 }
             }
             break;
@@ -606,6 +651,11 @@ private:
     bool relativeApplied_ = false;
     bool resizePending_ = false;
     bool closeQueuedThisPump_ = false;
+    // Main thread only: whether a windowed frame keeps its size across SetMode(), and the size in
+    // points this backend last gave it (a resize to another size is the player's).
+    bool frameKept_ = false;
+    int setFrameW_ = 0;
+    int setFrameH_ = 0;
     bool relativeFailureLogged_ = false;
     std::atomic<std::uint32_t> frameCap_{0};
 

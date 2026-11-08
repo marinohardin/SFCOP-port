@@ -5,6 +5,7 @@
 #include <SDL3/SDL.h>
 #include <doctest/doctest.h>
 
+#include <utility>
 #include <vector>
 
 namespace sfcop::platform {
@@ -88,6 +89,49 @@ void pushMotion(SDL_WindowID id, float x, float y, float dx, float dy) {
     event.motion.yrel = dy;
     REQUIRE(SDL_PushEvent(&event));
 }
+
+void pushButton(SDL_WindowID id, bool down, float x, float y) {
+    SDL_Event event;
+    SDL_zero(event);
+    event.type = down ? SDL_EVENT_MOUSE_BUTTON_DOWN : SDL_EVENT_MOUSE_BUTTON_UP;
+    event.button.timestamp = 1000000;
+    event.button.windowID = id;
+    event.button.button = SDL_BUTTON_LEFT;
+    event.button.down = down;
+    event.button.clicks = 1;
+    event.button.x = x;
+    event.button.y = y;
+    REQUIRE(SDL_PushEvent(&event));
+}
+
+// The frame's size in points, as SDL has it.
+std::pair<int, int> frameSize(SDL_WindowID id) {
+    int width = 0;
+    int height = 0;
+    SDL_GetWindowSize(SDL_GetWindowFromID(id), &width, &height);
+    return {width, height};
+}
+
+// Where each pushed button-down landed, in logical pixels.
+std::vector<std::pair<std::int32_t, std::int32_t>>
+clicksAt(Window &window, SDL_WindowID id, const std::vector<std::pair<float, float>> &points) {
+    RecordingSink sink;
+    REQUIRE(window.AttachInput(sink).Ok());
+    for (const auto &point : points) {
+        pushButton(id, true, point.first, point.second);
+    }
+    REQUIRE(window.PumpEvents().Ok());
+    REQUIRE(window.DetachInput().Ok());
+    std::vector<std::pair<std::int32_t, std::int32_t>> out;
+    for (const InputEvent &event : sink.events) {
+        if (event.type == InputEventType::kMouseButtonDown) {
+            out.emplace_back(event.x, event.y);
+        }
+    }
+    return out;
+}
+
+using Points = std::vector<std::pair<std::int32_t, std::int32_t>>;
 
 void pushWindowEvent(SDL_WindowID id, Uint32 type) {
     SDL_Event event;
@@ -494,6 +538,112 @@ TEST_CASE("the mouse maps through a letterboxed window at scale 2, carrying frac
     CHECK(sink.events[2].y == 0);
     CHECK(sink.events[3].x == 639);
     CHECK(sink.events[3].y == 479);
+}
+
+TEST_CASE("a frame the player resized keeps its size when SetMode changes the logical size") {
+    DummyVideo video;
+    auto window = makeWindow();
+    REQUIRE(window->Create(smallWindow()).Ok()); // logical 640x480, frame 640x480
+    const SDL_WindowID id = onlyWindowId();
+    REQUIRE(window->PumpEvents().Ok());
+    drain(*window);
+
+    // The player drags the frame to 1280x720 (a size the backend did not set).
+    REQUIRE(SDL_SetWindowSize(SDL_GetWindowFromID(id), 1280, 720));
+    SDL_SyncWindow(SDL_GetWindowFromID(id));
+    REQUIRE(window->PumpEvents().Ok());
+    for (const WindowEvent &event : drain(*window)) {
+        CHECK(event.type != WindowEventType::kResized); // a drag is not a logical change
+    }
+
+    // The game sets 1024x768: the frame stays, the logical size changes and is reported.
+    REQUIRE(window->SetMode(WindowMode::kWindowed, 1024, 768).Ok());
+    CHECK(frameSize(id) == std::pair<int, int>{1280, 720});
+    CHECK(window->GetState().Value().width == 1024);
+    CHECK(window->GetState().Value().height == 768);
+    REQUIRE(window->PumpEvents().Ok());
+    bool resized = false;
+    for (const WindowEvent &event : drain(*window)) {
+        if (event.type == WindowEventType::kResized) {
+            CHECK(event.width == 1024);
+            CHECK(event.height == 768);
+            resized = true;
+        }
+    }
+    CHECK(resized);
+
+    // Wider than the frame: 1024x768 shown 960x720 at x 160, bars of 160 points at each side.
+    // The middle, a button's edge, and both bars, each clamped to the frame's edge, not dropped.
+    CHECK(clicksAt(*window, id, {{640.0f, 360.0f}, {160.0f, 0.0f}, {10.0f, 360.0f},
+                                 {1279.0f, 700.0f}}) ==
+          Points{{512, 384}, {0, 0}, {0, 384}, {1023, 746}});
+}
+
+TEST_CASE("a frame nobody resized takes each logical size, mapping the mouse one to one") {
+    DummyVideo video;
+    auto window = makeWindow();
+    REQUIRE(window->Create(smallWindow()).Ok());
+    const SDL_WindowID id = onlyWindowId();
+    REQUIRE(window->SetMode(WindowMode::kWindowed, 800, 600).Ok());
+    REQUIRE(window->PumpEvents().Ok());
+    CHECK(frameSize(id) == std::pair<int, int>{800, 600});
+    REQUIRE(window->SetMode(WindowMode::kWindowed, 1024, 768).Ok());
+    REQUIRE(window->PumpEvents().Ok());
+    CHECK(frameSize(id) == std::pair<int, int>{1024, 768});
+    // The frame's own size: game pixels are points.
+    CHECK(clicksAt(*window, id, {{512.0f, 384.0f}, {0.0f, 0.0f}, {1023.0f, 767.0f}}) ==
+          Points{{512, 384}, {0, 0}, {1023, 767}});
+}
+
+TEST_CASE("a frame created with a window size keeps it, and the frame is scaled into it") {
+    DummyVideo video;
+    auto window = makeWindow();
+    WindowDesc desc = smallWindow(); // logical 640x480
+    desc.windowWidth = 512;
+    desc.windowHeight = 384;
+    REQUIRE(window->Create(desc).Ok());
+    const SDL_WindowID id = onlyWindowId();
+    CHECK(frameSize(id) == std::pair<int, int>{512, 384});
+    CHECK(window->GetState().Value().width == 640);
+    REQUIRE(window->SetMode(WindowMode::kWindowed, 1024, 768).Ok());
+    REQUIRE(window->PumpEvents().Ok());
+    CHECK(frameSize(id) == std::pair<int, int>{512, 384});
+    CHECK(window->GetState().Value().width == 1024);
+    CHECK(window->GetState().Value().height == 768);
+    // Smaller than the frame, half its size: each point is two game pixels.
+    CHECK(clicksAt(*window, id, {{256.0f, 192.0f}, {0.0f, 0.0f}, {511.0f, 383.0f}}) ==
+          Points{{512, 384}, {0, 0}, {1022, 766}});
+}
+
+TEST_CASE("a 1x1 frame maps the mouse without dividing by a side rounded to 0") {
+    DummyVideo video;
+    auto window = makeWindow();
+    WindowDesc desc = smallWindow();
+    desc.windowWidth = 1;
+    desc.windowHeight = 1;
+    REQUIRE(window->Create(desc).Ok());
+    const SDL_WindowID id = onlyWindowId();
+    REQUIRE(frameSize(id) == std::pair<int, int>{1, 1});
+    // 640x480 in 1x1: the frame is placed 1x1 (480 + 320 over 640 rounds to 1).
+    CHECK(clicksAt(*window, id, {{0.0f, 0.0f}, {0.5f, 0.5f}}) == Points{{0, 0}, {320, 240}});
+    // 1024x200 in 1x1: 200 high scales to 0.2 of a point, rounded to 0; mapped as one point.
+    REQUIRE(window->SetMode(WindowMode::kWindowed, 1024, 200).Ok());
+    REQUIRE(window->PumpEvents().Ok());
+    CHECK(frameSize(id) == std::pair<int, int>{1, 1});
+    CHECK(clicksAt(*window, id, {{0.0f, 0.0f}, {0.5f, 0.5f}}) == Points{{0, 0}, {512, 100}});
+}
+
+TEST_CASE("a window size needs both sides, each within the limits") {
+    DummyVideo video;
+    auto window = makeWindow();
+    WindowDesc desc = smallWindow();
+    desc.windowWidth = 800;
+    CHECK(window->Create(desc).Code() == Error::kInvalidArgument);
+    desc.windowWidth = 0;
+    desc.windowHeight = 600;
+    CHECK(window->Create(desc).Code() == Error::kInvalidArgument);
+    desc.windowWidth = 16385;
+    CHECK(window->Create(desc).Code() == Error::kInvalidArgument);
 }
 
 } // namespace sfcop::platform

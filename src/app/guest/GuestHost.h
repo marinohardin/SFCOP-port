@@ -49,6 +49,8 @@ struct Options {
     std::string arguments;  // after the exe's name on the guest's command line
     std::string title = "Starfleet Command: Orion Pirates";
     platform::WindowMode windowMode = platform::WindowMode::kWindowed;
+    std::uint32_t windowWidth = 0;  // --windowed WxH: the frame's first size in points, the
+    std::uint32_t windowHeight = 0; // game scaled into it; 0: the game's own size
     bool headless = false;  // the stub Window and Gpu: no window, nothing shown
     bool silent = false;    // no sound device
     bool trace = false;     // one line per Win32 call, and the exception dispatch's own lines

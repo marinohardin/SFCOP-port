@@ -5,6 +5,9 @@
 
 #include <doctest/doctest.h>
 
+#include <string>
+#include <vector>
+
 using sfcop::app::input::parseInputScript;
 using sfcop::app::input::ScriptedGpu;
 using sfcop::app::input::ScriptedWindow;
@@ -27,4 +30,20 @@ TEST_CASE("the Gpu given the scripted window attaches to the window it wraps") {
     CHECK(gpuInner.log.Count("Attach") == 1);
     CHECK(gpuInner.log.Count("Present") == 1);
     CHECK(gpuInner.log.Count("Detach") == 1);
+}
+
+TEST_CASE("the scripted Gpu hands the present filter to the Gpu it wraps, with its answer") {
+    sfcop::platform::WindowMock inner;
+    sfcop::platform::ClockMock clock;
+    sfcop::platform::GpuMock gpuInner;
+    ScriptPlayer player(parseInputScript("").script, {});
+    ScriptedWindow window(inner, player, clock, {});
+    ScriptedGpu gpu(gpuInner, window);
+
+    CHECK(gpu.SetPresentFilter(sfcop::platform::TextureFilter::kLinear).Ok());
+    CHECK(gpuInner.log.Calls() == std::vector<std::string>{"SetPresentFilter(1)"});
+    gpuInner.failWith = sfcop::platform::Error::kUnsupported;
+    CHECK(gpu.SetPresentFilter(sfcop::platform::TextureFilter::kPoint).Code() ==
+          sfcop::platform::Error::kUnsupported);
+    CHECK(gpuInner.log.Count("SetPresentFilter") == 2);
 }

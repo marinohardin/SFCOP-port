@@ -24,6 +24,8 @@ namespace sfcop::platform {
 namespace gpusdl {
 Error noDeviceError(bool driverTakesCarriedFormat, bool driverTakesOtherFormat);
 bool presentNeedsPacing(bool windowClaimed, bool explicitCap, bool swapchainAcquired);
+SDL_GPUFilter presentFilter(TextureFilter filter, std::uint32_t frameW, std::uint32_t frameH,
+                            std::uint32_t placeW, std::uint32_t placeH);
 } // namespace gpusdl
 
 namespace {
@@ -829,6 +831,28 @@ TEST_CASE("Present paces unless vsync is pacing a window that gave a swapchain")
     CHECK(gpusdl::presentNeedsPacing(true, true, true));        // an explicit cap
     CHECK(gpusdl::presentNeedsPacing(false, false, false));     // headless
     CHECK(gpusdl::presentNeedsPacing(false, true, true));
+}
+
+TEST_CASE("the scaled frame is sampled linearly or by nearest pixel as the present filter says") {
+    using gpusdl::presentFilter;
+    // Linear (the default): linear at 1024x768 in 667x500 and 1440x1080, nearest at 1x and 2x.
+    CHECK(presentFilter(TextureFilter::kLinear, 1024, 768, 667, 500) == SDL_GPU_FILTER_LINEAR);
+    CHECK(presentFilter(TextureFilter::kLinear, 1024, 768, 1024, 768) == SDL_GPU_FILTER_NEAREST);
+    CHECK(presentFilter(TextureFilter::kLinear, 1024, 768, 1440, 1080) == SDL_GPU_FILTER_LINEAR);
+    CHECK(presentFilter(TextureFilter::kLinear, 640, 480, 1280, 960) == SDL_GPU_FILTER_NEAREST);
+    // Whole on one axis only is not a whole-number scale.
+    CHECK(presentFilter(TextureFilter::kLinear, 640, 480, 1280, 480) == SDL_GPU_FILTER_LINEAR);
+    // Point: nearest at every scale.
+    CHECK(presentFilter(TextureFilter::kPoint, 1024, 768, 667, 500) == SDL_GPU_FILTER_NEAREST);
+    CHECK(presentFilter(TextureFilter::kPoint, 1024, 768, 1024, 768) == SDL_GPU_FILTER_NEAREST);
+    CHECK(presentFilter(TextureFilter::kPoint, 1024, 768, 1440, 1080) == SDL_GPU_FILTER_NEAREST);
+}
+
+TEST_CASE("the SDL Gpu takes both present filters and refuses another value") {
+    auto gpu = makeGpu();
+    CHECK(gpu->SetPresentFilter(TextureFilter::kPoint).Ok());
+    CHECK(gpu->SetPresentFilter(TextureFilter::kLinear).Ok());
+    CHECK(gpu->SetPresentFilter(static_cast<TextureFilter>(7)).Code() == Error::kInvalidArgument);
 }
 
 TEST_CASE("a viewport limits drawing to its rectangle") {

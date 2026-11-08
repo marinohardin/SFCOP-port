@@ -163,6 +163,10 @@ public:
         log.Record("Present");
         return status("Present");
     }
+    Status SetPresentFilter(TextureFilter filter) override {
+        log.Record("SetPresentFilter", filter);
+        return status("SetPresentFilter");
+    }
 
 private:
     Status status(std::string_view method) const {

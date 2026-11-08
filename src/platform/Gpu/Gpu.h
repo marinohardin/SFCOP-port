@@ -297,6 +297,34 @@ struct BlitDesc {
     bool sourceColorKey = false; // skip source pixels equal to the source's colour key
 };
 
+// Where Present() puts a frame of frameWidth by frameHeight pixels in a target of targetWidth by
+// targetHeight pixels: the largest rectangle of the frame's aspect that fits, centred, its size
+// rounded to the nearest pixel; the rest of the target is black bars. A frame the target's size
+// fills it exactly. A zero size anywhere gives a rectangle of width and height 0 at 0, 0.
+constexpr Rect presentRect(std::uint32_t frameWidth, std::uint32_t frameHeight,
+                           std::uint32_t targetWidth, std::uint32_t targetHeight) {
+    if (frameWidth == 0 || frameHeight == 0 || targetWidth == 0 || targetHeight == 0) {
+        return Rect{};
+    }
+    const std::uint64_t fw = frameWidth;
+    const std::uint64_t fh = frameHeight;
+    const std::uint64_t tw = targetWidth;
+    const std::uint64_t th = targetHeight;
+    std::uint64_t width = tw;
+    std::uint64_t height = th;
+    if (tw * fh <= th * fw) { // the target is narrower than the frame: bars above and below
+        height = (fh * tw + fw / 2) / fw;
+    } else { // wider: bars left and right
+        width = (fw * th + fh / 2) / fh;
+    }
+    Rect out;
+    out.x = static_cast<std::int32_t>((tw - width) / 2);
+    out.y = static_cast<std::int32_t>((th - height) / 2);
+    out.width = static_cast<std::uint32_t>(width);
+    out.height = static_cast<std::uint32_t>(height);
+    return out;
+}
+
 struct GpuCaps {
     std::uint32_t maxTextureSize = 0; // in each dimension
     std::vector<PixelFormat> textureFormats;
@@ -433,11 +461,22 @@ public:
     // kInvalidHandle; kInvalidArgument for an area outside the texture.
     virtual Status Fill(TextureId texture, Rect area, std::uint32_t value) = 0;
 
-    // Shows the back buffer in the window, scaled to fit with its aspect kept, and waits as the
+    // Shows the back buffer in the window at presentRect() of the window's size in pixels, scaled
+    // with the filter SetPresentFilter() set, with its aspect kept, and waits as the
     // window's frame cap requires. Main thread only. The back buffer's content is kept. Errors:
     // kUnsupported; kWrongState if not attached, inside a scene, or no back buffer is configured;
     // kIoError if the device was lost (the caller reconfigures and redraws).
     virtual Status Present() = 0;
+
+    // How Present() samples the back buffer when it scales it into the window (presentRect()).
+    // kPoint: nearest at every scale. kLinear: linear, except nearest at a whole-number scale; this
+    // is the default. A scale of 1 shows the back buffer's pixels as they are either way. Applies
+    // from the next Present(). Main thread only. Errors: kUnsupported (also the answer of a Gpu
+    // that does not implement it); kInvalidArgument for a value that is not a TextureFilter.
+    virtual Status SetPresentFilter(TextureFilter filter) {
+        static_cast<void>(filter);
+        return Error::kUnsupported;
+    }
 };
 
 // A Gpu whose every method fails with kUnsupported.

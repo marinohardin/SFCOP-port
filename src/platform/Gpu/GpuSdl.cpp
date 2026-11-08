@@ -58,6 +58,17 @@ Error noDeviceError(bool driverTakesCarriedFormat, bool driverTakesOtherFormat) 
                                                                : Error::kIoError;
 }
 
+// The sampler Present() scales a frame of frameW x frameH into placeW x placeH with
+// (Gpu::SetPresentFilter): kPoint is nearest always; kLinear is linear unless both axes scale by
+// the same whole number.
+SDL_GPUFilter presentFilter(TextureFilter filter, std::uint32_t frameW, std::uint32_t frameH,
+                            std::uint32_t placeW, std::uint32_t placeH) {
+    const bool whole = frameW != 0 && frameH != 0 && placeW % frameW == 0 &&
+                       placeH % frameH == 0 && placeW / frameW == placeH / frameH;
+    return filter == TextureFilter::kLinear && !whole ? SDL_GPU_FILTER_LINEAR
+                                                       : SDL_GPU_FILTER_NEAREST;
+}
+
 // Whether Present() must wait for the frame cap itself. Vsync paces a claimed window at the
 // display's rate, but only while a swapchain image is acquired: a minimised or occluded window
 // gets none and returns at once.
@@ -894,6 +905,14 @@ public:
         if (presentNeedsPacing(claimed_, explicitCap_, swapchainAcquired)) {
             Pace(fps);
         }
+        return {};
+    }
+
+    Status SetPresentFilter(TextureFilter filter) override {
+        if (filter != TextureFilter::kPoint && filter != TextureFilter::kLinear) {
+            return Error::kInvalidArgument;
+        }
+        presentFilter_ = filter;
         return {};
     }
 
@@ -1919,24 +1938,20 @@ private:
         acquired = swapchain != nullptr;
         const TextureRec *back = FindTexture(backBuffer_);
         if (swapchain != nullptr && back != nullptr && width != 0 && height != 0) {
-            const float bw = static_cast<float>(back->desc.width);
-            const float bh = static_cast<float>(back->desc.height);
-            const float scale =
-                (std::min)(static_cast<float>(width) / bw, static_cast<float>(height) / bh);
-            const auto dw = static_cast<Uint32>(std::lround(bw * scale));
-            const auto dh = static_cast<Uint32>(std::lround(bh * scale));
+            const Rect place = presentRect(back->desc.width, back->desc.height, width, height);
             SDL_GPUBlitInfo blit{};
             blit.source.texture = back->gpu;
             blit.source.w = back->desc.width;
             blit.source.h = back->desc.height;
             blit.destination.texture = swapchain;
-            blit.destination.x = (width - dw) / 2;
-            blit.destination.y = (height - dh) / 2;
-            blit.destination.w = dw;
-            blit.destination.h = dh;
+            blit.destination.x = static_cast<Uint32>(place.x);
+            blit.destination.y = static_cast<Uint32>(place.y);
+            blit.destination.w = place.width;
+            blit.destination.h = place.height;
             blit.load_op = SDL_GPU_LOADOP_CLEAR;
             blit.clear_color = SDL_FColor{0.0f, 0.0f, 0.0f, 1.0f};
-            blit.filter = std::floor(scale) == scale ? SDL_GPU_FILTER_NEAREST : SDL_GPU_FILTER_LINEAR;
+            blit.filter = presentFilter(presentFilter_, back->desc.width, back->desc.height,
+                                        place.width, place.height);
             SDL_BlitGPUTexture(commands, &blit);
         }
         SDL_SubmitGPUCommandBuffer(commands);
@@ -1973,6 +1988,7 @@ private:
     SDL_Window *sdlWindow_ = nullptr;
     bool claimed_ = false;
     SDL_GPUPresentMode presentMode_ = SDL_GPU_PRESENTMODE_VSYNC;
+    TextureFilter presentFilter_ = TextureFilter::kLinear;
     bool explicitCap_ = false;
     bool paced_ = false;
     std::chrono::steady_clock::time_point deadline_{};
