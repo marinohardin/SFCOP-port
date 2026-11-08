@@ -1,0 +1,31 @@
+[Unit]
+Description=SFCOP lobby service (server list and tickets)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=sfcop
+Group=sfcop
+# The shared ticket key (written once by whichever of deploy.sh and the relay's install.sh runs
+# first, root only: systemd reads it before dropping privileges), then the lobby's own settings.
+EnvironmentFile=/etc/sfcop/sfcop.env
+EnvironmentFile=/etc/sfcop/lobby.env
+ExecStart=/opt/sfcop/bin/sfcop-lobby
+Restart=on-failure
+RestartSec=2
+# Logs go to a file that logrotate keeps for 7 days (sfcop.logrotate).
+StandardOutput=append:/var/log/sfcop/lobby.log
+StandardError=append:/var/log/sfcop/lobby.log
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ReadWritePaths=/var/log/sfcop
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_INET AF_UNIX
+LockPersonality=true
+MemoryMax=128M
+
+[Install]
+WantedBy=multi-user.target

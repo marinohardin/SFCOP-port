@@ -1,0 +1,9 @@
+# The TLS front for the lobby API (LOBBY_API.md: HTTPS only, TLS 1.2 or later). deploy.sh installs
+# this as /etc/caddy/Caddyfile only when SFCOP_LOBBY_DOMAIN is set; Caddy gets and renews the
+# certificate itself. The certificate and its key live on the host, never in the repository.
+# Caddy appends the client's address to X-Forwarded-For, which the lobby reads (from loopback
+# only) for its per-address limits. The health endpoint is not exposed here beyond the lobby's
+# own limit of six requests a minute.
+{$SFCOP_LOBBY_DOMAIN} {
+    reverse_proxy 127.0.0.1:8080
+}
