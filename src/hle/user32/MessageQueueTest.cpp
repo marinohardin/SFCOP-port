@@ -1,4 +1,5 @@
 #include "hle/user32/MessageQueue.h"
+#include "hle/gdi32/Screen.h"
 #include "hle/user32/User32TestRig.h"
 
 #include <doctest/doctest.h>
@@ -190,6 +191,32 @@ TEST_CASE("Mouse coordinates are relative to the client area and clamped to the 
     rig.user.CursorPos(x, y);
     CHECK(x == 639);
     CHECK(y == 0);
+}
+
+// Headless there is no window (the stub's GetState fails) and the game's display is DirectDraw's
+// 800x600 mode. The screen is read the way gdi32::guest::screen() reads it (gdi32::ReadScreen on
+// the window and the mode), so a screen that ignored the mode would stay 640x480 and clamp the
+// click at (598, 501), the Mission Briefing's READY, to (598, 479).
+TEST_CASE("Headless, a click below y = 480 on an 800x600 display mode is not clamped") {
+    Rig rig;
+    const std::uint32_t hwnd = rig.GameWindow();
+    rig.Drain();
+    gdi32::Size mode{640, 480}; // win32hle's DirectDraw before SetDisplayMode
+    gdi32::ScreenInfo cached;
+    rig.screenSource = [&] { return cached = gdi32::ReadScreen(cached, rig.window, mode); };
+    rig.window.stateResult = platform::Error::kUnsupported;
+    mode = gdi32::Size{800, 600}; // the game's SetDisplayMode(800, 600)
+    rig.Mouse(WindowEventType::kMouseMove, 598, 501);
+    rig.Mouse(WindowEventType::kMouseButtonDown, 598, 501);
+    const std::vector<Message> got = rig.Drain();
+    REQUIRE(got.size() == 2);
+    CHECK(got[1].hwnd == hwnd);
+    CHECK(got[1].message == kWmLButtonDown);
+    CHECK(got[1].lParam == ((501u << 16) | 598u));
+    std::int32_t x = 0, y = 0;
+    rig.user.CursorPos(x, y);
+    CHECK(x == 598);
+    CHECK(y == 501);
 }
 
 TEST_CASE("The wheel goes to the focus window in notches of 120") {
