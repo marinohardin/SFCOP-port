@@ -10,6 +10,7 @@
 
 #include "hle/gdi32/Bitmap.h"
 #include "hle/gdi32/Gdi.h"
+#include "hle/gdi32/Screen.h"
 #include "hle/user32/User32.h"
 
 extern "C" {
@@ -44,16 +45,15 @@ public:
     }
 };
 
-// The game's screen: the platform window's logical size, which follows DirectDraw's display
-// mode, read on the main thread; 640x480 until a window says otherwise. Always 32 bits.
+// The game's screen (Screen.h): the platform window's logical size, which follows DirectDraw's
+// display mode, read on the main thread; headless, where the stub window has no size, the mode
+// win32hle's DirectDraw recorded; 640x480 until either says otherwise. Always 32 bits.
 inline ScreenInfo screen() {
     static ScreenInfo cached;
     if (user32::OnMainThread()) { // true only once the host is attached
-        const auto state = user32::AttachedHost()->window->GetState();
-        if (state.Ok() && state.Value().width != 0 && state.Value().height != 0) {
-            cached.width = static_cast<std::int32_t>(state.Value().width);
-            cached.height = static_cast<std::int32_t>(state.Value().height);
-        }
+        int width = 0, height = 0, bits = 0;
+        hle_dd_mode(&width, &height, &bits); // 640x480 until the game sets a mode
+        cached = ReadScreen(cached, *user32::AttachedHost()->window, Size{width, height});
     }
     return cached;
 }
