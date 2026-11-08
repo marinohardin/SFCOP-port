@@ -62,9 +62,13 @@ def find_doctest():
     return None
 
 
-@pytest.mark.skipif(shutil.which("cmake") is None or shutil.which("ninja") is None,
-                    reason="cmake and ninja are needed to build the service")
-def test_lobby_doctests_pass():
+_built = {}
+
+
+def build_server():
+    """Configures and builds every service with its tests, once per run; returns the build dir."""
+    if "dir" in _built:
+        return _built["dir"]
     doctest_dir = find_doctest()
     if doctest_dir is None:
         pytest.skip("no doctest source: set SFCOP_DOCTEST_DIR or FETCHCONTENT_SOURCE_DIR_DOCTEST "
@@ -77,7 +81,16 @@ def test_lobby_doctests_pass():
     built = subprocess.run(["nice", "-n", "19", "cmake", "--build", str(build), "-j4"],
                            capture_output=True, text=True)
     assert built.returncode == 0, built.stdout[-4000:] + built.stderr[-2000:]
-    ran = subprocess.run([str(build / "lobby" / "sfcop_lobby_tests"), "--no-version"],
+    _built["dir"] = build
+    return build
+
+
+@pytest.mark.skipif(shutil.which("cmake") is None or shutil.which("ninja") is None,
+                    reason="cmake and ninja are needed to build the services")
+@pytest.mark.parametrize("service", ["lobby", "relay"])
+def test_service_doctests_pass(service):
+    build = build_server()
+    ran = subprocess.run([str(build / service / ("sfcop_%s_tests" % service)), "--no-version"],
                          capture_output=True, text=True)
     assert ran.returncode == 0, ran.stdout[-4000:]
     assert "Status: SUCCESS!" in ran.stdout
@@ -89,6 +102,17 @@ def test_lobby_doctests_pass():
 def test_deploy_scripts_parse(script):
     r = subprocess.run(["sh", "-n", str(DEPLOY / script)], capture_output=True, text=True)
     assert r.returncode == 0, r.stderr
+
+
+def test_relay_unit_is_not_root_reads_its_own_environment_and_keeps_its_log_private():
+    unit = (DEPLOY / "sfcop-relay.service").read_text()
+    assert "User=sfcop" in unit
+    assert "EnvironmentFile=/etc/sfcop/relay.env" in unit
+    assert "EnvironmentFile=/etc/sfcop/sfcop.env" in unit          # the shared key, root-only file
+    assert "/var/log/sfcop/relay.log" in unit and "UMask=0027" in unit
+    env = (DEPLOY / "relay.env.example").read_text()
+    assert "SFCOP_HEALTH_LISTEN=127.0.0.1:47711" in env          # the monitor reads the same name
+    assert not any(line.startswith("SFCOP_TICKET_KEY=") for line in env.splitlines())
 
 
 def test_deploy_kit_files_say_what_the_brief_requires():
