@@ -27,7 +27,7 @@ game/                 the decompiled original, one file per original translation
   Meta/...            the Dynaverse client
   Common/...          Taldren's utility layer (SharedR)
   Switch/...          nSwitch
-  dmp3d/, Tiger/      the inherited engine and platform libraries
+  dmp3d/, Tiger/      the inherited engine and platform libraries, shared with Empires at War (DESIGN §7.5)
   unsorted/           units whose original file is not known yet (harness/SRC_LAYOUT.md)
   port/               types.h and the few headers the two compile modes need; nothing else
 src/

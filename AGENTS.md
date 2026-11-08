@@ -116,7 +116,14 @@ There is no install, build, lint or format command yet; the plan phase adds them
 
 - The game is `reference/installed game/Starfleet Command Orion Pirates/StarFleetOP.exe` (4.8 MB, 2.5.5.2, linked 2003-10-17, MSVC 6 SP4, DirectX 6 interfaces, Winsock plus DirectPlay 4 via COM). `SFCOP.exe` next to it is a boot stub, not the game.
 - The modding SDK (`OP API - R2.1`) holds static libs with about 60k mangled symbols, headers and sources; the server kit is `reference/SFCOPServer/`. Hashes of every retail file: `analysis/results/retail_hashes.sha256`; verify before use.
+- Orion Pirates 2.5.5.2 is the only target. The game it expands, Star Trek Starfleet Command II: Empires at War (`StarFleet2.exe`), is a later second module of this repository and not started: no build, test, fixture, trace, CI step or annotation uses its exe, and no work package reads it unless its brief says so (`docs/DESIGN.md` §7.5).
 - `reference/` is read-only input, git-ignored, reached by absolute path from every worktree. Never modify, move or delete anything in it. Never commit retail executables, libraries, assets or anything derived from them byte for byte.
+
+### Layers: what is the original and what is ours
+
+- `game/` is the original game's code and nothing else: no feature, no fix, no fix switch, and a `PORT:` line only where the platform forces one (`docs/DESIGN.md` §7.1). It is also the part of the work that a decompilation of Empires at War will reuse (§7.5), so a change to it that is not the original's code costs twice.
+- Features and the platform live in `src/` and `server/`. A fix to game code is an override unit under `src/fixes/overrides/`, linked in place of the original function when its switch is on.
+- Code outside `game/` names a decompiled function by its original address (`STARFLEETOP 0x...`) in annotations, manifests and override units, never by its file in `game/`: files under `game/` move as evidence appears, and `game/Tiger/` and `game/dmp3d/` will move to a tree shared with Empires at War. Including a `game/` header for a layout is allowed; a pull request that moves a file in `game/` updates every include of it and regenerates `game/manifest.tsv` and `src/app/guest/override.cpp` (`python3 tools/manifest.py`).
 
 ### Storage
 
