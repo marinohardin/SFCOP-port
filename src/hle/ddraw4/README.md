@@ -41,6 +41,16 @@ presented after each write. A host write made while a scene draws into a surface
 `BeginScene` and `EndScene`) is uploaded when the scene's drawing is recorded, over the pixels
 drawn so far: where a host write and a draw overlap, the host write wins.
 
+**The scaled frame.** The game draws at its own resolution and the Gpu shows that frame in a
+window of any size, centred with its aspect kept (`platform::presentRect`), the bars black. The
+window can be dragged, set by `--windowed WxH`, or be the display (`--fullscreen`); none of this
+reaches the module: the surfaces, their sizes and their uploads per frame are the same at every
+window size, and a window of the frame's own size shows it pixel for pixel. Before its first
+present the module gives the Gpu the scaling filter the runtime switch `fix_smooth_scaled_frame`
+names (on, the default: linear, nearest at a whole-number scale; off: nearest at every scale),
+and again only if the switch's position changes. Mouse positions come back in the game's pixels
+from the Window, which maps them through the same letterbox.
+
 The game makes two DirectDraw objects. Only the one that set the display mode owns its Gpu's back
 buffer (`DirectDraw::OwnsDisplay`; the owner is kept per Gpu); another object never configures it, so it cannot replace the
 game's frame with a black one. Screenshots (`--shots`) read the presented frame of the owner.
@@ -87,11 +97,13 @@ stack bytes) and `tests/test_hle_ddraw_tables.py` runs it, with `framediff.py --
 ## Proof run
 
 With `SFCOP_DDRAW4_STATS=1` in the environment the module prints, once a second, the frames it
-presented and the surface uploads (`WriteTexture` calls) it made:
+presented, the surface uploads (`WriteTexture` calls) it made, the game's frame size and the
+window's drawable size in pixels:
 
     SFCOP_DDRAW4_STATS=1 build/sfcop --install GAME --data DATA --windowed --shots SHOTS --shot-every 5
 
-On the main menu this reads `[ddraw4] 60.0 fps, 60.0 uploads/s`: one upload of the back buffer
+On the main menu this reads `[ddraw4] 60.0 fps, 60.0 uploads/s, frame 1024x768, window 2048x1536`
+(on a display of two pixels per point): one upload of the back buffer
 per frame, which the game redraws whole each frame (before deferral, one upload per `Unlock`,
 about 1,300 a second). The shots in `SHOTS` are the frames presented, and match a capture of the
 window. Two such shot directories, A and B, compare with:

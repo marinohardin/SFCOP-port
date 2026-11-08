@@ -184,4 +184,93 @@ TEST_CASE("every method of the gpu stub reports unsupported") {
     CHECK(gpu->Present().Code() == Error::kUnsupported);
 }
 
+namespace {
+
+void checkRect(const Rect &got, std::int32_t x, std::int32_t y, std::uint32_t width,
+               std::uint32_t height) {
+    CHECK(got.x == x);
+    CHECK(got.y == y);
+    CHECK(got.width == width);
+    CHECK(got.height == height);
+}
+
+// A Gpu written before SetPresentFilter existed: it overrides every other method.
+struct OlderGpu final : Gpu {
+    Status Attach(Window &) override { return {}; }
+    Status Detach() override { return {}; }
+    Result<GpuCaps> GetCaps() override { return GpuCaps{}; }
+    Result<TextureId> ConfigureBackBuffer(std::uint32_t, std::uint32_t, PixelFormat) override {
+        return TextureId{1};
+    }
+    Result<BufferId> CreateBuffer(BufferKind, std::uint32_t) override { return BufferId{1}; }
+    Status WriteBuffer(BufferId, std::uint32_t, const void *, std::uint32_t) override { return {}; }
+    Status DestroyBuffer(BufferId) override { return {}; }
+    Result<TextureId> CreateTexture(const TextureDesc &) override { return TextureId{2}; }
+    Status WriteTexture(TextureId, std::uint8_t, Rect, const void *, std::uint32_t) override {
+        return {};
+    }
+    Status ReadTexture(TextureId, std::uint8_t, Rect, void *, std::uint32_t) override { return {}; }
+    Status DestroyTexture(TextureId) override { return {}; }
+    Status SetColorKey(TextureId, std::optional<std::uint32_t>) override { return {}; }
+    Result<PaletteId> CreatePalette(const PaletteEntry *) override { return PaletteId{1}; }
+    Status WritePalette(PaletteId, std::uint32_t, std::uint32_t, const PaletteEntry *) override {
+        return {};
+    }
+    Status DestroyPalette(PaletteId) override { return {}; }
+    Status AttachPalette(TextureId, PaletteId) override { return {}; }
+    Result<PipelineId> CreatePipeline(const PipelineDesc &) override { return PipelineId{1}; }
+    Status DestroyPipeline(PipelineId) override { return {}; }
+    Status BeginScene(const RenderTargets &) override { return {}; }
+    Status SetViewport(const Viewport &) override { return {}; }
+    Status Clear(const ClearDesc &) override { return {}; }
+    Status Draw(const DrawCall &) override { return {}; }
+    Status EndScene() override { return {}; }
+    Status Blit(const BlitDesc &) override { return {}; }
+    Status Fill(TextureId, Rect, std::uint32_t) override { return {}; }
+    Status Present() override { return {}; }
+};
+
+} // namespace
+
+TEST_CASE("the frame is placed centred with its aspect kept in a smaller, equal or wider target") {
+    // 1024x768 into 800x500 (smaller, wider aspect): 500 high, 1024*500/768 = 666.7 -> 667 wide.
+    checkRect(presentRect(1024, 768, 800, 500), 66, 0, 667, 500);
+    // The frame's own size: the whole target, pixel for pixel.
+    checkRect(presentRect(1024, 768, 1024, 768), 0, 0, 1024, 768);
+    // 1920x1080 (wider): 1080 high, 1440 wide, bars of 240 at each side.
+    checkRect(presentRect(1024, 768, 1920, 1080), 240, 0, 1440, 1080);
+    // Taller than the frame: bars above and below.
+    checkRect(presentRect(1024, 768, 1024, 1024), 0, 128, 1024, 768);
+    // 640x480 into 1366x768: 768 high, 1024 wide, 342 left over, 171 at the left.
+    checkRect(presentRect(640, 480, 1366, 768), 171, 0, 1024, 768);
+    // Twice the frame: exact.
+    checkRect(presentRect(640, 480, 1280, 960), 0, 0, 1280, 960);
+}
+
+TEST_CASE("a zero size anywhere places nothing") {
+    checkRect(presentRect(0, 768, 800, 600), 0, 0, 0, 0);
+    checkRect(presentRect(1024, 0, 800, 600), 0, 0, 0, 0);
+    checkRect(presentRect(1024, 768, 0, 600), 0, 0, 0, 0);
+    checkRect(presentRect(1024, 768, 800, 0), 0, 0, 0, 0);
+}
+
+TEST_CASE("presentRect is usable at compile time") {
+    constexpr Rect place = presentRect(640, 480, 1280, 1200);
+    static_assert(place.x == 0 && place.y == 120 && place.width == 1280 && place.height == 960,
+                  "640x480 into 1280x1200 is 1280x960 with 120-point bars");
+    CHECK(place.height == 960);
+}
+
+TEST_CASE("the mock records the present filter, the stub and an older Gpu refuse it") {
+    GpuMock mock;
+    CHECK(mock.SetPresentFilter(TextureFilter::kPoint).Ok());
+    CHECK(mock.SetPresentFilter(TextureFilter::kLinear).Ok());
+    CHECK(mock.log.Calls() ==
+          std::vector<std::string>{"SetPresentFilter(0)", "SetPresentFilter(1)"});
+    auto stub = makeGpuStub();
+    CHECK(stub->SetPresentFilter(TextureFilter::kLinear).Code() == Error::kUnsupported);
+    OlderGpu older;
+    CHECK(older.SetPresentFilter(TextureFilter::kLinear).Code() == Error::kUnsupported);
+}
+
 } // namespace sfcop::platform

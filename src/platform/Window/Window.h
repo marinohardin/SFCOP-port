@@ -38,6 +38,9 @@ struct WindowDesc {
     std::uint32_t width = 640;              // logical size, in the game's pixels
     std::uint32_t height = 480;
     bool resizable = true;                  // windowed only: the user may drag the frame
+    std::uint32_t windowWidth = 0;          // windowed: the frame's first size in points, the
+    std::uint32_t windowHeight = 0;         // logical size shown scaled into it; 0 = the logical
+                                            // size (both 0, or both set)
 };
 
 struct DisplayMode {
@@ -92,8 +95,8 @@ public:
     virtual ~Window() = default;
 
     // Opens the window and shows it. One window per Window object. Errors: kUnsupported;
-    // kWrongState if it is already open; kInvalidArgument if a size is 0 or over 16384;
-    // kOutOfResources if the system refuses a window.
+    // kWrongState if it is already open; kInvalidArgument if a size is 0 or over 16384, or only
+    // one of windowWidth and windowHeight is set; kOutOfResources if the system refuses a window.
     virtual Status Create(const WindowDesc &desc) = 0;
 
     // Closes the window and discards queued events. Closing a window that is not open does
@@ -101,8 +104,12 @@ public:
     virtual Status Destroy() = 0;
 
     // Switches between windowed and fullscreen and sets the logical size. The change is reported
-    // as a kResized event once it has happened. Errors: kUnsupported; kWrongState if the window
-    // is not open; kInvalidArgument as Create().
+    // as a kResized event once it has happened. In windowed mode a frame the player has resized,
+    // or one created with a windowWidth and windowHeight, keeps its size: the new logical size is
+    // shown scaled into it (Gpu::Present()'s letterbox, recomputed) and mouse positions map back
+    // through that letterbox; otherwise the frame takes the logical size. Fullscreen covers the
+    // display, the logical size scaled into it, as before. Errors: kUnsupported; kWrongState if
+    // the window is not open; kInvalidArgument as Create().
     virtual Status SetMode(WindowMode mode, std::uint32_t width, std::uint32_t height) = 0;
 
     // The current mode, sizes, focus and minimised state. Errors: kUnsupported; kWrongState if

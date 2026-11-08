@@ -7,6 +7,7 @@
 #include <fstream>
 #include <set>
 #include <string>
+#include <string_view>
 #include <vector>
 
 using sfcop::fixes::Kind;
@@ -99,14 +100,36 @@ TEST_CASE("each build switch's block holds the default its line gives") {
 #undef SFCOP_FIX_SWITCH
 }
 
+namespace {
+
+// The registry's switch of that name, or nullptr.
+const Switch *declared(std::string_view name) {
+    for (const Switch &s : sfcop::fixes::registry()) {
+        if (s.name == name) {
+            return &s;
+        }
+    }
+    return nullptr;
+}
+
+} // namespace
+
 TEST_CASE("the registry declares the empty-name object fix as a runtime project fix, default on") {
-    const std::vector<Switch> &all = sfcop::fixes::registry();
-    REQUIRE(all.size() == 1);
-    CHECK(all[0].name == "fix_hle_named_objects");
-    CHECK(all[0].defaultOn);
-    CHECK(all[0].origin == Origin::Project);
-    CHECK(all[0].kind == Kind::Runtime);
-    CHECK(!all[0].description.empty());
+    const Switch *fix = declared("fix_hle_named_objects");
+    REQUIRE(fix != nullptr);
+    CHECK(fix->defaultOn);
+    CHECK(fix->origin == Origin::Project);
+    CHECK(fix->kind == Kind::Runtime);
+    CHECK(!fix->description.empty());
+}
+
+TEST_CASE("the registry declares the scaled frame's filter as a runtime project fix, default on") {
+    const Switch *fix = declared("fix_smooth_scaled_frame");
+    REQUIRE(fix != nullptr);
+    CHECK(fix->defaultOn);
+    CHECK(fix->origin == Origin::Project);
+    CHECK(fix->kind == Kind::Runtime);
+    CHECK(!fix->description.empty());
 }
 
 TEST_CASE("every declared switch has a unique lower_snake_case name starting fix_") {
@@ -132,7 +155,9 @@ TEST_CASE("each switch starts at its default") {
 
     Settings real;
     CHECK(real.isEnabled("fix_hle_named_objects"));
-    CHECK(real.report() == "fix_hle_named_objects on (default)\n");
+    const std::string report = real.report();
+    CHECK(report.find("fix_hle_named_objects on (default)\n") != std::string::npos);
+    CHECK(report.find("fix_smooth_scaled_frame on (default)\n") != std::string::npos);
 }
 
 TEST_CASE("--fix turns a switch off and another on") {

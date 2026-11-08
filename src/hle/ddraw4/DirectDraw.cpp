@@ -3,6 +3,8 @@
 #include "hle/ddraw4/Palette.h"
 #include "hle/ddraw4/Surface.h"
 
+#include "fixes/fixes.h"
+
 #include <algorithm>
 #include <map>
 #include <utility>
@@ -437,6 +439,15 @@ HResult DirectDraw::PresentPrimary(Surface &primary) {
         if (!copied.Ok()) {
             return fromError(copied.Code());
         }
+    }
+    // The frame scaled into a window of another size: linear or nearest (fix_smooth_scaled_frame).
+    // A Gpu without the call keeps its own; nothing else depends on it.
+    const platform::TextureFilter filter = fixes::isEnabled("fix_smooth_scaled_frame")
+                                               ? platform::TextureFilter::kLinear
+                                               : platform::TextureFilter::kPoint;
+    if (presentFilter_ != filter) {
+        (void)gpu_.SetPresentFilter(filter);
+        presentFilter_ = filter;
     }
     const platform::Status presented = gpu_.Present();
     if (!presented.Ok()) {

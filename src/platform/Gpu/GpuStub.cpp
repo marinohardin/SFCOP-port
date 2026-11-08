@@ -48,6 +48,7 @@ public:
     Status Blit(const BlitDesc &) override { return Error::kUnsupported; }
     Status Fill(TextureId, Rect, std::uint32_t) override { return Error::kUnsupported; }
     Status Present() override { return Error::kUnsupported; }
+    Status SetPresentFilter(TextureFilter) override { return Error::kUnsupported; }
 };
 
 } // namespace

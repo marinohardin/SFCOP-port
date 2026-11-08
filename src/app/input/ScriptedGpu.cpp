@@ -62,5 +62,8 @@ Status ScriptedGpu::Fill(TextureId texture, Rect area, std::uint32_t value) {
     return inner_.Fill(texture, area, value);
 }
 Status ScriptedGpu::Present() { return inner_.Present(); }
+Status ScriptedGpu::SetPresentFilter(platform::TextureFilter filter) {
+    return inner_.SetPresentFilter(filter);
+}
 
 } // namespace sfcop::app::input

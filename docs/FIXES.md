@@ -42,6 +42,7 @@ from its diff and never copied. A community row names no one.
 | Name | Default | Origin | Kind | Behaviors | Tests | Pull request |
 | --- | --- | --- | --- | --- | --- | --- |
 | `fix_hle_named_objects` | on | project | runtime | §5.2: a kernel object the game creates with an empty name during boot is its own object, not one shared by every such object | `spike/lifter/hle/tests/hle_selftest.c` (`test_unnamed_events`); `src/fixes/FixesTest.cpp` ("the installed set answers isEnabled for the empty-name object fix in both positions") | #8 (the fix); #19 (the switch) |
+| `fix_smooth_scaled_frame` | on | project | runtime | §5.6: the game's frame, shown scaled into a window of another size, is filtered linearly (nearest at a whole-number scale); off, nearest at every scale | `src/hle/ddraw4/SurfaceTest.cpp` ("the frame is presented with the filter fix_smooth_scaled_frame names, sent once"); `src/platform/Gpu/GpuSdlTest.cpp` ("the scaled frame is sampled linearly or by nearest pixel as the present filter says") | #64 |
 | `fix_example_rules_change` | off | community | build | §5.4: an example of a rules change | none | example, no code |
 
 ### `fix_hle_named_objects`
@@ -55,6 +56,16 @@ empty name is no name, as on Windows. Off reproduces the shared object, for diag
 The fix is in the HLE kernel objects, below the Win32 surface; the game's code is unchanged. Until
 the Wave 1 kernel32 module reads this switch, the lifter runtime applies the fix in every position
 (`cmake/lifter/patches/pcrecomp-kernel32-unnamed-objects.patch`).
+
+### `fix_smooth_scaled_frame`
+
+The original drew at its display mode on a display of that size. The port shows the game's frame
+in a window of any size, centred with its aspect kept, so the frame is scaled whenever the window
+is not its size. On, the scaling is linear, smooth at any size, and nearest-pixel at a
+whole-number scale, where it is exact. Off, every scale uses the nearest pixel: sharp, with uneven
+pixel widths at sizes that are not whole multiples. At the frame's own size both positions show
+its pixels as they are. The game's code is unchanged: `src/hle/ddraw4/` hands the position to the
+Gpu (`Gpu::SetPresentFilter`).
 
 ### `fix_example_rules_change`
 

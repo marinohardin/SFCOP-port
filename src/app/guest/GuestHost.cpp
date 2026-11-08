@@ -309,6 +309,8 @@ bool openWindow(const Options &options, Components &c) {
     platform::WindowDesc desc;
     desc.title = options.title;
     desc.mode = options.windowMode;
+    desc.windowWidth = options.windowWidth;
+    desc.windowHeight = options.windowHeight;
     if (!c.window.Create(desc).Ok() || !c.gpu.Attach(c.window).Ok()) {
         std::fprintf(stderr, "[guest] cannot open the game's window\n");
         return false;

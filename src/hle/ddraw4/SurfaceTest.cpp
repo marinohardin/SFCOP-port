@@ -2,7 +2,11 @@
 #include "hle/ddraw4/Ddraw4TestRig.h"
 #include "hle/ddraw4/Palette.h"
 
+#include "fixes/fixes.h"
+
+#include <algorithm>
 #include <array>
+#include <utility>
 
 namespace sfcop::hle::ddraw4 {
 
@@ -295,6 +299,70 @@ TEST_CASE("BltFast copies unstretched to a point and refuses what does not fit")
     destination->Release();
 }
 
+TEST_CASE("the frame is presented with the filter fix_smooth_scaled_frame names, sent once") {
+    Rig rig;
+    REQUIRE(rig.dd->SetDisplayMode(800, 600, 16, 0, 0) == kDdOk);
+    Surface *front = rig.Create(test::flipChainDesc());
+    rig.gpu.log.Clear();
+    // On by default: linear, given before the first present only.
+    CHECK(front->Flip(nullptr, kDdflipWait) == kDdOk);
+    CHECK(rig.gpu.log.Calls() == Calls{"WriteTexture(1, 0, 0, 0, 800, 600, 1600)",
+                                       "SetPresentFilter(1)", "Present()"});
+    rig.gpu.log.Clear();
+    CHECK(front->Flip(nullptr, kDdflipWait) == kDdOk);
+    CHECK(rig.gpu.log.Count("SetPresentFilter") == 0);
+
+    // Off: nearest, given once at the next present.
+    fixes::Settings off;
+    REQUIRE(off.applyCommandLine({"fix_smooth_scaled_frame=off"}).empty());
+    fixes::install(off);
+    rig.gpu.log.Clear();
+    CHECK(front->Flip(nullptr, kDdflipWait) == kDdOk);
+    CHECK(front->Flip(nullptr, kDdflipWait) == kDdOk);
+    CHECK(rig.gpu.log.Count("SetPresentFilter") == 1);
+    const Calls offCalls = rig.gpu.log.Calls();
+    CHECK(std::find(offCalls.begin(), offCalls.end(), "SetPresentFilter(0)") != offCalls.end());
+    fixes::install(fixes::Settings());
+
+    // A Gpu that does not know the call still presents.
+    rig.gpu.failOnly = "SetPresentFilter";
+    rig.gpu.failWith = Error::kUnsupported;
+    CHECK(front->Flip(nullptr, kDdflipWait) == kDdOk);
+    CHECK(rig.gpu.log.Count("Present") == 3);
+}
+
+TEST_CASE("a resized window changes nothing the game's frame costs: the same calls per frame") {
+    Rig rig;
+    REQUIRE(rig.dd->SetDisplayMode(1024, 768, 16, 0, 0) == kDdOk);
+    Surface *front = rig.Create(test::flipChainDesc());
+    Surface *back = nullptr;
+    REQUIRE(front->GetAttachedSurface(SurfaceCaps{kDdscapsBackBuffer, 0, 0, 0}, &back) == kDdOk);
+    REQUIRE(front->Flip(nullptr, kDdflipWait) == kDdOk); // the first present gives the filter
+    const auto frame = [&] {
+        rig.gpu.log.Clear();
+        SurfaceDesc locked;
+        REQUIRE(back->Lock(nullptr, locked, kDdlockWait) == kDdOk);
+        REQUIRE(back->Unlock() == kDdOk);
+        REQUIRE(front->Flip(nullptr, kDdflipWait) == kDdOk);
+        return rig.gpu.log.Calls();
+    };
+    const Calls oneFrame{"WriteTexture(1, 0, 0, 0, 1024, 768, 2048)", "Present()"};
+    for (const auto &size : {std::pair<std::uint32_t, std::uint32_t>{800, 500},
+                             {1024, 768},
+                             {1920, 1080}}) {
+        platform::WindowState state;
+        state.width = 1024;
+        state.height = 768;
+        state.drawableWidth = size.first;
+        state.drawableHeight = size.second;
+        rig.window.stateResult = state;
+        CAPTURE(size.first);
+        CHECK(frame() == oneFrame);
+        CHECK(back->Width() == 1024);
+        CHECK(back->Height() == 768);
+    }
+}
+
 TEST_CASE("Flip copies the back buffer into the display and presents it") {
     Rig rig;
     REQUIRE(rig.dd->SetDisplayMode(800, 600, 16, 0, 0) == kDdOk);
@@ -305,7 +373,8 @@ TEST_CASE("Flip copies the back buffer into the display and presents it") {
     // Both host copies are current (the 2D screens): the copy is made there and the display
     // gets one upload.
     CHECK(front->Flip(nullptr, kDdflipWait) == kDdOk);
-    CHECK(rig.gpu.log.Calls() == Calls{"WriteTexture(1, 0, 0, 0, 800, 600, 1600)", "Present()"});
+    CHECK(rig.gpu.log.Calls() == Calls{"WriteTexture(1, 0, 0, 0, 800, 600, 1600)",
+                                       "SetPresentFilter(1)", "Present()"});
 
     // The game's frame: lock the back buffer, draw, unlock, flip.
     rig.gpu.log.Clear();
@@ -354,7 +423,8 @@ TEST_CASE("a primary without a back buffer is presented after each change") {
     SurfaceDesc locked;
     REQUIRE(primary->Lock(&rect, locked, 0) == kDdOk);
     CHECK(primary->Unlock() == kDdOk);
-    CHECK(rig.gpu.log.Calls() == Calls{"WriteTexture(1, 0, 0, 0, 640, 480, 1280)", "Present()"});
+    CHECK(rig.gpu.log.Calls() == Calls{"WriteTexture(1, 0, 0, 0, 640, 480, 1280)",
+                                       "SetPresentFilter(1)", "Present()"});
     primary->Release();
 }
 

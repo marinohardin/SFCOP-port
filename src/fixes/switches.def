@@ -24,3 +24,7 @@
 SFCOP_FIX_SWITCH(fix_hle_named_objects, Runtime, 1, Project,
     "A kernel object created with an empty name is unnamed, so each such event, mutex and "
     "semaphore is its own object instead of one shared by all")
+
+SFCOP_FIX_SWITCH(fix_smooth_scaled_frame, Runtime, 1, Project,
+    "The game's frame, shown scaled into a window of another size, is filtered linearly (except "
+    "at a whole-number scale); off, every scale uses the nearest pixel")

@@ -12,6 +12,37 @@ namespace {
 
 constexpr unsigned kMaxWatchdogSeconds = 86400;
 constexpr std::uint32_t kMaxFixedStepMicroseconds = 1'000'000;
+constexpr std::uint32_t kMaxWindowSide = 16384;
+
+// "1600x900" as a size: digits, 'x', digits, each side 1 to 16384.
+std::optional<WindowSize> parseWindowSize(const std::string &text) {
+    const std::size_t cross = text.find('x');
+    if (cross == std::string::npos) {
+        return std::nullopt;
+    }
+    const auto side = [](const std::string &digits) -> std::optional<std::uint32_t> {
+        if (digits.empty() || digits.size() > 5) {
+            return std::nullopt;
+        }
+        std::uint32_t value = 0;
+        for (char c : digits) {
+            if (c < '0' || c > '9') {
+                return std::nullopt;
+            }
+            value = value * 10 + static_cast<std::uint32_t>(c - '0');
+        }
+        if (value == 0 || value > kMaxWindowSide) {
+            return std::nullopt;
+        }
+        return value;
+    };
+    const std::optional<std::uint32_t> width = side(text.substr(0, cross));
+    const std::optional<std::uint32_t> height = side(text.substr(cross + 1));
+    if (!width || !height) {
+        return std::nullopt;
+    }
+    return WindowSize{*width, *height};
+}
 
 // "16.667" as 16667 microseconds: digits, then at most three after a point; 0 or more than
 // 1000 ms is refused.
@@ -63,6 +94,8 @@ struct Flag {
     std::string_view value;
     std::string_view help;
     ApplyFn apply;
+    // The value may be left out (the next argument is taken only when it is not a flag).
+    bool valueOptional = false;
 };
 
 bool isFixName(const std::string &name) {
@@ -100,10 +133,19 @@ const Flag kFlags[] = {
          o.logsDir = v;
          return true;
      }},
-    {"--windowed", "", "play in a window",
-     [](ClientOptions &o, const std::string &, std::string &e) {
+    {"--windowed", "[WxH]", "play in a window, W by H points with the game scaled into it if given",
+     [](ClientOptions &o, const std::string &v, std::string &e) {
+         if (!v.empty()) {
+             const std::optional<WindowSize> size = parseWindowSize(v);
+             if (!size) {
+                 e = "--windowed takes a size WxH, each side 1 to 16384, not '" + v + "'";
+                 return false;
+             }
+             o.windowSize = size;
+         }
          return applyWindowMode(o, WindowMode::kWindowed, e);
-     }},
+     },
+     true},
     {"--fullscreen", "", "play full screen",
      [](ClientOptions &o, const std::string &, std::string &e) {
          return applyWindowMode(o, WindowMode::kFullscreen, e);
@@ -245,9 +287,20 @@ ParseResult parseCommandLine(const std::vector<std::string> &args,
             return failWith("unknown flag '" + name + "'");
         }
         const std::string_view valueName = flag != nullptr ? flag->value : extra->value;
+        const bool optional = flag != nullptr && flag->valueOptional;
 
         std::string value;
-        if (valueName.empty()) {
+        if (optional) {
+            if (inlineValue) {
+                value = arg.substr(equals + 1);
+                if (value.empty()) {
+                    return failWith(name + " needs " + std::string(valueName) +
+                                    " after '=', not an empty value");
+                }
+            } else if (i + 1 < args.size() && args[i + 1].rfind("--", 0) != 0) {
+                value = args[++i];
+            }
+        } else if (valueName.empty()) {
             if (inlineValue) {
                 return failWith(name + " takes no value");
             }
@@ -258,7 +311,7 @@ ParseResult parseCommandLine(const std::vector<std::string> &args,
         } else {
             return failWith(name + " needs " + std::string(valueName));
         }
-        if (!valueName.empty() && value.empty()) {
+        if (!optional && !valueName.empty() && value.empty()) {
             return failWith(name + " needs " + std::string(valueName) + ", not an empty value");
         }
 

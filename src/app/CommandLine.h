@@ -1,8 +1,11 @@
 // The native client's command line (DESIGN §6.8):
 //
-//   sfcop [--install DIR] [--data DIR] [--logs DIR] [--windowed|--fullscreen] [--fix NAME=on|off]
-//         [--oracle TRACE --input SCRIPT --headless --watchdog S] [--fixed-step MS]
+//   sfcop [--install DIR] [--data DIR] [--logs DIR] [--windowed [WxH]|--fullscreen]
+//         [--fix NAME=on|off] [--oracle TRACE --input SCRIPT --headless --watchdog S]
+//         [--fixed-step MS]
 //
+// --windowed WxH opens the window W by H points with the game's frame scaled into it; without
+// WxH the window takes the game's own size. --fullscreen scales the frame to the display.
 // --input may be given alone: a script with no trace is a menu run. --oracle needs --input.
 // --fixed-step MS runs the game's clock at MS milliseconds per frame instead of the wall clock
 // (platform/Clock/FixedStepClock.h); --oracle and --record-trace imply it at the default step.
@@ -10,8 +13,8 @@
 // .log files); without it they go to logs/ under the data folder (src/hle/kernel/README.md).
 //
 // One table in CommandLine.cpp holds every flag; parsing and `--help` both read it. A value is
-// given as `--flag VALUE` or `--flag=VALUE`. Parsing checks form only: whether a folder exists
-// or a fix is known is for the code that uses the value.
+// given as `--flag VALUE` or `--flag=VALUE`; --windowed's WxH is optional. Parsing checks form
+// only: whether a folder exists or a fix is known is for the code that uses the value.
 #pragma once
 
 #include <cstdint>
@@ -24,6 +27,12 @@ namespace sfcop::app {
 
 enum class WindowMode { kDefault, kWindowed, kFullscreen };
 
+// A window size in points, each side 1 to 16384.
+struct WindowSize {
+    std::uint32_t width = 0;
+    std::uint32_t height = 0;
+};
+
 struct FixSetting {
     std::string name;
     bool on = false;
@@ -34,6 +43,8 @@ struct ClientOptions {
     std::optional<std::string> dataDir;
     std::optional<std::string> logsDir;
     WindowMode window = WindowMode::kDefault;
+    // --windowed WxH; absent: the window takes the game's size.
+    std::optional<WindowSize> windowSize;
     // In command-line order, each name at most once.
     std::vector<FixSetting> fixes;
     std::optional<std::string> oracleTrace;

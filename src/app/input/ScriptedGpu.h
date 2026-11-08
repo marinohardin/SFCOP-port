@@ -54,6 +54,7 @@ public:
     platform::Status Fill(platform::TextureId texture, platform::Rect area,
                           std::uint32_t value) override;
     platform::Status Present() override;
+    platform::Status SetPresentFilter(platform::TextureFilter filter) override;
 
 private:
     platform::Gpu &inner_;
