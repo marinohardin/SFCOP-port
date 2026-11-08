@@ -73,6 +73,33 @@ TEST_CASE("the native player's own steps: waitmark and frames") {
     CHECK(steps[2].frames == 2);
 }
 
+TEST_CASE("keydown and keyup read a virtual key as key does") {
+    const ParsedScript parsed = parseInputScript("keydown 0x10\n"
+                                                 "key 0x32\n"
+                                                 "keyup 16\n");
+    REQUIRE_FALSE(parsed.error.has_value());
+    const auto &steps = parsed.script.steps;
+    REQUIRE(steps.size() == 3);
+    CHECK(steps[0].kind == StepKind::kKeyDown);
+    CHECK(steps[0].line == 1);
+    CHECK(steps[0].virtualKey == 16);
+    CHECK(steps[1].kind == StepKind::kKey);
+    CHECK(steps[1].virtualKey == 50);
+    CHECK(steps[2].kind == StepKind::kKeyUp);
+    CHECK(steps[2].line == 3);
+    CHECK(steps[2].virtualKey == 16);
+}
+
+TEST_CASE("a malformed keydown or keyup refuses the file with its own verb") {
+    requireRefused("keydown\n", 1, "keydown takes one virtual key, 1 to 254, decimal or 0x hex");
+    requireRefused("keyup 0x10 0x11\n", 1,
+                   "keyup takes one virtual key, 1 to 254, decimal or 0x hex");
+    requireRefused("keydown 0x07\n", 1,
+                   "keydown 0x07 is a virtual key the player has no keyboard key for");
+    requireRefused("sleep 1\nkeyup 0x07\n", 2,
+                   "keyup 0x07 is a virtual key the player has no keyboard key for");
+}
+
 TEST_CASE("an unknown or malformed step refuses the file, naming its line") {
     requireRefused("sleep 10\njump 3\n", 2, "unknown step 'jump'");
     requireRefused("sleep\n", 1, "sleep takes one whole number of milliseconds, 0 to 86400000");

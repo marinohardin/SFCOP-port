@@ -137,16 +137,18 @@ LineResult parseLine(std::string_view line, unsigned number_) {
         step.y = static_cast<std::int32_t>(*y);
         return LineResult{step, {}};
     }
-    if (verb == "key") {
+    if (verb == "key" || verb == "keydown" || verb == "keyup") {
         const auto vk = number(nextWord(rest), kMaxVirtualKey, true);
         if (!vk || *vk == 0 || !nothingLeft(rest)) {
-            return fail("key takes one virtual key, 1 to 254, decimal or 0x hex");
+            return fail(std::string(verb) + " takes one virtual key, 1 to 254, decimal or 0x hex");
         }
         if (!scancodeForVirtualKey(static_cast<std::uint16_t>(*vk))) {
-            return fail("key " + std::string(trimmed(line.substr(3))) +
+            return fail(std::string(verb) + " " + std::string(trimmed(line.substr(verb.size()))) +
                         " is a virtual key the player has no keyboard key for");
         }
-        step.kind = StepKind::kKey;
+        step.kind = verb == "key"       ? StepKind::kKey
+                    : verb == "keydown" ? StepKind::kKeyDown
+                                        : StepKind::kKeyUp;
         step.virtualKey = static_cast<std::uint16_t>(*vk);
         return LineResult{step, {}};
     }
