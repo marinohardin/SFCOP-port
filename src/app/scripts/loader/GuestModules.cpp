@@ -122,7 +122,7 @@ std::optional<GuestRuntime> clientRuntime() {
     };
     // The game's own bind found its rows in the client's modules. A mission imports three
     // KERNEL32 names the game does not (HeapReAlloc, HeapSize, TlsFree): pcrecomp's win32hle has
-    // rows for them, registered here on first use, as the guest host does for the game's.
+    // rows for the first two, registered here on first use; kernel32rt answers TlsFree.
     runtime.importAddress = [resolve, stub, add](const std::string &import) {
         static std::set<std::string> kept; // the registry and the stubs keep the names
         const std::string &name = *kept.insert(import.substr(import.find('!') + 1)).first;

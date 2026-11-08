@@ -12,6 +12,11 @@ Answer ThreadLocal::Allocate() {
     return Answer{slot.Value(), std::nullopt};
 }
 
+Answer ThreadLocal::Free(std::uint32_t index) {
+    const auto freed = threads_.FreeTlsSlot(index);
+    return freed.Ok() ? Answer{1, std::nullopt} : Answer{0, kErrorInvalidParameter};
+}
+
 Answer ThreadLocal::Get(std::uint32_t index) {
     const auto value = threads_.GetTlsValue(index);
     if (!value.Ok()) {
