@@ -13,6 +13,7 @@ vocabulary and what each driver does with each step are in `src/app/input/README
 | `skirmish.steps` | The Wine path towards the oracle skirmish, in the game's display pixels (800x600, the 640x480 menu centred); partly calibrated |
 | `probe/probe.steps` | Wine only: lists the windows the driver can see |
 | `menu.steps` | Native: boot to the main menu ("Select Game") and click SINGLE PLAYER, which opens `Setup`; in the game's display pixels |
+| `campaign.steps` | Native: boot to the main menu and play a single-player campaign start to the mission's combat (`analysis/campaign/README.md`); includes the map's compass recentre step |
 | `run_native.sh` | Plays a steps file into the native client with a prepared data folder |
 
 ## The native runner

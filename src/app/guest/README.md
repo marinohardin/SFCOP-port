@@ -97,12 +97,12 @@ with the chain, then the program's top-level filter runs, as on Windows.
 
 The guest tests run `tests/ehtest.cpp`, built by VC6 SP4 with `/GX` and the static C runtime and
 lifted by the same driver as the game, on this host (`tests/GuestTestMain.cpp`: the real `Threads`
-and `Clock`, stubs for the rest). Sixteen cases (the brief's "14" counted before two were added) each print `PASS` or `FAIL`: C++ throws by value,
+and `Clock`, stubs for the rest). Seventeen cases each print `PASS` or `FAIL`: C++ throws by value,
 by reference, nested, rethrown, thrown from a catch, unwinding two frames, 100 in a loop, every
 exception object destroyed; `__try`/`__except` around `RaiseException`; static TLS and a throw
 caught on a second thread; access violations caught by `catch(...)` and by `__except`, with a read
 and a write told apart; a throw out of a system callback with the lock depth unchanged; a divide by
-zero caught by `__except`. A second run throws an `int` nothing catches: it is reported, and the C
+zero caught by `__except`; 300 `TlsAlloc`/`TlsFree` pairs, which fail when a module's `TlsFree` is not answered by kernel32rt. A second run throws an `int` nothing catches: it is reported, and the C
 runtime's own filter ends it with `abnormal program termination`.
 
     cmake --build <build> --target sfcop_ehtest_lift   # VC6 compile and lift; sets SFCOP_ROOT itself
@@ -136,7 +136,7 @@ the brief's "all three presets" is not met and cannot be yet. The Linux backend 
 
 | Run | Outcome |
 |---|---|
-| Guest tests (`ctest`) | 16 of 16 pass; the uncaught throw reports `0xE06D7363, C++ type .H` and ends with `abnormal program termination` |
+| Guest tests (`ctest`) | 17 of 17 pass; the uncaught throw reports `0xE06D7363, C++ type .H` and ends with `abnormal program termination` |
 | Headless boot, clock 15:38 (`space21`), watchdog 60 s | the CD-key prompt at 10.1 s; exit 0; 1230 of 2048 shim slots in use |
 | Install unchanged | after a headless boot on a clone of the install, `find -newer` the stamp lists 0 files |
 | Windowed boot (`--windowed --watchdog 60 --shots DIR --shot-every 5`), same clock | the window opens, the CD-key prompt mark at 10.1 s, the watchdog at 60 s reports the goal reached, exit 0; 11 shots of 640x480, all uniformly black at the time (the shot path picked a DirectDraw object that did not own the display and reconfigured the back buffer; fixed by X1 #44, after which shots show the presented frame) |
