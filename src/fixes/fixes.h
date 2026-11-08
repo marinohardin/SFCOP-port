@@ -3,8 +3,10 @@
  * Every change to the original's behavior is a named switch with a default. There are two kinds,
  * by where the switch is read:
  *
- *   build    read in game/ by the preprocessor, `#if SFCOP_FIX(fix_name)`, with the original code
- *            in the `#else` branch. Its position is fixed when the file is compiled: under VC6 it
+ *   build    selects an override unit under src/fixes/overrides/: a copy of the fixed game
+ *            function, `// OVERRIDE:` annotated, linked in place of the original when the switch
+ *            is on. game/ is never edited for a fix. `#if SFCOP_FIX(fix_name)` may appear inside an
+ *            override unit only. The position is fixed when the build is configured: under VC6 it
  *            is 0 for every switch, because the byte check and the 32-bit build compile the
  *            original; in the native build it is the switch's default, or the value of
  *            -DSFCOP_FIX_BUILD_fix_name=0|1, and 0 for every switch under -DSFCOP_FIXES_OFF.
@@ -19,7 +21,8 @@
  * build: `SFCOP_FIX_name()` is then an undefined function-like macro inside `#if`. VC6 only warns
  * (C4067) and compiles the original, as it does for every switch.
  *
- * The part above the C++ section is plain C and VC6 C++, so that game/ and C code can include it.
+ * The part above the C++ section is plain C and VC6 C++, so that an override unit, compiled by
+ * VC6 like game/, and C code can include it.
  */
 #ifndef SFCOP_FIXES_FIXES_H
 #define SFCOP_FIXES_FIXES_H

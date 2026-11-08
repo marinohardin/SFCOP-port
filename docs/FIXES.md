@@ -17,11 +17,13 @@ from its diff and never copied. A community row names no one.
 - `runtime`: read in `src/` through `sfcop::fixes::isEnabled`. Its position comes from the default,
   then `settings/fixes.gf` in the per-user data directory (one `fix_name = on|off` per line), then
   `--fix fix_name=on|off` on the command line; each later source wins.
-- `build`: read in `game/` by `#if SFCOP_FIX(fix_name)`, with the original code in the `#else`
-  branch. Its position is fixed when the code is compiled: always off under VC6, so the byte check
-  and the 32-bit build compile the original; the default in the native build, or the value of
-  `-DSFCOP_FIX_BUILD_fix_name=0|1`, and off for every switch under `-DSFCOP_FIXES_OFF`. The
-  settings file and the command line may name it only in the position it was built in.
+- `build`: selects an override unit, `src/fixes/overrides/<Dir>/<unit>.cpp`, a copy of the fixed
+  function with the change made, annotated `// OVERRIDE: STARFLEETOP 0x... fix_name`. On, the
+  native build links the override's object in place of the original's; off, the original. `game/`
+  is never edited for a fix (DESIGN §5.14, §6.9). The position is fixed when the build is
+  configured: the default, or the value of `-DSFCOP_FIX_BUILD_fix_name=0|1`, and off for every
+  switch under `-DSFCOP_FIXES_OFF`. The byte check and the 32-bit build never compile an override.
+  The settings file and the command line may name it only in the position it was built in.
 
 ## Columns
 

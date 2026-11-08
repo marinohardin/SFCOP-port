@@ -272,6 +272,7 @@ Gate G2 passed with findings: traces differed between two runs of one binary, on
 | V1 | Directory and auth stand-ins | `server/directory/`, `server/auth/`; the client's lookup pointed at them |
 | V2 | The server kit under Wine on the host | Deploy and runbook; a campaign reachable |
 | V3 | Campaign server reimplementation | `server/campaign/`, with the kit as oracle |
+| F2 | Fix override units | `tools/manifest.py` lists the `// OVERRIDE:` annotations under `src/fixes/overrides/`; the lift links an override's object in place of the original's when its build switch is on (DESIGN §6.9); built with the first fix to game code |
 | M1 | Mod manager | `tools/modman/` or in the launcher |
 | L1 | Launcher and release | A signed launcher from the owner's account; the one-command build tool; the tag |
 

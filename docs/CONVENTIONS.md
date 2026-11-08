@@ -34,7 +34,7 @@ src/
   hle/                the Win32 surface (surface.tsv) implemented on the components: ddraw4/, d3d3/, dinput/, miles/, ds3d/, dplay/, winsock/, kernel/, registry/
   platform/           Window, Gpu, Input, Audio, Transport, Store, Clock, Threads; one directory each, interface in <Name>.h
   net/                PROTOCOL.md, envelope, rendezvous, relay client
-  fixes/              fixes.h and one file per fix
+  fixes/              fixes.h, switches.def, and overrides/ with one unit per fixed game unit
   app/                main(), command line, install discovery, the guest runtime glue
 server/               sfcop-lobby, sfcop-relay, directory and auth stand-ins; one directory each with its own tests
 tools/                scr2native, the lifter driver, build helpers
@@ -83,8 +83,8 @@ Branches follow §7.1. Commit scopes are the top-level directory or the componen
 - Every function carries its `// FUNCTION: STARFLEETOP 0x...` or `// STUB:` line (DESIGN §6.3). Functions appear in address order inside a unit.
 - Includes are paths from the `game/` root: `#include "Common/DynamicAllocator.h"`, with `game/` and `game/port/` the only include directories (owner's decision, 2026-11-04). The original wrote bare file names with a long list of include directories; its include lines are rewritten to this form when a unit is imported, and that rewrite is the one standing exception to "the original's source", since include lines change no code bytes.
 - Only what VC6 SP4 compiles: no C++11 or later, no `long long`, no anonymous namespaces where the original had none. When the guest mode is retired the whole tree compiles with clang in C++17 mode with `-fms-extensions`; a construct clang would reject is fixed with a `PORT:` line when it is written, never by forking the file.
-- A `PORT:` line is one line, tagged on the line itself: `// PORT: <reason>`. The reasons allowed: 64-bit or pointer-size hygiene, undefined behavior the original relied on, a platform difference the HLE surface cannot absorb. Everything else belongs in `src/` or behind a fix switch.
-- A fix is `#if SFCOP_FIX(name)` around the smallest possible region, with the original code in the `#else` branch. No fix changes a function's `FUNCTION:` status: the byte check compiles with every fix off.
+- A `PORT:` line is one line, tagged on the line itself: `// PORT: <reason>`. The reasons allowed: 64-bit or pointer-size hygiene, undefined behavior the original relied on, a platform difference the HLE surface cannot absorb. Everything else belongs in `src/`, or in an override unit under `src/fixes/overrides/` behind a fix switch.
+- No fix is written into `game/`: no `#if SFCOP_FIX(name)`, no changed line. A fix to a game function is a copy of that function in `src/fixes/overrides/<Dir>/<unit>.cpp`, annotated `// OVERRIDE: STARFLEETOP 0x... fix_name`, in this same style, with the change and a comment on the line that differs (DESIGN §6.9). The byte check never sees it, so no fix changes a function's `FUNCTION:` status.
 - Pointer-typed members and `long` keep the original's VC6 types. The native build takes the VC6 object of a unit and lifts it (DESIGN §7.2, §12.4), so `game/` is never compiled in a guest mode; `game/port/types.h` is the fallback route's header and nothing in `game/` depends on it.
 - No comment restates the code. A comment records evidence (`// matches SharedR.lib DynamicAllocator.obj`), a judgement (`// the original reads one past the end here; kept, see fix_...`) or a `PORT:` reason.
 
@@ -114,7 +114,7 @@ Branches follow §7.1. Commit scopes are the top-level directory or the componen
 - No real personal or confidential data in fixtures. Fixtures are plainly invented.
 - Expected values are written out, not computed by calling the code under test.
 - C++ tests use doctest through CTest: one `<Unit>Test.cpp` beside the unit, run by `ctest --preset <platform>`; `scripts/check.sh` runs them when the native build is configured on the machine.
-- Decompiled code is tested by the harness (byte exact) and the oracle (behavior), not by unit tests; a unit test for `game/` code is written only for a fix switch, in both positions.
+- Decompiled code is tested by the harness (byte exact) and the oracle (behavior), not by unit tests; a unit test for game code is written only for an override unit, in both positions of its switch.
 - A test that needs the retail install is marked (`pytest.mark.retail`, `TEST_CASE("..." * doctest::skip(!haveInstall()))`) and is skipped, not failed, where the install is absent; CI has it.
 - Fixtures are invented: addresses in the game's range, names like `TestCaptain`, addresses from the RFC 5737 ranges, keys in the game's format but made up.
 
@@ -173,9 +173,9 @@ Branches follow §7.1. Commit scopes are the top-level directory or the componen
 
 **Adding a fix**
 1. Row in `docs/FIXES.md`: name, default, origin, behaviors, tests.
-2. `#if SFCOP_FIX(name)` around the smallest region in `game/`, original code in `#else`; the switch declared in `src/fixes/switches.def` (the kind, `build` or `runtime`, decides where it is read; DESIGN §6.9).
-3. A test in each position; the byte check still passes with the fix off.
-4. Commit: `fix(game/<dir>): <what> (fix_<name>)`.
+2. The switch declared in `src/fixes/switches.def` (DESIGN §6.9). A `runtime` fix reads it in `src/` with `isEnabled`. A `build` fix is an override unit: copy the function from `game/` into `src/fixes/overrides/<Dir>/<unit>.cpp` with `// OVERRIDE: STARFLEETOP 0x... fix_<name>` on the line before it, make the change, and comment the changed line. `game/` is not touched.
+3. A test in each position; the byte check is unchanged, since it never compiles an override.
+4. Commit: `fix(fixes): <what> (fix_<name>)`, or `fix(hle/<module>)` for a runtime fix below the surface.
 
 **Adding a message to the network protocol**
 1. The message in `src/net/PROTOCOL.md` with its fields, version and the behavior it carries (DESIGN §5.11).
