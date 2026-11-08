@@ -6,7 +6,8 @@ check.sh through pytest, with no change to the root CMake files. The container t
 deploy.sh (server/deploy/test-container.sh) downloads packages and is run by hand.
 
 The runner is built standalone from server/CMakeLists.txt into a persistent directory under the
-work area (or $SFCOP_SERVER_BUILD), so the second run only rebuilds what changed. This is how
+work area, one per checkout (or $SFCOP_SERVER_BUILD), so the second run only rebuilds what
+changed and two worktrees never share a CMake cache. This is how
 check.sh runs every service's tests: a new service adds its directory to server/CMakeLists.txt and
 its tests are found by that build.
 
@@ -14,6 +15,7 @@ No network: doctest is taken from $SFCOP_DOCTEST_DIR or $FETCHCONTENT_SOURCE_DIR
 else from a doctest an existing build tree under the work area has already fetched (the same
 pinned release as third_party), else the test is skipped with a reason. It never downloads.
 """
+import hashlib
 import os
 import shutil
 import stat
@@ -42,9 +44,16 @@ def work_dir() -> Path:
     return ROOT / "build"
 
 
+def checkout_slug(root: Path = ROOT) -> str:
+    """A short name for this checkout, from its absolute path, so each worktree gets its own build
+    tree: a CMake cache remembers its source directory and refuses another checkout's."""
+    digest = hashlib.sha256(str(root).encode("utf-8")).hexdigest()[:12]
+    return root.name + "-" + digest
+
+
 def build_dir() -> Path:
     env = os.environ.get("SFCOP_SERVER_BUILD")
-    d = Path(env) if env else work_dir() / "server-tests"
+    d = Path(env) if env else work_dir() / "server-tests" / checkout_slug()
     d.mkdir(parents=True, exist_ok=True)
     return d
 
@@ -198,3 +207,17 @@ def test_health_check_asks_the_url_the_environment_names(tmp_path):
     assert (tmp_path / "asked").read_text().strip() == "http://127.0.0.1:9000/v1/health"
     subprocess.run(["sh", script, "relay"], env={**base, "SFCOP_HEALTH_URL": "http://127.0.0.1:1234/x"}, check=True)
     assert (tmp_path / "asked").read_text().strip() == "http://127.0.0.1:1234/x"
+
+
+def test_each_checkout_gets_its_own_build_directory(tmp_path, monkeypatch):
+    # A CMake cache belongs to one source directory, so two worktrees must not share one. The
+    # slug is the checkout's name and the first 12 hex digits of sha256 over its absolute path;
+    # the literal below was computed once by hand for "/x/SFCOP-decomp".
+    assert checkout_slug(Path("/x/SFCOP-decomp")) == "SFCOP-decomp-341c8c558e6a"
+    assert checkout_slug(Path("/x/.claude/worktrees/wp-X/SFCOP-decomp")) != "SFCOP-decomp-341c8c558e6a"
+    monkeypatch.delenv("SFCOP_SERVER_BUILD", raising=False)
+    monkeypatch.setenv("SFCOP_WORK", str(tmp_path / "work"))
+    assert build_dir().parent == tmp_path / "work" / "server-tests"
+    assert build_dir().name.startswith(ROOT.name + "-") and len(build_dir().name) == len(ROOT.name) + 13
+    monkeypatch.setenv("SFCOP_SERVER_BUILD", str(tmp_path / "explicit"))
+    assert build_dir() == tmp_path / "explicit"
