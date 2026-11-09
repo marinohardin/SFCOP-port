@@ -22,9 +22,11 @@
 
 #include "Bundle.h"
 #include "ExitCodes.h"
+#include "ServiceHosts.h"
 #include "Startup.h"
 #include "guest/GuestHost.h"
 #include "hle/kernel32rt/Runtime.h"
+#include "hle/winsock/Winsock.h"
 #include "input/Marks.h"
 #include "input/ScriptedGpu.h"
 #include "input/ScriptedWindow.h"
@@ -280,6 +282,16 @@ int main(int argc, char **argv) {
                                                  ? platform::makeAudioStub()
                                                  : platform::makeAudio();
     std::unique_ptr<platform::Store> store = platform::makeStore(options.installDir, options.dataDir);
+    // The online services: the host names the original carries resolve as this project's
+    // stand-ins, from servers.json in the data folder (app/ServiceHosts.h).
+    {
+        std::string warning;
+        sfcop::hle::winsock::setGuestHostAliases(
+            app::serviceAliases(app::loadServiceHosts(options.dataDir, warning)));
+        if (!warning.empty()) {
+            std::fprintf(stderr, "sfcop: %s\n", warning.c_str());
+        }
+    }
     std::unique_ptr<platform::Transport> transport = platform::makeTransport();
     std::unique_ptr<platform::Clock> clock = platform::makeClock();
     // --oracle, --record-trace and --fixed-step: the game's clock advances a fixed step per frame

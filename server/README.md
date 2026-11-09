@@ -4,7 +4,10 @@ One small Linux host runs the project's services (DESIGN §10, §11). Today `ser
 `sfcop-lobby`: the lobby HTTP API (`src/net/LOBBY_API.md`). The UDP rendezvous and the relay
 (`src/net/RENDEZVOUS.md`) are `sfcop-relay` (`server/relay/`, N4), a separate process that owns the UDP
 port; it adds its own unit and environment example to `server/deploy/`. The two share only the
-ticket key and one loopback call.
+ticket key and one loopback call. The Dynaverse stand-ins (`src/net/DIRECTORY_API.md`, V1) are
+`sfcop-directory` (`server/directory/`: the directory and its firewall detector) and `sfcop-auth`
+(`server/auth/`: the account login, its profile search and the version check). They share
+nothing with the lobby or the relay; their READMEs say what each keeps, logs and costs.
 
 ## What it keeps, and what it does not
 
@@ -73,6 +76,9 @@ is 1 exactly when the peer id is 1.
 ```
 server/CMakeLists.txt        standalone project; add_subdirectory(server) also works
 server/lobby/                the lobby: *.cpp, *.h, *Test.cpp, main.cpp, Server.cpp (sockets)
+server/relay/                the UDP rendezvous and relay
+server/directory/            the directory stand-in and its firewall detector
+server/auth/                 the account login and version check stand-in
 server/deploy/               deploy.sh, units, health check, logrotate, env example, container test
 ```
 
@@ -161,7 +167,13 @@ file is absent it uses the list compiled in.
   "lobbies": [
     { "name": "Official", "url": "https://lobby.example.test" }
   ],
-  "rendezvous": null
+  "rendezvous": null,
+  "services": {
+    "directory": "services.example.test",
+    "auth": "services.example.test",
+    "cdkey": "services.example.test",
+    "patch": "services.example.test"
+  }
 }
 ```
 
@@ -171,3 +183,11 @@ file is absent it uses the list compiled in.
   registration and ticket answer. A private setup may force `{ "host": "...", "port": 47710 }`.
 - Unknown keys are ignored; a missing or malformed file falls back to the compiled-in list and is
   logged by name only.
+- `services`: the hosts of the Dynaverse stand-ins (`server/directory/`, `server/auth/`;
+  `src/net/DIRECTORY_API.md`): `directory` (the directory and its firewall detector), `auth` (the
+  account login), `cdkey` (the CD-key check) and `patch` (the version check), each a host name or
+  dotted quad. The client resolves the host names the original carries for those services as
+  these hosts (`src/app/ServiceHosts.h`; read by the client since V1). A service left out uses the
+  compiled-in `services.example.test`, a reserved name that resolves nowhere, so an unconfigured
+  client shows the original's could-not-connect state and reaches no one else's server. A local
+  setup names `127.0.0.1` for all four.

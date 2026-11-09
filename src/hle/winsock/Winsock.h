@@ -13,6 +13,7 @@
 #include "platform/Transport/Transport.h"
 
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -163,8 +164,13 @@ public:
                             const std::uint32_t *value, std::int32_t length);
     std::int32_t GetSockOpt(std::uint32_t s, std::int32_t level, std::int32_t name,
                             std::uint32_t *value, std::int32_t *length);
-    // A NULL or empty name is this machine's own.
+    // A NULL or empty name is this machine's own. A name the alias map holds (compared without
+    // regard to case) is resolved as its target instead; the entry keeps the name asked for.
     std::optional<HostEntry> GetHostByName(const char *name);
+    // The names the client points elsewhere: the host names the original carries for the
+    // services that no longer exist, each mapped to the host or dotted quad of a stand-in
+    // (app/ServiceHosts.h). Replaces the whole map; an empty map resolves every name as asked.
+    void SetHostAliases(const std::map<std::string, std::string> &aliases);
     std::int32_t GetHostName(char *name, std::int32_t length);
 
 private:
@@ -180,6 +186,7 @@ private:
     std::unordered_map<std::uint32_t, Entry> sockets_;
     std::uint32_t nextSocket_ = 0x100;
     std::uint32_t started_ = 0;
+    std::map<std::string, std::string> aliases_; // lower-case name -> target
 
     bool started();
     std::optional<Entry> lookup(std::uint32_t s);
@@ -195,5 +202,7 @@ private:
 Winsock &guestWinsock();
 // Replaces the process's instance with one on `transport` (the guest runtime's, or a test's).
 void installGuestWinsock(std::unique_ptr<platform::Transport> transport);
+// Sets the alias map of the process's instance, now and for any instance made later.
+void setGuestHostAliases(const std::map<std::string, std::string> &aliases);
 
 } // namespace sfcop::hle::winsock

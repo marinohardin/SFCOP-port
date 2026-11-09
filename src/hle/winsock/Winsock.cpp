@@ -1,6 +1,7 @@
 #include "hle/winsock/Winsock.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cstdio>
 #include <cstring>
 #include <limits>
@@ -872,7 +873,18 @@ std::optional<HostEntry> Winsock::GetHostByName(const char *name) {
         }
         asked = self.Value();
     }
-    Result<std::vector<std::uint32_t>> found = transport_.Resolve(asked);
+    std::string target = asked;
+    {
+        std::string key = asked;
+        std::transform(key.begin(), key.end(), key.begin(),
+                       [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+        std::lock_guard<std::mutex> lock(mutex_);
+        auto alias = aliases_.find(key);
+        if (alias != aliases_.end()) {
+            target = alias->second;
+        }
+    }
+    Result<std::vector<std::uint32_t>> found = transport_.Resolve(target);
     if (!found.Ok()) {
         switch (found.Code()) {
         case Error::kNotFound:
@@ -897,6 +909,18 @@ std::optional<HostEntry> Winsock::GetHostByName(const char *name) {
         return std::nullopt;
     }
     return HostEntry{asked, found.Value()};
+}
+
+void Winsock::SetHostAliases(const std::map<std::string, std::string> &aliases) {
+    std::map<std::string, std::string> lowered;
+    for (const auto &[name, target] : aliases) {
+        std::string key = name;
+        std::transform(key.begin(), key.end(), key.begin(),
+                       [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+        lowered[key] = target;
+    }
+    std::lock_guard<std::mutex> lock(mutex_);
+    aliases_ = std::move(lowered);
 }
 
 std::int32_t Winsock::GetHostName(char *name, std::int32_t length) {

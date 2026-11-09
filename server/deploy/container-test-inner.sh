@@ -14,6 +14,12 @@ tail -n 3 /tmp/deploy1.log
 echo "== what was installed"
 [ -x /opt/sfcop/bin/sfcop-lobby ] || fail "no binary"
 [ -x /opt/sfcop/bin/sfcop-relay ] || fail "no relay binary"
+for s in directory auth; do
+    [ -x /opt/sfcop/bin/sfcop-$s ] || fail "no $s binary"
+    [ "$(stat -c '%a %U:%G' /etc/sfcop/$s.env)" = "640 root:sfcop" ] || fail "$s env file mode/owner"
+    [ -f /etc/systemd/system/sfcop-$s.service ] || fail "no $s unit"
+done
+[ "$(stat -c '%a %U:%G' /etc/sfcop/campaigns.txt)" = "640 root:sfcop" ] || fail "campaign file mode/owner"
 [ "$(stat -c '%a %U:%G' /etc/sfcop/relay.env)" = "640 root:sfcop" ] || fail "relay env file mode/owner"
 [ "$(stat -c '%a' /var/log/sfcop)" = 750 ] || fail "log directory mode"
 [ -x /opt/sfcop/bin/sfcop-health-check ] || fail "no health check"
@@ -34,7 +40,7 @@ echo "ok"
 
 echo "== unit files verify"
 if apt-get install -y -qq --no-install-recommends systemd > /dev/null 2>&1 && command -v systemd-analyze > /dev/null; then
-    systemd-analyze verify /etc/systemd/system/sfcop-lobby.service /etc/systemd/system/sfcop-relay.service 'sfcop-health@relay.service' 'sfcop-health@lobby.service' 'sfcop-health@lobby.timer' 2>&1 | tee /tmp/verify.out
+    systemd-analyze verify /etc/systemd/system/sfcop-lobby.service /etc/systemd/system/sfcop-relay.service /etc/systemd/system/sfcop-directory.service /etc/systemd/system/sfcop-auth.service 'sfcop-health@relay.service' 'sfcop-health@directory.service' 'sfcop-health@auth.service' 'sfcop-health@lobby.service' 'sfcop-health@lobby.timer' 2>&1 | tee /tmp/verify.out
     echo "systemd-analyze verify: no problems reported"
     grep -qi 'sfcop' /tmp/verify.out && grep -qiE 'error|invalid|bad|unknown' /tmp/verify.out && fail "systemd-analyze reported a problem"
 else
@@ -42,9 +48,9 @@ else
 fi
 
 echo "== deploy again changes nothing it should keep"
-before=$(sha256sum /etc/sfcop/lobby.env /etc/sfcop/relay.env /etc/sfcop/sfcop.env)
+before=$(sha256sum /etc/sfcop/lobby.env /etc/sfcop/relay.env /etc/sfcop/sfcop.env /etc/sfcop/directory.env /etc/sfcop/auth.env /etc/sfcop/campaigns.txt)
 sh "$src/server/deploy/deploy.sh" --no-systemd > /tmp/deploy2.log 2>&1 || { tail -n 30 /tmp/deploy2.log; fail "second deploy.sh"; }
-[ "$before" = "$(sha256sum /etc/sfcop/lobby.env /etc/sfcop/relay.env /etc/sfcop/sfcop.env)" ] || fail "second deploy rewrote an env file"
+[ "$before" = "$(sha256sum /etc/sfcop/lobby.env /etc/sfcop/relay.env /etc/sfcop/sfcop.env /etc/sfcop/directory.env /etc/sfcop/auth.env /etc/sfcop/campaigns.txt)" ] || fail "second deploy rewrote an env file"
 grep -q 'kept /etc/sfcop/lobby.env' /tmp/deploy2.log && grep -q 'kept the ticket key' /tmp/deploy2.log || fail "second deploy did not say it kept the env files"
 echo "ok"
 
@@ -111,6 +117,33 @@ pkill -TERM sfcop-relay
 sleep 1
 grep -q 'relay: stopped' /var/log/sfcop/relay.log || fail "relay did not stop cleanly"
 if grep -E '127\.0\.0\.1|5346434f50000001|SFCOP_TICKET_KEY' /var/log/sfcop/relay.log > /dev/null; then fail "the relay log names an address, a session or the key"; fi
+echo "ok"
+
+echo "== the Dynaverse stand-ins: run as sfcop, a directory query, a detection, a version check, a new account and a logon"
+# The directory refuses to start without the host's public address.
+if su -p -s /bin/sh sfcop -c "set -a; . /etc/sfcop/directory.env; set +a; /opt/sfcop/bin/sfcop-directory" > /tmp/dir-probe.out 2>&1; then
+    fail "the directory started without SFCOP_PUBLIC_ADDRESS"
+fi
+grep -q 'SFCOP_PUBLIC_ADDRESS' /tmp/dir-probe.out || fail "no clear message: $(cat /tmp/dir-probe.out)"
+sed -i 's/^#SFCOP_PUBLIC_ADDRESS=.*/SFCOP_PUBLIC_ADDRESS=192.0.2.20/' /etc/sfcop/directory.env
+runasd() { su -p -s /bin/sh sfcop -c "set -a; . /etc/sfcop/$1.env; set +a; $2"; }
+runasd directory '/opt/sfcop/bin/sfcop-directory >> /var/log/sfcop/directory.log 2>&1 &'
+# Port 80 needs the capability the unit grants; here (no systemd) the probe runs as root instead.
+set -a; . /etc/sfcop/auth.env; set +a
+/opt/sfcop/bin/sfcop-auth >> /var/log/sfcop/auth.log 2>&1 &
+sleep 1
+python3 "$src/server/deploy/dynaverse-probe.py" || { cat /var/log/sfcop/directory.log /var/log/sfcop/auth.log; fail "dynaverse probe"; }
+for s in directory auth; do
+    runasd $s "/opt/sfcop/bin/sfcop-health-check $s" > /dev/null 2>&1 || fail "$s health check failed while up"
+done
+curl -fsS http://127.0.0.1:47714/v1/health | grep -q '"accounts":1' || fail "auth health does not count the account"
+pkill -TERM sfcop-directory
+pkill -TERM sfcop-auth
+sleep 1
+grep -q 'directory: stopped' /var/log/sfcop/directory.log || fail "directory did not stop cleanly"
+if grep -E 'throwaway|8957a7e865c41c02e58f18bcd7c9f2b9|testcaptain|127\.0\.0\.1' /var/log/sfcop/auth.log /var/log/sfcop/directory.log > /dev/null; then
+    fail "a password, hash, email or address is in a stand-in's log"
+fi
 echo "ok"
 
 echo "container test: ok"

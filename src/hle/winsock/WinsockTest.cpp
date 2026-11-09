@@ -509,6 +509,31 @@ TEST_CASE("gethostbyname resolves through the transport; NULL is this machine") 
                                                          "Resolve(\"testhost\")"});
 }
 
+TEST_CASE("gethostbyname resolves an aliased name as its target and keeps the name asked") {
+    Fixture f;
+    f.mock.resolveResult = std::vector<std::uint32_t>{kTestHost};
+    f.winsock.SetHostAliases({{"Directory.Example.Test", "127.0.0.1"}});
+    std::optional<HostEntry> found = f.winsock.GetHostByName("directory.example.TEST");
+    REQUIRE(found);
+    CHECK(found->name == "directory.example.TEST");
+    CHECK(found->addresses == std::vector<std::uint32_t>{kTestHost});
+    CHECK(f.winsock.GetHostByName("other.test"));
+    f.winsock.SetHostAliases({});
+    CHECK(f.winsock.GetHostByName("directory.example.test"));
+    CHECK(f.mock.log.Calls() == std::vector<std::string>{"Resolve(\"127.0.0.1\")",
+                                                         "Resolve(\"other.test\")",
+                                                         "Resolve(\"directory.example.test\")"});
+}
+
+TEST_CASE("an aliased name whose target does not resolve fails as an unknown host") {
+    Fixture f;
+    f.winsock.SetHostAliases({{"directory.example.test", "standin.invalid"}});
+    f.mock.resolveResult = Error::kNotFound;
+    CHECK_FALSE(f.winsock.GetHostByName("directory.example.test"));
+    CHECK(Winsock::WsaGetLastError() == kWsaHostNotFound);
+    CHECK(f.mock.log.Calls() == std::vector<std::string>{"Resolve(\"standin.invalid\")"});
+}
+
 TEST_CASE("gethostbyname error paths give the resolver errors") {
     Fixture f;
     f.mock.resolveResult = Error::kNotFound;
