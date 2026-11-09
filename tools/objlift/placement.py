@@ -77,12 +77,14 @@ class PlacementError(Exception):
 
 class Claim:
     """A function the manifest claims: its original address and size, its compiled symbol, the
-    unit."""
-    __slots__ = ('address', 'size', 'symbol', 'name', 'source')
+    unit, and the path of the unit's object when known. The object is needed for a static
+    symbol, such as the dynamic initializer VC6 generates from a global's definition (`_$E1`):
+    every unit with a global has its own `_$E1`."""
+    __slots__ = ('address', 'size', 'symbol', 'name', 'source', 'obj')
 
-    def __init__(self, address, size, symbol, name, source):
+    def __init__(self, address, size, symbol, name, source, obj=None):
         self.address, self.size, self.symbol = address, size, symbol
-        self.name, self.source = name, source
+        self.name, self.source, self.obj = name, source, obj
 
 
 class InputSection:
@@ -262,8 +264,26 @@ def _select(psec, sec, sym, prev):
     return prev
 
 
+def _own_object(objects, claim):
+    """The input object compiled from the claim's unit: by path when the claim names one, else
+    by unit; None when neither picks out exactly one."""
+    mine = [o for o in objects if o.path == claim.obj] if claim.obj else \
+        [o for o in objects if o.unit == claim.source]
+    return mine[0] if len(mine) == 1 else None
+
+
+def _static_definitions(obj, name):
+    """[(section, symbol)]: the static function symbols called `name` in one object."""
+    if obj is None:
+        return []
+    return [(sec, sym) for sec in obj.sections.values() if not sec.dropped for sym in sec.symbols
+            if sym.storage == coff.SYM_CLASS_STATIC and sym.is_function and sym.name == name]
+
+
 def _claimed_sections(objects, claims):
-    """Attach each claim to the section that defines its symbol; place that section."""
+    """Attach each claim to the section that defines its symbol; place that section. An external
+    symbol is looked up in every object; a static one (a function VC6 generates from a global's
+    definition, `_$E1`) only in the object of the claim's own unit."""
     by_symbol = {}
     for obj in objects:
         for sec in obj.sections.values():
@@ -271,7 +291,10 @@ def _claimed_sections(objects, claims):
                 if sym.storage == coff.SYM_CLASS_EXTERNAL and not sec.dropped:
                     by_symbol.setdefault(sym.name, []).append((sec, sym))
     for c in claims:
-        hits = by_symbol.get(c.symbol)
+        hits = by_symbol.get(c.symbol) or _static_definitions(_own_object(objects, c), c.symbol)
+        if len(hits) > 1 and hits[0][1].storage == coff.SYM_CLASS_STATIC:
+            raise PlacementError(f'0x{c.address:08x} {c.name}: its unit\'s object defines the '
+                                 f'static symbol {c.symbol} {len(hits)} times')
         if not hits:
             raise PlacementError(f'0x{c.address:08x} {c.name}: its symbol {c.symbol} is not '
                                  f'defined in any input object')
@@ -530,7 +553,10 @@ def exact_function_evidence(claims, objects, exe, index):
             if sym.section > 0:
                 by_symbol.setdefault(name, obj)
     for c in claims:
-        obj = by_symbol.get(c.symbol)
+        own = _own_object(objects, c)
+        sym = own.coff.by_name.get(c.symbol) if own is not None else None
+        # A static symbol (`_$E1`) is the claim's own unit's; an external one is the same anywhere.
+        obj = own if sym is not None and sym.section > 0 else by_symbol.get(c.symbol)
         if obj is None:
             continue
         t = target.build(c.address, c.size, obj.coff, c.symbol, exe, index)

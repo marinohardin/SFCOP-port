@@ -105,8 +105,11 @@ def claimed_symbol(address, source, obj_path, game, fallback):
         if len(mine) == 1:
             others = [a.line for lst in anns.values() for a in lst
                       if os.path.samefile(a.path, unit) and a.line != mine[0].line]
-            sym = hsource.symbol_for_annotation(open(listing, encoding='latin1').read(), unit,
-                                                mine[0].line, others)
+            try:
+                sym = hsource.symbol_for_annotation(open(listing, encoding='latin1').read(),
+                                                    unit, mine[0].line, others)
+            except hsource.SourceError as e:
+                raise PlacementError(f'0x{address:08x} ({source}): {e}') from e
             if isinstance(sym, str):
                 return sym
             if isinstance(sym, list) and fallback in sym:
@@ -184,7 +187,7 @@ class Run:
             used.add(obj)
             fn = by_addr.get(address)
             sym = claimed_symbol(address, source, obj, self.args.game, fn.mangled if fn else '')
-            out.append(placement.Claim(address, size, sym, name, source))
+            out.append(placement.Claim(address, size, sym, name, source, obj))
         return sorted(out, key=lambda c: c.address)
 
     def place(self):

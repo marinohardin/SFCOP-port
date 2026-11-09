@@ -29,7 +29,9 @@ python3 tools/objlift/objlift.py --obj [UNIT=]UNIT.obj ... --manifest game/manif
 - `--obj` once per claimed unit. The object's stem names the unit (`DynamicAllocator.obj` is
   `Common/DynamicAllocator.cpp`); `UNIT=PATH` names it when two units share a file name. The /FAs
   listing beside the object (`UNIT.asm`, as the harness writes it) says which compiled symbol each
-  annotation claims; without one, the mangled name in `functions.csv` is used.
+  annotation claims; without one, the mangled name in `functions.csv` is used. A static symbol,
+  such as the dynamic initializer VC6 generates from a global's definition (`_$E1`, which every
+  unit with a global has), is looked up in the claimed unit's own object only.
 - `--symbols` is the exe's name evidence (`functions.csv`), plus the SDK match tables the harness
   uses (`--sdk-symbols` replaces them).
 - `--exe` is hash-checked against `analysis/results/retail_hashes.sha256`. It gives the evidence of
@@ -184,6 +186,7 @@ capstone>` runs it on the host instead.
 - data referenced from code, both the exe's and fresh;
 - data the exe holds apart;
 - evidence from an exact function;
+- a static claim (`_$E1`) found in its own unit's object only, and refused from another's;
 - the reserved range's limit;
 - COMDAT any, largest, and the three refusals;
 - the command line, and `--obj` split at the first `=`;
