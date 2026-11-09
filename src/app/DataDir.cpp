@@ -27,6 +27,28 @@ DataDirResult unset(const char *variable) {
     return result;
 }
 
+// The first line of a small file in the data folder; nothing when it is missing or that line is
+// empty.
+std::optional<std::string> firstLineOf(const std::string &path, const FileSystem &files) {
+    std::optional<std::string> text = files.readText(path);
+    if (!text) {
+        return std::nullopt;
+    }
+    const std::size_t end = text->find_first_of("\r\n");
+    if (end != std::string::npos) {
+        text->resize(end);
+    }
+    if (text->empty()) {
+        return std::nullopt;
+    }
+    return text;
+}
+
+bool isAbsolutePath(const std::string &path) {
+    return (!path.empty() && (path[0] == '/' || path[0] == '\\')) ||
+           (path.size() > 1 && path[1] == ':');
+}
+
 } // namespace
 
 DataDirResult resolveDataDir(Platform platform, const EnvLookup &env,
@@ -73,22 +95,21 @@ std::string ensureDataDir(const std::string &dir, FileSystem &files) {
 }
 
 std::optional<std::string> rememberedInstall(const std::string &dataDir, const FileSystem &files) {
-    std::optional<std::string> text = files.readText(joinPath(dataDir, kRememberedInstallFile));
-    if (!text) {
-        return std::nullopt;
-    }
-    const std::size_t end = text->find_first_of("\r\n");
-    if (end != std::string::npos) {
-        text->resize(end);
-    }
-    if (text->empty()) {
-        return std::nullopt;
-    }
-    return text;
+    return firstLineOf(joinPath(dataDir, kRememberedInstallFile), files);
 }
 
 bool rememberInstall(const std::string &dataDir, const std::string &installDir, FileSystem &files) {
     return files.writeTextAtomic(joinPath(dataDir, kRememberedInstallFile), installDir + "\n");
+}
+
+std::optional<std::string> rememberedMissionModules(const std::string &dataDir,
+                                                    const FileSystem &files) {
+    std::optional<std::string> dir =
+        firstLineOf(joinPath(dataDir, kRememberedMissionModulesFile), files);
+    if (!dir || isAbsolutePath(*dir)) {
+        return dir;
+    }
+    return joinPath(dataDir, *dir);
 }
 
 } // namespace sfcop::app

@@ -20,6 +20,7 @@
 #include <thread>
 #include <vector>
 
+#include "Bundle.h"
 #include "ExitCodes.h"
 #include "Startup.h"
 #include "guest/GuestHost.h"
@@ -170,8 +171,15 @@ void runOracle(const OracleJob &job) {
 int main(int argc, char **argv) {
     using namespace sfcop;
     using namespace sfcop::app;
-    const Startup start = startClient(
-        argc, argv, consoleStartup(SFCOP_HASH_LIST, kClientFlags, {SFCOP_INSTALL_DIR}));
+    // From SFCOP.app the hash list is the bundle's copy; a build run in place reads the source
+    // tree's (app/Bundle.h).
+    const std::string hashList = hashListFor(executablePath(), SFCOP_HASH_LIST, hostFileSystem());
+    if (!bundleResourcesDir(executablePath()).empty() && hashList == SFCOP_HASH_LIST) {
+        std::fprintf(stderr, "sfcop: the bundle has no %s in Resources; using the build's list\n",
+                     kBundledHashList);
+    }
+    const Startup start =
+        startClient(argc, argv, consoleStartup(hashList, kClientFlags, {SFCOP_INSTALL_DIR}));
     if (start.exitCode) {
         return *start.exitCode;
     }

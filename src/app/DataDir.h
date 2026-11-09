@@ -25,6 +25,11 @@ inline constexpr const char *kDataSubdirs[] = {
 // Where the install found on the first run is remembered: one line, the install's path.
 inline constexpr const char kRememberedInstallFile[] = "install.txt";
 
+// Where the player names the folder of translated mission modules, once, for every later run
+// (a run started from Finder has no environment): one line, the folder's path, absolute or
+// relative to the data folder. The client only reads it; SFCOP_MISSION_MODULES wins over it.
+inline constexpr const char kRememberedMissionModulesFile[] = "mission-modules.txt";
+
 struct DataDirResult {
     std::optional<std::string> dir;
     // For the player when the folder cannot be worked out.
@@ -42,5 +47,10 @@ std::string ensureDataDir(const std::string &dir, FileSystem &files);
 
 std::optional<std::string> rememberedInstall(const std::string &dataDir, const FileSystem &files);
 bool rememberInstall(const std::string &dataDir, const std::string &installDir, FileSystem &files);
+
+// The folder kRememberedMissionModulesFile names, made absolute against `dataDir`; nothing when
+// the file is missing or its first line is empty.
+std::optional<std::string> rememberedMissionModules(const std::string &dataDir,
+                                                    const FileSystem &files);
 
 } // namespace sfcop::app

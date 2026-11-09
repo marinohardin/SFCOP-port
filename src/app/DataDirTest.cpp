@@ -118,3 +118,21 @@ TEST_CASE("the install path is remembered in the data folder and read back") {
     files.files["/d/install.txt"] = "\n";
     CHECK_FALSE(rememberedInstall("/d", files).has_value());
 }
+
+TEST_CASE("the mission modules folder named once in the data folder is read back absolute") {
+    MemoryFileSystem files;
+    CHECK_FALSE(rememberedMissionModules("/d", files).has_value());
+    files.files["/d/mission-modules.txt"] = "/work/missions/modules\n";
+    CHECK(rememberedMissionModules("/d", files) ==
+          std::optional<std::string>("/work/missions/modules"));
+    files.files["/d/mission-modules.txt"] = "D:\\Missions\\modules\r\n";
+    CHECK(rememberedMissionModules("/d", files) ==
+          std::optional<std::string>("D:\\Missions\\modules"));
+    // A relative path is taken against the data folder, not the folder the client started in.
+    files.files["/d/mission-modules.txt"] = "mods/translated\n";
+    CHECK(rememberedMissionModules("/d", files) ==
+          std::optional<std::string>("/d/mods/translated"));
+    files.files["/d/mission-modules.txt"] = "\n";
+    CHECK_FALSE(rememberedMissionModules("/d", files).has_value());
+    CHECK(files.written.empty()); // read only: the player writes the file
+}
