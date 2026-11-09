@@ -89,6 +89,11 @@ std::vector<std::uint8_t> tcpIpConnection() {
     return buildAddress({{kAidServiceProvider, sp}});
 }
 
+std::vector<std::uint8_t> modemConnection() {
+    std::vector<std::uint8_t> sp(kSpModem.bytes.begin(), kSpModem.bytes.end());
+    return buildAddress({{kAidServiceProvider, sp}});
+}
+
 std::vector<std::uint8_t> tcpIpAddress(std::uint32_t address, std::uint16_t port) {
     std::vector<std::uint8_t> sp(kSpTcpIp.bytes.begin(), kSpTcpIp.bytes.end());
     std::string quad = dottedQuad(address);

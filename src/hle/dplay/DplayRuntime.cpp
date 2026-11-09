@@ -21,6 +21,19 @@ Platform currentPlatform() {
     return g_platform;
 }
 
+bool directPlayInstalled(const Platform &platform) {
+    return platform.transport != nullptr && platform.clock != nullptr;
+}
+
+std::unique_ptr<DirectPlay>
+createDirectPlay(const Platform &platform,
+                 const std::function<Environment(const Platform &)> &environmentOf, Config config) {
+    if (!directPlayInstalled(platform) || !environmentOf) {
+        return nullptr;
+    }
+    return std::make_unique<DirectPlay>(environmentOf(platform), config);
+}
+
 Environment environmentFor(const Platform &platform, std::function<void(std::uint32_t)> wait,
                            std::function<void(std::uint32_t)> signalHandle) {
     Environment env;

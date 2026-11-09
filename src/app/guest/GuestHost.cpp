@@ -7,6 +7,7 @@
 #include "hle/ddraw4/DirectDraw.h"
 #include "hle/ddraw4/GuestViews.h"
 #include "hle/dinput/DinputBridge.h"
+#include "hle/dplay/DplayRuntime.h"
 #include "hle/kernel/KernelBridge.h"
 #include "hle/kernel32rt/Runtime.h"
 #include "hle/registry/RegistryBridge.h"
@@ -550,6 +551,20 @@ void attachModules(const Options &options, Components &c) {
         &c.input, &c.threads, [](std::uint32_t handle) {
             return hle::kernel32rt::Runtime::Instance().WaitableOf(handle);
         }});
+    // DirectPlay on the client's Transport (main.cpp's, the one the host is given), its Clock and
+    // Threads; without this CoCreateInstance(CLSID_DirectPlay) answers "not installed" and the
+    // game, which never checks, faults on the null interface when Multiplayer is chosen. The
+    // winsock module keeps its own Transport: the two never share a socket, and a second instance
+    // is what the Transport contract allows.
+    // SFCOP_NO_DPLAY=1 leaves the platform unset, so the class answers "not installed" as before
+    // this wiring (for comparing a run with and without DirectPlay on one binary).
+    const char *noDplay = std::getenv("SFCOP_NO_DPLAY");
+    if (noDplay == nullptr || std::strcmp(noDplay, "1") != 0) {
+        hle::dplay::setPlatform(hle::dplay::Platform{
+            &c.transport, &c.clock, &c.threads, [](std::uint32_t handle) {
+                return hle::kernel32rt::Runtime::Instance().WaitableOf(handle);
+            }});
+    }
     sfcop_mss_silent = options.silent || options.headless ? 1 : 0;
 }
 

@@ -6,6 +6,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <optional>
 
 namespace sfcop::hle::dplay {
@@ -23,6 +24,17 @@ struct Platform {
 // Transport, and CoCreateInstance(CLSID_DirectPlay) answers as if DirectPlay were not installed.
 void setPlatform(Platform platform);
 Platform currentPlatform();
+
+// Whether CoCreateInstance(CLSID_DirectPlay) finds the class: only once the runtime has given a
+// Transport and a Clock. Otherwise it answers REGDB_E_CLASSNOTREG, as on a machine without
+// DirectPlay.
+bool directPlayInstalled(const Platform &platform);
+
+// The object CoCreateInstance(CLSID_DirectPlay) makes, on `platform` through `environmentOf`
+// (the guest's waits and SetEvent), or nullptr when the class is not installed.
+std::unique_ptr<DirectPlay>
+createDirectPlay(const Platform &platform,
+                 const std::function<Environment(const Platform &)> &environmentOf, Config config);
 
 // The Environment an object works on. A player's event is signalled through Threads when
 // `waitableOfHandle` resolves it, and otherwise through `signalHandle` (the guest's SetEvent);

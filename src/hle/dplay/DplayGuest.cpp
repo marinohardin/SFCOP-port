@@ -206,18 +206,19 @@ std::uint32_t createDirectPlay(const std::uint8_t *iid, std::uint32_t *out) {
     if (!guidIs(iid, &com::kIID_IDirectPlay4A) && !guidIs(iid, kIidIUnknown.bytes.data())) {
         return kDpErrNoInterface;
     }
-    Platform platform = currentPlatform();
-    if (platform.transport == nullptr || platform.clock == nullptr) {
-        return kClassNotRegistered;
-    }
-    buildVtables();
     Config config;
     std::random_device random;
     config.seed = (static_cast<std::uint64_t>(random()) << 32) ^ random() ^ hle_ticks_ms();
+    std::unique_ptr<DirectPlay> made = hle::dplay::createDirectPlay(currentPlatform(),
+                                                                    guestEnvironment, config);
+    if (!made) {
+        return kClassNotRegistered;
+    }
+    buildVtables();
     std::uint32_t obj = hle_com_new(g_vtPlay, kObjectBytes);
     {
         std::lock_guard<std::recursive_mutex> guard(g_lock);
-        g_players[obj] = std::make_unique<DirectPlay>(guestEnvironment(platform), config);
+        g_players[obj] = std::move(made);
     }
     if (out != nullptr) {
         *out = obj;

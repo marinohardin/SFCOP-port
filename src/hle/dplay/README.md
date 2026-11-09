@@ -101,8 +101,24 @@ Every decoder checks bounds and refuses a datagram that is malformed or has trai
 The game calls `CoCreateInstance(CLSID_DirectPlay)` and `CoCreateInstance(CLSID_DirectPlayLobby)`.
 `DplayGuest.cpp` registers both classes with win32hle's `hle_com_register_class` when the program
 loads, so `CoCreateInstance` calls this module's create functions. The runtime gives the
-components with `sfcop::hle::dplay::setPlatform()`. Until it does, `CLSID_DirectPlay` answers
-`REGDB_E_CLASSNOTREG`, as on a machine without DirectPlay, and the lobby object still works.
+components with `sfcop::hle::dplay::setPlatform()`: the guest host does so at start-up with the
+client's Transport, Clock and Threads and the kernel module's handle table
+(`src/app/guest/GuestHost.cpp`, `attachModules`), so the class is there in every run, headless
+too. The decision is `createDirectPlay()` in `DplayRuntime.h`, which the shim calls. Until
+then, `CLSID_DirectPlay` answers `REGDB_E_CLASSNOTREG`, as on a machine without DirectPlay, and
+the lobby object still works.
+
+The Transport is the client's own, the one `main.cpp` makes and gives the guest host in
+`Components`; the winsock module makes its own on first use. They are separate instances on
+purpose: the game's DirectPlay sockets and its Winsock sockets never share a socket, the Transport
+contract allows several instances, and neither module then depends on the other's lifetime. Two
+clients on one machine share the enumeration port (47700): the object sets `kReuseAddress` on the
+socket it binds there (`SO_REUSEADDR` and, on BSD and macOS, `SO_REUSEPORT`), and only a hosting
+machine binds it, so a joiner's own sockets stay on ephemeral ports. Setting the environment
+variable `SFCOP_NO_DPLAY=1` makes the host skip `setPlatform`, so the class answers "not
+installed" as before the wiring; it exists for comparing a run with and without DirectPlay on one
+binary. (`src/app/guest/README.md`'s environment table, a hotspot, would gain a line:
+`SFCOP_NO_DPLAY=1`: DirectPlay is not given its platform.)
 
 A blocking method (`EnumSessions`, `Open`) gives up the machine while it waits. Callbacks into the
 game run on the calling thread, with what they are handed in that thread's scratch memory. A
@@ -124,6 +140,11 @@ a failed check kills the child at once.
 
 ## Known differences
 
+- `EnumConnections` lists the TCP/IP connection and the modem one. The modem is listed because
+  every DirectPlay installation listed it and the game reads its entry without checking
+  (STARFLEETOP 0x00616700); `InitializeConnection` on it answers `DPERR_UNAVAILABLE`, as on a
+  machine without a modem, and the game does not offer it on its Game Connections screen (which
+  shows TCP/IP, and IPX greyed).
 - No fragmentation: a message is at most 60000 bytes (`dwMaxBufferSize`), and a join accept must
   fit in one datagram (`DPERR_CANTADDPLAYER` otherwise).
 - Priorities, timeouts and `CancelMessage` do nothing: no message waits in a send queue.

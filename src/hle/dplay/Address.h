@@ -48,6 +48,8 @@ TcpIpTarget tcpIpTargetOf(const std::vector<AddressElement> &elements);
 
 // The connection EnumConnections offers: the TCP/IP service provider and nothing else.
 std::vector<std::uint8_t> tcpIpConnection();
+// The modem connection: the service-provider chunk alone.
+std::vector<std::uint8_t> modemConnection();
 
 // The address of a TCP/IP endpoint: service provider, dotted quad and port.
 std::vector<std::uint8_t> tcpIpAddress(std::uint32_t address, std::uint16_t port);

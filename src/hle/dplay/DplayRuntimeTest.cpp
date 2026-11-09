@@ -22,6 +22,45 @@ TEST_CASE("setPlatform: objects made from now on get these components") {
     CHECK(currentPlatform().transport == nullptr);
 }
 
+TEST_CASE("CoCreateInstance's create function: an object once the runtime gave the platform") {
+    platform::TransportMock transport;
+    FakeClock clock;
+    platform::ThreadsMock threads;
+    int built = 0;
+    auto environmentOf = [&built](const Platform &p) {
+        ++built;
+        return environmentFor(p, nullptr, nullptr);
+    };
+
+    // Before the runtime calls setPlatform: as on a machine without DirectPlay.
+    setPlatform(Platform{});
+    CHECK_FALSE(directPlayInstalled(currentPlatform()));
+    CHECK(createDirectPlay(currentPlatform(), environmentOf, Config{}) == nullptr);
+    CHECK(built == 0);
+
+    // The runtime's wiring: the Transport, the Clock, Threads and the handle lookup.
+    Platform p;
+    p.transport = &transport;
+    p.clock = &clock;
+    p.threads = &threads;
+    p.waitableOfHandle = [](std::uint32_t) -> std::optional<platform::Waitable> {
+        return std::nullopt;
+    };
+    setPlatform(p);
+    CHECK(directPlayInstalled(currentPlatform()));
+    std::unique_ptr<DirectPlay> made = createDirectPlay(currentPlatform(), environmentOf, Config{});
+    CHECK(made != nullptr);
+    CHECK(built == 1);
+    made.reset();
+
+    // A Transport without a Clock is not enough.
+    Platform noClock;
+    noClock.transport = &transport;
+    CHECK_FALSE(directPlayInstalled(noClock));
+    CHECK(createDirectPlay(noClock, environmentOf, Config{}) == nullptr);
+    setPlatform(Platform{});
+}
+
 TEST_CASE("a player's event: through Threads when the handle names one, else the fallback") {
     platform::ThreadsMock threads;
     Platform p;

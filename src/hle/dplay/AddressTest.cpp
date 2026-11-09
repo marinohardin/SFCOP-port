@@ -16,6 +16,7 @@ const char kServiceProvider[] = "C0 16 D9 07 AF E0 CF 11 9C 4E 00 A0 C9 05 42 5E
 const char kINet[] = "A0 4D A5 C4 AF E0 CF 11 9C 4E 00 A0 C9 05 42 5E";
 const char kINetPort[] = "41 45 52 E4 A5 8E D1 11 8A 96 00 60 97 B0 14 11";
 const char kTcpIp[] = "E0 5E E9 36 77 85 CF 11 96 0C 00 80 C7 53 4E 82";
+const char kModem[] = "60 A7 EA 44 68 CB CF 11 9C 4E 00 A0 C9 05 42 5E";
 
 } // namespace
 
@@ -24,6 +25,13 @@ TEST_CASE("the TCP/IP connection is a total size chunk and the service provider"
         {hex(kTotalSize), hex("04 00 00 00 3C 00 00 00"), hex(kServiceProvider),
          hex("10 00 00 00"), hex(kTcpIp)});
     CHECK(tcpIpConnection() == expected);
+}
+
+TEST_CASE("the modem connection is a total size chunk and the modem service provider") {
+    std::vector<std::uint8_t> expected = test::concat(
+        {hex(kTotalSize), hex("04 00 00 00 3C 00 00 00"), hex(kServiceProvider),
+         hex("10 00 00 00"), hex(kModem)});
+    CHECK(modemConnection() == expected);
 }
 
 TEST_CASE("a player's address names the service provider, the dotted quad and the port") {

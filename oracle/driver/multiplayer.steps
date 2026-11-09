@@ -1,0 +1,53 @@
+# Native client (sfcop --input; oracle/driver/run_native.sh --steps): boot to the main menu, open
+# Multiplayer, take the LAN (TCP/IP) path to the session browser, wait there with the list empty,
+# then host a game and reach the player list ("Multiplayer Startup") with the host shown. With
+# multiplayer-join.steps in a second client, the second player joins this game. Needs a data
+# folder with a stored key.
+#
+# The waits on screens are marks the lift adds only when the build is configured with them
+# (src/app/input/README.md, "waitmark"):
+#
+#   -DSFCOP_LIFT_EXTRA_MARKS=0x0046667A,0x00464D4F,0x00461C67,0x0046ED6A
+#
+# each the entry (vfunction2) of a screen's state, as the Select Game and Setup marks are:
+#   0x0046667A  tState_GameConnections       "Game Connections", the Multiplayer screen
+#   0x00464D4F  tState_GameBrowser           "Select Game", the session browser
+#   0x00461C67  tState_CustomizeMultiplayer  "Create Multiplayer Game"
+#   0x0046ED6A  tState_Multiplayer           "Multiplayer Startup", the player list
+# A build without them runs out of time at the first of these waits and exits 2.
+#
+# Coordinates are the game's display pixels (800x600, the 640x480 menu centred), as in
+# menu.steps. Calibrated on the native build, 2026-11-08, with --shots captures of each screen.
+
+window 60 Starfleet Command
+
+# --- the main menu, "Select Game" (60 s until the boot time is fixed; menu.steps says why)
+waitmark 90 Select Game
+sleep 1000
+
+# --- MULTIPLAYER opens Game Connections. Entering it lists DirectPlay's connections
+# (STARFLEETOP 0x00614520): the screen offers TCP/IP and greys IPX.
+click 563 348
+waitmark 15 0x0046667A
+sleep 2000
+
+# --- LAN CONNECTIONS, TCP/IP: the session browser, which starts enumerating the LAN at once
+click 487 322
+waitmark 15 0x00464D4F
+
+# --- with no host on the network the list stays empty and the screen stays live: the frames
+# go on while the enumeration runs (the captures show it at once and after ten seconds)
+sleep 10000
+
+# --- CREATE: Create Multiplayer Game, with the game's default name, scenario and options
+click 456 506
+waitmark 15 0x00461C67
+sleep 3000
+
+# --- ANNOUNCE GAME: the session is created on the LAN and the host's player made; the player
+# list opens with the host in the first row
+click 612 302
+waitmark 15 0x0046ED6A
+
+# --- the host stays in the player list for the joiner (multiplayer-join.steps)
+sleep 60000

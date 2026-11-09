@@ -42,7 +42,7 @@ SessionDesc applicationFilter() {
 
 } // namespace
 
-TEST_CASE("EnumConnections offers the TCP/IP connection only") {
+TEST_CASE("EnumConnections offers TCP/IP, then the modem the game expects to find") {
     Mocked m;
     std::vector<Connection> seen;
     auto collect = [&](const Connection &c) {
@@ -50,11 +50,32 @@ TEST_CASE("EnumConnections offers the TCP/IP connection only") {
         return true;
     };
     REQUIRE(m.dp->EnumConnections(nullptr, collect, 0) == kDpOk);
-    REQUIRE(seen.size() == 1u);
+    REQUIRE(seen.size() == 2u);
     CHECK(seen[0].serviceProvider == kSpTcpIp);
     CHECK(seen[0].address == tcpIpConnection());
     CHECK(seen[0].name.shortName == std::optional<std::string>("Internet TCP/IP Connection"));
     CHECK(seen[0].flags == kConnectionDirectPlay);
+    CHECK(seen[1].serviceProvider ==
+          makeGuid(0x44EAA760, 0xCB68, 0x11CF, {0x9C, 0x4E, 0x00, 0xA0, 0xC9, 0x05, 0x42, 0x5E}));
+    CHECK(seen[1].address == modemConnection());
+    CHECK(seen[1].name.shortName ==
+          std::optional<std::string>("Modem Connection For DirectPlay"));
+    CHECK(seen[1].flags == kConnectionDirectPlay);
+    // The modem is listed but cannot be initialised, as on a machine without one.
+    CHECK(m.dp->InitializeConnection(seen[1].address.data(), seen[1].address.size(), 0) ==
+          kDpErrUnavailable);
+
+    // A callback that answers false stops the enumeration.
+    seen.clear();
+    REQUIRE(m.dp->EnumConnections(
+                nullptr,
+                [&](const Connection &c) {
+                    seen.push_back(c);
+                    return false;
+                },
+                0) == kDpOk);
+    CHECK(seen.size() == 1u);
+
     seen.clear();
     REQUIRE(m.dp->EnumConnections(nullptr, collect, 2) == kDpOk); // lobby connections
     CHECK(seen.empty());
