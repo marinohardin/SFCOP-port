@@ -39,3 +39,4 @@ CLAUDE.local.md
 *.scr
 *.map
 *.res
+dist/

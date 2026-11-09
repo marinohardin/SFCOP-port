@@ -1,6 +1,7 @@
 // The provider behind LoadLibraryA, GetProcAddress and FreeLibrary for the game's mission scripts
 // (GuestModules.h).
 #include "app/scripts/loader/GuestModules.h"
+#include "app/DataDir.h"
 
 #include "app/scripts/loader/NativeModuleLoader.h"
 
@@ -149,12 +150,26 @@ std::optional<GuestRuntime> clientRuntime() {
     return runtime;
 }
 
+std::filesystem::path missionModulesRootFor(const std::optional<std::string> &fromEnvironment,
+                                            const std::string &dataDir,
+                                            const app::FileSystem &files) {
+    if (fromEnvironment && !fromEnvironment->empty()) {
+        return std::filesystem::path(*fromEnvironment);
+    }
+    if (const std::optional<std::string> named = app::rememberedMissionModules(dataDir, files)) {
+        return std::filesystem::path(*named);
+    }
+    return std::filesystem::path(dataDir) / "mods" / "missions";
+}
+
 std::filesystem::path missionModulesRoot() {
-    if (const char *root = std::getenv("SFCOP_MISSION_MODULES"); root != nullptr && *root != '\0') {
-        return std::filesystem::path(root);
+    std::optional<std::string> fromEnvironment;
+    if (const char *root = std::getenv("SFCOP_MISSION_MODULES"); root != nullptr) {
+        fromEnvironment = root;
     }
     std::error_code error;
-    return std::filesystem::current_path(error) / "mods" / "missions";
+    return missionModulesRootFor(fromEnvironment, std::filesystem::current_path(error).string(),
+                                 app::hostFileSystem());
 }
 
 GuestModuleProvider::GuestModuleProvider(ModuleLoader &loader, std::optional<GuestRuntime> runtime,

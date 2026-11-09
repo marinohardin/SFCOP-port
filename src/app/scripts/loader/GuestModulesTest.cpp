@@ -5,6 +5,8 @@
 
 #include <doctest/doctest.h>
 
+#include "app/FilesMock.h"
+
 #include <cstring>
 #include <set>
 
@@ -286,6 +288,20 @@ TEST_CASE("the modules root is $SFCOP_MISSION_MODULES, else mods/missions in the
         CHECK(missionModulesRoot() == std::filesystem::path(set));
     }
     CHECK_FALSE(clientRuntime().has_value()); // the test runner is not the lifted client
+}
+
+TEST_CASE("the environment wins, then the folder named in the data folder, then mods/missions") {
+    sfcop::app::testing::MemoryFileSystem files;
+    const std::string data = "/Users/testcaptain/Library/Application Support/SFCOP";
+    CHECK(missionModulesRootFor(std::nullopt, data, files) ==
+          std::filesystem::path(data + "/mods/missions"));
+    CHECK(missionModulesRootFor(std::string(), data, files) ==
+          std::filesystem::path(data + "/mods/missions")); // set but empty is unset
+    files.files[data + "/mission-modules.txt"] = "/work/missions/modules\n";
+    CHECK(missionModulesRootFor(std::nullopt, data, files) ==
+          std::filesystem::path("/work/missions/modules"));
+    CHECK(missionModulesRootFor(std::string("/elsewhere/modules"), data, files) ==
+          std::filesystem::path("/elsewhere/modules"));
 }
 
 TEST_CASE("two missions lifted at one base: the second is refused while the first is loaded") {
