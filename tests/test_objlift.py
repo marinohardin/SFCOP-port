@@ -231,6 +231,37 @@ def test_evidence_from_an_exact_function_names_a_static(tmp_path):
     assert dword(r, section(r, 'ev.obj:.text#1'), 1) == 0x00C80010
 
 
+def global_initializer_object(body):
+    """A unit with a global: VC6's dynamic initializer `_$E1` is a static function in a COMDAT
+    code section of its own, and every such unit has one."""
+    o = mc.Obj()
+    t = o.section('.text', body, mc.CODE | mc.COMDAT | mc.ALIGN_16, selection=mc.NODUPLICATES)
+    o.define('_$E1', t, 0, function=True, static=True)
+    return o
+
+
+def test_a_static_claim_is_found_in_its_own_units_object_only(tmp_path):
+    # a.obj and b.obj both define a static _$E1; the claim for Test/b.cpp takes b's.
+    objs = objects(tmp_path, a=global_initializer_object(b'\x90\xc3'),
+                   b=global_initializer_object(b'\xc3'))
+    r = place(objs, [Claim(0x0040ceae, 1, '_$E1', 'g_b (dynamic initializer)', 'Test/b.cpp')])
+    assert [(s.label, s.mode, s.va) for s in r.sections] == [('b.obj:.text#1', 'claimed', 0x0040ceae)]
+    assert dict(r.dropped)['a.obj:.text#1'] == 'not referenced by claimed code'
+    # The object can be named by path, as objlift.py does from --obj.
+    objs = objects(tmp_path, a=global_initializer_object(b'\x90\xc3'),
+                   b=global_initializer_object(b'\xc3'))
+    r = place(objs, [Claim(0x0040ceae, 2, '_$E1', 'g_a (dynamic initializer)', 'Test/x.cpp',
+                           objs[0].path)])
+    assert [(s.label, s.va) for s in r.sections] == [('a.obj:.text#1', 0x0040ceae)]
+
+
+def test_a_static_claim_in_another_units_object_is_refused(tmp_path):
+    objs = objects(tmp_path, a=global_initializer_object(b'\xc3'))
+    with pytest.raises(PlacementError, match=r'0x0040ceae g_b \(dynamic initializer\): its symbol '
+                                             r'_\$E1 is not defined in any input object'):
+        place(objs, [Claim(0x0040ceae, 1, '_$E1', 'g_b (dynamic initializer)', 'Test/b.cpp')])
+
+
 def test_the_reserved_range_has_a_limit(tmp_path):
     objs = objects(tmp_path, unit=code_and_data_object())
     with pytest.raises(PlacementError, match='need 0x8 bytes; the reserved guest range holds 0x4'):
