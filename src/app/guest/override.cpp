@@ -15,6 +15,7 @@
 #include "Tiger/tpart.h"
 #include "Tiger/tsay.h"
 #include "Tiger/tsequence.h"
+#include "unsorted/tDynamicMemoryFreeListViaHandles.cpp"
 #include "unsorted/tEntity.h"
 
 // Entry points: the lifted names, the guest calling convention.
@@ -313,129 +314,261 @@ extern "C" void sub_00413FE9(void) {
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( tPhysicalEntity *, int ) >( &tPhysicalEntity::vfunction46 ) >::run();
 }
 
+// tDynamicMemoryFreeListViaHandles::vfunction3(), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+extern "C" void sub_00435391(void) {
+    ::sfcop::guest::entered(49);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tDynamicMemoryFreeListViaHandles::vfunction3 ) >::run();
+}
+
+// tDynamicMemoryFreeListViaHandles::vfunction6(), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+extern "C" void sub_0043539E(void) {
+    ::sfcop::guest::entered(50);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tListMemberWithHandle *() >( &tDynamicMemoryFreeListViaHandles::vfunction6 ) >::run();
+}
+
+// tDynamicMemoryFreeListViaHandles::vfunction7(), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+extern "C" void sub_004353A7(void) {
+    ::sfcop::guest::entered(51);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tListMemberWithHandle *() >( &tDynamicMemoryFreeListViaHandles::vfunction7 ) >::run();
+}
+
+// tDynamicMemoryFreeListViaHandles::vfunction8(int), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+extern "C" void sub_004353B0(void) {
+    ::sfcop::guest::entered(52);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< int( int ) >( &tDynamicMemoryFreeListViaHandles::vfunction8 ) >::run();
+}
+
+// tDynamicMemoryFreeListViaHandles::vfunction10(int), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+extern "C" void sub_004353C8(void) {
+    ::sfcop::guest::entered(53);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< int( int ) >( &tDynamicMemoryFreeListViaHandles::vfunction10 ) >::run();
+}
+
+// tDynamicMemoryFreeListViaHandles::vfunction13(tListMemberWithHandle *), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+extern "C" void sub_004353E0(void) {
+    ::sfcop::guest::entered(54);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tListMemberWithHandle *( tListMemberWithHandle * ) >( &tDynamicMemoryFreeListViaHandles::vfunction13 ) >::run();
+}
+
+// tDynamicMemoryFreeListViaHandles::vfunction13(int), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+extern "C" void sub_004353F8(void) {
+    ::sfcop::guest::entered(55);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tListMemberWithHandle *( int ) >( &tDynamicMemoryFreeListViaHandles::vfunction13 ) >::run();
+}
+
+// tDynamicMemoryFreeListViaHandles::vfunction15(tListMemberWithHandle *), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+extern "C" void sub_00435416(void) {
+    ::sfcop::guest::entered(56);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tListMemberWithHandle *( tListMemberWithHandle * ) >( &tDynamicMemoryFreeListViaHandles::vfunction15 ) >::run();
+}
+
+// tDynamicMemoryFreeListViaHandles::vfunction15(int), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+extern "C" void sub_0043542E(void) {
+    ::sfcop::guest::entered(57);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tListMemberWithHandle *( int ) >( &tDynamicMemoryFreeListViaHandles::vfunction15 ) >::run();
+}
+
+// tDynamicMemoryFreeListViaHandles::vfunction16(int), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+extern "C" void sub_0043544C(void) {
+    ::sfcop::guest::entered(58);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int ) >( &tDynamicMemoryFreeListViaHandles::vfunction16 ) >::run();
+}
+
+// tDynamicMemoryFreeListViaHandles::vfunction19(int), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+extern "C" void sub_00435464(void) {
+    ::sfcop::guest::entered(59);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tListMemberWithHandle *( int ) >( &tDynamicMemoryFreeListViaHandles::vfunction19 ) >::run();
+}
+
+// tDynamicMemoryFreeListViaHandles::vfunction18(tListMemberWithHandle *), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+extern "C" void sub_0043547C(void) {
+    ::sfcop::guest::entered(60);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tListMemberWithHandle *( tListMemberWithHandle * ) >( &tDynamicMemoryFreeListViaHandles::vfunction18 ) >::run();
+}
+
+// tDynamicMemoryFreeListViaHandles::vfunction20(int), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+extern "C" void sub_00435494(void) {
+    ::sfcop::guest::entered(61);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int ) >( &tDynamicMemoryFreeListViaHandles::vfunction20 ) >::run();
+}
+
+// tDynamicMemoryFreeListViaHandles::vfunction23(int), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+extern "C" void sub_004354AC(void) {
+    ::sfcop::guest::entered(62);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tListMemberWithHandle *( int ) >( &tDynamicMemoryFreeListViaHandles::vfunction23 ) >::run();
+}
+
+// tDynamicMemoryFreeListViaHandles::vfunction22(tListMemberWithHandle *), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+extern "C" void sub_004354C4(void) {
+    ::sfcop::guest::entered(63);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tListMemberWithHandle *( tListMemberWithHandle * ) >( &tDynamicMemoryFreeListViaHandles::vfunction22 ) >::run();
+}
+
+// tDynamicMemoryFreeListViaHandles::vfunction25(int), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+extern "C" void sub_004354DC(void) {
+    ::sfcop::guest::entered(64);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int ) >( &tDynamicMemoryFreeListViaHandles::vfunction25 ) >::run();
+}
+
+// tDynamicMemoryFreeListViaHandles::vfunction27(int), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+extern "C" void sub_004354F4(void) {
+    ::sfcop::guest::entered(65);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int ) >( &tDynamicMemoryFreeListViaHandles::vfunction27 ) >::run();
+}
+
+// tDynamicMemoryFreeListViaHandles::vfunction29(int,int), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+extern "C" void sub_0043550C(void) {
+    ::sfcop::guest::entered(66);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int, int ) >( &tDynamicMemoryFreeListViaHandles::vfunction29 ) >::run();
+}
+
+// tDynamicMemoryFreeListViaHandles::vfunction31(int,int), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+extern "C" void sub_00435530(void) {
+    ::sfcop::guest::entered(67);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int, int ) >( &tDynamicMemoryFreeListViaHandles::vfunction31 ) >::run();
+}
+
+// tDynamicMemoryFreeListViaHandles::vfunction33(int), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+extern "C" void sub_00435554(void) {
+    ::sfcop::guest::entered(68);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int ) >( &tDynamicMemoryFreeListViaHandles::vfunction33 ) >::run();
+}
+
+// tDynamicMemoryFreeListViaHandles::vfunction35(int), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+extern "C" void sub_0043556F(void) {
+    ::sfcop::guest::entered(69);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int ) >( &tDynamicMemoryFreeListViaHandles::vfunction35 ) >::run();
+}
+
+// tDynamicMemoryFreeListViaHandles::vfunction37(int), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+extern "C" void sub_0043558A(void) {
+    ::sfcop::guest::entered(70);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int ) >( &tDynamicMemoryFreeListViaHandles::vfunction37 ) >::run();
+}
+
 // tPart::mValidateParts(), game/Tiger/tpart.cpp
 extern "C" void sub_00628A60(void) {
-    ::sfcop::guest::entered(49);
+    ::sfcop::guest::entered(71);
     ::sfcop::guest::Entry< static_cast< void (*)() >( &tPart::mValidateParts ) >::run();
 }
 
 // tPart::mActivateParts(), game/Tiger/tpart.cpp
 extern "C" void sub_00628C20(void) {
-    ::sfcop::guest::entered(50);
+    ::sfcop::guest::entered(72);
     ::sfcop::guest::Entry< static_cast< void (*)() >( &tPart::mActivateParts ) >::run();
 }
 
 // tPart::mDeactivateParts(), game/Tiger/tpart.cpp
 extern "C" void sub_00628DA0(void) {
-    ::sfcop::guest::entered(51);
+    ::sfcop::guest::entered(73);
     ::sfcop::guest::Entry< static_cast< void (*)() >( &tPart::mDeactivateParts ) >::run();
 }
 
 // tPart::mAddToPartCachePtrList(tPart **), game/Tiger/tpart.cpp
 extern "C" void sub_00628E50(void) {
-    ::sfcop::guest::entered(52);
+    ::sfcop::guest::entered(74);
     ::sfcop::guest::Entry< static_cast< void (*)( tPart ** ) >( &tPart::mAddToPartCachePtrList ) >::run();
 }
 
 // tAtomicLock::mAcquire(), game/Tiger/tatomic.cpp
 extern "C" void sub_00628EF0(void) {
-    ::sfcop::guest::entered(53);
+    ::sfcop::guest::entered(75);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth() >( &tAtomicLock::mAcquire ) >::run();
 }
 
 // tAtomicLock::mRelease(), game/Tiger/tatomic.cpp
 extern "C" void sub_00628F20(void) {
-    ::sfcop::guest::entered(54);
+    ::sfcop::guest::entered(76);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tAtomicLock::mRelease ) >::run();
 }
 
 // clib::memset(void *,int8u,iCount), game/Tiger/tcglue.cpp
 extern "C" void sub_0062DDB0(void) {
-    ::sfcop::guest::entered(55);
+    ::sfcop::guest::entered(77);
     ::sfcop::guest::Entry< static_cast< void (*)( void *, int8u, iCount ) >( &clib::memset ) >::run();
 }
 
 // clib::strcpy(char *,const char *), game/Tiger/tcglue.cpp
 extern "C" void sub_0062DDE0(void) {
-    ::sfcop::guest::entered(56);
+    ::sfcop::guest::entered(78);
     ::sfcop::guest::Entry< static_cast< void (*)( char *, const char * ) >( &clib::strcpy ) >::run();
 }
 
 // clib::memcpy(void *,const void *,size_t), game/Tiger/tcglue.cpp
 extern "C" void sub_0062DE10(void) {
-    ::sfcop::guest::entered(57);
+    ::sfcop::guest::entered(79);
     ::sfcop::guest::Entry< static_cast< void * (*)( void *, const void *, size_t ) >( &clib::memcpy ) >::run();
 }
 
 // tCRandomSequence::mSetSeed(int32u), game/Tiger/tcrandsequence.cpp
 extern "C" void sub_0066C1C0(void) {
-    ::sfcop::guest::entered(58);
+    ::sfcop::guest::entered(80);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( int32u ) >( &tCRandomSequence::mSetSeed ) >::run();
 }
 
 // tCRandomSequence::mGenerateNumber(), game/Tiger/tcrandsequence.cpp
 extern "C" void sub_0066C1E0(void) {
-    ::sfcop::guest::entered(59);
+    ::sfcop::guest::entered(81);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32u() >( &tCRandomSequence::mGenerateNumber ) >::run();
 }
 
 // tSay::mHandleOutput(const int,const char *), game/Tiger/tsay.cpp
 extern "C" void sub_0066C6A0(void) {
-    ::sfcop::guest::entered(60);
+    ::sfcop::guest::entered(82);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( const int, const char * ) >( &tSay::mHandleOutput ) >::run();
 }
 
 // tSay::mSay(const char *,...), game/Tiger/tsay.cpp
 extern "C" void sub_0066C890(void) {
-    ::sfcop::guest::entered(61);
+    ::sfcop::guest::entered(83);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( const char *, ... ) >( &tSay::mSay ) >::run();
 }
 
 // tSay::mJustSayIt(const char *,...), game/Tiger/tsay.cpp
 extern "C" void sub_0066C8C0(void) {
-    ::sfcop::guest::entered(62);
+    ::sfcop::guest::entered(84);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( const char *, ... ) >( &tSay::mJustSayIt ) >::run();
 }
 
 // tItemBag::mAddToList(tBaseItemBag *,char *), game/Tiger/tBag.cpp
 extern "C" void sub_0066D7E0(void) {
-    ::sfcop::guest::entered(63);
+    ::sfcop::guest::entered(85);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( tBaseItemBag *, char * ) >( &tItemBag::mAddToList ) >::run();
 }
 
 // tItemBag::mFindItemWithLabel(char *), game/Tiger/tBag.cpp
 extern "C" void sub_0066D880(void) {
-    ::sfcop::guest::entered(64);
+    ::sfcop::guest::entered(86);
     ::sfcop::guest::Entry< ::sfcop::guest::member< tBaseItemBag *( char * ) >( &tItemBag::mFindItemWithLabel ) >::run();
 }
 
 // tSequencePart::mGetNumber(), game/Tiger/tsequence.cpp
 extern "C" void sub_00670180(void) {
-    ::sfcop::guest::entered(65);
+    ::sfcop::guest::entered(87);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32u() >( &tSequencePart::mGetNumber ) >::run();
 }
 
 // tSequencePart::mGetNumber(int32u), game/Tiger/tsequence.cpp
 extern "C" void sub_006701C0(void) {
-    ::sfcop::guest::entered(66);
+    ::sfcop::guest::entered(88);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32u( int32u ) >( &tSequencePart::mGetNumber ) >::run();
 }
 
 // tAllocatedClass::operator==(const type_info&), game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC4D0(void) {
-    ::sfcop::guest::entered(67);
+    ::sfcop::guest::entered(89);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32( const type_info& ) >( &tAllocatedClass::operator== ) >::run();
 }
 
 // tDynamicAllocator::tAllocatorInfo::operator==(const char*) const, game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC5A0(void) {
-    ::sfcop::guest::entered(68);
+    ::sfcop::guest::entered(90);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32( const char* ) const >( &tDynamicAllocator::tAllocatorInfo::operator== ) >::run();
 }
 
 // tDynamicAllocator::LockDownAllocator(), game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC750(void) {
-    ::sfcop::guest::entered(69);
+    ::sfcop::guest::entered(91);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tDynamicAllocator::LockDownAllocator ) >::run();
 }
 
@@ -508,6 +641,28 @@ const sfcop_guest_override sfcop_guest_overrides[] = {
     {0x00413F8Au, sub_00413F8A, "tPhysicalEntity::vfunction51()", "Source/entity/entity_physical.cpp"},
     {0x00413FBAu, sub_00413FBA, "tPhysicalEntity::vfunction52()", "Source/entity/entity_physical.cpp"},
     {0x00413FE9u, sub_00413FE9, "tPhysicalEntity::vfunction46(tPhysicalEntity *,int)", "Source/entity/entity_physical.cpp"},
+    {0x00435391u, sub_00435391, "tDynamicMemoryFreeListViaHandles::vfunction3()", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x0043539Eu, sub_0043539E, "tDynamicMemoryFreeListViaHandles::vfunction6()", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x004353A7u, sub_004353A7, "tDynamicMemoryFreeListViaHandles::vfunction7()", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x004353B0u, sub_004353B0, "tDynamicMemoryFreeListViaHandles::vfunction8(int)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x004353C8u, sub_004353C8, "tDynamicMemoryFreeListViaHandles::vfunction10(int)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x004353E0u, sub_004353E0, "tDynamicMemoryFreeListViaHandles::vfunction13(tListMemberWithHandle *)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x004353F8u, sub_004353F8, "tDynamicMemoryFreeListViaHandles::vfunction13(int)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x00435416u, sub_00435416, "tDynamicMemoryFreeListViaHandles::vfunction15(tListMemberWithHandle *)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x0043542Eu, sub_0043542E, "tDynamicMemoryFreeListViaHandles::vfunction15(int)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x0043544Cu, sub_0043544C, "tDynamicMemoryFreeListViaHandles::vfunction16(int)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x00435464u, sub_00435464, "tDynamicMemoryFreeListViaHandles::vfunction19(int)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x0043547Cu, sub_0043547C, "tDynamicMemoryFreeListViaHandles::vfunction18(tListMemberWithHandle *)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x00435494u, sub_00435494, "tDynamicMemoryFreeListViaHandles::vfunction20(int)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x004354ACu, sub_004354AC, "tDynamicMemoryFreeListViaHandles::vfunction23(int)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x004354C4u, sub_004354C4, "tDynamicMemoryFreeListViaHandles::vfunction22(tListMemberWithHandle *)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x004354DCu, sub_004354DC, "tDynamicMemoryFreeListViaHandles::vfunction25(int)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x004354F4u, sub_004354F4, "tDynamicMemoryFreeListViaHandles::vfunction27(int)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x0043550Cu, sub_0043550C, "tDynamicMemoryFreeListViaHandles::vfunction29(int,int)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x00435530u, sub_00435530, "tDynamicMemoryFreeListViaHandles::vfunction31(int,int)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x00435554u, sub_00435554, "tDynamicMemoryFreeListViaHandles::vfunction33(int)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x0043556Fu, sub_0043556F, "tDynamicMemoryFreeListViaHandles::vfunction35(int)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x0043558Au, sub_0043558A, "tDynamicMemoryFreeListViaHandles::vfunction37(int)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
     {0x00628A60u, sub_00628A60, "tPart::mValidateParts()", "Tiger/tpart.cpp"},
     {0x00628C20u, sub_00628C20, "tPart::mActivateParts()", "Tiger/tpart.cpp"},
     {0x00628DA0u, sub_00628DA0, "tPart::mDeactivateParts()", "Tiger/tpart.cpp"},
@@ -530,7 +685,7 @@ const sfcop_guest_override sfcop_guest_overrides[] = {
     {0x006FC5A0u, sub_006FC5A0, "tDynamicAllocator::tAllocatorInfo::operator==(const char*) const", "Common/DynamicAllocator.cpp"},
     {0x006FC750u, sub_006FC750, "tDynamicAllocator::LockDownAllocator()", "Common/DynamicAllocator.cpp"},
 };
-const unsigned sfcop_guest_override_count = 70u;
+const unsigned sfcop_guest_override_count = 92u;
 
 }  // extern "C"
 
