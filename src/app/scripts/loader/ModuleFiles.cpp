@@ -4,6 +4,7 @@
 // architecture is not loadable here.
 #include "app/scripts/loader/NativeModuleLoader.h"
 
+#include <algorithm>
 #include <cstring>
 #include <fstream>
 #include <iterator>
@@ -15,47 +16,86 @@ namespace {
 
 // ---- bytes ----
 
+// The library's bytes: a buffer, or a file read in blocks as the readers ask for them. A module's
+// library is about 9 MB, of which its headers and symbol table are about 150 KB; reading the rest
+// at every load cost the boot 27 ms a module when the disk had to give it (89 modules at boot).
 class Bytes {
 public:
-    explicit Bytes(std::string_view data) : data_(data) {}
+    explicit Bytes(std::string_view data) : data_(data), size_(data.size()) {}
+    Bytes(std::ifstream &file, std::uint64_t size) : file_(&file), size_(size) {}
+
     bool has(std::uint64_t offset, std::uint64_t size) const {
-        return offset <= data_.size() && size <= data_.size() - offset;
+        return offset <= size_ && size <= size_ - offset;
     }
     std::uint64_t le(std::uint64_t offset, int size) const {
         std::uint64_t v = 0;
         for (int i = size - 1; i >= 0; --i) {
-            v = v << 8 | static_cast<unsigned char>(data_[offset + static_cast<std::uint64_t>(i)]);
+            v = v << 8 | static_cast<unsigned char>(at(offset + static_cast<std::uint64_t>(i)));
         }
         return v;
     }
     std::uint64_t be(std::uint64_t offset, int size) const {
         std::uint64_t v = 0;
         for (int i = 0; i < size; ++i) {
-            v = v << 8 | static_cast<unsigned char>(data_[offset + static_cast<std::uint64_t>(i)]);
+            v = v << 8 | static_cast<unsigned char>(at(offset + static_cast<std::uint64_t>(i)));
         }
         return v;
     }
     // The NUL-terminated string at `offset`, bounded by `end`; empty when it runs past.
     std::string cstring(std::uint64_t offset, std::uint64_t end) const {
-        if (end > data_.size()) {
-            end = data_.size();
+        if (end > size_) {
+            end = size_;
         }
         std::string out;
         for (std::uint64_t i = offset; i < end; ++i) {
-            if (data_[i] == '\0') {
+            const char c = at(i);
+            if (c == '\0') {
                 return out;
             }
-            out += data_[i];
+            out += c;
         }
         return {};
     }
-    std::string_view slice(std::uint64_t offset, std::uint64_t size) const {
-        return data_.substr(offset, size);
+    // `size` bytes from `offset` into `out`; the caller has checked has(offset, size).
+    void copy(std::uint64_t offset, void *out, std::size_t size) const {
+        for (std::size_t i = 0; i < size; ++i) {
+            static_cast<char *>(out)[i] = at(offset + i);
+        }
     }
-    std::size_t size() const { return data_.size(); }
+    std::uint64_t size() const { return size_; }
+    std::uint64_t bytesRead() const { return bytesRead_; }
 
 private:
+    static constexpr std::uint64_t kBlock = 16 * 1024;
+
+    // The byte at `offset` < size_. From a file, its block is read on first use and kept.
+    char at(std::uint64_t offset) const {
+        if (file_ == nullptr) {
+            return data_[offset];
+        }
+        const std::uint64_t index = offset / kBlock;
+        if (last_ == nullptr || lastIndex_ != index) {
+            std::string &block = blocks_[index];
+            if (block.empty()) {
+                block.assign(static_cast<std::size_t>(std::min(kBlock, size_ - index * kBlock)), '\0');
+                file_->clear();
+                file_->seekg(static_cast<std::streamoff>(index * kBlock));
+                file_->read(block.data(), static_cast<std::streamsize>(block.size()));
+                bytesRead_ += block.size(); // a file cut short meanwhile reads as zeros
+            }
+            last_ = &block;
+            lastIndex_ = index;
+        }
+        return (*last_)[static_cast<std::size_t>(offset - index * kBlock)];
+    }
+
     std::string_view data_;
+    std::ifstream *file_ = nullptr;
+    std::uint64_t size_ = 0;
+    mutable std::map<std::uint64_t, std::string> blocks_;
+    mutable const std::string *last_ = nullptr;
+    mutable std::uint64_t lastIndex_ = 0;
+    mutable std::uint64_t bytesRead_ = 0;
 };
 
 std::optional<ModuleAbiTag> tagFrom(const Bytes &b, std::uint64_t offset) {
@@ -63,7 +103,7 @@ std::optional<ModuleAbiTag> tagFrom(const Bytes &b, std::uint64_t offset) {
         return std::nullopt;
     }
     ModuleAbiTag tag{};
-    std::memcpy(&tag, b.slice(offset, sizeof tag).data(), sizeof tag);
+    b.copy(offset, &tag, sizeof tag);
     return tag;
 }
 
@@ -467,6 +507,7 @@ private:
     std::size_t pos_ = 0;
 };
 
+// A small file (module.json), whole.
 std::optional<std::string> readFile(const std::filesystem::path &path) {
     std::ifstream in(path, std::ios::binary);
     if (!in) {
@@ -475,23 +516,44 @@ std::optional<std::string> readFile(const std::filesystem::path &path) {
     return std::string(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
 }
 
-} // namespace
-
-LibraryInfo readLibrary(std::string_view bytes, std::string_view hostAbi) {
-    const Bytes b(bytes);
+LibraryInfo readAny(const Bytes &b, std::string_view hostAbi) {
     if (!b.has(0, 4)) {
         return notLoadable("too short to be a library");
     }
     if (b.le(0, 4) == kMhMagic64 || b.be(0, 4) == kFatMagic || b.le(0, 4) == 0xFEEDFACEu) {
         return readMachOFile(b, hostAbi);
     }
-    if (bytes.substr(0, 4) == std::string_view("\x7F" "ELF", 4)) {
+    if (b.be(0, 4) == 0x7F454C46u) { // "\x7FELF"
         return readElf(b, hostAbi);
     }
-    if (bytes.substr(0, 2) == "MZ") {
+    if (b.be(0, 2) == 0x4D5Au) { // "MZ"
         return readPe(b, hostAbi);
     }
     return notLoadable("not a Mach-O, ELF or PE file");
+}
+
+} // namespace
+
+LibraryInfo readLibrary(std::string_view bytes, std::string_view hostAbi) {
+    return readAny(Bytes(bytes), hostAbi);
+}
+
+LibraryInfo readLibraryFile(const std::filesystem::path &library, std::string_view hostAbi,
+                            std::uint64_t *bytesRead) {
+    if (bytesRead != nullptr) {
+        *bytesRead = 0;
+    }
+    std::ifstream file(library, std::ios::binary | std::ios::ate);
+    const std::streamoff size = file ? static_cast<std::streamoff>(file.tellg()) : -1;
+    if (size < 0) {
+        return notLoadable("cannot be read");
+    }
+    const Bytes b(file, static_cast<std::uint64_t>(size));
+    LibraryInfo info = readAny(b, hostAbi);
+    if (bytesRead != nullptr) {
+        *bytesRead = b.bytesRead();
+    }
+    return info;
 }
 
 ManifestRead parseManifest(std::string_view json) {
@@ -533,12 +595,7 @@ ModuleImage readModuleImage(const std::filesystem::path &library) {
         image.manifest = std::move(read.manifest);
         image.manifestError = std::move(read.error);
     }
-    const auto bytes = readFile(library);
-    if (!bytes) {
-        image.notLoadable = "cannot be read";
-        return image;
-    }
-    LibraryInfo info = readLibrary(*bytes);
+    LibraryInfo info = readLibraryFile(library);
     image.notLoadable = std::move(info.notLoadable);
     image.abiTag = info.abiTag;
     image.undefinedSymbols = std::move(info.undefinedSymbols);

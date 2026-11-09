@@ -2,6 +2,8 @@
 // §5, §6). Threading: one loader is used from one thread at a time (the guest machine's holder).
 #include "app/scripts/loader/NativeModuleLoader.h"
 
+#include "app/scripts/loader/OpenAhead.h"
+
 #include <algorithm>
 #include <map>
 #include <system_error>
@@ -33,12 +35,37 @@ const char kAllowListText[] = "";
 const char kBaselineText[] = "";
 #endif
 
+// A library checked and, when the checks passed, opened: what load() needs from the files.
+struct Opened {
+    ModuleImage image;
+    std::optional<LoadError> error; // the check's refusal; nothing was opened
+    void *handle = nullptr;         // null with no error: the platform's loader failed, `why`
+    std::string why;
+};
+
 class NativeModuleLoader final : public ModuleLoader {
 public:
-    NativeModuleLoader(AllowList allowList, AllowList hostRuntime)
-        : allowList_(std::move(allowList)), hostRuntime_(std::move(hostRuntime)) {}
+    NativeModuleLoader(AllowList allowList, AllowList hostRuntime,
+                       const std::vector<std::filesystem::path> &openAhead)
+        : allowList_(std::move(allowList)), hostRuntime_(std::move(hostRuntime)) {
+        if (!openAhead.empty()) {
+            std::vector<std::string> keys;
+            for (const std::filesystem::path &library : openAhead) {
+                keys.push_back(keyOf(library));
+            }
+            // The key is the library's canonical path; opening it is what load() does first.
+            ahead_ = std::make_unique<OpenAhead<Opened>>(
+                std::move(keys), [this](const std::string &key) { return open(key); },
+                [](Opened &opened) {
+                    if (opened.handle != nullptr) {
+                        native::close(opened.handle);
+                    }
+                });
+        }
+    }
 
     ~NativeModuleLoader() override {
+        ahead_.reset(); // stops its thread and closes what was opened and never loaded
         for (auto &entry : loaded_) {
             native::close(entry.second.handle);
         }
@@ -56,16 +83,19 @@ public:
                 return LoadResult{entry.second.module, std::nullopt};
             }
         }
-        ModuleImage image;
-        if (std::optional<LoadError> error = verifyInto(library, image)) {
-            return LoadResult{{}, std::move(error)};
+        std::optional<Opened> opened = ahead_ ? ahead_->Take(key) : std::nullopt;
+        if (!opened) {
+            opened = open(library);
+        }
+        if (opened->error) {
+            return LoadResult{{}, std::move(opened->error)};
         }
         const std::string name = library.stem().string();
-        std::string why;
-        void *handle = native::open(library, &why);
+        void *handle = opened->handle;
         if (handle == nullptr) {
-            return LoadResult{{}, LoadError{Refusal::kNotLoadable, name, loaderFailureReason(library, why)}};
+            return LoadResult{{}, LoadError{Refusal::kNotLoadable, name, loaderFailureReason(library, opened->why)}};
         }
+        ModuleImage &image = opened->image;
         LoadedModule module;
         module.manifest = *image.manifest;
         module.missionSpecEntry = reinterpret_cast<MissionSpecEntryFn>(
@@ -125,7 +155,19 @@ private:
         return (error ? library : canonical).string();
     }
 
-    std::optional<LoadError> verifyInto(const std::filesystem::path &library, ModuleImage &image) {
+    // The checks of ModuleContract.md §5, then the platform's loader only if they all passed. Safe
+    // on OpenAhead's thread: it reads the lists and the files, and maps the library. What it throws
+    // there, OpenAhead throws again from Take() in load(), so the caller sees it as before.
+    Opened open(const std::filesystem::path &library) const {
+        Opened opened;
+        opened.error = verifyInto(library, opened.image);
+        if (!opened.error) {
+            opened.handle = native::open(library, &opened.why);
+        }
+        return opened;
+    }
+
+    std::optional<LoadError> verifyInto(const std::filesystem::path &library, ModuleImage &image) const {
         const std::string name = library.stem().string();
         std::error_code error;
         if (!std::filesystem::is_regular_file(library, error)) {
@@ -139,6 +181,7 @@ private:
     AllowList hostRuntime_;
     std::map<ModuleId, Loaded> loaded_;
     ModuleId nextId_ = 1;
+    std::unique_ptr<OpenAhead<Opened>> ahead_; // last: its thread uses the lists above
 };
 
 } // namespace
@@ -167,8 +210,9 @@ const AllowList &builtInHostBaseline() {
     return list;
 }
 
-std::unique_ptr<ModuleLoader> makeNativeModuleLoader(AllowList allowList, AllowList hostRuntime) {
-    return std::make_unique<NativeModuleLoader>(std::move(allowList), std::move(hostRuntime));
+std::unique_ptr<ModuleLoader> makeNativeModuleLoader(AllowList allowList, AllowList hostRuntime,
+                                                     const std::vector<std::filesystem::path> &openAhead) {
+    return std::make_unique<NativeModuleLoader>(std::move(allowList), std::move(hostRuntime), openAhead);
 }
 
 } // namespace sfcop::scripts

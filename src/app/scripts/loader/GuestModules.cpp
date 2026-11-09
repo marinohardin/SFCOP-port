@@ -172,6 +172,21 @@ std::filesystem::path missionModulesRoot() {
                                  app::hostFileSystem());
 }
 
+std::vector<std::filesystem::path> missionLibraries(const std::filesystem::path &root) {
+    std::vector<std::filesystem::path> libraries;
+    std::error_code error;
+    for (std::filesystem::directory_iterator it(root, error), end; !error && it != end; it.increment(error)) {
+        const std::string name = it->path().filename().string();
+        const std::filesystem::path library = it->path() / (name + std::string(kLibrarySuffix));
+        std::error_code missing;
+        if (isModuleName(name) && std::filesystem::is_regular_file(library, missing)) {
+            libraries.push_back(library);
+        }
+    }
+    std::sort(libraries.begin(), libraries.end());
+    return libraries;
+}
+
 GuestModuleProvider::GuestModuleProvider(ModuleLoader &loader, std::optional<GuestRuntime> runtime,
                                          std::filesystem::path root, const AllowList &allowList)
     : loader_(loader), runtime_(std::move(runtime)), root_(std::move(root)), allowList_(allowList) {}
@@ -388,8 +403,15 @@ void GuestModuleProvider::InstallHook() {
 namespace sfcop::hle::kernel32rt {
 
 ModuleProvider &MissionModules() {
-    static const std::unique_ptr<scripts::ModuleLoader> loader =
-        scripts::makeNativeModuleLoader(scripts::builtInAllowList(), scripts::builtInHostBaseline());
+    // The game loads every script once at boot, one after another; each module is opened ahead
+    // while the game is still on its loading screen (makeNativeModuleLoader). The first call is
+    // the game's first LoadLibraryA, once the host has set the working directory.
+    static const std::unique_ptr<scripts::ModuleLoader> loader = [] {
+        std::vector<std::filesystem::path> ahead = scripts::missionLibraries(scripts::missionModulesRoot());
+        std::fprintf(stderr, "[scripts] opening %zu mission modules ahead\n", ahead.size());
+        return scripts::makeNativeModuleLoader(scripts::builtInAllowList(), scripts::builtInHostBaseline(),
+                                               ahead);
+    }();
     static scripts::GuestModuleProvider provider(*loader, scripts::clientRuntime(), {},
                                                  scripts::builtInAllowList());
     return provider;

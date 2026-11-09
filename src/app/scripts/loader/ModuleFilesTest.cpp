@@ -9,7 +9,10 @@
 #include <doctest/doctest.h>
 
 #include <cstring>
+#include <filesystem>
+#include <fstream>
 #include <memory>
+#include <system_error>
 
 using namespace sfcop::scripts;
 
@@ -230,4 +233,91 @@ TEST_CASE("counts that overflow are refused or read as nothing, never trusted") 
     directories.directories = 0xFFFFFFFF;
     directories.exportRva = 0x1000;
     CHECK(readExact(directories.image(), kWindows).notLoadable == "");
+}
+
+// ---- the same images read from their files ----
+
+namespace {
+
+// A folder of its own for one test, removed with everything in it at the end.
+struct ScratchFolder {
+    std::filesystem::path path;
+    ScratchFolder() {
+        static int count = 0;
+        path = std::filesystem::temp_directory_path() /
+               ("sfcop-modulefiles-" + std::to_string(reinterpret_cast<std::uintptr_t>(this)) + "-" +
+                std::to_string(++count));
+        std::filesystem::create_directories(path);
+    }
+    ~ScratchFolder() {
+        std::error_code ignored;
+        std::filesystem::remove_all(path, ignored);
+    }
+    std::filesystem::path write(const std::string &name, const std::string &bytes) const {
+        const std::filesystem::path file = path / name;
+        std::ofstream out(file, std::ios::binary);
+        out.write(bytes.data(), static_cast<std::streamsize>(bytes.size()));
+        return file;
+    }
+};
+
+void checkSame(const LibraryInfo &fromFile, const LibraryInfo &fromMemory) {
+    CHECK(fromFile.notLoadable == fromMemory.notLoadable);
+    CHECK(fromFile.undefinedSymbols == fromMemory.undefinedSymbols);
+    CHECK(fromFile.exportedSymbols == fromMemory.exportedSymbols);
+    CHECK(fromFile.abiTag.has_value() == fromMemory.abiTag.has_value());
+}
+
+} // namespace
+
+TEST_CASE("a library read from its file answers what its bytes in memory answer, at every length") {
+    const ScratchFolder folder;
+    struct Case {
+        std::string image;
+        const char *host;
+    };
+    for (const Case &c : {Case{MachO{}.image(), kMac}, Case{Elf{}.image(), kLinux}, Case{Pe{}.image(), kWindows}}) {
+        CAPTURE(c.host);
+        for (std::size_t length = 0; length <= c.image.size(); ++length) {
+            CAPTURE(length);
+            const std::string cut = c.image.substr(0, length);
+            checkSame(readLibraryFile(folder.write("lib.bin", cut), c.host), readExact(cut, c.host));
+        }
+    }
+    const LibraryInfo mac = readLibraryFile(folder.write("mac.dylib", MachO{}.image()), kMac);
+    CHECK(mac.exportedSymbols == std::vector<std::string>{"ScriptEntry"});
+    CHECK(mac.undefinedSymbols == std::vector<std::string>{"memcpy"});
+}
+
+TEST_CASE("a library read from its file reads its headers and symbols, not its code") {
+    const ScratchFolder folder;
+    // 8 MB of code the readers never look at, after the symbols (as a module's __TEXT would sit).
+    std::string withCode = MachO{}.image();
+    withCode.resize(8u * 1024u * 1024u, '\xCC');
+    std::uint64_t read = 0;
+    const LibraryInfo first = readLibraryFile(folder.write("first.dylib", withCode), kMac, &read);
+    CHECK(first.exportedSymbols == std::vector<std::string>{"ScriptEntry"});
+    CHECK(first.undefinedSymbols == std::vector<std::string>{"memcpy"});
+    CHECK(read == 16384); // the one block holding the header, the table and its strings
+
+    // The table and its strings after the code, as a module's __LINKEDIT sits: two blocks.
+    MachO late;
+    late.symoff = 8u * 1024u * 1024u;
+    late.stroff = late.symoff + 32;
+    std::string lateImage = late.image(); // header and load commands only, up to its strings
+    lateImage.resize(static_cast<std::size_t>(late.symoff), '\xCC');
+    std::string table = MachO{}.image().substr(56, 32 + 29); // the two entries and the strings
+    lateImage += table;
+    const LibraryInfo last = readLibraryFile(folder.write("last.dylib", lateImage), kMac, &read);
+    CHECK(last.notLoadable == "");
+    CHECK(last.exportedSymbols == std::vector<std::string>{"ScriptEntry"});
+    CHECK(last.undefinedSymbols == std::vector<std::string>{"memcpy"});
+    CHECK(read == 16384 + (lateImage.size() - late.symoff)); // the first block and the last, short one
+}
+
+TEST_CASE("a library file that cannot be opened is not loadable") {
+    const ScratchFolder folder;
+    std::uint64_t read = 7;
+    CHECK(readLibraryFile(folder.path / "absent.dylib", kMac, &read).notLoadable == "cannot be read");
+    CHECK(read == 0);
 }
