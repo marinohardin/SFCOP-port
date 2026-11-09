@@ -229,6 +229,64 @@ TEST_CASE("each refusal of the contract is made on a real file, with its message
     CHECK(refusalFor(noEntry) == "refused: NoEntry: does not export ScriptEntry");
 }
 
+TEST_CASE("modules opened ahead load and refuse exactly as modules opened at load") {
+    if (!haveCompiler()) {
+        MESSAGE("skipped: no C compiler for this host");
+        return;
+    }
+    Spec first;
+    first.name = "AheadFirst";
+    Spec second;
+    second.name = "AheadSecond";
+    second.imports = {"KERNEL32.DLL!HeapAlloc"};
+    Spec foreign;
+    foreign.name = "AheadForeign";
+    foreign.imports = {"KERNEL32.DLL!CreateProcessA"};
+    Spec notAhead;
+    notAhead.name = "NotAhead";
+    const std::filesystem::path a = build(first), b = build(second), f = build(foreign), n = build(notAhead);
+
+    auto modules = makeNativeModuleLoader(committedAllowList(), AllowList::parse("memcpy\n"), {a, b, f});
+    const LoadResult loadedB = modules->load(b); // out of order: taken, or worked here
+    REQUIRE(loadedB.ok());
+    CHECK(reinterpret_cast<std::uintptr_t>(loadedB.module.scriptEntry()) == 0x5678u);
+    CHECK(loadedB.module.manifest.name == "AheadSecond");
+    const LoadResult loadedA = modules->load(a);
+    REQUIRE(loadedA.ok());
+    CHECK(reinterpret_cast<std::uintptr_t>(loadedA.module.missionSpecEntry(22.0f)) == 0x1234u);
+    CHECK(loadedA.module.id != loadedB.module.id);
+    const LoadResult refused = modules->load(f);
+    REQUIRE_FALSE(refused.ok());
+    CHECK(describe(*refused.error) == "refused: AheadForeign: imports KERNEL32.DLL!CreateProcessA, which is "
+                                      "outside the scripting library and the C runtime");
+    const LoadResult other = modules->load(n); // not in the list: opened at load, as before
+    REQUIRE(other.ok());
+    CHECK(other.module.manifest.name == "NotAhead");
+
+    // Unloaded and loaded again: opened again at load, a new module.
+    modules->unload(loadedA.module.id);
+    CHECK(modules->checkLookup(loadedA.module.id, "", "ScriptEntry")->reason == Refusal::kNotFound);
+    const LoadResult again = modules->load(a);
+    REQUIRE(again.ok());
+    CHECK(again.module.id != loadedA.module.id);
+    CHECK(reinterpret_cast<std::uintptr_t>(again.module.scriptEntry()) == 0x5678u);
+}
+
+TEST_CASE("a loader destroyed with modules opened ahead and never loaded closes them") {
+    if (!haveCompiler()) {
+        MESSAGE("skipped: no C compiler for this host");
+        return;
+    }
+    Spec spec;
+    spec.name = "AheadUnused";
+    const std::filesystem::path library = build(spec);
+    for (int i = 0; i < 3; ++i) { // destroyed while working, and after
+        auto modules = makeNativeModuleLoader(committedAllowList(), AllowList::parse("memcpy\n"), {library});
+    }
+    auto modules = makeNativeModuleLoader(committedAllowList(), AllowList::parse("memcpy\n"), {library});
+    CHECK(modules->load(library).ok());
+}
+
 TEST_CASE("checkLookup on a loaded module follows the contract's dynamic-lookup rule") {
     if (!haveCompiler()) {
         MESSAGE("skipped: no C compiler for this host");

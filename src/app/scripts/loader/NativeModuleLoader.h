@@ -23,6 +23,12 @@ struct LibraryInfo {
 };
 LibraryInfo readLibrary(std::string_view bytes, std::string_view hostAbi = kHostAbiTag);
 
+// The same, from the file, reading only the parts the readers look at: its headers, symbol table
+// and strings, about 150 KB of a module's 9 MB. `bytesRead`, when given, counts what was read.
+// A file that cannot be opened is not loadable: "cannot be read".
+LibraryInfo readLibraryFile(const std::filesystem::path &library, std::string_view hostAbi = kHostAbiTag,
+                            std::uint64_t *bytesRead = nullptr);
+
 // module.json (ModuleContract.md §4): the manifest, or the invalid field in `error`.
 struct ManifestRead {
     std::optional<ModuleManifest> manifest;
@@ -39,8 +45,16 @@ ModuleImage readModuleImage(const std::filesystem::path &library);
 const AllowList &builtInAllowList();
 const AllowList &builtInHostBaseline();
 
-// The real loader over the given lists.
-std::unique_ptr<ModuleLoader> makeNativeModuleLoader(AllowList allowList, AllowList hostRuntime);
+// The real loader over the given lists. The libraries in `openAhead` are checked and, when the
+// checks pass, opened by the platform's loader on a thread of their own, in that order, from now
+// on (OpenAhead.h); load() of one of them then takes what that thread did, or waits for it, instead
+// of doing it. Nothing else changes: each is still checked before it is opened, refused with the
+// same reason, opened once per load and closed by unload(). A library opened ahead and never
+// loaded is closed with the loader. A thrown exception reaches load()'s caller, as without it. A
+// library with initializers would run them on that thread, when it is opened; scr2native's modules
+// have none today (no initializer section in any of the 89), but nothing here checks that.
+std::unique_ptr<ModuleLoader> makeNativeModuleLoader(AllowList allowList, AllowList hostRuntime,
+                                                     const std::vector<std::filesystem::path> &openAhead = {});
 
 // The reason a refusal gives when the platform's loader fails: the library's file name and the
 // message after the last colon of the loader's own text, which names the full path of the library
