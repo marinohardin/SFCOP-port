@@ -10,11 +10,13 @@
 #
 # What it does, in order, and all of it safe to run again:
 #   1. installs the build tools and curl and logrotate with apt;
-#   2. builds sfcop-lobby and sfcop-relay from server/ into /opt/sfcop/bin (no tests, so no download);
+#   2. builds sfcop-lobby, sfcop-relay, sfcop-directory and sfcop-auth from server/ into
+#      /opt/sfcop/bin (no tests, so no download);
 #   3. creates the sfcop system user, /etc/sfcop and /var/log/sfcop;
 #   4. creates /etc/sfcop/lobby.env from lobby.env.example the first time (mode 640) and, only if
 #      absent, the ticket key in /etc/sfcop/sfcop.env (mode 600), the file the relay shares;
-#      existing files are never touched;
+#      existing files are never touched; the same for each service's env file and the
+#      directory's campaign file (/etc/sfcop/campaigns.txt);
 #   5. installs the service unit, the health-check script with its unit and timer, and the
 #      logrotate rule (daily, 7 days);
 #   6. with SFCOP_LOBBY_DOMAIN set, installs Caddy and a Caddyfile for that name;
@@ -42,7 +44,7 @@ unitdir=${SFCOP_UNIT_DIR:-/etc/systemd/system}
 builddir=${SFCOP_BUILD_DIR:-/var/lib/sfcop/build}
 
 # The services this script installs: each has sfcop-<name>.service and <name>.env.example here.
-SERVICES="lobby relay"
+SERVICES="lobby relay directory auth"
 
 if [ "$(id -u)" != 0 ]; then
     echo "deploy: run as root" >&2
@@ -62,8 +64,9 @@ echo "== build"
 mkdir -p "$builddir" "$prefix/bin"
 cmake -S "$root/server" -B "$builddir" -G Ninja -DCMAKE_BUILD_TYPE=Release -DSFCOP_SERVER_TESTS=OFF >/dev/null
 cmake --build "$builddir" -j2
-install -m 755 "$builddir/lobby/sfcop-lobby" "$prefix/bin/sfcop-lobby"
-install -m 755 "$builddir/relay/sfcop-relay" "$prefix/bin/sfcop-relay"
+for s in $SERVICES; do
+    install -m 755 "$builddir/$s/sfcop-$s" "$prefix/bin/sfcop-$s"
+done
 install -m 755 "$here/sfcop-health-check.sh" "$prefix/bin/sfcop-health-check"
 
 echo "== user and directories"
@@ -101,8 +104,22 @@ for s in $SERVICES; do
     cp "$here/$s.env.example" "$envfile"
     chown root:sfcop "$envfile"
     chmod 640 "$envfile"
-    echo "created $envfile (edit it: SFCOP_RENDEZVOUS_HOST in lobby.env, SFCOP_ALERT_COMMAND in either)"
+    if [ "$s" = auth ] && [ -n "${SFCOP_LOBBY_DOMAIN:-}" ]; then
+        # Caddy, the lobby's TLS front, holds port 80; the client reads a silent version check
+        # as current, so the auth stand-in leaves it off.
+        sed -i 's/^SFCOP_PATCH_LISTEN=.*/SFCOP_PATCH_LISTEN=off/' "$envfile"
+    fi
+    echo "created $envfile (edit it: SFCOP_RENDEZVOUS_HOST in lobby.env, SFCOP_PUBLIC_ADDRESS in directory.env, SFCOP_ALERT_COMMAND in each)"
 done
+
+# The campaign servers the directory lists; written once from the example.
+if [ ! -e "$etc/campaigns.txt" ]; then
+    umask 027
+    cp "$here/campaigns.example" "$etc/campaigns.txt"
+    chown root:sfcop "$etc/campaigns.txt"
+    chmod 640 "$etc/campaigns.txt"
+    echo "created $etc/campaigns.txt (edit it: your campaign server's address)"
+fi
 
 # The relay's block list (one IPv4 address per line; systemctl reload sfcop-relay applies it).
 if [ ! -e "$etc/relay-blocklist.txt" ]; then
@@ -143,7 +160,14 @@ if grep -qs '^SFCOP_RENDEZVOUS_HOST=lobby.example.test' "$etc/lobby.env"; then
     echo "        systemctl enable --now sfcop-lobby.service sfcop-relay.service sfcop-health@lobby.timer sfcop-health@relay.timer"
     exit 0
 fi
-for s in $SERVICES; do
+start=$SERVICES
+if ! grep -qs '^SFCOP_PUBLIC_ADDRESS=[0-9]' "$etc/directory.env"; then
+    # The Dynaverse stand-ins wait for the host's public address; the lobby and relay start.
+    start="lobby relay"
+    echo "deploy: set SFCOP_PUBLIC_ADDRESS in $etc/directory.env (this host's public IPv4 address), then:"
+    echo "        systemctl enable --now sfcop-directory.service sfcop-auth.service sfcop-health@directory.timer sfcop-health@auth.timer"
+fi
+for s in $start; do
     systemctl enable sfcop-"$s".service "sfcop-health@$s.timer" >/dev/null
     systemctl restart sfcop-"$s".service
     systemctl restart "sfcop-health@$s.timer"

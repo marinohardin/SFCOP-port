@@ -1,0 +1,29 @@
+[Unit]
+Description=SFCOP directory stand-in (TCP 15101, firewall detector TCP 15102, loopback HTTP 47713)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=sfcop
+Group=sfcop
+EnvironmentFile=/etc/sfcop/directory.env
+ExecStart=/opt/sfcop/bin/sfcop-directory
+Restart=on-failure
+RestartSec=2
+UMask=0027
+# Logs go to a file that logrotate keeps for 7 days (sfcop.logrotate).
+StandardOutput=append:/var/log/sfcop/directory.log
+StandardError=append:/var/log/sfcop/directory.log
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ReadWritePaths=/var/log/sfcop
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_INET AF_UNIX
+LockPersonality=true
+MemoryMax=64M
+
+[Install]
+WantedBy=multi-user.target

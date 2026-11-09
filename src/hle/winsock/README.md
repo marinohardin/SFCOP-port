@@ -40,6 +40,12 @@ through this module to the host sockets backend (`TransportHost.cpp`).
   machine's own name, which is its interfaces' addresses); NULL or an empty name is this machine.
   The shim keeps one `hostent` and one `inet_ntoa` buffer per thread in guest memory, as Winsock
   does. Up to 16 addresses are returned.
+- **Aliases.** Before it resolves, `gethostbyname` looks the name up, without regard to case, in
+  the alias map the app hands in (`setGuestHostAliases`, from `app/ServiceHosts.h`): the host
+  names the original carries for the online services that no longer exist, each mapped to the
+  host of a stand-in (`src/net/DIRECTORY_API.md`, "Pointing the client at the stand-ins"). An
+  aliased name resolves as its target; the `hostent` keeps the name the game asked for. Every
+  other name resolves as asked.
 
 ## Not provided
 

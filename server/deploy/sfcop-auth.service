@@ -1,0 +1,33 @@
+[Unit]
+Description=SFCOP auth stand-in (account login TCP 29900, profile search TCP 29901, version check TCP 80, loopback HTTP 47714)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=sfcop
+Group=sfcop
+EnvironmentFile=/etc/sfcop/auth.env
+ExecStart=/opt/sfcop/bin/sfcop-auth
+Restart=on-failure
+RestartSec=2
+UMask=0027
+# Logs go to a file that logrotate keeps for 7 days (sfcop.logrotate). No password, hash or proof
+# is ever written (src/net/DIRECTORY_API.md, "What is logged").
+StandardOutput=append:/var/log/sfcop/auth.log
+StandardError=append:/var/log/sfcop/auth.log
+# The version check is HTTP on port 80, the port the original client asks for; this is the only
+# capability the service holds, and it is dropped with every other one when 80 is not used.
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ReadWritePaths=/var/log/sfcop
+RestrictAddressFamilies=AF_INET AF_UNIX
+LockPersonality=true
+MemoryMax=64M
+
+[Install]
+WantedBy=multi-user.target
