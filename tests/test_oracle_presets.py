@@ -336,6 +336,31 @@ sys.path.insert(0, str(PRESETS))
 import ci  # noqa: E402
 
 
+def test_a_decompilation_only_change_builds_macos_alone():
+    grind = ['game/unsorted/tSphere.cpp', 'game/manifest.tsv', 'analysis/results/matched_set.json',
+             'src/app/guest/override.cpp']
+    assert ci.builds('macos-arm64', grind)
+    assert not ci.builds('linux-x64', grind)
+    assert not ci.builds('windows-x64', grind)
+
+
+def test_any_other_change_builds_every_preset():
+    for files in (['src/app/main.cpp'], ['game/Tiger/tsay.cpp', 'cmake/SfcopLifter.cmake'],
+                  ['src/app/guest/override.h'], ['docs/DESIGN.md'], [],
+                  ['game/port/types.h'], ['game/unsorted/tSphere.cpp', 'game/port/guest.h'],
+                  ['game/UNITS.tsv'], ['analysis/results/retail_hashes.sha256'],
+                  ['analysis/results/progress/progress.json']):
+        for preset in ('macos-arm64', 'linux-x64', 'windows-x64'):
+            assert ci.builds(preset, files), (preset, files)
+
+
+def test_builds_reads_paths_on_standard_input(monkeypatch, capsys):
+    import io
+    monkeypatch.setattr('sys.stdin', io.StringIO('game/unsorted/tSphere.cpp\n'))
+    assert ci.main(['builds', 'linux-x64']) == 0
+    assert capsys.readouterr().out == 'no\n'
+
+
 def test_path_gate_on_a_list_of_files():
     assert ci.path_gate(['README.md', 'src/app/main.cpp'])
     assert ci.path_gate(['game/Tiger/tsay.cpp'])
@@ -371,6 +396,33 @@ def test_run_all_keeps_the_presets_that_ran_warns_for_skips_and_fails_on_the_res
     text = '\n'.join(log)
     assert '::warning::oracle MenuPath/menu: linux-x64 did not run: linux-x64: no lifted client' in text
     assert '::error::oracle MenuPath/menu: windows-x64 failed (exit 1)' in text
+
+
+def test_run_leaves_out_the_presets_a_decompilation_only_change_did_not_build(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv('SFCOP_ORACLE_RUN_PRESET', str(fake_run_preset(tmp_path, {
+        p: (0, 'wrote') for p in ci.PRESETS})))
+    changed = tmp_path / 'changed.txt'
+    changed.write_text('game/unsorted/tSphere.cpp\nanalysis/results/matched_set.json\n')
+    env = tmp_path / 'env'
+    assert ci.main(['run', 'MenuPath', 'menu', '--build-root', str(tmp_path), '--traces', str(tmp_path),
+                    '--env-file', str(env), '--changed', str(changed)]) == 0
+    out = capsys.readouterr().out
+    assert env.read_text() == 'RAN_MENUPATH=macos-arm64\n'
+    assert 'oracle: linux-x64' not in out and 'oracle: windows-x64' not in out
+    assert '::notice::oracle MenuPath/menu: linux-x64 was not built for this pull request' in out
+    assert '::notice::oracle MenuPath/menu: windows-x64 was not built for this pull request' in out
+
+
+def test_run_runs_every_preset_for_any_other_change(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv('SFCOP_ORACLE_RUN_PRESET', str(fake_run_preset(tmp_path, {
+        p: (0, 'wrote') for p in ci.PRESETS})))
+    changed = tmp_path / 'changed.txt'
+    changed.write_text('game/unsorted/tSphere.cpp\nsrc/app/main.cpp\n')
+    env = tmp_path / 'env'
+    assert ci.main(['run', 'MenuPath', 'menu', '--build-root', str(tmp_path), '--traces', str(tmp_path),
+                    '--env-file', str(env), '--changed', str(changed)]) == 0
+    assert env.read_text() == 'RAN_MENUPATH=macos-arm64 linux-x64 windows-x64\n'
+    assert '::notice::' not in capsys.readouterr().out
 
 
 def test_run_all_with_only_skips_does_not_fail(tmp_path, monkeypatch):
