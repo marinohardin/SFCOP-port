@@ -1,5 +1,7 @@
 # SFCOP-decomp
 
+![Exact](analysis/results/progress/badge-exact.svg) ![Functional](analysis/results/progress/badge-functional.svg) ![Named](analysis/results/progress/badge-named.svg)
+
 A functional decompilation and native port of **Star Trek: Starfleet Command II — Orion Pirates**
 (version 2.5.5.2) for Apple Silicon Macs, Windows and Linux, verified against the original game.
 
@@ -77,6 +79,16 @@ oracle. CI runs the same steps on the three platforms.
 defines the behaviour, `docs/CONVENTIONS.md` the code, and `docs/PLAN.md` the work packages.
 `scripts/progress.py` reports how much of the original's code is exact, functional or still
 lifted, and how many functions are named; no change may lower those figures for any function.
+
+## Progress
+
+![Progress treemap](analysis/results/progress/treemap.svg)
+
+Each rectangle is one translation unit of the original game, sized by its code. Bright green: every function in it is rebuilt byte-exact. Dark grey shading toward green: the share of its bytes matched so far. Library code (C runtime, STL and the like) is left out. The figures are the game-only ones in [PROGRESS.md](analysis/results/progress/PROGRESS.md):
+
+- **Exact:** game code rebuilt byte-for-byte with the original compiler, as a share of game code bytes.
+- **Functional:** exact, plus code verified to behave the same by the replay oracle.
+- **Named:** game functions with a real symbol, as a share of game functions.
 
 ## Status and legal
 
