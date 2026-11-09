@@ -1,5 +1,7 @@
 #include "hle/kernel32rt/Time.h"
 
+#include <cstdio>
+
 namespace sfcop::hle::kernel32rt {
 
 namespace {
@@ -91,6 +93,16 @@ std::optional<SystemTime> systemTimeFromFileTime(std::uint64_t fileTime) {
     time.second = static_cast<std::uint16_t>(msOfDay / 1000 % 60);
     time.milliseconds = static_cast<std::uint16_t>(msOfDay % 1000);
     return time;
+}
+
+std::string traceTimeOfDay(const char *row, const SystemTime &time) {
+    char text[96];
+    std::snprintf(text, sizeof text, "%s %04u-%02u-%02u %02u:%02u:%02u.%03u", row,
+                  static_cast<unsigned>(time.year), static_cast<unsigned>(time.month),
+                  static_cast<unsigned>(time.day), static_cast<unsigned>(time.hour),
+                  static_cast<unsigned>(time.minute), static_cast<unsigned>(time.second),
+                  static_cast<unsigned>(time.milliseconds));
+    return text;
 }
 
 Time::Time(platform::Clock &clock) : clock_(clock) {}

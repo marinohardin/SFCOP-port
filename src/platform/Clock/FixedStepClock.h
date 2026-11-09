@@ -16,8 +16,11 @@
 // Sleep() on any other thread leaves the count alone: those threads run as the scheduler lets
 // them, and their waits would carry the wall clock into the count.
 //
-// Now(), UnixTime() and the real part of Sleep() (the thread does sleep, for as long as asked)
-// are the inner clock's: the host clock, whose time of day the boot probe's fake clock shifts.
+// The time of day is pinned too: Now() and UnixTime() answer kEpochUnixSeconds plus the count,
+// the same in both zones (UTC, a zone offset of 0), so the C runtime's time() and every srand()
+// seeded from it read the same values in every run, on every host and in every zone. Reading it
+// is not a read of the count: it never adds to the spin guard's reads. Only the real part of
+// Sleep() (the thread does sleep, for as long as asked) is the inner clock's.
 //
 // Threading: every method may be called from any thread at the same time.
 #pragma once
@@ -39,8 +42,11 @@ public:
     static constexpr std::uint64_t kUnitsPerMs = kFrequency / 1000;
     // Reads of the frame thread without growth after which the count grows by a millisecond.
     static constexpr std::uint64_t kSpinReads = 10'000;
+    // The time of day at a count of 0: 2026-01-01 00:00:00 UTC, a Thursday. Any fixed date the
+    // game accepts would do; this one is after every date the game or its files carry.
+    static constexpr std::int64_t kEpochUnixSeconds = 1'767'225'600;
 
-    // `inner` answers Now(), UnixTime() and sleeps for real; `quantumUnits` (at least 1) is the
+    // `inner` sleeps for real; `quantumUnits` (at least 1) is the
     // growth per frame in 100 ns units.
     FixedStepClock(std::unique_ptr<Clock> inner, std::uint64_t quantumUnits);
 
@@ -76,6 +82,10 @@ private:
     std::atomic<bool> bound_{false};
     std::thread::id frameThread_{};
 };
+
+// The UTC date and time `seconds` after 1970-01-01 00:00:00, with `millisecond` as given: the
+// pinned time of day's calendar, independent of the host's zone and of its C library.
+CivilTime civilTimeFromUnix(std::int64_t seconds, std::uint16_t millisecond);
 
 // The quantum for a frame of `microseconds`, in 100 ns units.
 constexpr std::uint64_t fixedStepQuantumFromMicroseconds(std::uint32_t microseconds) {

@@ -66,30 +66,82 @@ TEST_CASE("the fixed-step counter frequency is 10 MHz whatever the inner clock s
     CHECK(rig.inner->log.Count("CounterFrequency") == 0);
 }
 
-TEST_CASE("the fixed-step clock gives the inner clock's time of day") {
+TEST_CASE("the fixed-step time of day starts at the pinned epoch, the same in both zones") {
     Rig rig;
-    CivilTime programmed;
-    programmed.year = 2003;
-    programmed.month = 10;
-    programmed.day = 17;
-    programmed.hour = 9;
-    rig.inner->nowResult = programmed;
-    const Result<CivilTime> now = rig.clock->Now(TimeZone::kLocal);
-    REQUIRE(now.Ok());
-    CHECK(now.Value().year == 2003);
-    CHECK(now.Value().hour == 9);
-    rig.inner->nowResult = Error::kIoError;
-    CHECK(rig.clock->Now(TimeZone::kUtc).Code() == Error::kIoError);
-    CHECK(rig.inner->log.Calls() == std::vector<std::string>{"Now(1)", "Now(0)"});
+    rig.inner->nowResult = CivilTime{2003, 10, 17, 5, 9, 30, 0, 0}; // the host's, never read
+    rig.inner->unixTimeResult = std::int64_t{1066392000};
+    for (const TimeZone zone : {TimeZone::kUtc, TimeZone::kLocal}) {
+        const Result<CivilTime> now = rig.clock->Now(zone);
+        REQUIRE(now.Ok());
+        CHECK(now.Value().year == 2026);
+        CHECK(now.Value().month == 1);
+        CHECK(now.Value().day == 1);
+        CHECK(now.Value().weekday == 4); // Thursday
+        CHECK(now.Value().hour == 0);
+        CHECK(now.Value().minute == 0);
+        CHECK(now.Value().second == 0);
+        CHECK(now.Value().millisecond == 0);
+    }
+    CHECK(rig.clock->UnixTime().Value() == 1'767'225'600);
+    CHECK(rig.inner->log.Count("Now") == 0);
+    CHECK(rig.inner->log.Count("UnixTime") == 0);
 }
 
-TEST_CASE("the fixed-step clock gives the inner clock's Unix time") {
+TEST_CASE("the fixed-step time of day moves with the count, never with the host") {
     Rig rig;
-    rig.inner->unixTimeResult = std::int64_t{1066392000};
-    CHECK(rig.clock->UnixTime().Value() == 1066392000);
-    rig.clock->AdvanceFrame(); // a frame does not move the time of day
-    CHECK(rig.clock->UnixTime().Value() == 1066392000);
-    CHECK(rig.inner->log.Count("UnixTime") == 2);
+    for (int i = 0; i < 3; ++i) {
+        rig.clock->AdvanceFrame(); // 50.001 ms
+    }
+    CHECK(rig.clock->Now(TimeZone::kUtc).Value().millisecond == 50);
+    CHECK(rig.clock->UnixTime().Value() == 1'767'225'600);
+    CHECK(rig.clock->Sleep(61'000).Ok()); // a minute and a second on the main thread
+    const CivilTime later = rig.clock->Now(TimeZone::kLocal).Value();
+    CHECK(later.minute == 1);
+    CHECK(later.second == 1);
+    CHECK(later.millisecond == 50);
+    CHECK(rig.clock->UnixTime().Value() == 1'767'225'661);
+}
+
+TEST_CASE("reading the fixed-step time of day is not a read of the clock") {
+    Rig rig;
+    for (int i = 0; i < 20'000; ++i) {
+        static_cast<void>(rig.clock->Now(TimeZone::kUtc));
+        static_cast<void>(rig.clock->UnixTime());
+    }
+    CHECK(rig.clock->SpinSteps() == 0u);
+    CHECK(rig.clock->Counter().Value() == 0u);
+}
+
+TEST_CASE("the pinned calendar converts Unix seconds to a UTC date") {
+    const CivilTime epoch = civilTimeFromUnix(0, 0);
+    CHECK(epoch.year == 1970);
+    CHECK(epoch.month == 1);
+    CHECK(epoch.day == 1);
+    CHECK(epoch.weekday == 4); // Thursday
+    const CivilTime leap = civilTimeFromUnix(951'782'400, 999); // 2000-02-29 00:00:00.999
+    CHECK(leap.year == 2000);
+    CHECK(leap.month == 2);
+    CHECK(leap.day == 29);
+    CHECK(leap.weekday == 2); // Tuesday
+    CHECK(leap.millisecond == 999);
+    const CivilTime noon = civilTimeFromUnix(1'066'392'000, 0); // 2003-10-17 12:00:00
+    CHECK(noon.year == 2003);
+    CHECK(noon.month == 10);
+    CHECK(noon.day == 17);
+    CHECK(noon.weekday == 5); // Friday
+    CHECK(noon.hour == 12);
+    const CivilTime before = civilTimeFromUnix(-1, 0); // 1969-12-31 23:59:59
+    CHECK(before.year == 1969);
+    CHECK(before.month == 12);
+    CHECK(before.day == 31);
+    CHECK(before.weekday == 3); // Wednesday
+    CHECK(before.hour == 23);
+    CHECK(before.minute == 59);
+    CHECK(before.second == 59);
+    const CivilTime pinned = civilTimeFromUnix(FixedStepClock::kEpochUnixSeconds, 0);
+    CHECK(pinned.year == 2026);
+    CHECK(pinned.month == 1);
+    CHECK(pinned.day == 1);
 }
 
 TEST_CASE("a sleep on the frame thread grows the count by the milliseconds asked and sleeps") {

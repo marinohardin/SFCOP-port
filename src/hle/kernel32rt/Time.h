@@ -13,6 +13,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <string>
 
 namespace sfcop::hle::kernel32rt {
 
@@ -36,6 +37,10 @@ constexpr std::uint64_t kFileTimePerSecond = 10'000'000u;
 std::optional<std::uint64_t> fileTimeFromSystemTime(const SystemTime &time);
 // FileTimeToSystemTime: std::nullopt for a value with the top bit set.
 std::optional<SystemTime> systemTimeFromFileTime(std::uint64_t fileTime);
+
+// A time-of-day row's answer as `--trace` prints it: "GetLocalTime 2026-01-01 00:00:12.345". Two
+// runs whose traces differ in such a line read a different time of day (src/app/oracle/README.md).
+std::string traceTimeOfDay(const char *row, const SystemTime &time);
 
 class Time {
 public:
