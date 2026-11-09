@@ -1,0 +1,43 @@
+# Native client, the second of two (sfcop --input): boot to the main menu, open Multiplayer, take
+# the LAN (TCP/IP) path to the session browser, wait for the game multiplayer.steps hosts in the
+# other client to be listed, select it and join, and reach the player list ("Multiplayer
+# Startup") with both players shown. Needs a data folder with a stored key of its own: two
+# clients never share one.
+#
+# Start the host first. The waits on screens are the marks multiplayer.steps names, which the
+# build adds only when configured with
+#
+#   -DSFCOP_LIFT_EXTRA_MARKS=0x0046667A,0x00464D4F,0x00461C67,0x0046ED6A
+#
+# Coordinates are the game's display pixels (800x600, the 640x480 menu centred), as in
+# menu.steps.
+
+window 60 Starfleet Command
+
+# --- the main menu, "Select Game"
+waitmark 90 Select Game
+sleep 1000
+
+# --- MULTIPLAYER: Game Connections
+click 563 348
+waitmark 15 0x0046667A
+sleep 2000
+
+# --- LAN CONNECTIONS, TCP/IP: the session browser
+click 487 322
+waitmark 15 0x00464D4F
+
+# --- the host announces its game about 50 s after its own start: wait for it, then UPDATE
+# enumerates again and lists it
+sleep 30000
+click 279 506
+sleep 5000
+
+# --- the first row is the host's game; JOIN asks the host and opens the player list
+click 175 174
+sleep 1000
+click 368 506
+waitmark 30 0x0046ED6A
+
+# --- both players in the list
+sleep 20000

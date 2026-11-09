@@ -185,9 +185,14 @@ constexpr std::uint32_t kCapsBytes = 40;          // DPCAPS
 
 // ---- GUIDs --------------------------------------------------------------------------------
 
-// The TCP/IP service provider, the one connection this module offers.
+// The TCP/IP service provider, the one connection this module can initialise.
 constexpr Guid kSpTcpIp = makeGuid(0x36E95EE0, 0x8577, 0x11CF,
                                    {0x96, 0x0C, 0x00, 0x80, 0xC7, 0x53, 0x4E, 0x82});
+// The modem service provider: listed, as every DirectPlay installation listed it, because the
+// game's connection list reads its entry unconditionally (STARFLEETOP 0x00616700); initialising
+// it answers DPERR_UNAVAILABLE, as on a machine without a modem.
+constexpr Guid kSpModem = makeGuid(0x44EAA760, 0xCB68, 0x11CF,
+                                   {0x9C, 0x4E, 0x00, 0xA0, 0xC9, 0x05, 0x42, 0x5E});
 // Address data types (DPAID_*)
 constexpr Guid kAidTotalSize = makeGuid(0x1318F560, 0x912C, 0x11D0,
                                         {0x9D, 0xAA, 0x00, 0xA0, 0xC9, 0x0A, 0x43, 0xCB});

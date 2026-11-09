@@ -16,6 +16,7 @@ namespace {
 
 constexpr std::uint32_t kWaitStepMs = 10;
 const char kConnectionName[] = "Internet TCP/IP Connection";
+const char kModemConnectionName[] = "Modem Connection For DirectPlay";
 
 std::uint64_t splitmix(std::uint64_t &state) {
     std::uint64_t z = (state += 0x9E3779B97F4A7C15ull);
@@ -106,7 +107,17 @@ HResult DirectPlay::EnumConnections(const Guid *, const ConnectionCallback &call
     c.address = tcpIpConnection();
     c.name.shortName = kConnectionName;
     c.flags = kConnectionDirectPlay;
-    callback(c);
+    if (!callback(c)) {
+        return kDpOk;
+    }
+    // Listed so that the game finds the entry it expects (DplayDefs.h, kSpModem);
+    // InitializeConnection on it answers DPERR_UNAVAILABLE.
+    Connection modem;
+    modem.serviceProvider = kSpModem;
+    modem.address = modemConnection();
+    modem.name.shortName = kModemConnectionName;
+    modem.flags = kConnectionDirectPlay;
+    callback(modem);
     return kDpOk;
 }
 

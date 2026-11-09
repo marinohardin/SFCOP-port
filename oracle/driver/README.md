@@ -14,6 +14,8 @@ vocabulary and what each driver does with each step are in `src/app/input/README
 | `probe/probe.steps` | Wine only: lists the windows the driver can see |
 | `menu.steps` | Native: boot to the main menu ("Select Game") and click SINGLE PLAYER, which opens `Setup`; in the game's display pixels |
 | `campaign.steps` | Native: boot to the main menu and play a single-player campaign start to the mission's combat (`analysis/campaign/README.md`); includes the map's compass recentre step |
+| `multiplayer.steps` | Native: boot, open Multiplayer (Game Connections), the LAN session browser left empty for ten seconds, then host a game and reach the player list ("Multiplayer Startup"); its screen waits need the build's extra marks, listed in its header |
+| `multiplayer-join.steps` | Native, the second client: the session browser lists the game `multiplayer.steps` hosts; select it, JOIN, and reach the player list with both players; a data folder of its own |
 | `run_native.sh` | Plays a steps file into the native client with a prepared data folder |
 
 ## The native runner
