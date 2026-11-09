@@ -14,7 +14,10 @@
 // else mods/missions/ under the working directory, which the guest host makes the per-user data
 // folder. The install is never read for a module and never written.
 //
-// Threading: every call is made with the guest machine held, so one thread at a time.
+// Threading: every call is made with the guest machine held, so one thread at a time. The native
+// loader behind MissionModules() checks and opens the modules under the root ahead, on a host
+// thread of its own (missionLibraries(), NativeModuleLoader.h): it reads files and maps libraries
+// and never touches guest memory, so the guest sees each load exactly as without it.
 #pragma once
 
 #include "app/Files.h"
@@ -29,6 +32,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace sfcop::scripts {
 
@@ -104,5 +108,9 @@ std::filesystem::path missionModulesRoot();
 std::filesystem::path missionModulesRootFor(const std::optional<std::string> &fromEnvironment,
                                             const std::string &dataDir,
                                             const app::FileSystem &files);
+
+// The libraries under `root` that LibraryFor() would name, in byte order of their names, which is
+// the order the game loads its scripts in at boot: the list the loader opens ahead.
+std::vector<std::filesystem::path> missionLibraries(const std::filesystem::path &root);
 
 } // namespace sfcop::scripts

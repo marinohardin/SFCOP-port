@@ -7,8 +7,12 @@
 
 #include "app/FilesMock.h"
 
+#include <cstdint>
 #include <cstring>
+#include <fstream>
+#include <random>
 #include <set>
+#include <system_error>
 
 using namespace sfcop::scripts;
 
@@ -317,4 +321,39 @@ TEST_CASE("two missions lifted at one base: the second is refused while the firs
     provider.Free(first);
     CHECK(provider.Load("Second.scr") == kBase); // free, the slot takes the other
     CHECK(provider.Owns(kBase));
+}
+
+TEST_CASE("the libraries opened ahead are the modules LibraryFor names, in byte order of their names") {
+#if defined(__APPLE__)
+    const std::string suffix = ".dylib";
+#elif defined(_WIN32)
+    const std::string suffix = ".dll";
+#else
+    const std::string suffix = ".so";
+#endif
+    const std::filesystem::path root =
+        std::filesystem::temp_directory_path() /
+        ("sfcop-missionlibraries-" + std::to_string(std::random_device{}()) + "-" +
+         std::to_string(reinterpret_cast<std::uintptr_t>(&suffix)));
+    std::error_code ignored;
+    std::filesystem::remove_all(root, ignored);
+    const auto add = [&root, &suffix](const std::string &folder, const std::string &file) {
+        std::filesystem::create_directories(root / folder);
+        if (!file.empty()) {
+            std::ofstream(root / folder / (file + suffix)) << "x";
+        }
+    };
+    add("Met_1Scout", "Met_1Scout");
+    add("Bon_Hit", "Bon_Hit");
+    add("Met_19Scan", "Met_19Scan");
+    add("Empty", "");              // no library: not a module
+    add("Wrong", "Other");         // a library named for another folder: LibraryFor would not name it
+    add("bad name", "bad name");   // not a module name
+    std::ofstream(root / ("Loose" + suffix)) << "x"; // a file, not a folder
+    CHECK(missionLibraries(root) ==
+          std::vector<std::filesystem::path>{root / "Bon_Hit" / ("Bon_Hit" + suffix),
+                                             root / "Met_19Scan" / ("Met_19Scan" + suffix),
+                                             root / "Met_1Scout" / ("Met_1Scout" + suffix)});
+    CHECK(missionLibraries(root / "absent").empty());
+    std::filesystem::remove_all(root, ignored);
 }
