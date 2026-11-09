@@ -2,6 +2,7 @@
 
 #include <cstdlib>
 #include <cwchar>
+#include <vector>
 
 #include <windows.h>
 
@@ -41,6 +42,21 @@ EnvLookup hostEnvironment() {
         }
         return narrow(value);
     };
+}
+
+std::string executablePath() {
+    std::vector<wchar_t> path(MAX_PATH);
+    for (;;) {
+        const DWORD length =
+            GetModuleFileNameW(nullptr, path.data(), static_cast<DWORD>(path.size()));
+        if (length == 0) {
+            return std::string();
+        }
+        if (length < path.size()) {
+            return narrow(path.data());
+        }
+        path.resize(path.size() * 2);
+    }
 }
 
 } // namespace sfcop::app

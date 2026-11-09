@@ -142,6 +142,8 @@ if(TARGET sfcop_hle_guest)
 endif()
 add_dependencies(sfcop SDL3-shared)
 add_dependencies(sfcop sfcop_gameroot)
+# SFCOP.app on macOS (cmake/SfcopBundle.cmake): the client, its libraries and the hash list.
+include(SfcopBundle)
 
 # --- The guest tests (src/app/guest/README.md, "Tests") ----------------------------------------------
 # The guest host running a lifted test program, ehtest.exe, instead of the game. The program is

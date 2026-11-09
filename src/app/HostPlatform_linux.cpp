@@ -1,6 +1,8 @@
 #include "app/HostPlatform.h"
 
 #include <cstdlib>
+#include <filesystem>
+#include <system_error>
 
 namespace sfcop::app {
 
@@ -14,6 +16,12 @@ EnvLookup hostEnvironment() {
         }
         return std::string(value);
     };
+}
+
+std::string executablePath() {
+    std::error_code error;
+    const std::filesystem::path self = std::filesystem::read_symlink("/proc/self/exe", error);
+    return error ? std::string() : self.string();
 }
 
 } // namespace sfcop::app

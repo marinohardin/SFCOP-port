@@ -9,13 +9,15 @@
 // A module that cannot be loaded is logged with the loader's refusal message and LoadLibraryA
 // returns 0, as Windows does for a DLL that fails to load; the game goes on without that mission.
 //
-// The modules root is $SFCOP_MISSION_MODULES when it is set, else mods/missions/ under the working
-// directory, which the guest host makes the per-user data folder. The install is never read for a
-// module and never written.
+// The modules root is $SFCOP_MISSION_MODULES when it is set, else the folder named in the per-user
+// data folder's mission-modules.txt (app/DataDir.h; a run started from Finder has no environment),
+// else mods/missions/ under the working directory, which the guest host makes the per-user data
+// folder. The install is never read for a module and never written.
 //
 // Threading: every call is made with the guest machine held, so one thread at a time.
 #pragma once
 
+#include "app/Files.h"
 #include "app/scripts/ModuleLoader.h"
 #include "app/scripts/guest/GuestModuleAbi.h"
 #include "hle/kernel32rt/Modules.h"
@@ -94,7 +96,13 @@ private:
     std::map<std::uint32_t, Module> byBase_; // the loaded modules, by base (their handle)
 };
 
-// The modules root as the client finds it (above).
+// The modules root as the client finds it (above), in the working directory.
 std::filesystem::path missionModulesRoot();
+
+// The same rule with its inputs passed in: the value of $SFCOP_MISSION_MODULES (nothing when it is
+// unset) and the data folder.
+std::filesystem::path missionModulesRootFor(const std::optional<std::string> &fromEnvironment,
+                                            const std::string &dataDir,
+                                            const app::FileSystem &files);
 
 } // namespace sfcop::scripts

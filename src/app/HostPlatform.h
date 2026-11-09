@@ -16,5 +16,7 @@ using EnvLookup = std::function<std::optional<std::string>(const std::string &na
 // Defined once per platform, in HostPlatform_<platform>.cpp.
 Platform hostPlatform();
 EnvLookup hostEnvironment();
+// The running program's own file, absolute, in UTF-8; empty when the platform cannot say.
+std::string executablePath();
 
 } // namespace sfcop::app
