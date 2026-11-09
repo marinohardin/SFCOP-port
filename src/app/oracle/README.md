@@ -59,9 +59,11 @@ on one, for diagnosis; the client says so on stderr: `[clock] fixed step, 16.667
   time to pass without pumping or sleeping ends instead of hanging. Each such step is counted and
   the oracle prints the count at `END`: `[clock] F frames, S spin steps, T ms on the game's clock`.
   A run with spin steps is deterministic only as far as the number of reads is.
-- The time of day (`GetLocalTime`, `GetSystemTime`, `time()`) stays the host's, which the boot
-  probe's fake clock shifts. Timed waits (`WaitForSingleObject` with a timeout) stay on the
-  kernel's real clock.
+- The time of day (`GetLocalTime`, `GetSystemTime`, `GetSystemTimeAsFileTime`, and the C
+  runtime's `time()`, which reads them) is pinned too: 2026-01-01 00:00:00 UTC
+  (`FixedStepClock::kEpochUnixSeconds`) plus the game's clock, the same in both zones, so the zone
+  offset is 0 on every host. Reading it does not count towards the spin guard below. Timed waits
+  (`WaitForSingleObject` with a timeout) stay on the kernel's real clock.
 - The multimedia timers (`timeSetEvent`) start no thread: they fall due by the fixed-step clock
   and fire on the main thread right after the frame's step, the earliest due first
   (`hle/kernel32rt/Timers.h`); the oracle prints how many at `END`:
@@ -187,11 +189,75 @@ The headless runs give the same two sequences as before the change, parting at s
 same field (`dist` of `c101` and `c201`, `318.271637` in `h1` against `318.271606` in `h2`, every
 grid position the same), and `w1` follows `h2` to sample 25 and parts at 26 in `dist` again
 (`315.039459` against `315.039642`). The timer's callbacks now land on the same frames in every
-run, so they are not what parts them; the change stays, as one source fewer. The cause is
-unconfirmed. The next candidates are the C runtime's `srand` sites seeded from the host
-(`oracle/README.md`, "Determinism assumptions" 1): from `time(NULL)` (`0x005098C9`, `0x006C2267`,
-`0x006DE5BB`), which under `--oracle` is still the host's time of day, and from
-`GetCurrentThreadId()` (`0x0073325F`); a seed taken at a different second would move the ships
-within their grid cells, which is what `dist` shows with every grid position equal.
+run, so they are not what parts them; the change stays, as one source fewer. The cause is in
+"Run to run", below.
 
 The captures of each screen, taken by window id with `screencapture -l`, are in the pull request.
+
+### Run to run
+
+**The cause: the oracle mission's own `srand(time(NULL))`.** The mission module has a C runtime of
+its own, and the SDK's `tScriptInterface::mInitialize` seeds it from `time(NULL)` when the mission
+starts: in a trace of every time-of-day read (the `[time]` lines `--trace` now prints), the run's
+last is `GetLocalTime` and `GetSystemTime` (which the C runtime's `time()` reads) from `sub_6602D00D`, in the translated mission at base
+`0x66000000`, at frame 3,964, on the main thread. The seed pin (`oracle/README.md`, "Determinism
+assumptions" 1) reaches the game's two generators, not the script's, and the time of day was the
+host's, so a run started in another second drew other numbers from the script's `rand()`. The
+two traces part at sample 3 in `dist` alone (`318.271637` against `318.271606`, one unit in the
+last place of a float, every grid cell and speed equal), and the gap grows sample by sample
+(5 units at sample 5, 16 at sample 8): the same motion from a slightly different start.
+
+The fixed-step clock now pins the time of day ("The fixed step", above). The other candidates:
+
+| Candidate | Under the fixed step | Contributes |
+| --- | --- | --- |
+| `time(NULL)` in the mission module (`sub_6602D00D`, frame 3,964) | was the host's; now pinned | **yes**: two sequences before, one after |
+| `time(NULL)` in the game: `srand` at `0x005098C9`, `0x006C2267`, `0x006DE5BB` | read at frames 0 and 302 (`sub_007390FA`), before the mission; now pinned | no: the seed pin at mission start replaces the main thread's seed |
+| `GetCurrentThreadId()` (`srand` at `0x0073325F`, for a name printed as `SHI%lX`) | ids are handed out as threads are created (`[thread]` under `--trace`), all five by the main thread in the same order: 264, 268, 272, 276 at frame 0, 280 at frame 2 | no: the same ids in every run |
+| The two threads that wait by `Sleep(20)` on the host's clock (thread 276, the sound part's update at `0x0066F040`; thread 268, a C runtime thread) | their loop counts follow the wall clock (thread 276 slept 9,090 times in one pinned run and 12,591 in another) | no: with the time pinned, the game's `.data` (0x838000, 93 pages) hashed every frame agrees in every run except four words of a C runtime `FILE` record at `0x0088EE88` (a console stream's buffer pointer, count and size) at a frame or two, which the simulation never reads |
+| Timed waits on the kernel's real clock (four waits of 60 s by the C runtime's threads) | the same outcome in every run | no |
+
+Before and after, on the same build except the pin, headless, `--record-trace`, the steps file
+`oracle/driver/skirmish.steps`, one run at a time on a MacBook Pro (M1 Pro):
+
+| Run | Time of day | Run time | Tick lines (SHA-256 of the 641 `tick<TAB>hash` lines) |
+| --- | --- | --- | --- |
+| `b1` | the host's | 165 s | `cdba757473d5847f246a12c2aa7dd98b6fefd8f0c3e476fedc084cc93936ad9d` |
+| `b2` | the host's | 250 s | `cdba757473d5847f246a12c2aa7dd98b6fefd8f0c3e476fedc084cc93936ad9d` |
+| `b3` | the host's | 151 s | `312196fd7ea89ecf8d6c04401f1a193f02643cfbc3fd6fd3eb6f1197b3add02a` |
+| `b4` | the host's | 211 s | `312196fd7ea89ecf8d6c04401f1a193f02643cfbc3fd6fd3eb6f1197b3add02a` |
+
+(The sequences differ from the ones above because #67 changed the headless screen, through which
+the script's clicks reach the game.) Five consecutive runs of this branch, headless,
+`--record-trace`, then windowed `--oracle` runs against `p1`'s trace:
+
+| Run | Mode | Started | Run time | Exit | Tick lines |
+| --- | --- | --- | --- | --- | --- |
+| `p1` | `--headless --record-trace` | 14:11:48 | 247 s | 0 | `312196fd7ea89ecf8d6c04401f1a193f02643cfbc3fd6fd3eb6f1197b3add02a` |
+| `p2` | `--headless --record-trace` | 14:15:55 | 291 s | 0 | `312196fd7ea89ecf8d6c04401f1a193f02643cfbc3fd6fd3eb6f1197b3add02a` |
+| `p3` | `--headless --record-trace` | 14:20:46 | 353 s | 0 | `312196fd7ea89ecf8d6c04401f1a193f02643cfbc3fd6fd3eb6f1197b3add02a` |
+| `p4` | `--headless --record-trace` | 14:26:39 | 301 s | 0 | `312196fd7ea89ecf8d6c04401f1a193f02643cfbc3fd6fd3eb6f1197b3add02a` |
+| `p5` | `--headless --record-trace` | 14:31:40 | 262 s | 0 | `312196fd7ea89ecf8d6c04401f1a193f02643cfbc3fd6fd3eb6f1197b3add02a` |
+| `w1` | `--windowed --oracle p1 --record-trace` | 14:36:02 | 1471 s | 4 (tick 3) | `27f4a1757a564ea068752f3f63151a1aa80f76f9ce6fdaec57290f7a559ccaf6` |
+| `w2` | `--windowed --silent --oracle p1 --record-trace` | 15:01:39 | 672 s | 4 (tick 3) | `33241d59aca6e8d9f26c7cb6c3d0c2852ea6e425d4678f57a5910d9dc507ebf1` |
+
+**Headless runs now agree; a windowed run does not yet.** Both windowed runs part from `p1` at
+sample 3 with the same tick hash, in `dist` alone (`318.271606` against `318.271637`, the same pair
+as before the pin), and from each other later; `--silent` (the audio stub) changes nothing, so the
+difference comes in through the window or the Gpu, not the sound. A third windowed run and a
+headless run of the same build, the game's `.data` hashed on every frame of the fixed-step clock,
+first part in two words, at frame 3,965: `0x0083ECA4`, the game-clock stamp (in microseconds) that
+`sub_00431708` keeps for a task it runs every 50 ms (it stamps it the first time it runs, when the
+stamp is still negative), and `0x0085366C`, a float of seconds. Windowed, both are 16.667 ms, one
+frame, ahead of headless from then on, so the 50 ms task falls on other frames. Four other pages of `.data` (at `0x00842000`, `0x0084B000`, `0x0088E000`,
+`0x0088F000`) differ from the first frames on and were not identified. The windowed run counts each script step one
+pump turn later than headless (SINGLE PLAYER at turn 3,002 against 3,001) at the same time on the
+game's clock: one extra turn that read a window event and is not a frame. Where the window moves the
+first call of `sub_00431708` by a frame is not found yet; it is outside the clock (the pump's turns,
+`src/app/guest/`, and the scripted window, `src/app/input/`).
+
+The trace files themselves differ only in their header (the build's commit and the run's own
+lines), which `compare.py` does not hash. The script's steps fall on the frames they fell on
+before the pin (2026-11-08, on develop `f8f63b0` and this branch alike): the window and the
+first sleep at frame 1, SINGLE PLAYER at 3,001, SKIRMISH at 3,484, the mission's row at 3,967,
+PLAY GAME at 4,140, the wait for the log at 4,142.

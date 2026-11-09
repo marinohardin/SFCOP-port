@@ -176,6 +176,11 @@ void k_CreateThread() { // (attributes, stack, start, parameter, flags, &id)
         RET(answer(started), 6);
     }
     const std::uint32_t handle = handleFor(thread);
+    if (win32hle_trace) {
+        // Ids are handed out in the order threads are created; this line shows the order.
+        std::fprintf(stderr, "[thread] %u starts at 0x%08X, created by thread %u in sub_%08X\n", id,
+                     start, hle_thread_id(), g_cur_func);
+    }
     put32(idOut, id);
     RET(handle, 6);
 }
@@ -960,18 +965,35 @@ void k_QueryPerformanceFrequency() { // (&frequency)
     RET(frequency != 0 ? 1u : 0u, 1);
 }
 
+// --trace: each time-of-day answer, with the function and thread that read it, so that two runs'
+// traces show where a time the game read differs (src/app/oracle/README.md, "The fixed step").
+void traceTimeRead(const char *row, const SystemTime &time) {
+    if (win32hle_trace) {
+        std::fprintf(stderr, "[time] %s in sub_%08X, thread %u\n", traceTimeOfDay(row, time).c_str(),
+                     g_cur_func, hle_thread_id());
+    }
+}
+
 void k_GetSystemTime() {
-    putSystemTime(A32(0), runtime().Timing().Now(platform::TimeZone::kUtc));
+    const SystemTime now = runtime().Timing().Now(platform::TimeZone::kUtc);
+    traceTimeRead("GetSystemTime", now);
+    putSystemTime(A32(0), now);
     RET(0, 1);
 }
 
 void k_GetLocalTime() {
-    putSystemTime(A32(0), runtime().Timing().Now(platform::TimeZone::kLocal));
+    const SystemTime now = runtime().Timing().Now(platform::TimeZone::kLocal);
+    traceTimeRead("GetLocalTime", now);
+    putSystemTime(A32(0), now);
     RET(0, 1);
 }
 
 void k_GetSystemTimeAsFileTime() {
-    put64(A32(0), runtime().Timing().FileTimeNow());
+    const std::uint64_t now = runtime().Timing().FileTimeNow();
+    if (win32hle_trace) {
+        traceTimeRead("GetSystemTimeAsFileTime", systemTimeFromFileTime(now).value_or(SystemTime{}));
+    }
+    put64(A32(0), now);
     RET(0, 1);
 }
 
