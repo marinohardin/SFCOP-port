@@ -1,0 +1,108 @@
+# Dynaverse logon against the stand-ins, for the native client (sfcop --input;
+# oracle/driver/run_native.sh --steps): main menu -> MULTIPLAYER -> Game Connections ->
+# DYNAVERSE II LOG IN -> the policy notice -> a new account (the client logs on with it at once:
+# "Account successfully created!") -> LOGIN -> the Campaign Selector. The data folder's
+# servers.json points every service at 127.0.0.1, where sfcop-directory and sfcop-auth run
+# (src/net/DIRECTORY_API.md, "The logon, in order"). The selector's rows are not the stand-ins'
+# (server/directory/README.md, "Boundary for V2 and V1b"): it opens empty.
+#
+# Coordinates are the game's display pixels (800x600, the 640x480 menu centred), as in
+# menu.steps; calibrated on the native build with --shots captures, 2026-11-08. The fields of the
+# login screen drop their placeholder text on the first click, and letters type in lower case.
+# The original refuses an email without '@' and a '.' at least four characters from its end
+# (STARFLEETOP 0x005DAC19), so the '@' is typed with Shift held. The guest translates a key with
+# the Shift state of the moment the game reads it, not the moment it was pressed, and the game
+# reads keys a few frames late here: the pauses around the Shift let it catch up first. The
+# account is the stand-in's, kept in its memory only, with a throwaway password.
+
+window 60 Starfleet Command
+
+waitmark 60 Select Game
+sleep 1500
+
+# --- main menu, "Select Game": MULTIPLAYER opens Game Connections
+click 563 348
+sleep 5000
+
+# --- Game Connections: DYNAVERSE II, LOG IN opens Dynaverse II Login. The client looks up the
+# directory, asks the firewall detector and checks its version; then the policy notice comes up.
+click 310 322
+sleep 8000
+
+# --- the policy notice: ACCEPT
+click 345 442
+sleep 2000
+
+# --- E-Mail
+click 230 430
+sleep 300
+key 0x54
+key 0x45
+key 0x53
+key 0x54
+key 0x43
+key 0x41
+key 0x50
+key 0x54
+key 0x41
+key 0x49
+key 0x4E
+sleep 500
+keydown 0x10
+sleep 500
+key 0x32
+sleep 500
+keyup 0x10
+sleep 500
+key 0x45
+key 0x58
+key 0x41
+key 0x4D
+key 0x50
+key 0x4C
+key 0x45
+key 0xBE
+key 0x54
+key 0x45
+key 0x53
+key 0x54
+sleep 300
+
+# --- Password
+click 230 453
+sleep 300
+key 0x54
+key 0x48
+key 0x52
+key 0x4F
+key 0x57
+key 0x41
+key 0x57
+key 0x41
+key 0x59
+sleep 300
+
+# --- Nickname (the field shows OP until clicked)
+click 230 476
+sleep 300
+key 0x54
+key 0x45
+key 0x53
+key 0x54
+key 0x43
+key 0x41
+key 0x50
+key 0x54
+key 0x41
+key 0x49
+key 0x4E
+sleep 300
+
+# --- CREATE NEW ACCOUNT: the client checks the email by search, then creates the account
+click 625 506
+sleep 8000
+
+# --- LOGIN: the email check, the challenge, the login and the server's proof; then the
+# Campaign Selector
+click 297 505
+sleep 15000

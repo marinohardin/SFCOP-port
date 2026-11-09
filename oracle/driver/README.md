@@ -16,6 +16,7 @@ vocabulary and what each driver does with each step are in `src/app/input/README
 | `campaign.steps` | Native: boot to the main menu and play a single-player campaign start to the mission's combat (`analysis/campaign/README.md`); includes the map's compass recentre step |
 | `multiplayer.steps` | Native: boot, open Multiplayer (Game Connections), the LAN session browser left empty for ten seconds, then host a game and reach the player list ("Multiplayer Startup"); its screen waits need the build's extra marks, listed in its header |
 | `multiplayer-join.steps` | Native, the second client: the session browser lists the game `multiplayer.steps` hosts; select it, JOIN, and reach the player list with both players; a data folder of its own |
+| `dynaverse.steps` | Native: boot to the main menu, open the Dynaverse, create an account and log on to the stand-ins (`server/directory`, `server/auth`), ending on the Campaign Selector (its rows are V1b and V2: `server/directory/README.md`); needs a data folder whose `servers.json` points the services at 127.0.0.1 |
 | `run_native.sh` | Plays a steps file into the native client with a prepared data folder |
 
 ## The native runner

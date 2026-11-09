@@ -1,4 +1,4 @@
-"""The hosted services under server/ (N3): builds and runs the lobby's doctest runner, and tests the
+"""The hosted services under server/ (N3, N4, V1): builds and runs each service's doctest runner, and tests the
 deploy kit's shell scripts that do not need a container.
 
 scripts/check.sh runs this file with the rest of tests/, so the service's C++ tests are run by
@@ -96,7 +96,7 @@ def build_server():
 
 @pytest.mark.skipif(shutil.which("cmake") is None or shutil.which("ninja") is None,
                     reason="cmake and ninja are needed to build the services")
-@pytest.mark.parametrize("service", ["lobby", "relay"])
+@pytest.mark.parametrize("service", ["lobby", "relay", "directory", "auth"])
 def test_service_doctests_pass(service):
     build = build_server()
     ran = subprocess.run([str(build / service / ("sfcop_%s_tests" % service)), "--no-version"],
@@ -122,6 +122,28 @@ def test_relay_unit_is_not_root_reads_its_own_environment_and_keeps_its_log_priv
     env = (DEPLOY / "relay.env.example").read_text()
     assert "SFCOP_HEALTH_LISTEN=127.0.0.1:47711" in env          # the monitor reads the same name
     assert not any(line.startswith("SFCOP_TICKET_KEY=") for line in env.splitlines())
+
+
+@pytest.mark.parametrize("service,health", [("directory", "47713"), ("auth", "47714")])
+def test_dynaverse_unit_is_not_root_reads_its_own_environment_and_keeps_its_log_private(service, health):
+    unit = (DEPLOY / ("sfcop-%s.service" % service)).read_text()
+    assert "User=sfcop" in unit
+    assert "EnvironmentFile=/etc/sfcop/%s.env" % service in unit
+    assert "EnvironmentFile=/etc/sfcop/sfcop.env" not in unit     # no use for the ticket key
+    assert "/var/log/sfcop/%s.log" % service in unit and "UMask=0027" in unit
+    env = (DEPLOY / ("%s.env.example" % service)).read_text()
+    assert "SFCOP_HEALTH_LISTEN=127.0.0.1:%s" % health in env       # the monitor reads the same name
+    deploy = (DEPLOY / "deploy.sh").read_text()
+    assert 'SERVICES="lobby relay directory auth"' in deploy
+
+
+def test_auth_unit_holds_only_the_port_80_capability():
+    unit = (DEPLOY / "sfcop-auth.service").read_text()
+    assert "CapabilityBoundingSet=CAP_NET_BIND_SERVICE\n" in unit
+    assert "AmbientCapabilities=CAP_NET_BIND_SERVICE\n" in unit
+    assert "NoNewPrivileges=true" in unit
+    directory = (DEPLOY / "sfcop-directory.service").read_text()
+    assert "CapabilityBoundingSet=\n" in directory
 
 
 def test_deploy_kit_files_say_what_the_brief_requires():

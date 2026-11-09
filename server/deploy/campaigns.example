@@ -1,0 +1,12 @@
+# /etc/sfcop/campaigns.txt: the campaign servers the directory stand-in lists
+# (server/directory/README.md, "The campaign file"). deploy.sh creates it from this file once.
+# One [campaign] block per server; `address` is where clients reach it. Every other key is a
+# field of the original's campaign record, by its original name; a field left out keeps its
+# default. TemplateName must be the name the campaign server gives in its status reply: the
+# client finds this record by it when a player joins (server/directory/README.md, "Boundary for
+# V2 and V1b"). Example values only: replace the address with your campaign server's.
+[campaign]
+address = 192.0.2.10:27000
+TemplateName = TestCampaign
+CampaignName = TestCampaign
+PlayersMax = 40

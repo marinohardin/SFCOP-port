@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <map>
 #include <optional>
 #include <string>
 
@@ -17,6 +18,7 @@ struct Instance {
     std::mutex mutex;
     std::unique_ptr<platform::Transport> transport;
     std::unique_ptr<Winsock> winsock;
+    std::map<std::string, std::string> aliases;
 };
 
 Instance &instance() {
@@ -41,6 +43,7 @@ Winsock &guestWinsock() {
     if (!one.winsock) {
         one.transport = platform::makeTransport();
         one.winsock = std::make_unique<Winsock>(*one.transport);
+        one.winsock->SetHostAliases(one.aliases);
     }
     return *one.winsock;
 }
@@ -51,6 +54,16 @@ void installGuestWinsock(std::unique_ptr<platform::Transport> transport) {
     one.winsock.reset();
     one.transport = std::move(transport);
     one.winsock = std::make_unique<Winsock>(*one.transport);
+    one.winsock->SetHostAliases(one.aliases);
+}
+
+void setGuestHostAliases(const std::map<std::string, std::string> &aliases) {
+    Instance &one = instance();
+    std::lock_guard<std::mutex> lock(one.mutex);
+    one.aliases = aliases;
+    if (one.winsock) {
+        one.winsock->SetHostAliases(one.aliases);
+    }
 }
 
 } // namespace sfcop::hle::winsock
