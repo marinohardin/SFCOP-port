@@ -48,7 +48,9 @@ that is not about files.
   if it set one, else a report on stderr) and ends the process with exit status 1, as Windows ends a
   thread whose exception reaches its outermost frame. `IsBad*Ptr` ask the host's mapping.
 - **Time.** `GetTimeZoneInformation` gives the bias in force and no daylight rule
-  (`TIME_ZONE_ID_UNKNOWN`): `Clock` gives the offset, not the zone's rules.
+  (`TIME_ZONE_ID_UNKNOWN`): `Clock` gives the offset, not the zone's rules. On a fixed-step clock
+  (`--oracle`, `--record-trace`, `--fixed-step`) the time-of-day rows answer the pinned time of day
+  (`platform/Clock/FixedStepClock.h`), in UTC with a bias of 0, and no host time reaches the game.
 - **The environment** is private: `PATH` and `WINDIR` as any Windows has them; nothing of the host's
   environment reaches the game. `GetEnvironmentStringsW` is refused as on Windows 95 and 98, so the
   C runtime reads the narrow block.

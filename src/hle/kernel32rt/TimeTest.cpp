@@ -64,6 +64,13 @@ TEST_CASE("FileTimeToSystemTime gives the date, the time and the day of the week
     CHECK_FALSE(systemTimeFromFileTime(0x8000000000000000u));
 }
 
+TEST_CASE("--trace prints a time-of-day answer to the millisecond") {
+    CHECK(traceTimeOfDay("GetLocalTime", SystemTime{2026, 1, 4, 1, 0, 0, 12, 345}) ==
+          "GetLocalTime 2026-01-01 00:00:12.345");
+    CHECK(traceTimeOfDay("GetSystemTime", SystemTime{2003, 10, 5, 17, 9, 5, 7, 8}) ==
+          "GetSystemTime 2003-10-17 09:05:07.008");
+}
+
 TEST_CASE("GetTickCount and the performance counter read the clock") {
     ClockMock clock;
     clock.ticksResult = std::uint32_t{4000};
@@ -123,11 +130,43 @@ TEST_CASE("GetTickCount, timeGetTime and the performance counter answer from a f
     CHECK(clock.Sleep(10).Ok()); // Sleep(10) on the game's main thread
     CHECK(time.TickCount() == 43u);
     CHECK(time.Counter() == 433'340u);
-    // The time of day stays the inner clock's.
-    mock->nowResult = CivilTime{2026, 11, 4, 3, 15, 38, 0, 0};
-    CHECK(time.FileTimeNow() == 134382802800000000u);
     CHECK(mock->log.Count("Ticks") == 0);
     CHECK(mock->log.Count("Counter") == 0);
+}
+
+// The time of day in both positions: live on the host's clock (GetSystemTimeAsFileTime is the UTC
+// wall clock, above), pinned on a fixed-step clock, whatever the host's zone says.
+TEST_CASE("GetSystemTime, GetLocalTime and GetSystemTimeAsFileTime are pinned on a fixed-step clock") {
+    auto inner = std::make_unique<ClockMock>();
+    ClockMock *mock = inner.get();
+    mock->nowResult = CivilTime{2026, 11, 4, 3, 15, 38, 0, 0}; // the host's time, never read
+    platform::FixedStepClock clock(std::move(inner), 166'670);
+    clock.BindToCallingThread();
+    Time time(clock);
+    // A count of 0: 2026-01-01 00:00:00.000 UTC, a Thursday, in both zones.
+    SystemTime utc = time.Now(TimeZone::kUtc);
+    CHECK(utc.year == 2026);
+    CHECK(utc.month == 1);
+    CHECK(utc.day == 1);
+    CHECK(utc.dayOfWeek == 4);
+    CHECK(utc.hour == 0);
+    CHECK(utc.minute == 0);
+    CHECK(utc.second == 0);
+    CHECK(utc.milliseconds == 0);
+    CHECK(time.FileTimeNow() == 134116992000000000u);
+    CHECK(time.BiasMinutes() == 0);
+    // Two frames and a Sleep(10) on the main thread: 43.334 ms on the game's clock.
+    clock.AdvanceFrame();
+    clock.AdvanceFrame();
+    CHECK(clock.Sleep(10).Ok());
+    const SystemTime local = time.Now(TimeZone::kLocal);
+    utc = time.Now(TimeZone::kUtc);
+    CHECK(local.milliseconds == 43);
+    CHECK(utc.milliseconds == 43);
+    CHECK(local.second == 0);
+    CHECK(time.FileTimeNow() == 134116992000430000u);
+    CHECK(time.LocalFromUtc(134116992000430000u) == 134116992000430000u);
+    CHECK(mock->log.Count("Now") == 0);
 }
 
 } // namespace
