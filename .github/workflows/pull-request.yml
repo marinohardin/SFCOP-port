@@ -31,12 +31,14 @@ jobs:
         run: sh scripts/check.sh
 
   # The native build (DESIGN §7.4), one job per preset: macos-arm64 with Apple clang, windows-x64
-  # and linux-x64 cross-compiled on the same Mac (cmake/toolchains/README.md). Every job builds
-  # sfcop_tests and runs it (windows-x64 under Wine, linux-x64 in a linux/amd64 container), builds
-  # sfcop with the lift where the runner has the install and pcrecomp, and keeps sfcop_tests and
-  # the configure and test logs for 7 days as an artifact of this private repository, for the
-  # owner's own review. The lifted sfcop is derived from the retail executable and is never
-  # uploaded; nothing is released or published (DESIGN §12.2).
+  # and linux-x64 cross-compiled on the same Mac (cmake/toolchains/README.md). A pull request that
+  # changes only game/, analysis/results/ and the generated override table builds macos-arm64
+  # alone (oracle/presets/ci.py, "builds"). Every job that builds makes sfcop_tests and runs it
+  # (windows-x64 under Wine, linux-x64 in a linux/amd64 container), builds sfcop with the lift
+  # where the runner has the install and pcrecomp, and keeps sfcop_tests and the configure and test
+  # logs for 7 days as an artifact of this private repository, for the owner's own review. The
+  # lifted sfcop is derived from the retail executable and is never uploaded; nothing is released
+  # or published (DESIGN §12.2).
   #
   # The jobs run one after another (max-parallel: 1) on one shared runner, so a hang costs every
   # other pull request: each step has its own timeout, well under the job's. The build trees live
@@ -68,17 +70,33 @@ jobs:
             lift: "not yet: the lift's runtime and the guest host do not build for Windows (reported)"
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      # A pull request that changes only decompiled source and its records builds macOS alone
+      # (oracle/presets/ci.py, "builds"); the other presets' steps are skipped and the job passes.
+      - name: Is ${{ matrix.preset }} built for this pull request
+        id: want
+        shell: bash
+        env:
+          PRESET: ${{ matrix.preset }}
+        run: |
+          set -eu -o pipefail
+          build=$(git diff --name-only HEAD^1 HEAD | python3 -I oracle/presets/ci.py builds "$PRESET")
+          [ "$build" = yes ] || echo "::notice::skip: $PRESET: this pull request changes only decompiled source; macos-arm64 builds it"
+          echo "build=$build" >> "$GITHUB_OUTPUT"
 
       # A missing macOS permission to read the external tools volume would otherwise stall the
       # first compiler run for the whole timeout (cmake/toolchains/README.md, "The runner").
       - name: Check the toolchain is readable
-        if: matrix.preset != 'macos-arm64'
+        if: steps.want.outputs.build == 'yes' && matrix.preset != 'macos-arm64'
         timeout-minutes: 2
         env:
           PRESET: ${{ matrix.preset }}
         run: sh cmake/toolchains/check-readable.sh "$PRESET"
 
       - name: Configure ${{ matrix.preset }}
+        if: steps.want.outputs.build == 'yes'
         timeout-minutes: 5
         shell: bash
         env:
@@ -103,6 +121,7 @@ jobs:
           cmake --preset "$PRESET" -B "$root/$PRESET" "$@" 2>&1 | tee "$root/$PRESET/logs/configure.log"
 
       - name: Build ${{ matrix.preset }}
+        if: steps.want.outputs.build == 'yes'
         timeout-minutes: 15
         run: nice -n 19 cmake --build "$SFCOP_BUILD_DIR" -j4
 
@@ -111,6 +130,7 @@ jobs:
       # cmake/toolchains/README.md "Known failures") out of the verdict, running them once more
       # for the record.
       - name: C++ tests
+        if: steps.want.outputs.build == 'yes'
         timeout-minutes: 10
         shell: bash
         env:
@@ -123,6 +143,7 @@ jobs:
           fi
 
       - name: Keep the tests and the logs for 7 days
+        if: steps.want.outputs.build == 'yes'
         uses: actions/upload-artifact@v4
         with:
           name: sfcop-${{ matrix.preset }}-pr${{ github.event.pull_request.number }}
@@ -164,8 +185,11 @@ jobs:
         id: gate
         shell: bash
         run: |
-          set -eu
-          run=$(git diff --name-only HEAD^1 HEAD | python3 -I oracle/presets/ci.py gate)
+          set -eu -o pipefail
+          git diff --name-only HEAD^1 HEAD > "$RUNNER_TEMP/changed.txt"
+          [ -s "$RUNNER_TEMP/changed.txt" ] || { echo "::error::no changed paths between HEAD^1 and HEAD"; exit 1; }
+          echo "CHANGED=$RUNNER_TEMP/changed.txt" >> "$GITHUB_ENV"
+          run=$(python3 -I oracle/presets/ci.py gate < "$RUNNER_TEMP/changed.txt")
           if [ "$run" = no ]; then
             echo "::notice::skip: the oracle on the presets: nothing under game/, src/ or the oracle's runner changed"
           elif [ -z "${SFCOP_ORACLE_DATA:-}" ]; then
@@ -183,7 +207,7 @@ jobs:
         if: steps.gate.outputs.run == 'yes'
         timeout-minutes: 15
         shell: bash
-        run: python3 -I oracle/presets/ci.py run MenuPath menu --build-root "$BUILD_ROOT" --traces "$TRACES" --env-file "$GITHUB_ENV"
+        run: python3 -I oracle/presets/ci.py run MenuPath menu --build-root "$BUILD_ROOT" --traces "$TRACES" --env-file "$GITHUB_ENV" --changed "$CHANGED"
 
       - name: Compare the menu path
         if: steps.gate.outputs.run == 'yes'
@@ -202,7 +226,7 @@ jobs:
             echo "RAN_ORACLESKIRMISH=" >> "$GITHUB_ENV"
             exit 0
           fi
-          python3 -I oracle/presets/ci.py run OracleSkirmish skirmish --build-root "$BUILD_ROOT" --traces "$TRACES" --env-file "$GITHUB_ENV"
+          python3 -I oracle/presets/ci.py run OracleSkirmish skirmish --build-root "$BUILD_ROOT" --traces "$TRACES" --env-file "$GITHUB_ENV" --changed "$CHANGED"
 
       - name: Compare the skirmish
         if: steps.gate.outputs.run == 'yes' && hashFiles('oracle/driver/skirmish.steps') != ''

@@ -2,6 +2,8 @@
 """The oracle job's logic, so that what the workflow decides is tested (oracle/presets/README.md).
 
     ci.py gate                       reads the changed paths on standard input; prints yes or no
+    ci.py builds PRESET              reads the changed paths on standard input; prints yes or no:
+                                     whether the build job builds that preset for this change
     ci.py run MISSION INPUT --build-root DIR --traces DIR [--env-file FILE]
     ci.py compare MISSION INPUT --traces DIR --ran "PRESET PRESET" [--expected DIR]
 
@@ -27,6 +29,24 @@ PRESETS = ('macos-arm64', 'linux-x64', 'windows-x64')
 # runner, driver, trace tools and this workflow.
 GATE = re.compile(r'^(game/|src/|oracle/presets/|oracle/driver/|oracle/trace/|'
                   r'\.github/workflows/pull-request\.yml$)')
+
+
+# A change made only of decompiled source and its records (a grind pull request) builds and
+# judges macOS alone: the cross presets compile the same game/ code with the same lifter, and the
+# platform layer they exercise did not change. Anything else builds every preset.
+# game/port/ (the platform-forced shims) and game/UNITS.tsv are not decompiled source, and of
+# analysis/results/ only the harness's records are.
+DECOMP_ONLY = re.compile(r'^(game/(?!port/|UNITS\.tsv$)|analysis/results/(matched_set\.json|difficult_functions\.tsv)$|'
+                         r'src/app/guest/override\.cpp$)')
+DECOMP_PRESET = 'macos-arm64'
+
+
+def builds(preset, files):
+    """True when the build job builds this preset for a change to these paths."""
+    files = [f.strip() for f in files if f.strip()]
+    if preset == DECOMP_PRESET or not files:
+        return True
+    return not all(DECOMP_ONLY.match(f) for f in files)
 
 
 def path_gate(files):
@@ -80,12 +100,15 @@ def main(argv):
     p = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     sub = p.add_subparsers(dest='cmd', required=True)
     sub.add_parser('gate')
+    sub.add_parser('builds').add_argument('preset')
     r = sub.add_parser('run')
     r.add_argument('mission')
     r.add_argument('input')
     r.add_argument('--build-root', required=True)
     r.add_argument('--traces', required=True)
     r.add_argument('--env-file')
+    r.add_argument('--changed', help='file listing the changed paths; a preset the build job '
+                   'did not build for them is not run, since its client is an older build')
     c = sub.add_parser('compare')
     c.add_argument('mission')
     c.add_argument('input')
@@ -98,8 +121,21 @@ def main(argv):
         print('yes' if path_gate(sys.stdin.read().splitlines()) else 'no')
         return 0
 
+    if args.cmd == 'builds':
+        print('yes' if builds(args.preset, sys.stdin.read().splitlines()) else 'no')
+        return 0
+
     if args.cmd == 'run':
-        ran, failed, log = run_all(args.mission, args.input, args.build_root, args.traces)
+        presets = PRESETS
+        if args.changed:
+            with open(args.changed, encoding='utf-8') as f:
+                changed = f.read().splitlines()
+            presets = tuple(p for p in PRESETS if builds(p, changed))
+            for p in PRESETS:
+                if p not in presets:
+                    print(f'::notice::oracle {args.mission}/{args.input}: {p} was not built for this '
+                          'pull request, so its older client is not run')
+        ran, failed, log = run_all(args.mission, args.input, args.build_root, args.traces, presets)
         print('\n'.join(log))
         if args.env_file:
             with open(args.env_file, 'a') as f:
