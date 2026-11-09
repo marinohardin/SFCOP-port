@@ -28,6 +28,7 @@ for _p in (TOOL, os.path.join(TOOL, 'fixtures'), REPO):
         sys.path.insert(0, _p)
 
 import make_coff as mc  # noqa: E402
+import compile as objcompile  # noqa: E402
 import objlift  # noqa: E402
 import placement  # noqa: E402
 from harness.lib import paths  # noqa: E402
@@ -580,3 +581,18 @@ def test_the_real_dynamic_allocator_object_lifts_onto_the_exe(tmp_path):
     relocs = text.split('\nrelocations:\n')[1].split('\n\n')[0].splitlines()
     assert {line.split()[1] for line in relocs} == {'REL32', 'DIR32'}
     assert 'data image: empty\n' in text
+
+
+def test_partial_and_stub_rows_are_neither_compiled_nor_lifted(tmp_path):
+    # tools/manifest.py gives a FUNCTION not recorded exact the mode `partial`: the native build
+    # keeps the exe lift's body for it, so neither the compile step nor the placement reads it.
+    m = tmp_path / 'manifest.tsv'
+    m.write_text('address\tsize\tsymbol\tsource\tmodes\n'
+                 '0x00401000\t24\tA()\tTest/Exact.cpp\tvc6 guest\n'
+                 '0x00401100\t16\tB()\tTest/Exact.cpp\tpartial\n'
+                 '0x00401200\t40\tC()\tTest/Waiting.cpp\tpartial\n'
+                 '0x00401300\t8\tD()\tTest/Stubbed.cpp\tstub\n'
+                 '0x00401400\t20\tE::E()\tTest/Ctor.cpp\tvc6\n')
+    assert objlift.read_manifest(str(m)) == [(0x00401000, 24, 'A()', 'Test/Exact.cpp'),
+                                             (0x00401400, 20, 'E::E()', 'Test/Ctor.cpp')]
+    assert objcompile.claimed_units(str(m)) == ['Test/Exact.cpp', 'Test/Ctor.cpp']

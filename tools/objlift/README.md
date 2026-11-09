@@ -5,7 +5,8 @@ pinned VC6 exactly as the harness compiles it for the byte check. Its COFF objec
 guest as a linker would place it, and lifted with pcrecomp the way the exe is lifted. The lifted
 body replaces the exe lift's body for that address: for direct calls, for the dispatch table and
 for every guest vtable slot. The source in `game/` is the original's form, with no guest-mode
-constructs; the same object the harness scores exact is the one that runs.
+constructs; the same object the harness scores exact is the one that runs. A function the
+harness has not recorded exact has the mode `partial` and is skipped: the exe lift's body stays.
 
 | File | What it does |
 | --- | --- |
