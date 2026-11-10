@@ -45,16 +45,22 @@ python3 tools/objlift/objlift.py --obj [UNIT=]UNIT.obj ... --manifest game/manif
   message names the symbol or section, for example `unresolved external symbol ?Nowhere@@YAXXZ
   (referenced from missing.obj:.text#1)`.
 
-It writes into `DIR`, each file only when its content changed:
+It writes into `DIR`, each file only when its content changed, so the build recompiles only
+what a change touches:
 
 | File | Contents |
 | --- | --- |
-| `objlift_code.c` | The lifted bodies, under the exe lift's names (`sub_006FC5A0`) |
-| `objlift_funcs.h` | Their declarations |
-| `objlift_table.c` | The override table (`src/app/guest/override.h`) and the data image |
+| `objlift_code_<UNIT>.c` | One per claimed unit: its lifted bodies, under the exe lift's names (`sub_006FC5A0`), with the declarations they need beyond `recomp_funcs.h`. `<UNIT>` is the unit's path without its extension as a C identifier (`Common/DynamicAllocator.cpp` gives `objlift_code_Common_DynamicAllocator.c`) |
+| `objlift_funcs.h` | Every lifted body's declaration, for the table and the dispatch table |
+| `objlift_table.c` | The override table (`src/app/guest/override.h`), each claim's index into it (`sfcop_objlift_index_<ADDRESS>`), and the data image |
 | `objlift_dispatch.c` | The exe lift's dispatch table, with any fresh body merged in |
-| `objlift_weak.h` | `#pragma weak` for each exe-lift body the objects replace |
+| `objlift_weak_NNNN.h` | One per exe-lift file `recomp_NNNN.c` (with `--lifted`): `#pragma weak` for each body of that file the objects replace; empty when it holds none |
 | `objlift_report.txt` | Where every section went and why, every relocation, every judgement call |
+
+Which exe-lift file holds a body is read from the `void sub_XXXXXXXX(void) {` lines of the
+`recomp_NNNN.c` files themselves. A file an earlier run wrote that this run does not (a unit no
+longer claimed, or the single `objlift_code.c` and `objlift_weak.h` of earlier versions) is
+removed.
 
 ## Where each section goes
 
@@ -114,7 +120,9 @@ pcrecomp is used as pinned, with no change.
 
 Two statements go before `RECOMP_ENTER`, where `g_cur_func` still names the caller:
 
-- `sfcop_guest_entered(N)`, in a claimed body, counts the call and logs its first run;
+- `sfcop_guest_entered(sfcop_objlift_index_<ADDRESS>)`, in a claimed body, counts the call and
+  logs its first run. The index is a constant in `objlift_table.c`, not a literal, so a new
+  claim, which renumbers the table, leaves every other unit's code file as it was;
 - `SFCOP_GUEST_OBJECTS_LOAD()`, in every body when there is a data image, loads it the first time.
 
 A body ends at its section's end. The exe lift's body can run on past trailing padding into the
@@ -151,8 +159,10 @@ the following when the manifest claims anything for VC6 (option `SFCOP_OBJLIFT`,
 - It runs `objlift.sh`. The step depends on `game/`, the manifest, the compiler profiles, the
   symbol evidence, the exe, the exe lift's `recomp_funcs.h` and `recomp_dispatch.c`, and these
   tools.
-- It compiles the generated C into the OBJECT library `sfcop_objlift`.
-- It force-includes `objlift_weak.h` into every exe-lift file.
+- It compiles the generated C into the OBJECT library `sfcop_objlift`. The per-unit file names
+  are derived from the manifest at configure time, with CMake's `string(MAKE_C_IDENTIFIER)`.
+- It force-includes `objlift_weak_NNNN.h` into `recomp_NNNN.c`, and into no other file, and
+  makes each file depend on its own header only.
 - It replaces `recomp_dispatch.c` with `objlift_dispatch.c`.
 - It links the objects through `sfcop_lifted`'s interface, since an archive member is never loaded
   to replace a symbol that is already defined.
@@ -160,6 +170,16 @@ the following when the manifest claims anything for VC6 (option `SFCOP_OBJLIFT`,
 
 With nothing claimed, or `SFCOP_OBJLIFT=OFF`, nothing is added. Guest mode (`SFCOP_GUEST_MODE`)
 and the object lift are exclusive, and configure stops if both are on.
+
+`compile.py` keeps a key beside each object (`DIR/obj/<unit>.key`): the SHA-256 of the unit's
+source, its profile, every file under `game/` that is not a `.c`, a `.cpp` or the manifest, and
+the compile scripts. A unit whose key did not change is not compiled again. So a change to one
+unit's `.cpp` compiles that unit, lifts every unit again (the placement is global), and then
+recompiles that unit's code file, the exe-lift files that hold its claimed functions, and, when
+the claimed set or a fresh body changed, `objlift_table.c` and `objlift_dispatch.c`. A change to
+a header compiles every unit. Fresh sections are placed one after another in the reserved range,
+so a fresh section that grows or appears moves the later units' fresh bodies, and their files
+change with it.
 
 The lift runs in the lifter container (`cmake/lifter/Dockerfile`), with no network and with the
 repository, the exe, the exe lift and pcrecomp mounted read-only. `OBJLIFT_PYTHON=<a Python with
@@ -192,6 +212,12 @@ capstone>` runs it on the host instead.
 - the command line, and `--obj` split at the first `=`;
 - COMDAT copies that disagree on the selection kind;
 - the exe lift's output formats, on the fixtures in `fixtures/exe_lift/`;
+- one code file per unit and one weak header per exe-lift file, each holding exactly its own
+  bodies; a second run with the same input leaves every file's time alone; a new claim (below
+  the others, so the whole table is renumbered) rewrites only its unit's file, the weak header of
+  its exe-lift file, the table, the declarations and the report; a unit no longer claimed loses
+  its file (with bodies written by hand, so these run everywhere);
+- the compile key: one unit's source changes its key only, any header every key;
 - the lifted C of a two-instruction function against `fixtures/two_instruction.c`, a golden file
   the tool produced; a test of its structure, written out by hand, runs everywhere.
 
