@@ -123,7 +123,10 @@ jobs:
       - name: Build ${{ matrix.preset }}
         if: steps.want.outputs.build == 'yes'
         timeout-minutes: 15
-        run: nice -n 19 cmake --build "$SFCOP_BUILD_DIR" -j4
+        # nice 5, not 19: on Apple Silicon a niceness of 19 keeps the compiles on the efficiency
+        # cores even when the machine is idle, and a full rebuild then outruns the timeout.
+        # -j4 still caps the load when agents share the machine.
+        run: nice -n 5 cmake --build "$SFCOP_BUILD_DIR" -j4
 
       # The cross presets run their tests through the emulator and keep the test cases
       # cmake/toolchains/expected-failures.tsv names (each with its defect, described in
