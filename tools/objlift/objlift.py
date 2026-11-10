@@ -108,9 +108,11 @@ def object_for_unit(source, objs):
     return hits[0] if hits else None
 
 
-def claimed_symbol(address, source, obj_path, game, fallback):
+def claimed_symbol(address, source, obj_path, game, fallback, name='', recorded=None):
     """The compiled symbol the annotation for `address` claims: from the object's /FAs listing,
-    with the harness's own rule (harness/lib/source.py), else the mangled name in functions.csv."""
+    with the harness's own rule (harness/lib/source.symbol_for_claim, given the evidence: the
+    address's matched-set entry `recorded`, functions.csv's mangled name `fallback` and `name`),
+    else the mangled name in functions.csv."""
     from harness.lib import source as hsource
     listing = os.path.splitext(obj_path)[0] + '.asm'
     unit = os.path.join(game, source)
@@ -122,8 +124,9 @@ def claimed_symbol(address, source, obj_path, game, fallback):
             others = [a.line for lst in anns.values() for a in lst
                       if os.path.samefile(a.path, unit) and a.line != mine[0].line]
             try:
-                sym = hsource.symbol_for_annotation(open(listing, encoding='latin1').read(),
-                                                    unit, mine[0].line, others)
+                sym = hsource.symbol_for_claim(
+                    open(listing, encoding='latin1').read(), unit, mine[0].line, others,
+                    recorded=recorded, mangled=fallback, name=name)
             except hsource.SourceError as e:
                 raise PlacementError(f'0x{address:08x} ({source}): {e}') from e
             if isinstance(sym, str):
@@ -228,6 +231,8 @@ class Run:
         self.objs = parse_obj_args(args.obj)
         self.lifted = read_lifted_names(args.lifted) if args.lifted else None
         self.lift_files = read_lift_files(args.lifted) if args.lifted else None
+        from harness.lib import matched
+        self.recorded = matched.load(getattr(args, 'matched', None) or paths.MATCHED_SET)['functions']
 
     def claims(self):
         out, used = [], set()
@@ -238,7 +243,8 @@ class Run:
                 raise PlacementError(f'0x{address:08x} {name}: no --obj for its unit {source}')
             used.add(obj)
             fn = by_addr.get(address)
-            sym = claimed_symbol(address, source, obj, self.args.game, fn.mangled if fn else '')
+            sym = claimed_symbol(address, source, obj, self.args.game, fn.mangled if fn else '',
+                                 fn.name if fn else '', self.recorded.get('0x%08x' % address))
             out.append(placement.Claim(address, size, sym, name, source, obj))
         return sorted(out, key=lambda c: c.address)
 
@@ -507,6 +513,8 @@ def main(argv=None):
     ap.add_argument('--sdk-symbols', action='append', metavar='TSV',
                     help='more name evidence (default: the harness\'s SDK match tables)')
     ap.add_argument('--game', default=os.path.join(REPO, 'game'))
+    ap.add_argument('--matched', help='the matched set (default analysis/results/matched_set.json): '
+                    'evidence for what an annotation claims')
     ap.add_argument('--exe', help='the original exe: evidence from exact functions, SECTION/SECREL')
     ap.add_argument('--lifted', metavar='GEN', help='the exe lift\'s out/gen directory')
     ap.add_argument('--pcrecomp', default=os.environ.get('SFCOP_PCRECOMP_DIR', ''))

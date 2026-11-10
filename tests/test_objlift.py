@@ -873,3 +873,39 @@ def test_the_compile_key_follows_the_unit_and_every_header(tmp_path):
     assert a3 != a2 and b3 != b2                     # any header: every unit
     assert objcompile.unit_key(objcompile.shared_key(str(game)), 'Test/B.cpp',
                                str(game / 'Test' / 'B.cpp'), dict(profile, flags='/O2')) != b3
+
+
+# A unit with tShip's out-of-class destructor and the /FAs listing VC6 writes for it: the
+# destructor has a line record (3), the scalar deleting destructor generated from it has none.
+DELETING_UNIT = '// FUNCTION: STARFLEETOP 0x00401500\ntShip::~tShip()\n{\n}\n'
+DELETING_LISTING = (
+    '\tTITLE\tship.cpp\n'
+    '_TEXT\tSEGMENT\n'
+    '??1tShip@@UAE@XZ PROC NEAR\t\t; tShip::~tShip, COMDAT\n\n'
+    '; 3    : {\n\n'
+    '\tret\t0\n'
+    '??1tShip@@UAE@XZ ENDP\n'
+    '_TEXT\tENDS\n'
+    '_TEXT\tSEGMENT\n'
+    '??_GtShip@@UAEPAXI@Z PROC NEAR\t\t; tShip::`scalar deleting destructor\', COMDAT\n'
+    '\tcall\t??1tShip@@UAE@XZ\t\t; tShip::~tShip\n'
+    '\tret\t4\n'
+    '??_GtShip@@UAEPAXI@Z ENDP\n'
+    '_TEXT\tENDS\n'
+    'END\n')
+
+
+def test_the_lift_claims_a_deleting_destructor_the_matched_set_alone_names(tmp_path):
+    # functions.csv has no mangled name and a placeholder name for 0x00401500; only its
+    # matched-set entry says it is tShip's scalar deleting destructor. The lift places ??_GtShip
+    # there, as the harness scores it and tools/manifest.py names the row, not the destructor.
+    game = tmp_path / 'game'
+    (game / 'Test').mkdir(parents=True)
+    (game / 'Test' / 'ship.cpp').write_text(DELETING_UNIT)
+    (tmp_path / 'ship.asm').write_text(DELETING_LISTING)
+    obj = str(tmp_path / 'ship.obj')
+    recorded = {'symbol': '??_GtShip@@UAEPAXI@Z', 'name': 'FUN_00401500', 'exact': True}
+    assert objlift.claimed_symbol(0x00401500, 'Test/ship.cpp', obj, str(game), '', 'FUN_00401500',
+                                  recorded) == '??_GtShip@@UAEPAXI@Z'
+    assert objlift.claimed_symbol(0x00401500, 'Test/ship.cpp', obj, str(game), '',
+                                  'FUN_00401500') == '??1tShip@@UAE@XZ'
