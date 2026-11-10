@@ -161,6 +161,11 @@ Branches follow §7.1. Commit scopes are the top-level directory or the componen
 4. `harness/update-matched-set.sh 0x<address>`; `python3 scripts/progress.py --gate`.
 5. Commit: `feat(game/<dir>): decompile <Class>::<Method>`; the matched set change in the same commit.
 
+**Closing a grind batch**
+1. Once the batch's pull requests are merged, on a branch cut from `develop`: `python3 scripts/progress.py --markdown --matched-set analysis/results/matched_set.json`, then `python3 tools/progress_chart.py`. Nothing in the output is edited by hand, and a warning from the second script is fixed, not ignored.
+2. Commit the progress files, the README badges and the treemap together: `chore(progress): regenerate after <batch>`, with the before and after figures in the body.
+3. The progress files are regenerated here and nowhere else: no CI job writes them, and another pull request does so only when it changes how they are computed. Batch pull requests then never conflict over them.
+
 **Adding an HLE entry (a Win32 function or COM method the game calls)**
 1. Row in `src/hle/surface.tsv`: module, name, convention, status.
 2. Implementation in the module's directory, on the component interface only; calling convention and stack purge stated.
