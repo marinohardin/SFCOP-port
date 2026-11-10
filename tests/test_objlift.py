@@ -526,8 +526,10 @@ def test_the_golden_c_has_the_lifting_conventions_written_by_hand():
     assert lines[2:9] == ['    int _fpu_cmp = 0;', '    uint32_t _cf = 0;', '    int _df = 1;',
                           '    uint32_t _flag_k = FK_NONE;', '    uint32_t _flag_a = 0, _flag_b = 0;',
                           '    uint32_t _itail_tgt = 0;', '    RECOMP_REGS_LOCALS']
-    # the hook before RECOMP_ENTER, so the counter sees the caller
-    assert '    sfcop_guest_entered(0u); RECOMP_ENTER(0x00401000u);' in lines
+    # the hook before RECOMP_ENTER, so the counter sees the caller; the index is the table's
+    # constant, so a claim added elsewhere does not change this body
+    assert ('    sfcop_guest_entered(sfcop_objlift_index_00401000); RECOMP_ENTER(0x00401000u);'
+            in lines)
     # the load from the relocated field, the exe's _gValue at 0x00838010
     assert '    eax = MEM32(0x838010); /* 0x00401000: mov eax, dword ptr [0x838010] */' in lines
     # the return pops the return address and leaves through the register write-back
@@ -544,7 +546,7 @@ def test_a_two_instruction_function_lifts_to_the_expected_c(tmp_path):
     out = tmp_path / 'out'
     status, err = run_lift(tmp_path, args + ['--out', str(out)])
     assert status == 0, err
-    code = (out / 'objlift_code.c').read_text()
+    code = (out / 'objlift_code_Test_unit.c').read_text()
     body = code[code.index('/* 0x00401000'):]
     body = body.rstrip('\n') + '\n'
     if os.environ.get('SFCOP_UPDATE_GOLDEN') == '1':
@@ -554,9 +556,11 @@ def test_a_two_instruction_function_lifts_to_the_expected_c(tmp_path):
     table = (out / 'objlift_table.c').read_text()
     assert '    {0x00401000u, sub_00401000, "Value()", "Test/unit.cpp"},\n' in table
     assert 'const unsigned sfcop_guest_override_count = 1u;\n' in table
+    assert 'const unsigned sfcop_objlift_index_00401000 = 0u;\n' in table
     assert 'const unsigned sfcop_guest_object_section_count = 0u;\n' in table
-    assert (out / 'objlift_weak.h').read_text().endswith('#pragma weak sub_00401000\n')
     assert (out / 'objlift_funcs.h').read_text().endswith('void sub_00401000(void);\n')
+    # no --lifted: no exe-lift file to weaken a body in
+    assert not [n for n in os.listdir(out) if n.startswith('objlift_weak')]
 
 
 def test_fresh_code_lifts_under_its_reserved_address_and_loads_the_image(tmp_path):
@@ -566,9 +570,10 @@ def test_fresh_code_lifts_under_its_reserved_address_and_loads_the_image(tmp_pat
     out = tmp_path / 'out'
     status, err = run_lift(tmp_path, args + ['--out', str(out)])
     assert status == 0, err
-    code = (out / 'objlift_code.c').read_text()
+    code = (out / 'objlift_code_Test_unit.c').read_text()
     assert 'RECOMP_CALL(sub_0F000000); /* 0x00401000: call 0xf000000 */' in code
-    assert 'SFCOP_GUEST_OBJECTS_LOAD(); sfcop_guest_entered(0u); RECOMP_ENTER(0x00401000u);' in code
+    assert ('SFCOP_GUEST_OBJECTS_LOAD(); sfcop_guest_entered(sfcop_objlift_index_00401000); '
+            'RECOMP_ENTER(0x00401000u);') in code
     assert 'SFCOP_GUEST_OBJECTS_LOAD(); RECOMP_ENTER(0x0F000000u);' in code
     # The macro is defined in the guest override header, so the code file includes it.
     assert '#include "app/guest/override.h"\n' in code
@@ -577,8 +582,220 @@ def test_fresh_code_lifts_under_its_reserved_address_and_loads_the_image(tmp_pat
             '    0x61, 0x62, 0x63, 0x00,\n};\n') in table
     assert '    {0x0F000004u, 4u, sfcop_guest_object_bytes_1}, /* unit.obj:.rdata#4 */\n' in table
     assert 'const uint32_t sfcop_guest_object_size = 0x10000u;\n' in table
-    weak = (out / 'objlift_weak.h').read_text()
-    assert '#pragma weak sub_00401000\n' in weak and 'sub_0F000000' not in weak
+    # the fresh body is declared in the unit's own file; the claimed one too, beside recomp_funcs.h
+    assert 'void sub_00401000(void);\nvoid sub_0F000000(void);\n' in code
+    assert 'extern const unsigned sfcop_objlift_index_00401000;\n' in code
+
+
+def test_the_lift_weakens_each_claimed_body_in_its_own_exe_lift_file(tmp_path):
+    obj = code_and_data_object()
+    args = cli_inputs(tmp_path, obj, [(0x00401000, 17, 'f()')],
+                      [(0x00401000, 17, 'f', '_f'), (0x00839104, 4, 'gCount', '_gCount')])
+    gen = fake_exe_lift(tmp_path / 'gen', [[0x00400000], [0x00401000, 0x00402000], []])
+    out = tmp_path / 'out'
+    status, err = run_lift(tmp_path, args + ['--out', str(out), '--lifted', str(gen)])
+    assert status == 0, err
+    assert (out / 'objlift_weak_0000.h').read_text() == WEAK_HEAD % '0000'
+    # the fresh helper at 0x0F000000 has no exe-lift body to weaken
+    assert (out / 'objlift_weak_0001.h').read_text() == (WEAK_HEAD % '0001'
+                                                         + '#pragma weak sub_00401000\n')
+    assert (out / 'objlift_weak_0002.h').read_text() == WEAK_HEAD % '0002'
+    disp = (out / 'objlift_dispatch.c').read_text()
+    assert '    { 0x00401000u, sub_00401000 },\n    { 0x00402000u, sub_00402000 },\n' \
+           '    { 0x0F000000u, sub_0F000000 },\n};\n' in disp
+
+
+# --- per-unit and per-file output -----------------------------------------------------------------
+# These emit with bodies written by hand in place of pcrecomp's, so they run everywhere: what they
+# hold is which file each body and each weak line goes to, and which files a change rewrites.
+
+WEAK_HEAD = ('/* Generated by tools/objlift/objlift.py from the VC6 objects of the claimed units. */\n'
+             '/* The bodies of recomp_%s.c that the lifted objects replace. */\n')
+
+
+def fake_exe_lift(gen, files):
+    """An exe lift's out/gen: recomp_NNNN.c defining the bodies of files[N], their declarations
+    and a dispatch table of all of them."""
+    gen.mkdir(parents=True, exist_ok=True)
+    every = sorted(va for f in files for va in f)
+    for i, vas in enumerate(files):
+        (gen / f'recomp_{i:04d}.c').write_text(
+            '#include "recomp_types.h"\n\n'
+            + ''.join(f'void sub_{va:08X}(void) {{\n    RECOMP_ENTER(0x{va:08X}u);\n}}\n\n'
+                      for va in vas))
+    (gen / 'recomp_funcs.h').write_text(''.join(f'void sub_{va:08X}(void);\n' for va in every))
+    (gen / 'recomp_dispatch.c').write_text(
+        'const recomp_dispatch_entry_t recomp_dispatch_table[] = {\n'
+        + ''.join(f'    {{ 0x{va:08X}u, sub_{va:08X} }},\n' for va in every)
+        + '};\nconst uint32_t sfcop_entry_va = 0x00400000u;\n')
+    return gen
+
+
+def ret_object(*functions):
+    """One COMDAT section per (symbol, bytes), each a function."""
+    o = mc.Obj()
+    for sym, code in functions:
+        t = o.section('.text', code, mc.CODE | mc.COMDAT | mc.ALIGN_16, selection=mc.NODUPLICATES)
+        o.define(sym, t, 0, function=True)
+    return o
+
+
+XOR_RET = b'\x33\xc0\xc3'   # xor eax, eax / ret
+
+
+def two_unit_inputs(tmp_path, claims):
+    """Units Test/A.cpp (_a) and Test/B.cpp (_b, _b2); claims: [(address, symbol, unit)]."""
+    write(tmp_path, 'A.obj', ret_object(('_a', XOR_RET)))
+    write(tmp_path, 'B.obj', ret_object(('_b', XOR_RET), ('_b2', XOR_RET)))
+    with open(tmp_path / 'manifest.tsv', 'w', newline='') as f:
+        f.write('address\tsize\tsymbol\tsource\tmodes\n')
+        for address, sym, unit in claims:
+            f.write(f'0x{address:08x}\t3\t{sym[1:]}()\tTest/{unit}.cpp\tvc6\n')
+    with open(tmp_path / 'functions.csv', 'w', newline='') as f:
+        w = csv.writer(f)
+        w.writerow(FUNCTIONS_HEADER)
+        for address, sym, _unit in claims:
+            w.writerow([f'{address:08x}', 3, sym[1:], sym, '', 'test', '', '', '', '0', '',
+                        'function', ''])
+    (tmp_path / 'sdk.tsv').write_text('address\tname\n')
+    (tmp_path / 'game').mkdir(exist_ok=True)
+
+
+def emit_by_hand(tmp_path, out, gen):
+    """objlift's placement and emit, each claimed body lifted 'by hand' to a one-line C body that
+    calls the function at the next claim's address, as a lifted call would."""
+    import argparse
+    import liftcode
+    a = argparse.Namespace(
+        symbols=str(tmp_path / 'functions.csv'), sdk_symbols=[str(tmp_path / 'sdk.tsv')], exe=None,
+        obj=[f'Test/A.cpp={tmp_path / "A.obj"}', f'Test/B.cpp={tmp_path / "B.obj"}'],
+        lifted=str(gen), manifest=str(tmp_path / 'manifest.tsv'), game=str(tmp_path / 'game'))
+    run = objlift.Run(a)
+    claims, result = run.place()
+    bodies = []
+    for c in claims:
+        sec = next(s for s in result.sections if c in s.claims)
+        bodies.append(liftcode.Body(
+            c.address, 'sub_%08X' % c.address,
+            'void sub_%08X(void) { sfcop_guest_entered(%s); }\n' % (c.address,
+                                                                  objlift.index_name(c.address)),
+            sec, True))
+    files = objlift.emit(run, claims, result, bodies)
+    return objlift.write_or_check(str(out), files, False)
+
+
+def unit_file(unit, decls, bodies):
+    """A unit's code file as it is written: the head, then decls and bodies as given."""
+    return ('/* Generated by tools/objlift/objlift.py from the VC6 objects of the claimed units. */\n'
+            f'/* game/Test/{unit}.cpp */\n'
+            '#define RECOMP_GENERATED_CODE\n#include "recomp_types.h"\n#include "recomp_funcs.h"\n'
+            '#include "app/guest/override.h"\n#include <math.h>\n#include <string.h>\n\n'
+            + decls + '\n' + bodies)
+
+
+A_FILE = unit_file('A', 'void sub_00402000(void);\n'
+                   'extern const unsigned sfcop_objlift_index_00402000;\n',
+                   '/* 0x00402000 claimed .text, game/Test/A.cpp */\n'
+                   'void sub_00402000(void) { sfcop_guest_entered(sfcop_objlift_index_00402000); }\n\n')
+B_FILE = unit_file('B', 'void sub_00403000(void);\n'
+                   'extern const unsigned sfcop_objlift_index_00403000;\n',
+                   '/* 0x00403000 claimed .text, game/Test/B.cpp */\n'
+                   'void sub_00403000(void) { sfcop_guest_entered(sfcop_objlift_index_00403000); }\n\n')
+
+
+def test_the_code_file_name_is_the_units_path_as_a_c_identifier():
+    assert objlift.code_file_name('Common/DynamicAllocator.cpp') == \
+        'objlift_code_Common_DynamicAllocator.c'
+    assert objlift.code_file_name('unsorted/t3DListenerProfile.cpp') == \
+        'objlift_code_unsorted_t3DListenerProfile.c'
+    assert objlift.code_file_name('3d/a-b.c') == 'objlift_code__3d_a_b.c'
+
+
+def test_read_lift_files_says_which_exe_lift_file_defines_each_body(tmp_path):
+    gen = fake_exe_lift(tmp_path, [[0x00401000], [0x00402000, 0x00403000]])
+    assert objlift.read_lift_files(str(gen)) == (
+        {0x00401000: '0000', 0x00402000: '0001', 0x00403000: '0001'}, ['0000', '0001'])
+    (gen / 'recomp_0002.c').write_text('void sub_00401000(void) {\n}\n')
+    with pytest.raises(PlacementError, match='sub_00401000 is defined in both recomp_0000.c and '
+                                             'recomp_0002.c'):
+        objlift.read_lift_files(str(gen))
+
+
+def test_each_unit_and_each_exe_lift_file_gets_its_own_file(tmp_path):
+    two_unit_inputs(tmp_path, [(0x00402000, '_a', 'A'), (0x00403000, '_b', 'B')])
+    gen = fake_exe_lift(tmp_path / 'gen', [[0x00401000], [0x00402000], [0x00403000], []])
+    out = tmp_path / 'out'
+    emit_by_hand(tmp_path, out, gen)
+    assert sorted(os.listdir(out)) == [
+        'objlift_code_Test_A.c', 'objlift_code_Test_B.c', 'objlift_dispatch.c', 'objlift_funcs.h',
+        'objlift_report.txt', 'objlift_table.c', 'objlift_weak_0000.h', 'objlift_weak_0001.h',
+        'objlift_weak_0002.h', 'objlift_weak_0003.h']
+    assert (out / 'objlift_code_Test_A.c').read_text() == A_FILE
+    assert (out / 'objlift_code_Test_B.c').read_text() == B_FILE
+    assert (out / 'objlift_weak_0000.h').read_text() == WEAK_HEAD % '0000'
+    assert (out / 'objlift_weak_0001.h').read_text() == (WEAK_HEAD % '0001'
+                                                         + '#pragma weak sub_00402000\n')
+    assert (out / 'objlift_weak_0002.h').read_text() == (WEAK_HEAD % '0002'
+                                                         + '#pragma weak sub_00403000\n')
+    assert (out / 'objlift_weak_0003.h').read_text() == WEAK_HEAD % '0003'
+    table = (out / 'objlift_table.c').read_text()
+    assert ('const unsigned sfcop_objlift_index_00402000 = 0u;\n'
+            'const unsigned sfcop_objlift_index_00403000 = 1u;\n') in table
+
+
+def test_a_second_emit_of_the_same_input_touches_nothing(tmp_path):
+    two_unit_inputs(tmp_path, [(0x00402000, '_a', 'A'), (0x00403000, '_b', 'B')])
+    gen = fake_exe_lift(tmp_path / 'gen', [[0x00401000], [0x00402000], [0x00403000], []])
+    out = tmp_path / 'out'
+    assert len(emit_by_hand(tmp_path, out, gen)) == 10
+    for n in os.listdir(out):
+        os.utime(out / n, ns=(1_000_000_000, 1_000_000_000))
+    assert emit_by_hand(tmp_path, out, gen) == []
+    assert {os.stat(out / n).st_mtime_ns for n in os.listdir(out)} == {1_000_000_000}
+
+
+def test_a_new_claim_rewrites_only_its_units_file_and_its_weak_header(tmp_path):
+    two_unit_inputs(tmp_path, [(0x00402000, '_a', 'A'), (0x00403000, '_b', 'B')])
+    gen = fake_exe_lift(tmp_path / 'gen', [[0x00401000], [0x00402000], [0x00403000], []])
+    out = tmp_path / 'out'
+    emit_by_hand(tmp_path, out, gen)
+    for n in os.listdir(out):
+        os.utime(out / n, ns=(1_000_000_000, 1_000_000_000))
+    # B's second function, claimed below A's: every index in the table moves up by one
+    two_unit_inputs(tmp_path, [(0x00401000, '_b2', 'B'), (0x00402000, '_a', 'A'),
+                               (0x00403000, '_b', 'B')])
+    changed = emit_by_hand(tmp_path, out, gen)
+    assert changed == ['objlift_code_Test_B.c', 'objlift_funcs.h', 'objlift_report.txt',
+                       'objlift_table.c', 'objlift_weak_0000.h']
+    # the dispatch table changes only with a fresh body: the exe lift's already names 0x00401000
+    untouched = ['objlift_code_Test_A.c', 'objlift_dispatch.c', 'objlift_weak_0001.h',
+                 'objlift_weak_0002.h', 'objlift_weak_0003.h']
+    assert {os.stat(out / n).st_mtime_ns for n in untouched} == {1_000_000_000}
+    assert (out / 'objlift_code_Test_A.c').read_text() == A_FILE
+    assert (out / 'objlift_weak_0000.h').read_text() == (WEAK_HEAD % '0000'
+                                                         + '#pragma weak sub_00401000\n')
+    table = (out / 'objlift_table.c').read_text()
+    assert ('const unsigned sfcop_objlift_index_00401000 = 0u;\n'
+            'const unsigned sfcop_objlift_index_00402000 = 1u;\n'
+            'const unsigned sfcop_objlift_index_00403000 = 2u;\n') in table
+
+
+def test_a_unit_no_longer_claimed_loses_its_file_and_the_old_single_files_go(tmp_path):
+    two_unit_inputs(tmp_path, [(0x00402000, '_a', 'A'), (0x00403000, '_b', 'B')])
+    gen = fake_exe_lift(tmp_path / 'gen', [[0x00401000], [0x00402000], [0x00403000], []])
+    out = tmp_path / 'out'
+    out.mkdir()
+    (out / 'objlift_code.c').write_text('old\n')
+    (out / 'objlift_weak.h').write_text('old\n')
+    (out / 'objlift_unrelated.txt').write_text('kept\n')
+    emit_by_hand(tmp_path, out, gen)
+    assert not (out / 'objlift_code.c').exists() and not (out / 'objlift_weak.h').exists()
+    two_unit_inputs(tmp_path, [(0x00402000, '_a', 'A')])
+    emit_by_hand(tmp_path, out, gen)
+    assert not (out / 'objlift_code_Test_B.c').exists()
+    assert (out / 'objlift_code_Test_A.c').read_text() == A_FILE
+    assert (out / 'objlift_weak_0002.h').read_text() == WEAK_HEAD % '0002'
+    assert (out / 'objlift_unrelated.txt').read_text() == 'kept\n'
 
 
 # --- against the install ---------------------------------------------------------------------------
@@ -629,3 +846,30 @@ def test_partial_and_stub_rows_are_neither_compiled_nor_lifted(tmp_path):
     assert objlift.read_manifest(str(m)) == [(0x00401000, 24, 'A()', 'Test/Exact.cpp'),
                                              (0x00401400, 20, 'E::E()', 'Test/Ctor.cpp')]
     assert objcompile.claimed_units(str(m)) == ['Test/Exact.cpp', 'Test/Ctor.cpp']
+
+
+def test_the_compile_key_follows_the_unit_and_every_header(tmp_path):
+    game = tmp_path / 'game'
+    (game / 'Test').mkdir(parents=True)
+    (game / 'Test' / 'A.cpp').write_text('#include "A.h"\nint a;\n')
+    (game / 'Test' / 'B.cpp').write_text('int b;\n')
+    (game / 'Test' / 'A.h').write_text('int x;\n')
+    (game / 'manifest.tsv').write_text('address\n')
+    profile = {'name': 'p', 'flags': '/O1'}
+
+    def keys():
+        shared = objcompile.shared_key(str(game))
+        return [objcompile.unit_key(shared, f'Test/{u}.cpp', str(game / 'Test' / f'{u}.cpp'),
+                                    profile) for u in 'AB']
+    a, b = keys()
+    assert keys() == [a, b]
+    (game / 'Test' / 'A.cpp').write_text('#include "A.h"\nint a;  // a comment\n')
+    a2, b2 = keys()
+    assert a2 != a and b2 == b                       # one unit's source: that unit only
+    (game / 'manifest.tsv').write_text('address\nmore\n')
+    assert keys() == [a2, b2]                        # the manifest is not a compile input
+    (game / 'Test' / 'A.h').write_text('int y;\n')
+    a3, b3 = keys()
+    assert a3 != a2 and b3 != b2                     # any header: every unit
+    assert objcompile.unit_key(objcompile.shared_key(str(game)), 'Test/B.cpp',
+                               str(game / 'Test' / 'B.cpp'), dict(profile, flags='/O2')) != b3

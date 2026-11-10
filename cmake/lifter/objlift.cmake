@@ -7,12 +7,16 @@
 #   2. tools/objlift/objlift.py places its object's sections, resolves its relocations against the
 #      exe's symbols and lifts its code with pcrecomp in the lifter container, against this lift.
 # Then, in this file:
-#   - sfcop_objlift, an OBJECT library, holds the lifted bodies, the override table, the data image
-#     of any section placed in the reserved guest range, and the exe lift's dispatch table with the
-#     new bodies merged in (it replaces recomp_dispatch.c in sfcop_lifted);
-#   - every file of sfcop_lifted is compiled with objlift_weak.h, which declares the exe-lift bodies
-#     of the claimed functions weak, so the strong lifted-object bodies win for direct calls, the
-#     dispatch table and every guest vtable slot;
+#   - sfcop_objlift, an OBJECT library, holds the lifted bodies (one objlift_code_<UNIT>.c per
+#     claimed unit), the override table, the data image of any section placed in the reserved
+#     guest range, and the exe lift's dispatch table with the new bodies merged in (it replaces
+#     recomp_dispatch.c in sfcop_lifted);
+#   - every recomp_NNNN.c of sfcop_lifted is compiled with its own objlift_weak_NNNN.h, which
+#     declares weak the exe-lift bodies of that file the claimed functions replace, so the strong
+#     lifted-object bodies win for direct calls, the dispatch table and every guest vtable slot;
+#   - objlift.py rewrites a file only when its content changed and compile.py recompiles a unit
+#     only when its source or a header changed, so a change to one unit recompiles that unit's
+#     code file, the exe-lift files that hold its claimed functions, and the table and dispatch;
 #   - the objects are linked through sfcop_lifted's interface (an archive member would never be
 #     loaded to replace a symbol that is already defined, even weakly), and override.cpp, the
 #     empty guest-mode table, leaves sfcop_src.
@@ -27,6 +31,7 @@ set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_sfcop_manifes
 file(STRINGS "${_sfcop_manifest}" _sfcop_rows)
 set(_sfcop_claimed 0)
 set(_sfcop_units "")
+set(_sfcop_unit_code "")
 foreach(_row IN LISTS _sfcop_rows)
     string(REPLACE "\t" ";" _f "${_row}")
     list(LENGTH _f _n)
@@ -41,8 +46,13 @@ foreach(_row IN LISTS _sfcop_rows)
     endif()
     math(EXPR _sfcop_claimed "${_sfcop_claimed} + 1")
     list(APPEND _sfcop_units "${CMAKE_SOURCE_DIR}/game/${_unit}")
+    # objlift.py's code_file_name: the unit's path without its extension, as a C identifier.
+    string(REGEX REPLACE "\\.[^./]*$" "" _stem "${_unit}")
+    string(MAKE_C_IDENTIFIER "${_stem}" _stem)
+    list(APPEND _sfcop_unit_code "objlift_code_${_stem}.c")
 endforeach()
 list(REMOVE_DUPLICATES _sfcop_units)
+list(REMOVE_DUPLICATES _sfcop_unit_code)
 
 if(NOT SFCOP_OBJLIFT OR _sfcop_claimed EQUAL 0)
     if(NOT SFCOP_OBJLIFT)
@@ -57,9 +67,18 @@ if("$CACHE{SFCOP_GUEST_MODE}")
 endif()
 
 set(SFCOP_OBJLIFT_DIR "${CMAKE_BINARY_DIR}/objlift")
-set(_sfcop_objlift_files objlift_code.c objlift_funcs.h objlift_table.c objlift_dispatch.c
-    objlift_weak.h objlift_report.txt)
+# One weak header per exe-lift file: recomp_0012.c is compiled with objlift_weak_0012.h.
+set(_sfcop_weak_headers "")
+foreach(_c IN LISTS _sfcop_lifted_c)
+    get_filename_component(_n "${_c}" NAME_WE)
+    string(REPLACE "recomp_" "objlift_weak_" _n "${_n}")
+    list(APPEND _sfcop_weak_headers "${SFCOP_OBJLIFT_DIR}/${_n}.h")
+endforeach()
+list(TRANSFORM _sfcop_unit_code PREPEND "${SFCOP_OBJLIFT_DIR}/" OUTPUT_VARIABLE _sfcop_unit_code)
+set(_sfcop_objlift_files objlift_funcs.h objlift_table.c objlift_dispatch.c objlift_report.txt)
 list(TRANSFORM _sfcop_objlift_files PREPEND "${SFCOP_OBJLIFT_DIR}/" OUTPUT_VARIABLE _sfcop_objlift_out)
+# Byproducts: with Ninja the step restats them, so a file objlift.py left untouched rebuilds nothing.
+list(APPEND _sfcop_objlift_out ${_sfcop_unit_code} ${_sfcop_weak_headers})
 
 # What the lift reads: game/ (a header change can change any unit's code), the manifest, the
 # compiler profiles, the symbol evidence, the exe and its lift, and the tools themselves.
@@ -86,7 +105,7 @@ add_custom_command(
     VERBATIM)
 add_custom_target(sfcop_objlift_gen DEPENDS "${SFCOP_OBJLIFT_DIR}/objlift.stamp")
 
-add_library(sfcop_objlift OBJECT "${SFCOP_OBJLIFT_DIR}/objlift_code.c"
+add_library(sfcop_objlift OBJECT ${_sfcop_unit_code}
     "${SFCOP_OBJLIFT_DIR}/objlift_table.c" "${SFCOP_OBJLIFT_DIR}/objlift_dispatch.c")
 target_include_directories(sfcop_objlift PRIVATE "${SFCOP_OBJLIFT_DIR}" ${SFCOP_RECOMP_INCLUDES}
     "${CMAKE_SOURCE_DIR}/src")
@@ -99,9 +118,10 @@ add_dependencies(sfcop_objlift sfcop_objlift_gen)
 get_target_property(_sfcop_lifted_sources sfcop_lifted SOURCES)
 list(REMOVE_ITEM _sfcop_lifted_sources "${_sfcop_gen}/recomp_dispatch.c")
 set_property(TARGET sfcop_lifted PROPERTY SOURCES ${_sfcop_lifted_sources})
-target_compile_options(sfcop_lifted PRIVATE -include "${SFCOP_OBJLIFT_DIR}/objlift_weak.h")
-set_source_files_properties(${_sfcop_lifted_sources} PROPERTIES
-    OBJECT_DEPENDS "${SFCOP_OBJLIFT_DIR}/objlift_weak.h")
+foreach(_c _h IN ZIP_LISTS _sfcop_lifted_c _sfcop_weak_headers)
+    set_property(SOURCE "${_c}" APPEND PROPERTY COMPILE_OPTIONS -include "${_h}")
+    set_property(SOURCE "${_c}" APPEND PROPERTY OBJECT_DEPENDS "${_h}")
+endforeach()
 add_dependencies(sfcop_lifted sfcop_objlift_gen sfcop_objlift)
 target_link_libraries(sfcop_lifted INTERFACE $<TARGET_OBJECTS:sfcop_objlift>)
 
