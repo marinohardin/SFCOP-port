@@ -1,11 +1,16 @@
 #!/bin/sh
 # Installs the pinned cross toolchains (pins.env) under SFCOP_TOOLS_DIR, outside the repository:
 #
-#   sh cmake/toolchains/setup.sh [llvm] [linux] [windows]     (no argument: all three)
+#   sh cmake/toolchains/setup.sh [llvm] [linux] [windows] [linux-arm64] [windows-arm64]
+#                                                    (no argument: llvm, linux and windows)
 #
 #   $SFCOP_TOOLS_DIR/llvm/<LLVM_VERSION>/                                 clang, clang-cl, lld, ...
 #   $SFCOP_TOOLS_DIR/sysroots/linux-x64/steamrt3-sniper-<version>/        glibc 2.31, GCC 10
 #   $SFCOP_TOOLS_DIR/sysroots/windows-x64/msvc-<crt>-sdk-<sdk>/           MSVC CRT, Windows SDK
+#   $SFCOP_TOOLS_DIR/sysroots/linux-arm64/debian12-<snapshot>/            glibc 2.36, GCC 12
+#   $SFCOP_TOOLS_DIR/sysroots/windows-arm64/msvc-<crt>-sdk-<sdk>/         the same, aarch64
+#
+# The two arm64 sysroots serve the release packages (packaging/README.md); PR CI does not use them.
 #
 # Idempotent: an install whose stamp names the pinned hash is left alone. A download or an
 # installed tree whose SHA-256 differs from the pin is refused and removed. Downloads go to
@@ -17,7 +22,8 @@ set -eu
 here=$(cd "$(dirname "$0")" && pwd)
 # shellcheck source=pins.env
 . "$here/pins.env"
-tools=${SFCOP_TOOLS_DIR:-$SFCOP_ROOT/tools}
+tools=${SFCOP_TOOLS_DIR:-}
+[ -n "$tools" ] || { echo "setup: error: set SFCOP_TOOLS_DIR to the folder to install the toolchains into" >&2; exit 2; }
 downloads=${SFCOP_TOOLCHAIN_DOWNLOADS:-$tools/.downloads}
 
 say() { printf 'setup: %s\n' "$*"; }
@@ -147,9 +153,18 @@ install_linux() {
 }
 
 install_windows() {
-    dest=$tools/sysroots/windows-x64/msvc-$WINDOWS_CRT_VERSION-sdk-$WINDOWS_SDK_VERSION
-    if installed "$dest" "$WINDOWS_SYSROOT_TREE_SHA256"; then say "windows sysroot: installed"; return 0; fi
-    command -v docker >/dev/null 2>&1 || die "windows sysroot: docker is needed to run xwin"
+    install_windows_arch x86_64 windows-x64 "$WINDOWS_SYSROOT_TREE_SHA256" "windows sysroot"
+}
+
+install_windows_arm64() {
+    install_windows_arch aarch64 windows-arm64 "$WINDOWS_ARM64_SYSROOT_TREE_SHA256" "windows arm64 sysroot"
+}
+
+# install_windows_arch <xwin arch> <sysroot folder> <tree pin> <name>
+install_windows_arch() {
+    arch=$1 dest=$tools/sysroots/$2/msvc-$WINDOWS_CRT_VERSION-sdk-$WINDOWS_SDK_VERSION pin=$3 name=$4
+    if installed "$dest" "$pin"; then say "$name: installed"; return 0; fi
+    command -v docker >/dev/null 2>&1 || die "$name: docker is needed to run xwin"
     file=xwin-$XWIN_VERSION-aarch64-unknown-linux-musl.tar.gz
     fetch "$XWIN_URL" "$file" "$XWIN_SHA256" "$XWIN_SIZE"
     work=$downloads/xwin-work
@@ -166,22 +181,67 @@ install_windows() {
 EOF
     # The licence acceptance is the owner's (README.md, "Licence"). The splat keeps no case
     # symlinks: the tools volume is case-insensitive APFS, where they would collide.
-    say "windows sysroot: MSVC CRT $WINDOWS_CRT_VERSION and Windows SDK $WINDOWS_SDK_VERSION via xwin $XWIN_VERSION"
+    say "$name: MSVC CRT $WINDOWS_CRT_VERSION and Windows SDK $WINDOWS_SDK_VERSION ($arch) via xwin $XWIN_VERSION"
     nice -n 19 docker run --rm \
         -v "$work:/work" "$XWIN_IMAGE" \
         /work/bin/xwin --accept-license --cache-dir /work/cache --manifest /work/channel.json \
-            --arch x86_64 --variant desktop \
+            --arch "$arch" --variant desktop \
             --crt-version "$WINDOWS_CRT_VERSION" --sdk-version "$WINDOWS_SDK_VERSION" \
             splat --output /work/out --disable-symlinks
     # One mount for the cache and the output: xwin moves files from one to the other.
     mkdir -p "$(dirname "$dest")"
     mv "$work/out" "$dest.tmp"
-    check_tree "$dest.tmp" "$WINDOWS_SYSROOT_TREE_SHA256" "windows sysroot"
+    check_tree "$dest.tmp" "$pin" "$name"
     rm -rf "$dest"
     mv "$dest.tmp" "$dest"
-    printf '%s\n' "$WINDOWS_SYSROOT_TREE_SHA256" > "$dest/.sfcop-pin"
+    printf '%s\n' "$pin" > "$dest/.sfcop-pin"
     rm -rf "$work" "$downloads/$file"
-    say "windows sysroot: installed in $dest"
+    say "$name: installed in $dest"
+}
+
+# The Linux arm64 sysroot: Debian 12 (bookworm) arm64, because the Steam Runtime 3 has no arm64
+# build. The pinned image (native arm64 on the Mac) installs the -dev packages of glibc, libstdc++
+# and of what SDL3 probes for from the Debian snapshot archive at the pinned time, and streams the
+# headers and link libraries out, sorted by name; the tree hash pins what is kept.
+install_linux_arm64() {
+    dest=$tools/sysroots/linux-arm64/debian12-$LINUX_ARM64_SYSROOT_SNAPSHOT
+    if installed "$dest" "$LINUX_ARM64_SYSROOT_TREE_SHA256"; then say "linux arm64 sysroot: installed"; return 0; fi
+    command -v docker >/dev/null 2>&1 || die "linux arm64 sysroot: docker is needed"
+    rm -rf "$dest.tmp"
+    mkdir -p "$dest.tmp"
+    say "linux arm64 sysroot: Debian 12 arm64 from the snapshot of $LINUX_ARM64_SYSROOT_SNAPSHOT"
+    nice -n 19 docker run --rm --platform linux/arm64 -e SNAP="$LINUX_ARM64_SYSROOT_SNAPSHOT" \
+        "$LINUX_ARM64_SYSROOT_IMAGE" sh -euc '
+        exec 3>&1 1>&2
+        rm -f /etc/apt/sources.list.d/*
+        echo "deb [check-valid-until=no] http://snapshot.debian.org/archive/debian/$SNAP bookworm main" > /etc/apt/sources.list
+        echo "deb [check-valid-until=no] http://snapshot.debian.org/archive/debian/$SNAP bookworm-updates main" >> /etc/apt/sources.list
+        echo "deb [check-valid-until=no] http://snapshot.debian.org/archive/debian-security/$SNAP bookworm-security main" >> /etc/apt/sources.list
+        apt-get -o Acquire::Retries=3 update -qq
+        DEBIAN_FRONTEND=noninteractive apt-get install -qq -y --no-install-recommends \
+            libc6-dev libstdc++-12-dev libgcc-12-dev \
+            libx11-dev libxext-dev libxcursor-dev libxi-dev libxfixes-dev libxrandr-dev \
+            libxss-dev libxrender-dev libxtst-dev libxinerama-dev libxkbcommon-dev \
+            libwayland-dev libegl-dev libgl-dev libgles-dev libdrm-dev libgbm-dev \
+            libasound2-dev libpulse-dev libpipewire-0.3-dev libjack-jackd2-dev libudev-dev \
+            libdbus-1-dev libibus-1.0-dev libdecor-0-dev libusb-1.0-0-dev libvulkan-dev \
+            libfribidi-dev libthai-dev >/dev/null
+        cd /
+        tar --sort=name --numeric-owner -cf - \
+            --exclude usr/lib/aarch64-linux-gnu/dri --exclude "usr/lib/aarch64-linux-gnu/libLLVM*" \
+            --exclude usr/lib/aarch64-linux-gnu/perl --exclude usr/lib/aarch64-linux-gnu/perl-base \
+            --exclude usr/lib/aarch64-linux-gnu/gconv --exclude "usr/lib/aarch64-linux-gnu/libicudata*" \
+            --exclude "usr/lib/gcc/aarch64-linux-gnu/*/cc1*" --exclude "usr/lib/gcc/aarch64-linux-gnu/*/lto*" \
+            --exclude "usr/lib/gcc/aarch64-linux-gnu/*/plugin" --exclude "usr/include/Fl" --exclude "usr/include/FL" \
+            lib usr/lib/ld-linux-aarch64.so.1 usr/include usr/lib/aarch64-linux-gnu \
+            usr/lib/gcc/aarch64-linux-gnu usr/share/pkgconfig >&3
+    ' | nice -n 19 tar -xf - -C "$dest.tmp"
+    python3 -I "$here/sysroot.py" relink "$dest.tmp"
+    check_tree "$dest.tmp" "$LINUX_ARM64_SYSROOT_TREE_SHA256" "linux arm64 sysroot"
+    rm -rf "$dest"
+    mv "$dest.tmp" "$dest"
+    printf '%s\n' "$LINUX_ARM64_SYSROOT_TREE_SHA256" > "$dest/.sfcop-pin"
+    say "linux arm64 sysroot: installed in $dest"
 }
 
 [ $# -gt 0 ] || set -- llvm linux windows
@@ -190,7 +250,9 @@ for part in "$@"; do
         llvm) install_llvm ;;
         linux) install_linux ;;
         windows) install_windows ;;
-        *) die "unknown part: $part (llvm, linux, windows)" ;;
+        linux-arm64) install_linux_arm64 ;;
+        windows-arm64) install_windows_arm64 ;;
+        *) die "unknown part: $part (llvm, linux, windows, linux-arm64, windows-arm64)" ;;
     esac
 done
 rmdir "$downloads" 2>/dev/null || true

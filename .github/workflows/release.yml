@@ -1,0 +1,215 @@
+name: Release
+
+# Builds the five release packages on the self-hosted Mac and attaches them to a DRAFT GitHub
+# release for the tag (packaging/README.md). Never part of pull-request CI. The draft is never
+# published here: the owner reviews it and publishes it.
+#
+#   macos-arm64    SFCOP-<version>-macos-arm64.dmg           (SFCOP.app, unsigned)
+#   linux-x64      SFCOP-<version>-linux-x64.tar.gz          (+ .AppImage when it builds)
+#   linux-arm64    SFCOP-<version>-linux-arm64.tar.gz        (+ .AppImage when it builds)
+#   windows-x64    SFCOP-<version>-windows-x64.zip
+#   windows-arm64  SFCOP-<version>-windows-arm64.zip
+#
+# The packages carry the native client with the lifted game code (DESIGN §7.2). The `lift` input
+# turns that off: the draft then carries only the source archive (`scripts/dist.sh source`).
+# Every package is checked by packaging/check_package.py before it is attached: no retail file, no
+# mission module, nothing but the client's own files.
+#
+# The runner needs, in its environment: SFCOP_INSTALL_DIR and SFCOP_PCRECOMP_DIR (the lift's
+# inputs; never written in this file), the cross toolchains under SFCOP_TOOLS_DIR (`sh
+# cmake/toolchains/setup.sh llvm linux windows linux-arm64 windows-arm64`), and Docker.
+# SFCOP_RELEASE_BUILD_ROOT moves the build trees and packages (default: work/release on the
+# external drive, because a lift build is several GB). The builds run one after another, each at
+# nice 19 with -j4, and the lift of each preset carries over from run to run.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      lift:
+        description: "Package the lifted client (off: a draft with the source archive only)"
+        type: boolean
+        default: true
+      tag:
+        description: "The draft's tag (default: v plus the VERSION file; a suffix makes a trial draft)"
+        type: string
+        required: false
+
+permissions:
+  contents: write
+
+# One release run at a time, whatever its tag: a dispatch and a tag push of the same version
+# would otherwise race for one draft, and the runner builds one lift at a time anyway.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  # One job: the packages go straight from the build folder to the draft release and are never
+  # uploaded as workflow artifacts. A preset that fails is named in the draft's notes; the others
+  # are still attached.
+  package:
+    runs-on: [self-hosted, sfcop-mac]
+    timeout-minutes: 600
+    env:
+      # Asked for; the next steps turn it into LIFT, which is false when the runner lacks the
+      # lift's inputs.
+      WANT_LIFT: ${{ github.event_name == 'push' && 'true' || github.event.inputs.lift }}
+      SFCOP_APPIMAGE: optional
+      # Empty once the lifted client builds for Windows; until then the two Windows steps are
+      # skipped and the draft's notes give this reason (cmake/toolchains/README.md, "Known failures").
+      WINDOWS_NOT_YET: "the lifted client does not build for Windows yet: pcrecomp's win32hle runtime includes POSIX headers, and the guest host's exception hooks are not declared on Windows"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup
+
+      # The lift's inputs are masked before anything can print them: their values, their real
+      # paths and the install's parent folder. No step prints them; release_step.sh also replaces
+      # them in the lines it shows.
+      - name: The tag, the version and the folders
+        shell: bash
+        env:
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -eu
+          for name in SFCOP_INSTALL_DIR SFCOP_PCRECOMP_DIR; do
+            value=${!name:-}
+            [ -n "$value" ] || continue
+            echo "::add-mask::$value"
+            real=$(cd "$value" 2>/dev/null && pwd -P || true)
+            [ -z "$real" ] || echo "::add-mask::$real"
+            echo "::add-mask::$(dirname "$value")"
+          done
+          if [ "$EVENT" = push ]; then tag=$GITHUB_REF_NAME; else tag=${INPUT_TAG:-}; fi
+          if ! sh packaging/release_tag.sh "$EVENT" "$tag" VERSION > "$RUNNER_TEMP/tag.env"; then
+            echo "::error::the release tag is refused (packaging/release_tag.sh says why above)"
+            exit 1
+          fi
+          . "$RUNNER_TEMP/tag.env"
+          # The build trees and packages: SFCOP_RELEASE_BUILD_ROOT, else work/release beside the
+          # tools folder (a lift build is several GB; never the runner's internal tool cache).
+          if [ -n "${SFCOP_RELEASE_BUILD_ROOT:-}" ]; then
+            root=$SFCOP_RELEASE_BUILD_ROOT
+          elif [ -n "${SFCOP_TOOLS_DIR:-}" ]; then
+            root=$(dirname "$SFCOP_TOOLS_DIR")/work/release
+          else
+            echo "::error::set SFCOP_RELEASE_BUILD_ROOT (or SFCOP_TOOLS_DIR) in the runner's environment: the release builds need several GB on a disk with room"
+            exit 1
+          fi
+          dist=$root/dist/$SFCOP_VERSION
+          rm -rf "$dist"
+          mkdir -p "$dist" "$root/logs" "$root/tmp"
+          {
+            cat "$RUNNER_TEMP/tag.env"
+            echo "RELEASE_ROOT=$root"
+            echo "SFCOP_DIST_DIR=$dist"
+            echo "SFCOP_CHECK_TMP=$root/tmp"
+          } >> "$GITHUB_ENV"
+          echo "tag $TAG, version $SFCOP_VERSION, packages in $dist"
+
+      - name: The package checks' own tests (the dmg one included)
+        timeout-minutes: 5
+        run: SFCOP_TEST_DMG=1 python3 -m pytest tests/test_packaging.py -q
+
+      # The values of SFCOP_INSTALL_DIR and SFCOP_PCRECOMP_DIR are never printed: only set or
+      # unset. Without them a lift run warns and makes the source-only draft instead.
+      - name: The lift's inputs
+        shell: bash
+        run: |
+          set -eu
+          lift=false
+          if [ "$WANT_LIFT" = true ]; then
+            install=unset pcrecomp=unset
+            [ -n "${SFCOP_INSTALL_DIR:-}" ] && install=set
+            [ -n "${SFCOP_PCRECOMP_DIR:-}" ] && pcrecomp=set
+            echo "SFCOP_INSTALL_DIR: $install; SFCOP_PCRECOMP_DIR: $pcrecomp"
+            if [ "$install" = set ] && [ "$pcrecomp" = set ]; then
+              lift=true
+            else
+              echo "::warning::the lift's inputs are not in the runner's environment (SFCOP_INSTALL_DIR $install, SFCOP_PCRECOMP_DIR $pcrecomp): no client is built, and the draft carries the source archive only. The owner adds both to the runner's environment file and restarts the runner."
+            fi
+          fi
+          echo "LIFT=$lift" >> "$GITHUB_ENV"
+          echo "lift: $lift"
+
+      # Each preset: build with the lift and package (scripts/dist.sh), one after another.
+      # continue-on-error keeps one preset's failure from losing the others; the last step names it.
+      # The build's output stays in RELEASE_ROOT/logs on the runner and is not printed here: the
+      # configure and the lift can name the install's folder. A cross preset whose toolchain cannot
+      # be read fails its own step only (release_step.sh).
+      - name: macos-arm64
+        id: macos_arm64
+        if: env.LIFT == 'true'
+        continue-on-error: true
+        timeout-minutes: 120
+        run: sh packaging/release_step.sh macos-arm64
+
+      - name: linux-x64
+        id: linux_x64
+        if: env.LIFT == 'true'
+        continue-on-error: true
+        timeout-minutes: 120
+        run: sh packaging/release_step.sh linux-x64
+
+      - name: linux-arm64
+        id: linux_arm64
+        if: env.LIFT == 'true'
+        continue-on-error: true
+        timeout-minutes: 120
+        run: sh packaging/release_step.sh linux-arm64
+
+      - name: windows-x64
+        id: windows_x64
+        if: env.LIFT == 'true' && env.WINDOWS_NOT_YET == ''
+        continue-on-error: true
+        timeout-minutes: 120
+        run: sh packaging/release_step.sh windows-x64
+
+      - name: windows-arm64
+        id: windows_arm64
+        if: env.LIFT == 'true' && env.WINDOWS_NOT_YET == ''
+        continue-on-error: true
+        timeout-minutes: 120
+        run: sh packaging/release_step.sh windows-arm64
+
+      - name: The source archive
+        if: env.LIFT != 'true'
+        run: sh scripts/dist.sh source
+
+      - name: Check every asset and make the draft release
+        timeout-minutes: 30
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OUTCOMES: >-
+            macos-arm64=${{ steps.macos_arm64.outcome }}
+            linux-x64=${{ steps.linux_x64.outcome }}
+            linux-arm64=${{ steps.linux_arm64.outcome }}
+            windows-x64=${{ steps.windows_x64.outcome }}
+            windows-arm64=${{ steps.windows_arm64.outcome }}
+        run: |
+          set -eu
+          python3 -I packaging/release_notes.py --dist "$SFCOP_DIST_DIR" --version "$SFCOP_VERSION" \
+            --lift "$LIFT" --commit "$GITHUB_SHA" --outcomes "$OUTCOMES" \
+            --hash-list analysis/results/retail_hashes.sha256 \
+            --reason "windows-x64=${WINDOWS_NOT_YET}" --reason "windows-arm64=${WINDOWS_NOT_YET}" \
+            --notes "$RELEASE_ROOT/notes.md" --assets "$RELEASE_ROOT/assets.txt"
+          if [ ! -s "$RELEASE_ROOT/assets.txt" ]; then
+            echo "::error::no package was built; see the notes:"
+            cat "$RELEASE_ROOT/notes.md"
+            exit 1
+          fi
+          sh packaging/draft_release.sh "$TAG" "SFCOP $SFCOP_VERSION" "$RELEASE_ROOT/notes.md" \
+            "$RELEASE_ROOT/assets.txt" "$GITHUB_SHA"
+          # The draft holds what was built; a preset that failed still fails the run.
+          failed=0
+          for item in $OUTCOMES; do
+            if [ "${item#*=}" = failure ]; then
+              echo "::error::${item%%=*} was not built; the draft's notes name it, and its log is ${item%%=*}.log in the release root's logs"
+              failed=1
+            fi
+          done
+          exit "$failed"

@@ -173,15 +173,21 @@ void runOracle(const OracleJob &job) {
 int main(int argc, char **argv) {
     using namespace sfcop;
     using namespace sfcop::app;
-    // From SFCOP.app the hash list is the bundle's copy; a build run in place reads the source
-    // tree's (app/Bundle.h).
+    // From SFCOP.app the hash list is the bundle's copy, from a package the copy beside the
+    // client; a build run in place reads the source tree's (app/Bundle.h). A package build
+    // compiles in no list and no install (SFCOP_PACKAGE_BUILD).
     const std::string hashList = hashListFor(executablePath(), SFCOP_HASH_LIST, hostFileSystem());
+    if (hashList.empty()) {
+        std::fprintf(stderr, "sfcop: no %s beside the client or in its bundle; the package is "
+                             "incomplete\n", kBundledHashList);
+        return 1;
+    }
     if (!bundleResourcesDir(executablePath()).empty() && hashList == SFCOP_HASH_LIST) {
         std::fprintf(stderr, "sfcop: the bundle has no %s in Resources; using the build's list\n",
                      kBundledHashList);
     }
-    const Startup start =
-        startClient(argc, argv, consoleStartup(hashList, kClientFlags, {SFCOP_INSTALL_DIR}));
+    const Startup start = startClient(
+        argc, argv, consoleStartup(hashList, kClientFlags, builtInInstallDirs(SFCOP_INSTALL_DIR)));
     if (start.exitCode) {
         return *start.exitCode;
     }
@@ -258,6 +264,14 @@ int main(int argc, char **argv) {
         job.logPath = joinPath(logsDir, "OracleTrace.txt");
         job.outPath = recordTrace ? *recordTrace
                                   : joinPath(joinPath(logsDir, names->mission), names->input + ".trace");
+        // A package build names no source tree (SFCOP_PACKAGE_BUILD): the oracle's tools are then
+        // found only through SFCOP_ORACLE_TOOLS.
+        const std::optional<std::string> oracleTools = hostEnvironment()("SFCOP_ORACLE_TOOLS");
+        if (std::string(SFCOP_HASH_LIST).empty() && (!oracleTools || oracleTools->empty())) {
+            std::fprintf(stderr, "sfcop: a packaged client has no source tree for the oracle's "
+                                 "tools; set SFCOP_ORACLE_TOOLS to its oracle/trace folder\n");
+            return kExitBadInput;
+        }
         job.sourceDir = app::oracle::sourceDirOfHashList(SFCOP_HASH_LIST);
         job.tools = app::oracle::toolsOf(job.sourceDir, hostEnvironment());
         job.tools.dir = app::oracle::absoluteFrom(startedIn, job.tools.dir);

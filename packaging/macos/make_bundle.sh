@@ -9,7 +9,7 @@
 # Contents/Frameworks with load paths inside the bundle, the hash list and the icon in
 # Contents/Resources, and nothing from the original game: packaging/macos/check_bundle.py
 # refuses the bundle otherwise. It is signed ad hoc, which lets its owner run it on this Mac; it
-# is not a release (DESIGN §12.2). SFCOP_PYTHON names the Python for check_bundle.py (CMake passes
+# is not yet a release package (scripts/dist.sh makes that). SFCOP_PYTHON names the Python for check_bundle.py (CMake passes
 # its own); python3 on PATH otherwise.
 set -eu
 
@@ -28,9 +28,10 @@ for file in "$sfcop" "$sdl2" "$sdl3" "$hash_list" "$here/SFCOP.icns"; do
     fi
 done
 
-# The version: git describe of the source, the commit count as the build number (numeric, as
-# CFBundleVersion wants); the project's version when the source is not a git checkout.
-version=$(git -C "$source" describe --tags --always --dirty 2>/dev/null || echo "$project_version")
+# The version: SFCOP_VERSION when scripts/dist.sh packages a release, else git describe of the
+# source, the commit count as the build number (numeric, as CFBundleVersion wants); the project's
+# version when the source is not a git checkout.
+version=${SFCOP_VERSION:-$(git -C "$source" describe --tags --always --dirty 2>/dev/null || echo "$project_version")}
 build_number=$(git -C "$source" rev-list --count HEAD 2>/dev/null || echo 0)
 # The minimum macOS the client was linked for.
 min_macos=$(vtool -show-build "$sfcop" 2>/dev/null | awk '$1 == "minos" { print $2; exit }')

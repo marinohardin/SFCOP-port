@@ -40,3 +40,37 @@ TEST_CASE("a build run in place, or a bundle without the list, keeps the compile
     MemoryFileSystem empty;
     CHECK(hashListFor("/dist/SFCOP.app/Contents/MacOS/sfcop", kBuiltIn, empty) == kBuiltIn);
 }
+
+TEST_CASE("a Linux or Windows package's hash list beside the executable is used") {
+    MemoryFileSystem files;
+    files.files["/opt/SFCOP-0.1.0-alpha-linux-x64/retail_hashes.sha256"] = "invented\n";
+    files.files["C:\\Games\\SFCOP\\retail_hashes.sha256"] = "invented\n";
+    CHECK(hashListFor("/opt/SFCOP-0.1.0-alpha-linux-x64/sfcop", kBuiltIn, files) ==
+          "/opt/SFCOP-0.1.0-alpha-linux-x64/retail_hashes.sha256");
+    CHECK(hashListFor("C:\\Games\\SFCOP\\sfcop.exe", kBuiltIn, files) ==
+          "C:\\Games\\SFCOP\\retail_hashes.sha256");
+    CHECK(hashListFor("/opt/elsewhere/sfcop", kBuiltIn, files) == kBuiltIn);
+}
+
+TEST_CASE("inside a bundle, the Resources copy wins over one beside the executable") {
+    MemoryFileSystem files;
+    files.files["/dist/SFCOP.app/Contents/Resources/retail_hashes.sha256"] = "invented\n";
+    files.files["/dist/SFCOP.app/Contents/MacOS/retail_hashes.sha256"] = "invented\n";
+    CHECK(hashListFor("/dist/SFCOP.app/Contents/MacOS/sfcop", kBuiltIn, files) ==
+          "/dist/SFCOP.app/Contents/Resources/retail_hashes.sha256");
+}
+
+TEST_CASE("a package build: the list beside the client is used, and no install is a candidate") {
+    MemoryFileSystem files;
+    files.files["/opt/SFCOP-0.1.0-alpha-linux-x64/bin/retail_hashes.sha256"] = "invented\n";
+    CHECK(hashListFor("/opt/SFCOP-0.1.0-alpha-linux-x64/bin/sfcop", "", files) ==
+          "/opt/SFCOP-0.1.0-alpha-linux-x64/bin/retail_hashes.sha256");
+    files.files["/dist/SFCOP.app/Contents/Resources/retail_hashes.sha256"] = "invented\n";
+    CHECK(hashListFor("/dist/SFCOP.app/Contents/MacOS/sfcop", "", files) ==
+          "/dist/SFCOP.app/Contents/Resources/retail_hashes.sha256");
+    CHECK(hashListFor("/opt/elsewhere/sfcop", "", files) == "");
+    CHECK(builtInInstallDirs("").empty());
+    const std::vector<std::string> one = builtInInstallDirs("/games/Test Install");
+    REQUIRE(one.size() == 1);
+    CHECK(one[0] == "/games/Test Install");
+}

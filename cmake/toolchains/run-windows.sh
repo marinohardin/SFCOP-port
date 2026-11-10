@@ -11,7 +11,9 @@
 set -eu
 
 [ $# -ge 1 ] || { echo "usage: run-windows.sh <program.exe> [arguments...]" >&2; exit 2; }
-tools=${SFCOP_TOOLS_DIR:-$SFCOP_ROOT/tools}
+tools=${SFCOP_TOOLS_DIR:-}
+[ -n "$tools" ] || [ -n "${SFCOP_WINE_BIN:-}" ] ||
+    { echo "run-windows.sh: set SFCOP_TOOLS_DIR to the folder setup.sh installed into (or SFCOP_WINE_BIN)" >&2; exit 2; }
 wine_bin=${SFCOP_WINE_BIN:-$tools/wine/stable-11.0_1/Wine Stable.app/Contents/Resources/wine/bin}
 [ -x "$wine_bin/wine" ] || { echo "run-windows.sh: no Wine at $wine_bin (set SFCOP_WINE_BIN)" >&2; exit 1; }
 prog_dir=$(cd "$(dirname "$1")" && pwd)
