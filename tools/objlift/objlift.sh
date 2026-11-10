@@ -9,7 +9,8 @@
 #                exe lift's image, with capstone), against the exe lift in --gen -> DIR/objlift_*
 #
 # The lifter container runs with no network, the repository, the exe, the exe lift and pcrecomp
-# read-only, and only DIR writable. objlift.py rewrites a file only when its content changed, so an
+# read-only, and only DIR writable. compile.py recompiles a unit only when its source or a header
+# changed, and objlift.py rewrites a file only when its content changed, so an
 # unchanged unit recompiles nothing downstream. --lift-only skips step 1 (objects already in
 # DIR/obj); OBJLIFT_PYTHON=<python with capstone> runs step 2 without the container.
 set -eu

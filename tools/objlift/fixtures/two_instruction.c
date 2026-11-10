@@ -7,7 +7,7 @@ void sub_00401000(void) {
     uint32_t _flag_a = 0, _flag_b = 0;
     uint32_t _itail_tgt = 0;
     RECOMP_REGS_LOCALS
-    sfcop_guest_entered(0u); RECOMP_ENTER(0x00401000u);
+    sfcop_guest_entered(sfcop_objlift_index_00401000); RECOMP_ENTER(0x00401000u);
 
 L_00401000:
     eax = MEM32(0x838010); /* 0x00401000: mov eax, dword ptr [0x838010] */
