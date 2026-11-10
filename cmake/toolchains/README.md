@@ -12,6 +12,7 @@ needs none of this.
 | `sysroot.py` | `tree-hash` (the content hash a sysroot is pinned by) and `relink` (absolute symlinks made relative) |
 | `pins.cmake` | Read by both toolchain files: the pins, the tools folder, LLVM |
 | `windows-x64.cmake`, `linux-x64.cmake` | The toolchain files |
+| `windows-arm64.cmake`, `linux-arm64.cmake` | The arm64 toolchain files, for the release packages only (`packaging/README.md`); PR CI does not build them |
 | `run-windows.sh`, `run-linux.sh` | `CMAKE_CROSSCOMPILING_EMULATOR`: run a built program under Wine, or in a `linux/amd64` container |
 | `check-readable.sh` | CI's first step on a cross preset: fails in 20 seconds, naming the cause, if the toolchain cannot be read (see "The runner") |
 
@@ -27,6 +28,19 @@ ctest --test-dir <build> --output-on-failure  # in the container
 The same for `windows-x64` (tests under Wine). With `-DSFCOP_LIFT=ON`, `SFCOP_INSTALL_DIR` and
 `SFCOP_PCRECOMP_DIR`, the build also lifts the original and builds `sfcop`. `ctest --preset <p>`
 works on the default build folder `build/<p>`.
+
+### The arm64 presets
+
+`linux-arm64` and `windows-arm64` exist for the release packages. `sh cmake/toolchains/setup.sh
+linux-arm64 windows-arm64` installs their sysroots (the default `setup.sh` with no argument does
+not). Windows arm64 uses the same MSVC CRT and Windows SDK pins as x64, laid out by xwin for
+`aarch64`. Linux arm64 cannot use the Steam Runtime 3, which has no arm64 build; its sysroot is
+Debian 12 "bookworm" arm64 (glibc 2.36, GCC 12's libstdc++), made by the pinned `debian:bookworm-slim`
+image from the Debian snapshot archive at the pinned time (`LINUX_ARM64_SYSROOT_*` in `pins.env`)
+and pinned by its tree hash. `linux-arm64`'s tests run in that same image, natively on an arm64
+Mac (`run-linux.sh` with `SFCOP_RUN_PLATFORM=linux/arm64`; `run-tests.sh linux-arm64`).
+`windows-arm64` has no emulator: Wine on the Mac does not run Windows arm64 programs, so its tests
+are built and not run here.
 
 ## Tests
 
@@ -60,6 +74,9 @@ repository, and neither do SDL's libraries. The owner builds `sfcop` locally.
 The test cases `expected-failures.tsv` names, one entry per defect. The causes are suspected from
 the failing assertion and the code it exercises; the owner named is the package that wrote the
 module, who confirms the cause when fixing it.
+
+KF-1 to KF-3 are Linux's, not an architecture's: `linux-arm64` lists the same test cases as
+`linux-x64`.
 
 **KF-1: a second `connect()` on a connected socket succeeds on Linux.** After a non-blocking
 connect has completed, the host Transport calls `connect()` again and Linux returns 0 where macOS
@@ -119,6 +136,8 @@ preset until both are fixed. Owners: the lifter (pcrecomp, integrator) and B6.
 | LLVM 22.1.8, the official macOS arm64 release: clang, clang++, clang-cl, lld (ld.lld, lld-link), llvm-ar, llvm-lib, llvm-rc, llvm-nm, llvm-objcopy, llvm-objdump, llvm-readobj, and clang's own headers | the archive's SHA-256 | `llvm/22.1.8/` |
 | The Linux sysroot: the Steam Runtime 3 "sniper" SDK sysroot 3.0.20261021.266025 (Debian 11 base, glibc 2.31, GCC 10's libstdc++), x86_64 headers and link libraries only | the archive's SHA-256 and the tree hash | `sysroots/linux-x64/steamrt3-sniper-<version>/` |
 | The Windows sysroot: the MSVC CRT 14.44.17.14 and the Windows SDK 10.0.26100, x86_64 desktop, from the Visual Studio 17.14.44 installer manifest, laid out by xwin 0.10.0 run in the pinned Alpine image | the installer manifest's SHA-256 (xwin checks each package against it) and the tree hash | `sysroots/windows-x64/msvc-<crt>-sdk-<sdk>/` |
+| The Windows arm64 sysroot: the same, aarch64 | the same, and its own tree hash | `sysroots/windows-arm64/msvc-<crt>-sdk-<sdk>/` |
+| The Linux arm64 sysroot: Debian 12 arm64 headers and link libraries (glibc 2.36, GCC 12), about 210 MB | the image digest, the snapshot time and the tree hash | `sysroots/linux-arm64/debian12-<snapshot>/` |
 
 Nothing comes from Homebrew. Downloads land in `SFCOP_TOOLCHAIN_DOWNLOADS` (default
 `<tools>/.downloads`) and are deleted once their tree is installed. The Windows sysroot is laid
@@ -167,7 +186,7 @@ The runner needs no installer step; CI never downloads a toolchain. Its environm
 
 | Variable | Meaning |
 | --- | --- |
-| `SFCOP_TOOLS_DIR` | The tools folder `setup.sh` installed into (default `$SFCOP_ROOT/tools`) |
+| `SFCOP_TOOLS_DIR` | The tools folder `setup.sh` installed into; the scripts stop with an error when it is unset |
 | `SFCOP_LLVM_DIR`, `SFCOP_LINUX_SYSROOT`, `SFCOP_WINDOWS_SYSROOT` | Optional: one part somewhere else |
 | `SFCOP_WINE_BIN` | Optional: the folder holding `wine` and `wineserver` (default: the Wine under the tools folder) |
 | `SFCOP_CROSS_WINEPREFIX` | Optional: the Wine prefix the Windows tests use (default: `wine-prefix` in the build folder) |

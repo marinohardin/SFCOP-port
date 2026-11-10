@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=SFCOP
+GenericName=Starship tactics
+Comment=Starfleet Command II: Orion Pirates 2.5.5.2, native; needs your own install of the game
+Exec=sfcop
+Icon=sfcop
+Terminal=true
+Categories=Game;StrategyGame;

@@ -1,0 +1,22 @@
+SFCOP @VERSION@ for Linux @ARCH@
+================================
+
+A native client for Star Trek Starfleet Command II: Orion Pirates 2.5.5.2. It contains no file
+of the original game: you need your own install, patched to 2.5.5.2. Alpha software.
+
+Run it from a terminal the first time, pointing it at your install:
+
+    ./sfcop --install "/path/to/Starfleet Command Orion Pirates"
+
+It checks every file of the install against the known hashes (retail_hashes.sha256 in bin/),
+remembers the path, and never writes into the install. Later runs need no argument. Settings,
+saves and logs live in ~/.local/share/SFCOP ($XDG_DATA_HOME/SFCOP when that is set).
+
+Needs glibc @GLIBC@ or later, and X11 (or Xwayland) with OpenGL or Vulkan drivers. The SDL
+libraries the client needs are in lib/; ./sfcop puts them on the library path.
+
+Missions: the mission list needs translated mission modules, which this package does not carry
+(they are made from your install's own files). See "Installing a release" in the project's
+README for the one-time step; without them the menus run and missions are missing.
+
+`./sfcop --help` lists the options.

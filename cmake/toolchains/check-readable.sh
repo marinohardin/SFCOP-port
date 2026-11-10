@@ -14,8 +14,9 @@ set -eu
 here=$(cd "$(dirname "$0")" && pwd)
 # shellcheck source=pins.env
 . "$here/pins.env"
-[ $# -eq 1 ] || { echo "usage: check-readable.sh <windows-x64|linux-x64>" >&2; exit 2; }
-tools=${SFCOP_TOOLS_DIR:-$SFCOP_ROOT/tools}
+[ $# -eq 1 ] || { echo "usage: check-readable.sh <windows-x64|linux-x64|windows-arm64|linux-arm64>" >&2; exit 2; }
+tools=${SFCOP_TOOLS_DIR:-}
+[ -n "$tools" ] || { echo "check-readable.sh: set SFCOP_TOOLS_DIR to the folder setup.sh installed into" >&2; exit 2; }
 llvm=${SFCOP_LLVM_DIR:-$tools/llvm/$LLVM_VERSION}
 case $1 in
     linux-x64)
@@ -23,6 +24,12 @@ case $1 in
         probe=$sysroot/usr/include/stdio.h ;;
     windows-x64)
         sysroot=${SFCOP_WINDOWS_SYSROOT:-$tools/sysroots/windows-x64/msvc-$WINDOWS_CRT_VERSION-sdk-$WINDOWS_SDK_VERSION}
+        probe=$sysroot/crt/include/vcruntime.h ;;
+    linux-arm64)
+        sysroot=${SFCOP_LINUX_ARM64_SYSROOT:-$tools/sysroots/linux-arm64/debian12-$LINUX_ARM64_SYSROOT_SNAPSHOT}
+        probe=$sysroot/usr/include/stdio.h ;;
+    windows-arm64)
+        sysroot=${SFCOP_WINDOWS_ARM64_SYSROOT:-$tools/sysroots/windows-arm64/msvc-$WINDOWS_CRT_VERSION-sdk-$WINDOWS_SDK_VERSION}
         probe=$sysroot/crt/include/vcruntime.h ;;
     *) echo "check-readable.sh: no cross preset $1" >&2; exit 2 ;;
 esac

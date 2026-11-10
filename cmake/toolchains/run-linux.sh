@@ -5,8 +5,10 @@
 #   sh cmake/toolchains/run-linux.sh <program> [arguments...]
 #
 # The program's folder, the current folder and the checkout (read-only) are mounted at the same
-# paths, so the absolute paths ctest and the tests use still work. SFCOP_RUN_MOUNTS adds folders (colon-separated, mounted
-# read-only at the same paths). The container has no network and runs as the calling user.
+# paths, so the absolute paths ctest and the tests use still work. SFCOP_RUN_PLATFORM and
+# SFCOP_RUN_IMAGE choose another platform and image (linux-arm64: linux/arm64 and
+# LINUX_ARM64_RUN_IMAGE). SFCOP_RUN_MOUNTS adds folders (colon-separated, mounted read-only at the
+# same paths). The container has no network and runs as the calling user.
 set -eu
 
 here=$(cd "$(dirname "$0")" && pwd)
@@ -42,6 +44,6 @@ IFS=$old_ifs
 case "$prog_dir$cwd$source_dir${SFCOP_RUN_MOUNTS:-}" in
     *" "*) echo "run-linux.sh: paths with spaces cannot be mounted: $prog_dir, $cwd" >&2; exit 2 ;;
 esac
-exec docker run --rm --platform linux/amd64 --network none \
+exec docker run --rm --platform "${SFCOP_RUN_PLATFORM:-linux/amd64}" --network none \
     --user "$(id -u):$(id -g)" -e HOME=/tmp -e SFCOP_SKIP_TIMING_TESTS \
-    $mounts -w "$cwd" "$LINUX_RUN_IMAGE" "$@"
+    $mounts -w "$cwd" "${SFCOP_RUN_IMAGE:-$LINUX_RUN_IMAGE}" "$@"

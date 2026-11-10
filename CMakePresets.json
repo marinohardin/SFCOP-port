@@ -33,12 +33,26 @@
       "inherits": "base",
       "displayName": "Linux x64 (clang, ld.lld, Steam Runtime 3 sysroot; cross from macOS)",
       "toolchainFile": "${sourceDir}/cmake/toolchains/linux-x64.cmake"
+    },
+    {
+      "name": "linux-arm64",
+      "inherits": "base",
+      "displayName": "Linux arm64 (clang, ld.lld, Debian 12 sysroot; cross from macOS; release packages)",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/linux-arm64.cmake"
+    },
+    {
+      "name": "windows-arm64",
+      "inherits": "base",
+      "displayName": "Windows arm64 (clang for aarch64-windows-msvc, lld-link, MSVC CRT; cross from macOS; release packages)",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/windows-arm64.cmake"
     }
   ],
   "buildPresets": [
     { "name": "macos-arm64", "configurePreset": "macos-arm64", "jobs": 4 },
     { "name": "windows-x64", "configurePreset": "windows-x64", "jobs": 4 },
-    { "name": "linux-x64", "configurePreset": "linux-x64", "jobs": 4 }
+    { "name": "linux-x64", "configurePreset": "linux-x64", "jobs": 4 },
+    { "name": "linux-arm64", "configurePreset": "linux-arm64", "jobs": 4 },
+    { "name": "windows-arm64", "configurePreset": "windows-arm64", "jobs": 4 }
   ],
   "testPresets": [
     {
@@ -58,6 +72,13 @@
       "name": "linux-x64",
       "displayName": "Linux x64 tests in a linux/amd64 container (cmake/toolchains/run-linux.sh)",
       "configurePreset": "linux-x64",
+      "output": { "outputOnFailure": true },
+      "execution": { "jobs": 1, "noTestsAction": "error", "timeout": 900 }
+    },
+    {
+      "name": "linux-arm64",
+      "displayName": "Linux arm64 tests in a linux/arm64 container (cmake/toolchains/run-linux.sh)",
+      "configurePreset": "linux-arm64",
       "output": { "outputOnFailure": true },
       "execution": { "jobs": 1, "noTestsAction": "error", "timeout": 900 }
     }

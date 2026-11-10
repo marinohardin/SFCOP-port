@@ -18,6 +18,10 @@ build=$(cd "$2" && pwd)
 case $preset in
     windows-x64) run="sh $here/run-windows.sh"; tests=$build/sfcop_tests.exe ;;
     linux-x64) run="sh $here/run-linux.sh"; tests=$build/sfcop_tests ;;
+    linux-arm64)
+        . "$here/pins.env"
+        run="env SFCOP_RUN_PLATFORM=linux/arm64 SFCOP_RUN_IMAGE=$LINUX_ARM64_RUN_IMAGE sh $here/run-linux.sh"
+        tests=$build/sfcop_tests ;;
     *) echo "run-tests.sh: no cross preset $preset" >&2; exit 2 ;;
 esac
 [ -f "$tests" ] || { echo "run-tests.sh: $tests is not built" >&2; exit 1; }

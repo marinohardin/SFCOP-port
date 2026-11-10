@@ -38,7 +38,22 @@ std::string hashListFor(const std::string &executable, const std::string &builtI
             return bundled;
         }
     }
+    std::size_t exeStart = 0;
+    componentBefore(executable, executable.size(), exeStart);
+    if (exeStart > 0) {
+        const std::string beside = executable.substr(0, exeStart) + kBundledHashList;
+        if (files.fileSize(beside)) {
+            return beside;
+        }
+    }
     return builtIn;
+}
+
+std::vector<std::string> builtInInstallDirs(const std::string &builtIn) {
+    if (builtIn.empty()) {
+        return {};
+    }
+    return {builtIn};
 }
 
 } // namespace sfcop::app
