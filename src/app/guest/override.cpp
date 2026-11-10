@@ -16,6 +16,7 @@
 #include "Tiger/tsay.h"
 #include "Tiger/tsequence.h"
 #include "unsorted/t3DListenerProfile.cpp"
+#include "unsorted/tCloakSystem.cpp"
 #include "unsorted/tDynamicMemoryFreeListViaHandles.cpp"
 #include "unsorted/tEntity.h"
 
@@ -531,129 +532,219 @@ extern "C" void sub_004356A8(void) {
     ::sfcop::guest::Entry< ::sfcop::guest::member< double() >( &t3DListenerProfile::fn_004356a8 ) >::run();
 }
 
+// tCloakSystem::vfunction100(int), game/unsorted/tCloakSystem.cpp
+extern "C" void sub_004382BE(void) {
+    ::sfcop::guest::entered(85);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int ) >( &tCloakSystem::vfunction100 ) >::run();
+}
+
+// tCloakSystem::fn_004382cb(), game/unsorted/tCloakSystem.cpp
+extern "C" void sub_004382CB(void) {
+    ::sfcop::guest::entered(86);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< bool() >( &tCloakSystem::fn_004382cb ) >::run();
+}
+
+// tCloakSystem::fn_004382e3(), game/unsorted/tCloakSystem.cpp
+extern "C" void sub_004382E3(void) {
+    ::sfcop::guest::entered(87);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< float() >( &tCloakSystem::fn_004382e3 ) >::run();
+}
+
+// tCloakSystem::vfunction103(int), game/unsorted/tCloakSystem.cpp
+extern "C" void sub_004382EA(void) {
+    ::sfcop::guest::entered(88);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int ) >( &tCloakSystem::vfunction103 ) >::run();
+}
+
+// tCloakSystem::vfunction102(bool*), game/unsorted/tCloakSystem.cpp
+extern "C" void sub_0043835D(void) {
+    ::sfcop::guest::entered(89);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< int( bool* ) >( &tCloakSystem::vfunction102 ) >::run();
+}
+
+// tCloakSystem::fn_00438390(), game/unsorted/tCloakSystem.cpp
+extern "C" void sub_00438390(void) {
+    ::sfcop::guest::entered(90);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tCloakSystem::fn_00438390 ) >::run();
+}
+
+// tCloakSystem::vfunction62(), game/unsorted/tCloakSystem.cpp
+extern "C" void sub_0043839D(void) {
+    ::sfcop::guest::entered(91);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tCloakSystem::vfunction62 ) >::run();
+}
+
+// tCloakSystem::vfunction63(), game/unsorted/tCloakSystem.cpp
+extern "C" void sub_004384A5(void) {
+    ::sfcop::guest::entered(92);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tCloakSystem::vfunction63 ) >::run();
+}
+
+// tCloakSystem::mDetermineCloakWeaponRange(float,int), game/unsorted/tCloakSystem.cpp
+extern "C" void sub_00438522(void) {
+    ::sfcop::guest::entered(93);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< float( float, int ) >( &tCloakSystem::mDetermineCloakWeaponRange ) >::run();
+}
+
+// tCloakSystem::mDetermineCloakSeekingWeaponDamageModifier(int,int), game/unsorted/tCloakSystem.cpp
+extern "C" void sub_00438607(void) {
+    ::sfcop::guest::entered(94);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< float( int, int ) >( &tCloakSystem::mDetermineCloakSeekingWeaponDamageModifier ) >::run();
+}
+
+// tCloakSystem::vfunction40(float), game/unsorted/tCloakSystem.cpp
+extern "C" void sub_004386BC(void) {
+    ::sfcop::guest::entered(95);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( float ) >( &tCloakSystem::vfunction40 ) >::run();
+}
+
+// tCloakSystem::vfunction39(float), game/unsorted/tCloakSystem.cpp
+extern "C" void sub_004386F3(void) {
+    ::sfcop::guest::entered(96);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( float ) >( &tCloakSystem::vfunction39 ) >::run();
+}
+
+// tCloakSystem::vfunction23(int,unsigned int,int), game/unsorted/tCloakSystem.cpp
+extern "C" void sub_00438877(void) {
+    ::sfcop::guest::entered(97);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned int( int, unsigned int, int ) >( &tCloakSystem::vfunction23 ) >::run();
+}
+
+// tCloakSystem::vfunction72(), game/unsorted/tCloakSystem.cpp
+extern "C" void sub_0043894D(void) {
+    ::sfcop::guest::entered(98);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< float() >( &tCloakSystem::vfunction72 ) >::run();
+}
+
+// tCloakSystem::vfunction76(float,int), game/unsorted/tCloakSystem.cpp
+extern "C" void sub_00438974(void) {
+    ::sfcop::guest::entered(99);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< float( float, int ) >( &tCloakSystem::vfunction76 ) >::run();
+}
+
 // tPart::mValidateParts(), game/Tiger/tpart.cpp
 extern "C" void sub_00628A60(void) {
-    ::sfcop::guest::entered(85);
+    ::sfcop::guest::entered(100);
     ::sfcop::guest::Entry< static_cast< void (*)() >( &tPart::mValidateParts ) >::run();
 }
 
 // tPart::mActivateParts(), game/Tiger/tpart.cpp
 extern "C" void sub_00628C20(void) {
-    ::sfcop::guest::entered(86);
+    ::sfcop::guest::entered(101);
     ::sfcop::guest::Entry< static_cast< void (*)() >( &tPart::mActivateParts ) >::run();
 }
 
 // tPart::mDeactivateParts(), game/Tiger/tpart.cpp
 extern "C" void sub_00628DA0(void) {
-    ::sfcop::guest::entered(87);
+    ::sfcop::guest::entered(102);
     ::sfcop::guest::Entry< static_cast< void (*)() >( &tPart::mDeactivateParts ) >::run();
 }
 
 // tPart::mAddToPartCachePtrList(tPart **), game/Tiger/tpart.cpp
 extern "C" void sub_00628E50(void) {
-    ::sfcop::guest::entered(88);
+    ::sfcop::guest::entered(103);
     ::sfcop::guest::Entry< static_cast< void (*)( tPart ** ) >( &tPart::mAddToPartCachePtrList ) >::run();
 }
 
 // tAtomicLock::mAcquire(), game/Tiger/tatomic.cpp
 extern "C" void sub_00628EF0(void) {
-    ::sfcop::guest::entered(89);
+    ::sfcop::guest::entered(104);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth() >( &tAtomicLock::mAcquire ) >::run();
 }
 
 // tAtomicLock::mRelease(), game/Tiger/tatomic.cpp
 extern "C" void sub_00628F20(void) {
-    ::sfcop::guest::entered(90);
+    ::sfcop::guest::entered(105);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tAtomicLock::mRelease ) >::run();
 }
 
 // clib::memset(void *,int8u,iCount), game/Tiger/tcglue.cpp
 extern "C" void sub_0062DDB0(void) {
-    ::sfcop::guest::entered(91);
+    ::sfcop::guest::entered(106);
     ::sfcop::guest::Entry< static_cast< void (*)( void *, int8u, iCount ) >( &clib::memset ) >::run();
 }
 
 // clib::strcpy(char *,const char *), game/Tiger/tcglue.cpp
 extern "C" void sub_0062DDE0(void) {
-    ::sfcop::guest::entered(92);
+    ::sfcop::guest::entered(107);
     ::sfcop::guest::Entry< static_cast< void (*)( char *, const char * ) >( &clib::strcpy ) >::run();
 }
 
 // clib::memcpy(void *,const void *,size_t), game/Tiger/tcglue.cpp
 extern "C" void sub_0062DE10(void) {
-    ::sfcop::guest::entered(93);
+    ::sfcop::guest::entered(108);
     ::sfcop::guest::Entry< static_cast< void * (*)( void *, const void *, size_t ) >( &clib::memcpy ) >::run();
 }
 
 // tCRandomSequence::mSetSeed(int32u), game/Tiger/tcrandsequence.cpp
 extern "C" void sub_0066C1C0(void) {
-    ::sfcop::guest::entered(94);
+    ::sfcop::guest::entered(109);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( int32u ) >( &tCRandomSequence::mSetSeed ) >::run();
 }
 
 // tCRandomSequence::mGenerateNumber(), game/Tiger/tcrandsequence.cpp
 extern "C" void sub_0066C1E0(void) {
-    ::sfcop::guest::entered(95);
+    ::sfcop::guest::entered(110);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32u() >( &tCRandomSequence::mGenerateNumber ) >::run();
 }
 
 // tSay::mHandleOutput(const int,const char *), game/Tiger/tsay.cpp
 extern "C" void sub_0066C6A0(void) {
-    ::sfcop::guest::entered(96);
+    ::sfcop::guest::entered(111);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( const int, const char * ) >( &tSay::mHandleOutput ) >::run();
 }
 
 // tSay::mSay(const char *,...), game/Tiger/tsay.cpp
 extern "C" void sub_0066C890(void) {
-    ::sfcop::guest::entered(97);
+    ::sfcop::guest::entered(112);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( const char *, ... ) >( &tSay::mSay ) >::run();
 }
 
 // tSay::mJustSayIt(const char *,...), game/Tiger/tsay.cpp
 extern "C" void sub_0066C8C0(void) {
-    ::sfcop::guest::entered(98);
+    ::sfcop::guest::entered(113);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( const char *, ... ) >( &tSay::mJustSayIt ) >::run();
 }
 
 // tItemBag::mAddToList(tBaseItemBag *,char *), game/Tiger/tBag.cpp
 extern "C" void sub_0066D7E0(void) {
-    ::sfcop::guest::entered(99);
+    ::sfcop::guest::entered(114);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( tBaseItemBag *, char * ) >( &tItemBag::mAddToList ) >::run();
 }
 
 // tItemBag::mFindItemWithLabel(char *), game/Tiger/tBag.cpp
 extern "C" void sub_0066D880(void) {
-    ::sfcop::guest::entered(100);
+    ::sfcop::guest::entered(115);
     ::sfcop::guest::Entry< ::sfcop::guest::member< tBaseItemBag *( char * ) >( &tItemBag::mFindItemWithLabel ) >::run();
 }
 
 // tSequencePart::mGetNumber(), game/Tiger/tsequence.cpp
 extern "C" void sub_00670180(void) {
-    ::sfcop::guest::entered(101);
+    ::sfcop::guest::entered(116);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32u() >( &tSequencePart::mGetNumber ) >::run();
 }
 
 // tSequencePart::mGetNumber(int32u), game/Tiger/tsequence.cpp
 extern "C" void sub_006701C0(void) {
-    ::sfcop::guest::entered(102);
+    ::sfcop::guest::entered(117);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32u( int32u ) >( &tSequencePart::mGetNumber ) >::run();
 }
 
 // tAllocatedClass::operator==(const type_info&), game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC4D0(void) {
-    ::sfcop::guest::entered(103);
+    ::sfcop::guest::entered(118);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32( const type_info& ) >( &tAllocatedClass::operator== ) >::run();
 }
 
 // tDynamicAllocator::tAllocatorInfo::operator==(const char*) const, game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC5A0(void) {
-    ::sfcop::guest::entered(104);
+    ::sfcop::guest::entered(119);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32( const char* ) const >( &tDynamicAllocator::tAllocatorInfo::operator== ) >::run();
 }
 
 // tDynamicAllocator::LockDownAllocator(), game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC750(void) {
-    ::sfcop::guest::entered(105);
+    ::sfcop::guest::entered(120);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tDynamicAllocator::LockDownAllocator ) >::run();
 }
 
@@ -762,6 +853,21 @@ const sfcop_guest_override sfcop_guest_overrides[] = {
     {0x0043569Au, sub_0043569A, "t3DListenerProfile::fn_0043569a()", "unsorted/t3DListenerProfile.cpp"},
     {0x0043569Eu, sub_0043569E, "t3DListenerProfile::fn_0043569e(double)", "unsorted/t3DListenerProfile.cpp"},
     {0x004356A8u, sub_004356A8, "t3DListenerProfile::fn_004356a8()", "unsorted/t3DListenerProfile.cpp"},
+    {0x004382BEu, sub_004382BE, "tCloakSystem::vfunction100(int)", "unsorted/tCloakSystem.cpp"},
+    {0x004382CBu, sub_004382CB, "tCloakSystem::fn_004382cb()", "unsorted/tCloakSystem.cpp"},
+    {0x004382E3u, sub_004382E3, "tCloakSystem::fn_004382e3()", "unsorted/tCloakSystem.cpp"},
+    {0x004382EAu, sub_004382EA, "tCloakSystem::vfunction103(int)", "unsorted/tCloakSystem.cpp"},
+    {0x0043835Du, sub_0043835D, "tCloakSystem::vfunction102(bool*)", "unsorted/tCloakSystem.cpp"},
+    {0x00438390u, sub_00438390, "tCloakSystem::fn_00438390()", "unsorted/tCloakSystem.cpp"},
+    {0x0043839Du, sub_0043839D, "tCloakSystem::vfunction62()", "unsorted/tCloakSystem.cpp"},
+    {0x004384A5u, sub_004384A5, "tCloakSystem::vfunction63()", "unsorted/tCloakSystem.cpp"},
+    {0x00438522u, sub_00438522, "tCloakSystem::mDetermineCloakWeaponRange(float,int)", "unsorted/tCloakSystem.cpp"},
+    {0x00438607u, sub_00438607, "tCloakSystem::mDetermineCloakSeekingWeaponDamageModifier(int,int)", "unsorted/tCloakSystem.cpp"},
+    {0x004386BCu, sub_004386BC, "tCloakSystem::vfunction40(float)", "unsorted/tCloakSystem.cpp"},
+    {0x004386F3u, sub_004386F3, "tCloakSystem::vfunction39(float)", "unsorted/tCloakSystem.cpp"},
+    {0x00438877u, sub_00438877, "tCloakSystem::vfunction23(int,unsigned int,int)", "unsorted/tCloakSystem.cpp"},
+    {0x0043894Du, sub_0043894D, "tCloakSystem::vfunction72()", "unsorted/tCloakSystem.cpp"},
+    {0x00438974u, sub_00438974, "tCloakSystem::vfunction76(float,int)", "unsorted/tCloakSystem.cpp"},
     {0x00628A60u, sub_00628A60, "tPart::mValidateParts()", "Tiger/tpart.cpp"},
     {0x00628C20u, sub_00628C20, "tPart::mActivateParts()", "Tiger/tpart.cpp"},
     {0x00628DA0u, sub_00628DA0, "tPart::mDeactivateParts()", "Tiger/tpart.cpp"},
@@ -784,7 +890,7 @@ const sfcop_guest_override sfcop_guest_overrides[] = {
     {0x006FC5A0u, sub_006FC5A0, "tDynamicAllocator::tAllocatorInfo::operator==(const char*) const", "Common/DynamicAllocator.cpp"},
     {0x006FC750u, sub_006FC750, "tDynamicAllocator::LockDownAllocator()", "Common/DynamicAllocator.cpp"},
 };
-const unsigned sfcop_guest_override_count = 106u;
+const unsigned sfcop_guest_override_count = 121u;
 
 }  // extern "C"
 
