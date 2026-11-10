@@ -1,0 +1,24 @@
+SFCOP @VERSION@ for Windows @ARCH@
+==================================
+
+A native client for Star Trek Starfleet Command II: Orion Pirates 2.5.5.2. It contains no file
+of the original game: you need your own install, patched to 2.5.5.2. Alpha software.
+
+Unzip this folder anywhere, open a command prompt in it, and the first time point the client at
+your install:
+
+    sfcop.exe --install "C:\Program Files (x86)\Starfleet Command Orion Pirates"
+
+It checks every file of the install against the known hashes (retail_hashes.sha256 beside
+sfcop.exe), remembers the path, and never writes into the install. Later runs need no argument;
+an install in Program Files is found without one. Settings, saves and logs live in
+%APPDATA%\SFCOP.
+
+The program is not signed: Windows SmartScreen may warn on the first start ("More info", then
+"Run anyway"). SDL2.dll and SDL3.dll must stay beside sfcop.exe.
+
+Missions: the mission list needs translated mission modules, which this package does not carry
+(they are made from your install's own files). See "Installing a release" in the project's
+README for the one-time step; without them the menus run and missions are missing.
+
+`sfcop.exe --help` lists the options.

@@ -12,3 +12,7 @@ windows-x64	WIN32_FIND_DATAA and W are written field by field	KF-6	the found nam
 windows-x64	a rename replaces a file but not a directory, and needs its source and target parent	KF-7	under Wine on a case-insensitive volume, a listing after a case-only rename keeps the old case
 windows-x64	a stack size the system refuses fails the start	KF-8	under Wine a stack size past the end of the range starts the thread anyway
 windows-x64	relative mode holds the position and reports motion only	KF-9	under Wine the dummy video driver delivers no relative-motion event
+linux-arm64	host transport: a non-blocking connect finishes as writable and is accepted	KF-1	a second connect() on a connected socket returns 0 on Linux where the test expects an error
+linux-arm64	loopback: a non-blocking connect ends writable and SO_ERROR reads 0	KF-1	the same connect() result reaches the winsock module, which returns 0 instead of WSAEISCONN
+linux-arm64	host transport: calls in the wrong state fail with the documented errors	KF-2	send() on a TCP socket that never connected fails with EPIPE on Linux, ENOTCONN on macOS
+linux-arm64	names cross the bridge as Latin-1 or UTF-16	KF-3	an upper-case Latin-1 name does not find its lower-case file on a case-sensitive file system

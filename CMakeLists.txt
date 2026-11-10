@@ -67,6 +67,19 @@ if(NOT SFCOP_LIFT_READY)
     return()
 endif()
 
+# A package build (scripts/dist.sh) carries no build-machine folder: the generated configuration's
+# strings are left empty, and the packaged client reads the hash list it carries and asks for the
+# install (src/app/Bundle.h, packaging/check_paths.py).
+option(SFCOP_PACKAGE_BUILD "Compile no build-machine folder into the client (release packages)" OFF)
+if(SFCOP_PACKAGE_BUILD)
+    set(SFCOP_CONFIG_INSTALL_DIR "")
+    set(SFCOP_CONFIG_GAME_DIR "")
+    set(SFCOP_CONFIG_HASH_LIST "")
+else()
+    set(SFCOP_CONFIG_INSTALL_DIR "${SFCOP_INSTALL_DIR}")
+    set(SFCOP_CONFIG_GAME_DIR "${SFCOP_GAMEROOT}")
+    set(SFCOP_CONFIG_HASH_LIST "${CMAKE_SOURCE_DIR}/analysis/results/retail_hashes.sha256")
+endif()
 configure_file(cmake/sfcop_build_config.h.in "${CMAKE_BINARY_DIR}/generated/sfcop_build_config.h" @ONLY)
 
 # The registration of the HLE module tables, generated from the shim files the build found
