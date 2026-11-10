@@ -265,6 +265,8 @@ def emit(run, claims, result, bodies):
 
     code = [HEADER, '#define RECOMP_GENERATED_CODE\n#include "recomp_types.h"\n',
             '#include "recomp_funcs.h"\n#include "objlift_funcs.h"\n',
+            # SFCOP_GUEST_OBJECTS_LOAD, which a body calls when its unit has a data image
+            '#include "app/guest/override.h"\n',
             '#include <math.h>\n#include <string.h>\n\n']
     for b in bodies:
         sources = sorted({c.source for c in b.section.claims}) or [b.section.obj.unit or

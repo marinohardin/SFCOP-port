@@ -570,6 +570,8 @@ def test_fresh_code_lifts_under_its_reserved_address_and_loads_the_image(tmp_pat
     assert 'RECOMP_CALL(sub_0F000000); /* 0x00401000: call 0xf000000 */' in code
     assert 'SFCOP_GUEST_OBJECTS_LOAD(); sfcop_guest_entered(0u); RECOMP_ENTER(0x00401000u);' in code
     assert 'SFCOP_GUEST_OBJECTS_LOAD(); RECOMP_ENTER(0x0F000000u);' in code
+    # The macro is defined in the guest override header, so the code file includes it.
+    assert '#include "app/guest/override.h"\n' in code
     table = (out / 'objlift_table.c').read_text()
     assert ('static const uint8_t sfcop_guest_object_bytes_1[4] = {\n'
             '    0x61, 0x62, 0x63, 0x00,\n};\n') in table
