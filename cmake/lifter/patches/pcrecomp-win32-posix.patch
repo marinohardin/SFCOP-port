@@ -1,0 +1,990 @@
+diff --git a/runtime/win32hle/win32/include/arpa/inet.h b/runtime/win32hle/win32/include/arpa/inet.h
+new file mode 100644
+index 0000000..ce453b3
+--- /dev/null
++++ b/runtime/win32hle/win32/include/arpa/inet.h
+@@ -0,0 +1,2 @@
++/* <arpa/inet.h> on a Windows host: win32/net.h */
++#include "../../net.h"
+diff --git a/runtime/win32hle/win32/include/dirent.h b/runtime/win32hle/win32/include/dirent.h
+new file mode 100644
+index 0000000..231cac5
+--- /dev/null
++++ b/runtime/win32hle/win32/include/dirent.h
+@@ -0,0 +1,2 @@
++/* <dirent.h> on a Windows host: win32/posix.h */
++#include "../posix.h"
+diff --git a/runtime/win32hle/win32/include/ifaddrs.h b/runtime/win32hle/win32/include/ifaddrs.h
+new file mode 100644
+index 0000000..df94cd9
+--- /dev/null
++++ b/runtime/win32hle/win32/include/ifaddrs.h
+@@ -0,0 +1,2 @@
++/* <ifaddrs.h> on a Windows host: win32/net.h */
++#include "../net.h"
+diff --git a/runtime/win32hle/win32/include/net/if.h b/runtime/win32hle/win32/include/net/if.h
+new file mode 100644
+index 0000000..37bc412
+--- /dev/null
++++ b/runtime/win32hle/win32/include/net/if.h
+@@ -0,0 +1,2 @@
++/* <net/if.h> on a Windows host: win32/net.h */
++#include "../../net.h"
+diff --git a/runtime/win32hle/win32/include/netdb.h b/runtime/win32hle/win32/include/netdb.h
+new file mode 100644
+index 0000000..6e82aaf
+--- /dev/null
++++ b/runtime/win32hle/win32/include/netdb.h
+@@ -0,0 +1,2 @@
++/* <netdb.h> on a Windows host: win32/net.h */
++#include "../net.h"
+diff --git a/runtime/win32hle/win32/include/netinet/in.h b/runtime/win32hle/win32/include/netinet/in.h
+new file mode 100644
+index 0000000..a9e0ade
+--- /dev/null
++++ b/runtime/win32hle/win32/include/netinet/in.h
+@@ -0,0 +1,2 @@
++/* <netinet/in.h> on a Windows host: win32/net.h */
++#include "../../net.h"
+diff --git a/runtime/win32hle/win32/include/poll.h b/runtime/win32hle/win32/include/poll.h
+new file mode 100644
+index 0000000..f50ecb5
+--- /dev/null
++++ b/runtime/win32hle/win32/include/poll.h
+@@ -0,0 +1,2 @@
++/* <poll.h> on a Windows host: win32/net.h */
++#include "../net.h"
+diff --git a/runtime/win32hle/win32/include/pthread.h b/runtime/win32hle/win32/include/pthread.h
+new file mode 100644
+index 0000000..f68ea80
+--- /dev/null
++++ b/runtime/win32hle/win32/include/pthread.h
+@@ -0,0 +1,2 @@
++/* <pthread.h> on a Windows host: win32/posix.h */
++#include "../posix.h"
+diff --git a/runtime/win32hle/win32/include/sched.h b/runtime/win32hle/win32/include/sched.h
+new file mode 100644
+index 0000000..c99dbec
+--- /dev/null
++++ b/runtime/win32hle/win32/include/sched.h
+@@ -0,0 +1,2 @@
++/* <sched.h> on a Windows host: win32/posix.h */
++#include "../posix.h"
+diff --git a/runtime/win32hle/win32/include/strings.h b/runtime/win32hle/win32/include/strings.h
+new file mode 100644
+index 0000000..faf8fd4
+--- /dev/null
++++ b/runtime/win32hle/win32/include/strings.h
+@@ -0,0 +1,2 @@
++/* <strings.h> on a Windows host: win32/posix.h */
++#include "../posix.h"
+diff --git a/runtime/win32hle/win32/include/sys/ioctl.h b/runtime/win32hle/win32/include/sys/ioctl.h
+new file mode 100644
+index 0000000..ced388b
+--- /dev/null
++++ b/runtime/win32hle/win32/include/sys/ioctl.h
+@@ -0,0 +1,2 @@
++/* <sys/ioctl.h> on a Windows host: win32/net.h */
++#include "../../net.h"
+diff --git a/runtime/win32hle/win32/include/sys/mman.h b/runtime/win32hle/win32/include/sys/mman.h
+new file mode 100644
+index 0000000..ca25fbc
+--- /dev/null
++++ b/runtime/win32hle/win32/include/sys/mman.h
+@@ -0,0 +1,2 @@
++/* <sys/mman.h> on a Windows host: win32/posix.h */
++#include "../../posix.h"
+diff --git a/runtime/win32hle/win32/include/sys/socket.h b/runtime/win32hle/win32/include/sys/socket.h
+new file mode 100644
+index 0000000..2c25651
+--- /dev/null
++++ b/runtime/win32hle/win32/include/sys/socket.h
+@@ -0,0 +1,2 @@
++/* <sys/socket.h> on a Windows host: win32/net.h */
++#include "../../net.h"
+diff --git a/runtime/win32hle/win32/include/sys/statvfs.h b/runtime/win32hle/win32/include/sys/statvfs.h
+new file mode 100644
+index 0000000..26d9e63
+--- /dev/null
++++ b/runtime/win32hle/win32/include/sys/statvfs.h
+@@ -0,0 +1,2 @@
++/* <sys/statvfs.h> on a Windows host: win32/posix.h */
++#include "../../posix.h"
+diff --git a/runtime/win32hle/win32/include/unistd.h b/runtime/win32hle/win32/include/unistd.h
+new file mode 100644
+index 0000000..830e398
+--- /dev/null
++++ b/runtime/win32hle/win32/include/unistd.h
+@@ -0,0 +1,2 @@
++/* <unistd.h> on a Windows host: win32/posix.h */
++#include "../posix.h"
+diff --git a/runtime/win32hle/win32/net.h b/runtime/win32hle/win32/net.h
+new file mode 100644
+index 0000000..78dc504
+--- /dev/null
++++ b/runtime/win32hle/win32/net.h
+@@ -0,0 +1,200 @@
++/*
++ * win32/net.h -- BSD sockets on Winsock, for wsock32.c on a Windows host.
++ *
++ * wsock32.c includes <sys/socket.h>, <poll.h>, <netdb.h> and the rest; on
++ * Windows those (win32/include) bring this header in, and only that file
++ * includes them. It is the one runtime file that sees <winsock2.h> (and so
++ * <windows.h>); its own guest constants (INVALID_SOCKET, WSAE*, FD_READ)
++ * have Winsock's values, and its definitions come after these.
++ *
++ * The calls keep POSIX's form: a socket is an int (Winsock's handles are
++ * small numbers), a failure is -1 with errno set from WSAGetLastError, and
++ * close, fcntl(O_NONBLOCK) and ioctl(FIONREAD) work on sockets. Winsock is
++ * started by the first call that needs it. There is no interface list:
++ * getifaddrs fails, and the caller falls back to the loopback address.
++ */
++#ifndef WIN32HLE_WIN32_NET_H
++#define WIN32HLE_WIN32_NET_H
++#ifdef _WIN32
++
++#ifndef WIN32_LEAN_AND_MEAN
++#define WIN32_LEAN_AND_MEAN
++#endif
++#ifndef NOMINMAX
++#define NOMINMAX
++#endif
++#include <winsock2.h>
++#include <ws2tcpip.h>
++#include <stdarg.h>
++#include "posix.h"
++
++typedef unsigned long nfds_t;
++
++static int w32n_errno(void) {
++    switch (WSAGetLastError()) {
++    case WSAEWOULDBLOCK: return EWOULDBLOCK;
++    case WSAEINPROGRESS: return EINPROGRESS;
++    case WSAEALREADY: return EALREADY;
++    case WSAEADDRINUSE: return EADDRINUSE;
++    case WSAEADDRNOTAVAIL: return EADDRNOTAVAIL;
++    case WSAEINVAL: return EINVAL;
++    case WSAENOTSOCK: return ENOTSOCK;
++    case WSAEBADF: return EBADF;
++    case WSAECONNRESET: return ECONNRESET;
++    case WSAECONNREFUSED: return ECONNREFUSED;
++    case WSAECONNABORTED: return ECONNABORTED;
++    case WSAEAFNOSUPPORT: return EAFNOSUPPORT;
++    case WSAENOTCONN: return ENOTCONN;
++    case WSAEISCONN: return EISCONN;
++    case WSAEMSGSIZE: return EMSGSIZE;
++    case WSAETIMEDOUT: return ETIMEDOUT;
++    case WSAENETUNREACH: return ENETUNREACH;
++    case WSAEHOSTUNREACH: return EHOSTUNREACH;
++    case WSAEINTR: return EINTR;
++    case WSAENOBUFS: return ENOBUFS;
++    default: return EIO;
++    }
++}
++static int w32n_fail(void) { errno = w32n_errno(); return -1; }
++
++static BOOL CALLBACK w32n_start_once(PINIT_ONCE once, PVOID p, PVOID *c) {
++    WSADATA data;
++    (void)once, (void)p, (void)c;
++    WSAStartup(MAKEWORD(2, 2), &data);
++    return TRUE;
++}
++static void w32n_start(void) {
++    static INIT_ONCE once = INIT_ONCE_STATIC_INIT;
++    InitOnceExecuteOnce(&once, w32n_start_once, NULL, NULL);
++}
++
++/* Which sockets are non-blocking: Winsock can set it and not tell it. */
++static uint8_t w32n_nonblocking[0x10000 / 8];
++static int w32n_nb(int fd) { return fd >= 0 && fd < 0x10000 && (w32n_nonblocking[fd >> 3] >> (fd & 7) & 1); }
++
++static int w32n_socket(int af, int type, int proto) {
++    w32n_start();
++    SOCKET s = socket(af, type, proto);
++    if (s == INVALID_SOCKET) return w32n_fail();
++    if (s > 0x7FFFFFFF) { closesocket(s); errno = EMFILE; return -1; }
++    if (s < 0x10000) w32n_nonblocking[s >> 3] &= (uint8_t)~(1u << (s & 7));
++    return (int)s;
++}
++static int w32n_closesocket(int fd) { return closesocket((SOCKET)fd) == 0 ? 0 : w32n_fail(); }
++static int w32n_bind(int fd, const struct sockaddr *a, int l) { return bind((SOCKET)fd, a, l) == 0 ? 0 : w32n_fail(); }
++static int w32n_connect(int fd, const struct sockaddr *a, int l) {
++    if (connect((SOCKET)fd, a, l) == 0) return 0;
++    w32n_fail();
++    if (errno == EWOULDBLOCK) errno = EINPROGRESS;     /* POSIX's word for a connect under way */
++    return -1;
++}
++static int w32n_listen(int fd, int n) { return listen((SOCKET)fd, n) == 0 ? 0 : w32n_fail(); }
++static int w32n_accept(int fd, struct sockaddr *a, socklen_t *l) {
++    SOCKET s = accept((SOCKET)fd, a, l);
++    if (s == INVALID_SOCKET) return w32n_fail();
++    if (s > 0x7FFFFFFF) { closesocket(s); errno = EMFILE; return -1; }
++    if (s < 0x10000) w32n_nonblocking[s >> 3] &= (uint8_t)~(1u << (s & 7));
++    return (int)s;
++}
++static ssize_t w32n_send(int fd, const void *b, size_t n, int f) {
++    int r = send((SOCKET)fd, (const char *)b, (int)n, f);
++    return r == SOCKET_ERROR ? w32n_fail() : r;
++}
++/* MSG_DONTWAIT: this call does not wait, on a socket that would. */
++#define MSG_DONTWAIT 0x40000000
++static int w32n_would_wait(int fd, int f) {
++    if (!(f & MSG_DONTWAIT) || w32n_nb(fd)) return 0;
++    WSAPOLLFD p = { (SOCKET)fd, POLLRDNORM, 0 };
++    if (WSAPoll(&p, 1, 0) != 0) return 0;              /* readable, or an error recv reports */
++    errno = EWOULDBLOCK;
++    return 1;
++}
++static ssize_t w32n_recv(int fd, void *b, size_t n, int f) {
++    if (w32n_would_wait(fd, f)) return -1;
++    int r = recv((SOCKET)fd, (char *)b, (int)n, f & ~MSG_DONTWAIT);
++    return r == SOCKET_ERROR ? w32n_fail() : r;
++}
++static ssize_t w32n_sendto(int fd, const void *b, size_t n, int f, const struct sockaddr *a, int l) {
++    int r = sendto((SOCKET)fd, (const char *)b, (int)n, f, a, l);
++    return r == SOCKET_ERROR ? w32n_fail() : r;
++}
++static ssize_t w32n_recvfrom(int fd, void *b, size_t n, int f, struct sockaddr *a, socklen_t *l) {
++    if (w32n_would_wait(fd, f)) return -1;
++    int r = recvfrom((SOCKET)fd, (char *)b, (int)n, f & ~MSG_DONTWAIT, a, l);
++    return r == SOCKET_ERROR ? w32n_fail() : r;
++}
++static int w32n_shutdown(int fd, int how) { return shutdown((SOCKET)fd, how) == 0 ? 0 : w32n_fail(); }
++static int w32n_getsockname(int fd, struct sockaddr *a, socklen_t *l) { return getsockname((SOCKET)fd, a, l) == 0 ? 0 : w32n_fail(); }
++static int w32n_getpeername(int fd, struct sockaddr *a, socklen_t *l) { return getpeername((SOCKET)fd, a, l) == 0 ? 0 : w32n_fail(); }
++static int w32n_setsockopt(int fd, int level, int opt, const void *v, int l) {
++    return setsockopt((SOCKET)fd, level, opt, (const char *)v, l) == 0 ? 0 : w32n_fail();
++}
++static int w32n_getsockopt(int fd, int level, int opt, void *v, socklen_t *l) {
++    return getsockopt((SOCKET)fd, level, opt, (char *)v, l) == 0 ? 0 : w32n_fail();
++}
++static int w32n_poll(struct pollfd *p, nfds_t n, int ms) {
++    int r = WSAPoll(p, (ULONG)n, ms);
++    return r == SOCKET_ERROR ? w32n_fail() : r;
++}
++#define F_GETFL 3
++#define F_SETFL 4
++static int w32n_fcntl(int fd, int cmd, ...) {
++    if (cmd == F_GETFL) return w32n_nb(fd) ? O_NONBLOCK : 0;
++    if (cmd != F_SETFL) { errno = EINVAL; return -1; }
++    va_list ap;
++    va_start(ap, cmd);
++    int flags = va_arg(ap, int);
++    va_end(ap);
++    u_long on = (flags & O_NONBLOCK) != 0;
++    if (ioctlsocket((SOCKET)fd, FIONBIO, &on) != 0) return w32n_fail();
++    if (fd >= 0 && fd < 0x10000) {
++        if (on) w32n_nonblocking[fd >> 3] |= (uint8_t)(1u << (fd & 7));
++        else w32n_nonblocking[fd >> 3] &= (uint8_t)~(1u << (fd & 7));
++    }
++    return 0;
++}
++static int w32n_ioctl(int fd, unsigned long req, int *v) {
++    u_long n = 0;
++    if (ioctlsocket((SOCKET)fd, (long)req, &n) != 0) return w32n_fail();
++    *v = (int)n;
++    return 0;
++}
++static int w32n_gethostname(char *name, size_t n) { w32n_start(); return gethostname(name, (int)n) == 0 ? 0 : w32n_fail(); }
++static struct hostent *w32n_gethostbyname(const char *name) { w32n_start(); return gethostbyname(name); }
++
++/* ifaddrs.h, net/if.h */
++#define IFF_UP       0x1
++#define IFF_LOOPBACK 0x8
++struct ifaddrs {
++    struct ifaddrs *ifa_next;
++    char *ifa_name;
++    unsigned int ifa_flags;
++    struct sockaddr *ifa_addr, *ifa_netmask, *ifa_dstaddr;
++    void *ifa_data;
++};
++static int getifaddrs(struct ifaddrs **out) { *out = NULL; errno = ENOSYS; return -1; }
++static void freeifaddrs(struct ifaddrs *list) { (void)list; }
++
++#define socket(af, type, proto)         w32n_socket(af, type, proto)
++#define close(fd)                       w32n_closesocket(fd)
++#define bind(fd, a, l)                  w32n_bind(fd, a, l)
++#define connect(fd, a, l)               w32n_connect(fd, a, l)
++#define listen(fd, n)                   w32n_listen(fd, n)
++#define accept(fd, a, l)                w32n_accept(fd, a, l)
++#define send(fd, b, n, f)               w32n_send(fd, b, n, f)
++#define recv(fd, b, n, f)               w32n_recv(fd, b, n, f)
++#define sendto(fd, b, n, f, a, l)       w32n_sendto(fd, b, n, f, a, l)
++#define recvfrom(fd, b, n, f, a, l)     w32n_recvfrom(fd, b, n, f, a, l)
++#define shutdown(fd, how)               w32n_shutdown(fd, how)
++#define getsockname(fd, a, l)           w32n_getsockname(fd, a, l)
++#define getpeername(fd, a, l)           w32n_getpeername(fd, a, l)
++#define setsockopt(fd, lv, o, v, l)     w32n_setsockopt(fd, lv, o, v, l)
++#define getsockopt(fd, lv, o, v, l)     w32n_getsockopt(fd, lv, o, v, l)
++#define poll(p, n, ms)                  w32n_poll(p, n, ms)
++#define fcntl(...)                      w32n_fcntl(__VA_ARGS__)
++#define ioctl(fd, req, v)               w32n_ioctl(fd, req, v)
++#define gethostname(name, n)            w32n_gethostname(name, n)
++#define gethostbyname(name)             w32n_gethostbyname(name)
++
++#endif /* _WIN32 */
++#endif /* WIN32HLE_WIN32_NET_H */
+diff --git a/runtime/win32hle/win32/posix.c b/runtime/win32hle/win32/posix.c
+new file mode 100644
+index 0000000..ba4e4c6
+--- /dev/null
++++ b/runtime/win32hle/win32/posix.c
+@@ -0,0 +1,448 @@
++/*
++ * win32/posix.c -- the POSIX calls of win32/posix.h, on the Windows API.
++ *
++ * Built on Windows only (the build adds it there); the runtime's own files
++ * never see <windows.h>.
++ */
++#ifdef _WIN32
++
++#define WIN32_LEAN_AND_MEAN
++#define NOMINMAX
++#include <windows.h>
++
++#include "posix.h"
++
++#include <stdarg.h>
++
++/* The POSIX names posix.h maps to the C runtime's are the real ones here. */
++#undef open
++#undef stat
++#undef fstat
++#undef mkdir
++#undef getcwd
++
++_Static_assert(sizeof(pthread_mutex_t) == sizeof(SRWLOCK), "pthread_mutex_t holds an SRWLOCK");
++_Static_assert(sizeof(pthread_cond_t) == sizeof(CONDITION_VARIABLE), "pthread_cond_t holds a CONDITION_VARIABLE");
++_Static_assert(sizeof(pthread_once_t) == sizeof(INIT_ONCE), "pthread_once_t holds an INIT_ONCE");
++
++/* ---- errors ---- */
++
++static int errno_of(DWORD e) {
++    switch (e) {
++    case ERROR_FILE_NOT_FOUND: case ERROR_PATH_NOT_FOUND: case ERROR_INVALID_NAME: return ENOENT;
++    case ERROR_ACCESS_DENIED: case ERROR_SHARING_VIOLATION: return EACCES;
++    case ERROR_ALREADY_EXISTS: case ERROR_FILE_EXISTS: return EEXIST;
++    case ERROR_INVALID_HANDLE: return EBADF;
++    case ERROR_NOT_ENOUGH_MEMORY: case ERROR_OUTOFMEMORY: case ERROR_COMMITMENT_LIMIT: return ENOMEM;
++    case ERROR_INVALID_ADDRESS: return ENOMEM;
++    case ERROR_DIRECTORY: return ENOTDIR;
++    case ERROR_DIR_NOT_EMPTY: return ENOTEMPTY;
++    default: return EINVAL;
++    }
++}
++static int fail(DWORD e) { errno = errno_of(e); return -1; }
++
++/* ---- files ---- */
++
++int w32p_open(const char *path, int flags, ...) {
++    int mode = 0;
++    if (flags & _O_CREAT) {
++        va_list ap;
++        va_start(ap, flags);
++        mode = va_arg(ap, int);
++        va_end(ap);
++    }
++    /* binary, as every POSIX file is; of the permissions the C runtime knows
++     * the owner's read and write only */
++    int pmode = mode & (_S_IREAD | _S_IWRITE);
++    return _open(path, flags | _O_BINARY, pmode ? pmode : _S_IREAD | _S_IWRITE);
++}
++
++/* A read or write at an offset on a synchronous handle also moves the file
++ * pointer; POSIX's leaves it, and the runtime mixes them with read and lseek
++ * on one descriptor (a file mapping's), so the pointer is put back. */
++static ssize_t pio(int fd, void *buf, size_t n, off_t off, int write) {
++    HANDLE h = (HANDLE)_get_osfhandle(fd);
++    if (h == INVALID_HANDLE_VALUE) { errno = EBADF; return -1; }
++    LARGE_INTEGER zero = { 0 }, pos;
++    if (!SetFilePointerEx(h, zero, &pos, FILE_CURRENT)) return fail(GetLastError());
++    OVERLAPPED o = { 0 };
++    uint64_t at = (uint64_t)(int64_t)off;
++    o.Offset = (DWORD)at, o.OffsetHigh = (DWORD)(at >> 32);
++    DWORD done = 0, len = n > 0x7FFFFFFFu ? 0x7FFFFFFFu : (DWORD)n;
++    BOOL ok = write ? WriteFile(h, buf, len, &done, &o) : ReadFile(h, buf, len, &done, &o);
++    DWORD e = ok ? 0 : GetLastError();
++    SetFilePointerEx(h, pos, NULL, FILE_BEGIN);
++    if (!ok) return e == ERROR_HANDLE_EOF ? 0 : fail(e);
++    return (ssize_t)done;
++}
++ssize_t pread(int fd, void *buf, size_t n, off_t off) { return pio(fd, buf, n, off, 0); }
++ssize_t pwrite(int fd, const void *buf, size_t n, off_t off) { return pio(fd, (void *)buf, n, off, 1); }
++
++int ftruncate(int fd, off_t size) {
++    errno_t e = _chsize_s(fd, (__int64)size);
++    if (e) { errno = e; return -1; }
++    return 0;
++}
++
++ssize_t readlink(const char *path, char *buf, size_t n) {
++    (void)path, (void)buf, (void)n;
++    errno = EINVAL;                                      /* no symbolic links here */
++    return -1;
++}
++
++/* The absolute path of an existing file, with forward slashes (the runtime
++ * joins and compares paths with '/', and Windows takes either). */
++char *realpath(const char *path, char *resolved) {
++    char full[MAX_PATH * 4];
++    DWORD n = GetFullPathNameA(path, sizeof full, full, NULL);
++    if (!n || n >= sizeof full) { errno = n ? ENAMETOOLONG : ENOENT; return NULL; }
++    if (GetFileAttributesA(full) == INVALID_FILE_ATTRIBUTES) { fail(GetLastError()); return NULL; }
++    for (char *c = full; *c; c++) if (*c == '\\') *c = '/';
++    size_t len = strlen(full);
++    while (len > 3 && full[len - 1] == '/') full[--len] = 0;     /* "C:/" keeps its slash */
++    if (!resolved) return _strdup(full);
++    if (len >= MAX_PATH) { errno = ENAMETOOLONG; return NULL; }  /* POSIX: PATH_MAX bytes */
++    memcpy(resolved, full, len + 1);
++    return resolved;
++}
++
++char *w32p_getcwd(char *buf, int n) {
++    char *r = _getcwd(buf, n);
++    if (r) for (char *c = r; *c; c++) if (*c == '\\') *c = '/';
++    return r;
++}
++
++static struct timespec ts_of_filetime(FILETIME f) {
++    uint64_t t = (uint64_t)f.dwHighDateTime << 32 | f.dwLowDateTime;
++    t -= 116444736000000000ull;                          /* 1601 to 1970, in 100 ns */
++    struct timespec ts = { (time_t)(t / 10000000ull), (long)(t % 10000000ull) * 100 };
++    return ts;
++}
++
++static void stat_times(HANDLE h, struct w32p_stat *st) {
++    FILETIME c, a, w;
++    if (GetFileTime(h, &c, &a, &w)) {
++        st->st_ctim = ts_of_filetime(c);
++        st->st_atim = ts_of_filetime(a);
++        st->st_mtim = ts_of_filetime(w);
++    }
++}
++
++static void stat_from(const struct _stat64 *b, struct w32p_stat *st) {
++    memset(st, 0, sizeof *st);
++    st->st_dev = b->st_dev;
++    st->st_mode = b->st_mode;
++    st->st_nlink = (unsigned)b->st_nlink;
++    st->st_size = b->st_size;
++    st->st_atim.tv_sec = b->st_atime;
++    st->st_mtim.tv_sec = b->st_mtime;
++    st->st_ctim.tv_sec = b->st_ctime;
++}
++
++static void stat_handle(HANDLE h, struct w32p_stat *st) {
++    BY_HANDLE_FILE_INFORMATION info;
++    if (GetFileInformationByHandle(h, &info)) {
++        st->st_nlink = info.nNumberOfLinks;
++        st->st_ino = (uint64_t)info.nFileIndexHigh << 32 | info.nFileIndexLow;
++    }
++    stat_times(h, st);
++}
++
++int w32p_stat(const char *path, struct w32p_stat *st) {
++    struct _stat64 b;
++    if (_stat64(path, &b) != 0) return -1;
++    stat_from(&b, st);
++    /* the times to the 100 ns and the file index, as fstat has them */
++    HANDLE h = CreateFileA(path, FILE_READ_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
++                           NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
++    if (h != INVALID_HANDLE_VALUE) { stat_handle(h, st); CloseHandle(h); }
++    return 0;
++}
++
++int w32p_fstat(int fd, struct w32p_stat *st) {
++    struct _stat64 b;
++    if (_fstat64(fd, &b) != 0) return -1;
++    stat_from(&b, st);
++    HANDLE h = (HANDLE)_get_osfhandle(fd);
++    if (h != INVALID_HANDLE_VALUE) stat_handle(h, st);
++    return 0;
++}
++
++int futimens(int fd, const struct timespec times[2]) {
++    HANDLE h = (HANDLE)_get_osfhandle(fd);
++    if (h == INVALID_HANDLE_VALUE) { errno = EBADF; return -1; }
++    FILETIME ft[2], now;
++    GetSystemTimeAsFileTime(&now);
++    for (int i = 0; i < 2; i++) {
++        if (!times || times[i].tv_nsec == UTIME_NOW) { ft[i] = now; continue; }
++        if (times[i].tv_nsec == UTIME_OMIT) continue;
++        uint64_t t = (uint64_t)times[i].tv_sec * 10000000ull + (uint64_t)times[i].tv_nsec / 100 + 116444736000000000ull;
++        ft[i].dwLowDateTime = (DWORD)t, ft[i].dwHighDateTime = (DWORD)(t >> 32);
++    }
++    const int omit_a = times && times[0].tv_nsec == UTIME_OMIT, omit_m = times && times[1].tv_nsec == UTIME_OMIT;
++    if (!SetFileTime(h, NULL, omit_a ? NULL : &ft[0], omit_m ? NULL : &ft[1])) return fail(GetLastError());
++    return 0;
++}
++
++int statvfs(const char *path, struct statvfs *out) {
++    ULARGE_INTEGER avail, total, free_;
++    if (!GetDiskFreeSpaceExA(path, &avail, &total, &free_)) return fail(GetLastError());
++    memset(out, 0, sizeof *out);
++    out->f_bsize = out->f_frsize = 1;                    /* the counts are bytes */
++    out->f_blocks = total.QuadPart, out->f_bfree = free_.QuadPart, out->f_bavail = avail.QuadPart;
++    return 0;
++}
++
++/* ---- directories ---- */
++
++struct w32p_dir {
++    HANDLE find;
++    int first;                                           /* the entry FindFirstFile gave is not read yet */
++    WIN32_FIND_DATAA data;
++    struct dirent entry;
++};
++
++DIR *opendir(const char *path) {
++    char pattern[MAX_PATH * 4];
++    size_t len = strlen(path);
++    if (len + 3 > sizeof pattern) { errno = ENAMETOOLONG; return NULL; }
++    memcpy(pattern, path, len);
++    if (len && pattern[len - 1] != '/' && pattern[len - 1] != '\\') pattern[len++] = '/';
++    pattern[len++] = '*', pattern[len] = 0;
++    DIR *d = (DIR *)calloc(1, sizeof *d);
++    if (!d) { errno = ENOMEM; return NULL; }
++    d->find = FindFirstFileA(pattern, &d->data);
++    if (d->find == INVALID_HANDLE_VALUE) {
++        DWORD e = GetLastError();
++        free(d);
++        fail(e == ERROR_FILE_NOT_FOUND ? ERROR_PATH_NOT_FOUND : e);
++        return NULL;
++    }
++    d->first = 1;
++    return d;
++}
++
++struct dirent *readdir(DIR *d) {
++    if (!d->first && !FindNextFileA(d->find, &d->data)) return NULL;
++    d->first = 0;
++    d->entry.d_type = d->data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ? DT_DIR : DT_REG;
++    strncpy(d->entry.d_name, d->data.cFileName, sizeof d->entry.d_name - 1);
++    d->entry.d_name[sizeof d->entry.d_name - 1] = 0;
++    return &d->entry;
++}
++
++int closedir(DIR *d) {
++    if (!d) { errno = EBADF; return -1; }
++    FindClose(d->find);
++    free(d);
++    return 0;
++}
++
++/* ---- time ---- */
++
++int clock_gettime(clockid_t clock, struct timespec *ts) {
++    if (clock == CLOCK_MONOTONIC) {
++        static LARGE_INTEGER freq;
++        LARGE_INTEGER now;
++        if (!freq.QuadPart) QueryPerformanceFrequency(&freq);
++        QueryPerformanceCounter(&now);
++        ts->tv_sec = (time_t)(now.QuadPart / freq.QuadPart);
++        ts->tv_nsec = (long)((now.QuadPart % freq.QuadPart) * 1000000000ll / freq.QuadPart);
++        return 0;
++    }
++    if (clock == CLOCK_REALTIME) {
++        FILETIME f;
++        GetSystemTimePreciseAsFileTime(&f);
++        *ts = ts_of_filetime(f);
++        return 0;
++    }
++    errno = EINVAL;
++    return -1;
++}
++
++/* A wait of `us` microseconds on a high-resolution timer where Windows has
++ * one (Windows 10 1803 and later), else on an ordinary one (the system's
++ * timer resolution, about 1 to 16 ms). */
++int usleep(useconds_t us) {
++    if (us == 0) { Sleep(0); return 0; }
++    static __declspec(thread) HANDLE timer;
++    if (!timer) {
++        timer = CreateWaitableTimerExW(NULL, NULL, 0x00000002 /* CREATE_WAITABLE_TIMER_HIGH_RESOLUTION */,
++                                       TIMER_ALL_ACCESS);
++        if (!timer) timer = CreateWaitableTimerExW(NULL, NULL, 0, TIMER_ALL_ACCESS);
++        if (!timer) { Sleep((us + 999) / 1000); return 0; }
++    }
++    LARGE_INTEGER due;
++    due.QuadPart = -(LONGLONG)us * 10;                   /* relative, in 100 ns */
++    if (!SetWaitableTimer(timer, &due, 0, NULL, NULL, FALSE)) { Sleep((us + 999) / 1000); return 0; }
++    WaitForSingleObject(timer, INFINITE);
++    return 0;
++}
++
++int nanosleep(const struct timespec *request, struct timespec *remain) {
++    if (!request || request->tv_nsec < 0 || request->tv_nsec >= 1000000000l) { errno = EINVAL; return -1; }
++    uint64_t us = (uint64_t)request->tv_sec * 1000000u + ((uint64_t)request->tv_nsec + 999u) / 1000u;
++    while (us > 0) {
++        useconds_t step = us > 0x7FFFFFFFu ? 0x7FFFFFFFu : (useconds_t)us;
++        usleep(step);
++        us -= step;
++    }
++    if (remain) remain->tv_sec = 0, remain->tv_nsec = 0;
++    return 0;
++}
++
++int sched_yield(void) { SwitchToThread(); return 0; }
++
++int getpagesize(void) {
++    SYSTEM_INFO si;
++    GetSystemInfo(&si);
++    return (int)si.dwPageSize;
++}
++
++long sysconf(int name) {
++    SYSTEM_INFO si;
++    GetSystemInfo(&si);
++    switch (name) {
++    case _SC_PAGESIZE: return (long)si.dwPageSize;
++    case _SC_NPROCESSORS_ONLN: return (long)si.dwNumberOfProcessors;
++    default: errno = EINVAL; return -1;
++    }
++}
++
++/* ---- threads ---- */
++
++struct w32p_start { void *(*fn)(void *); void *arg; };
++
++static unsigned __stdcall thread_start(void *p) {
++    struct w32p_start s = *(struct w32p_start *)p;
++    free(p);
++    return (unsigned)(uintptr_t)s.fn(s.arg);
++}
++
++int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*fn)(void *), void *arg) {
++    (void)attr;
++    struct w32p_start *s = (struct w32p_start *)malloc(sizeof *s);
++    if (!s) return EAGAIN;
++    s->fn = fn, s->arg = arg;
++    unsigned id = 0;
++    uintptr_t h = _beginthreadex(NULL, 0, thread_start, s, 0, &id);
++    if (!h) { free(s); return EAGAIN; }
++    CloseHandle((HANDLE)h);                              /* detached: nothing joins it */
++    if (thread) *thread = (pthread_t)id;
++    return 0;
++}
++int pthread_detach(pthread_t thread) { (void)thread; return 0; }
++pthread_t pthread_self(void) { return (pthread_t)GetCurrentThreadId(); }
++int pthread_equal(pthread_t a, pthread_t b) { return a == b; }
++void pthread_exit(void *value) { _endthreadex((unsigned)(uintptr_t)value); }
++
++static BOOL CALLBACK once_run(PINIT_ONCE once, PVOID fn, PVOID *context) {
++    (void)once, (void)context;
++    ((void (*)(void))fn)();
++    return TRUE;
++}
++int pthread_once(pthread_once_t *once, void (*fn)(void)) {
++    return InitOnceExecuteOnce((PINIT_ONCE)once, once_run, (PVOID)fn, NULL) ? 0 : EINVAL;
++}
++
++int pthread_mutex_init(pthread_mutex_t *m, const pthread_mutexattr_t *attr) {
++    (void)attr;
++    InitializeSRWLock((PSRWLOCK)m);
++    return 0;
++}
++int pthread_mutex_destroy(pthread_mutex_t *m) { (void)m; return 0; }
++int pthread_mutex_lock(pthread_mutex_t *m) { AcquireSRWLockExclusive((PSRWLOCK)m); return 0; }
++int pthread_mutex_trylock(pthread_mutex_t *m) { return TryAcquireSRWLockExclusive((PSRWLOCK)m) ? 0 : EBUSY; }
++int pthread_mutex_unlock(pthread_mutex_t *m) { ReleaseSRWLockExclusive((PSRWLOCK)m); return 0; }
++
++int pthread_cond_init(pthread_cond_t *c, const pthread_condattr_t *attr) {
++    (void)attr;
++    InitializeConditionVariable((PCONDITION_VARIABLE)c);
++    return 0;
++}
++int pthread_cond_destroy(pthread_cond_t *c) { (void)c; return 0; }
++int pthread_cond_wait(pthread_cond_t *c, pthread_mutex_t *m) {
++    return SleepConditionVariableSRW((PCONDITION_VARIABLE)c, (PSRWLOCK)m, INFINITE, 0) ? 0 : EINVAL;
++}
++int pthread_cond_signal(pthread_cond_t *c) { WakeConditionVariable((PCONDITION_VARIABLE)c); return 0; }
++int pthread_cond_broadcast(pthread_cond_t *c) { WakeAllConditionVariable((PCONDITION_VARIABLE)c); return 0; }
++
++/* ---- memory ---- */
++
++static DWORD page_protection(int prot) {
++    switch (prot & (PROT_READ | PROT_WRITE | PROT_EXEC)) {
++    case PROT_NONE: return PAGE_NOACCESS;
++    case PROT_READ: return PAGE_READONLY;
++    case PROT_EXEC: return PAGE_EXECUTE;
++    case PROT_READ | PROT_EXEC: return PAGE_EXECUTE_READ;
++    case PROT_EXEC | PROT_WRITE: case PROT_READ | PROT_WRITE | PROT_EXEC: return PAGE_EXECUTE_READWRITE;
++    default: return PAGE_READWRITE;
++    }
++}
++
++/* Whether [addr, addr+len) lies inside memory already reserved. */
++static int reserved(void *addr, size_t len) {
++    MEMORY_BASIC_INFORMATION mi;
++    if (!VirtualQuery(addr, &mi, sizeof mi) || mi.State == MEM_FREE) return 0;
++    void *base = mi.AllocationBase;
++    /* every region the range covers belongs to that one reservation */
++    for (uint8_t *at = (uint8_t *)addr; at < (uint8_t *)addr + len; at = (uint8_t *)mi.BaseAddress + mi.RegionSize) {
++        if (!VirtualQuery(at, &mi, sizeof mi) || mi.State == MEM_FREE || mi.AllocationBase != base) return 0;
++    }
++    return 1;
++}
++
++void *mmap(void *addr, size_t len, int prot, int flags, int fd, off_t off) {
++    (void)off;
++    if (!(flags & MAP_ANONYMOUS) || fd != -1) { errno = ENODEV; return MAP_FAILED; } /* no file views */
++    if (!len) { errno = EINVAL; return MAP_FAILED; }
++    const DWORD protect = page_protection(prot);
++    if ((flags & MAP_FIXED) && reserved(addr, len)) {
++        /* Over part of a reservation: fresh zero pages, as POSIX gives. */
++        if (!VirtualFree(addr, len, MEM_DECOMMIT)) { fail(GetLastError()); return MAP_FAILED; }
++        if (prot != PROT_NONE && !VirtualAlloc(addr, len, MEM_COMMIT, protect)) { fail(GetLastError()); return MAP_FAILED; }
++        return addr;
++    }
++    /* A new reservation: committed now unless it has no access (Windows
++     * commits nothing it is not asked to, so NORESERVE is the default). */
++    const DWORD type = prot == PROT_NONE ? MEM_RESERVE : MEM_RESERVE | MEM_COMMIT;
++    void *p = addr ? VirtualAlloc(addr, len, type, protect) : NULL;
++    if (!p && (flags & (MAP_FIXED | MAP_FIXED_NOREPLACE)) && addr) { fail(GetLastError()); return MAP_FAILED; }
++    if (!p) p = VirtualAlloc(NULL, len, type, protect);  /* a hint the system could not take */
++    if (!p) { fail(GetLastError()); return MAP_FAILED; }
++    return p;
++}
++
++int munmap(void *addr, size_t len) {
++    MEMORY_BASIC_INFORMATION mi;
++    if (!VirtualQuery(addr, &mi, sizeof mi) || mi.State == MEM_FREE) return 0;
++    /* A whole reservation is released; part of one is only decommitted (its
++     * address range stays reserved, and nothing else can be placed in it). */
++    if (mi.AllocationBase == addr) {
++        size_t whole = 0;
++        for (uint8_t *at = (uint8_t *)addr;; at = (uint8_t *)mi.BaseAddress + mi.RegionSize) {
++            if (!VirtualQuery(at, &mi, sizeof mi) || mi.AllocationBase != addr) break;
++            whole = (size_t)((uint8_t *)mi.BaseAddress + mi.RegionSize - (uint8_t *)addr);
++        }
++        if (len >= whole) return VirtualFree(addr, 0, MEM_RELEASE) ? 0 : fail(GetLastError());
++    }
++    return VirtualFree(addr, len, MEM_DECOMMIT) ? 0 : fail(GetLastError());
++}
++
++int mprotect(void *addr, size_t len, int prot) {
++    DWORD old;
++    return VirtualProtect(addr, len, page_protection(prot), &old) ? 0 : fail(GetLastError());
++}
++
++/* MADV_DONTNEED on private anonymous memory: the pages read as zero again. */
++int madvise(void *addr, size_t len, int advice) {
++    if (advice != MADV_DONTNEED) return 0;
++    MEMORY_BASIC_INFORMATION mi;
++    if (!VirtualQuery(addr, &mi, sizeof mi) || mi.State != MEM_COMMIT) return 0;
++    const DWORD protect = mi.Protect;
++    if (!VirtualFree(addr, len, MEM_DECOMMIT)) return fail(GetLastError());
++    return VirtualAlloc(addr, len, MEM_COMMIT, protect) ? 0 : fail(GetLastError());
++}
++
++#endif /* _WIN32 */
+diff --git a/runtime/win32hle/win32/posix.h b/runtime/win32hle/win32/posix.h
+new file mode 100644
+index 0000000..833becd
+--- /dev/null
++++ b/runtime/win32hle/win32/posix.h
+@@ -0,0 +1,204 @@
++/*
++ * win32/posix.h -- the POSIX subset the win32hle runtime uses, on a Windows
++ * host (the MSVC C runtime and the Windows API underneath).
++ *
++ * The runtime is written against POSIX. On Windows the build includes this
++ * header first in every runtime file (-include win32/posix.h) and puts
++ * win32/include on the include path, whose unistd.h, pthread.h, dirent.h,
++ * sys/mman.h and the rest only bring this header in. Nothing here includes
++ * <windows.h>: the runtime names Win32's own types and constants for the
++ * guest, so the host's must stay out of its files. win32/posix.c holds the
++ * implementations; win32/net.h is the sockets part, for wsock32.c alone.
++ *
++ * Only what the runtime calls is here, with the semantics it relies on:
++ *   - files are binary (open adds O_BINARY), as on POSIX;
++ *   - threads are detached (pthread_create closes its handle; there is no
++ *     pthread_join), pthread_t is the thread id;
++ *   - mutexes are not recursive (SRW locks), conditions are condition
++ *     variables, once is InitOnce;
++ *   - mmap is anonymous memory only (a file view fails with ENODEV): a
++ *     reservation without access, and MAP_FIXED over part of one gives fresh
++ *     zero pages with the protection asked for, as on POSIX;
++ *   - paths are the C runtime's (ANSI); realpath and getcwd give forward
++ *     slashes;
++ *   - pread and pwrite leave the file pointer where it was, as on POSIX.
++ */
++#ifndef WIN32HLE_WIN32_POSIX_H
++#define WIN32HLE_WIN32_POSIX_H
++#ifdef _WIN32
++
++#ifndef _CRT_DECLARE_NONSTDC_NAMES
++#define _CRT_DECLARE_NONSTDC_NAMES 1   /* close, read, lseek... by their POSIX names */
++#endif
++#ifndef _CRT_SECURE_NO_WARNINGS
++#define _CRT_SECURE_NO_WARNINGS 1
++#endif
++#ifndef _CRT_NONSTDC_NO_WARNINGS
++#define _CRT_NONSTDC_NO_WARNINGS 1
++#endif
++
++#include <stdint.h>
++#include <stddef.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <time.h>
++#include <errno.h>
++#include <io.h>
++#include <direct.h>
++#include <process.h>
++#include <fcntl.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++typedef intptr_t ssize_t;
++typedef unsigned int useconds_t;
++
++/* ---- unistd.h ---- */
++#define R_OK 4
++#define W_OK 2
++#define X_OK 0                       /* the C runtime has no execute check: existence */
++#define F_OK 0
++#ifndef O_CLOEXEC
++#define O_CLOEXEC _O_NOINHERIT
++#endif
++#ifndef O_NONBLOCK
++#define O_NONBLOCK 0x4000000         /* sockets only (fcntl in win32/net.h) */
++#endif
++#define _SC_PAGESIZE          1
++#define _SC_NPROCESSORS_ONLN  2
++
++int w32p_open(const char *path, int flags, ...);
++#define open(...) w32p_open(__VA_ARGS__)
++ssize_t pread(int fd, void *buf, size_t n, off_t off);
++ssize_t pwrite(int fd, const void *buf, size_t n, off_t off);
++int ftruncate(int fd, off_t size);
++int usleep(useconds_t us);
++int getpagesize(void);
++long sysconf(int name);
++ssize_t readlink(const char *path, char *buf, size_t n);
++char *realpath(const char *path, char *resolved);
++char *w32p_getcwd(char *buf, int n);                  /* with forward slashes, as realpath */
++#define getcwd(buf, n) w32p_getcwd(buf, n)
++#define mkdir(path, mode) _mkdir(path)
++#define popen _popen
++#define pclose _pclose
++
++/* ---- sys/stat.h: POSIX's struct stat, with nanosecond times ---- */
++struct w32p_stat {
++    dev_t st_dev;
++    uint64_t st_ino;
++    unsigned short st_mode;
++    unsigned int st_nlink;
++    short st_uid, st_gid;
++    int64_t st_size;
++    struct timespec st_atim, st_mtim, st_ctim;
++};
++int w32p_stat(const char *path, struct w32p_stat *st);
++int w32p_fstat(int fd, struct w32p_stat *st);
++#define stat w32p_stat               /* both the struct and the call */
++#define fstat w32p_fstat
++#ifndef S_ISDIR
++#define S_ISDIR(m) (((m) & _S_IFMT) == _S_IFDIR)
++#endif
++#ifndef S_ISREG
++#define S_ISREG(m) (((m) & _S_IFMT) == _S_IFREG)
++#endif
++#define S_IRUSR _S_IREAD
++#define S_IWUSR _S_IWRITE
++#define UTIME_NOW  ((1l << 30) - 1l)
++#define UTIME_OMIT ((1l << 30) - 2l)
++int futimens(int fd, const struct timespec times[2]);
++
++/* ---- sys/statvfs.h ---- */
++struct statvfs {
++    unsigned long f_bsize, f_frsize;
++    uint64_t f_blocks, f_bfree, f_bavail;
++};
++int statvfs(const char *path, struct statvfs *out);
++
++/* ---- time.h ---- */
++typedef int clockid_t;
++#define CLOCK_REALTIME  0
++#define CLOCK_MONOTONIC 1
++int clock_gettime(clockid_t clock, struct timespec *ts);
++int nanosleep(const struct timespec *request, struct timespec *remain);
++static __inline struct tm *localtime_r(const time_t *t, struct tm *out) { return localtime_s(out, t) ? NULL : out; }
++static __inline struct tm *gmtime_r(const time_t *t, struct tm *out) { return gmtime_s(out, t) ? NULL : out; }
++#define timegm _mkgmtime
++
++/* ---- strings.h ---- */
++static __inline int strcasecmp(const char *a, const char *b) { return _stricmp(a, b); }
++static __inline int strncasecmp(const char *a, const char *b, size_t n) { return _strnicmp(a, b, n); }
++
++/* ---- sched.h ---- */
++int sched_yield(void);
++
++/* ---- pthread.h ---- */
++typedef uintptr_t pthread_t;                                     /* the thread id */
++typedef struct { void *p; } pthread_mutex_t;                     /* an SRWLOCK */
++typedef struct { void *p; } pthread_cond_t;                      /* a CONDITION_VARIABLE */
++typedef struct { void *p; } pthread_once_t;                      /* an INIT_ONCE */
++typedef struct { int unused; } pthread_attr_t, pthread_mutexattr_t, pthread_condattr_t;
++#define PTHREAD_MUTEX_INITIALIZER { 0 }
++#define PTHREAD_COND_INITIALIZER  { 0 }
++#define PTHREAD_ONCE_INIT         { 0 }
++int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*fn)(void *), void *arg);
++int pthread_detach(pthread_t thread);
++pthread_t pthread_self(void);
++int pthread_equal(pthread_t a, pthread_t b);
++void pthread_exit(void *value);
++int pthread_once(pthread_once_t *once, void (*fn)(void));
++int pthread_mutex_init(pthread_mutex_t *m, const pthread_mutexattr_t *attr);
++int pthread_mutex_destroy(pthread_mutex_t *m);
++int pthread_mutex_lock(pthread_mutex_t *m);
++int pthread_mutex_trylock(pthread_mutex_t *m);
++int pthread_mutex_unlock(pthread_mutex_t *m);
++int pthread_cond_init(pthread_cond_t *c, const pthread_condattr_t *attr);
++int pthread_cond_destroy(pthread_cond_t *c);
++int pthread_cond_wait(pthread_cond_t *c, pthread_mutex_t *m);
++int pthread_cond_signal(pthread_cond_t *c);
++int pthread_cond_broadcast(pthread_cond_t *c);
++
++/* ---- dirent.h ---- */
++#define DT_UNKNOWN 0
++#define DT_DIR     4
++#define DT_REG     8
++struct dirent {
++    unsigned char d_type;
++    char d_name[260];
++};
++typedef struct w32p_dir DIR;
++DIR *opendir(const char *path);
++struct dirent *readdir(DIR *dir);
++int closedir(DIR *dir);
++
++/* ---- sys/mman.h ---- */
++#define PROT_NONE  0
++#define PROT_READ  1
++#define PROT_WRITE 2
++#define PROT_EXEC  4
++#define MAP_SHARED    0x01
++#define MAP_PRIVATE   0x02
++#define MAP_FIXED     0x10
++#define MAP_ANONYMOUS 0x20
++#define MAP_ANON      MAP_ANONYMOUS
++#define MAP_NORESERVE 0x4000
++#define MAP_FIXED_NOREPLACE 0x100000
++#define MAP_FAILED ((void *)-1)
++#define MADV_DONTNEED 4
++void *mmap(void *addr, size_t len, int prot, int flags, int fd, off_t off);
++int munmap(void *addr, size_t len);
++int mprotect(void *addr, size_t len, int prot);
++int madvise(void *addr, size_t len, int advice);
++
++#ifdef __cplusplus
++}
++#endif
++
++#endif /* _WIN32 */
++#endif /* WIN32HLE_WIN32_POSIX_H */

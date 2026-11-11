@@ -24,7 +24,7 @@
 # remaining folders out (-ffile-prefix-map), the package strips debug information, and
 # packaging/check_paths.py refuses the package otherwise (SFCOP_ALLOW_BUILD_PATHS=1 lets a local
 # test package through, never in GitHub Actions). The AppImage needs Docker and is skipped with a
-# warning when it cannot be made, unless SFCOP_APPIMAGE=required. Builds run at nice 19, -j4.
+# warning when it cannot be made, unless SFCOP_APPIMAGE=required. Builds run at nice 5, -j4.
 #
 # The client is the lifted program (DESIGN §7.2): without the lift there is nothing to package,
 # so SFCOP_LIFT=OFF is refused here; `source` is the package that needs no lift.
@@ -169,7 +169,7 @@ check_paths() {
 
 case $os in
     macos)
-        nice -n 19 cmake --build "$build" -j4 --target sfcop_app
+        nice -n 5 cmake --build "$build" -j4 --target sfcop_app
         rm -rf "$dist/SFCOP.app"
         # ditto keeps the signature's extended attributes and the executable bits.
         ditto "$build/dist/SFCOP.app" "$dist/SFCOP.app"
@@ -191,7 +191,7 @@ case $os in
         sh "$root/packaging/macos/make_dmg.sh" "$dist/SFCOP.app" "$dist/$name.dmg" "$hash_list"
         ;;
     linux)
-        nice -n 19 cmake --build "$build" -j4 --target sfcop
+        nice -n 5 cmake --build "$build" -j4 --target sfcop
         sh "$root/packaging/linux/make_tree.sh" "$dist/$name" "$(find_built sfcop)" \
             "$(find_built libSDL2-2.0.so.0)" "$(find_built libSDL3.so.0)" "$root" "$version" "$arch"
         check_paths "$dist/$name/bin/sfcop" "$dist/$name/lib/libSDL2-2.0.so.0" "$dist/$name/lib/libSDL3.so.0"
@@ -205,7 +205,7 @@ case $os in
         fi
         ;;
     windows)
-        nice -n 19 cmake --build "$build" -j4 --target sfcop
+        nice -n 5 cmake --build "$build" -j4 --target sfcop
         sh "$root/packaging/windows/make_tree.sh" "$dist/$name" "$(find_built sfcop.exe)" \
             "$(find_built SDL2.dll)" "$(find_built SDL3.dll)" "$root" "$version" "$arch"
         check_paths "$dist/$name/sfcop.exe" "$dist/$name/SDL2.dll" "$dist/$name/SDL3.dll"

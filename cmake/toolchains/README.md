@@ -123,11 +123,12 @@ Windows does; not seen on Windows. Owner: B6.
 SDL's dummy video driver in relative mode. Suspected: the dummy driver on the Windows build never
 delivers it; not seen on Windows. Owner: B1 (Window backend).
 
-An unrelated limit, not a failing case: the lifted `sfcop` does not build for `windows-x64` yet.
-pcrecomp's win32hle runtime includes POSIX headers (`unistd.h`, `pthread.h`, `strings.h`) and
-calls `clock_gettime` and `nanosleep`, and `src/app/guest/GuestExceptions.cpp` leaves
-`g_raiseShim` and `g_liftedCode` undeclared on Windows. CI builds and tests `src/` only on that
-preset until both are fixed. Owners: the lifter (pcrecomp, integrator) and B6.
+An unrelated limit, not a failing case: CI builds and tests `src/` on `windows-x64` with the lift
+off. The lifted `sfcop` builds for `windows-x64` and `windows-arm64` (`-DSFCOP_LIFT=ON`, through
+`scripts/dist.sh`); the lift's runtime reaches the Windows API through the compat layer the
+`pcrecomp-win32-*` patches add (`cmake/lifter/setup.sh`). The x64 client boots under Wine with this
+runner; the arm64 one is built and packaged, not run. A build directory does not put `SDL2.dll` and
+`SDL3.dll` beside `sfcop.exe`: copy them there from `_deps/` to run it, as the package does.
 
 ## What is installed
 

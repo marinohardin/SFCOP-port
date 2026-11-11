@@ -3,7 +3,9 @@
 # patches applied (the P0-4 static TLS hook, the three P1-2 win32hle patches, and the guest
 # exception patches: landing pads for every catching function, the machine lock's depth for a
 # longjmp out of nested guest calls, and a host hook for a zero divisor; and the machine's
-# quantum, a count of hand-over points before an import gives the machine to a waiting thread).
+# quantum, a count of hand-over points before an import gives the machine to a waiting thread;
+# and for a Windows host, the runtime's POSIX calls on the Windows API, drive-letter host paths,
+# the two kernel32 rows that read POSIX-only state, and no host CPUID on a Windows Arm host).
 # The clone is regenerable and lives outside the repository, by default in
 # $SFCOP_WORK/lifter-hle/pcrecomp.
 #
@@ -28,7 +30,11 @@ for p in "$HERE/patches/pcrecomp-tib-hook.patch" \
          "$HERE/patches/pcrecomp-eh-landing-pads.patch" \
          "$HERE/patches/pcrecomp-mach-depth.patch" \
          "$HERE/patches/pcrecomp-div-fault.patch" \
-         "$HERE/patches/pcrecomp-quantum.patch"; do
+         "$HERE/patches/pcrecomp-quantum.patch" \
+         "$HERE/patches/pcrecomp-win32-posix.patch" \
+         "$HERE/patches/pcrecomp-win32-paths.patch" \
+         "$HERE/patches/pcrecomp-win32-kernel32.patch" \
+         "$HERE/patches/pcrecomp-win32-cpuid.patch"; do
     if git -C "$dir" apply --check "$p" 2>/dev/null; then
         git -C "$dir" apply "$p"; echo "applied $(basename "$p")"
     elif git -C "$dir" apply --reverse --check "$p" 2>/dev/null; then
