@@ -26,16 +26,20 @@
 #include "unsorted/tEntityControlShip.cpp"
 #include "unsorted/tEntityMgr.cpp"
 #include "unsorted/tINIMgr.cpp"
+#include "unsorted/tListBox_Base.h"
+#include "unsorted/tListBox_Select.cpp"
 #include "unsorted/tMouseMgr_Base.cpp"
 #include "unsorted/tMyApp.cpp"
 #include "unsorted/tNetControl.h"
 #include "unsorted/tPhaserBank.cpp"
 #include "unsorted/tPhaserXBank.cpp"
+#include "unsorted/tScrollBar.h"
 #include "unsorted/tSfcApp3d.cpp"
 #include "unsorted/tSfcMouseMgr_Ex.cpp"
 #include "unsorted/tShieldGroup.h"
 #include "unsorted/tShieldSystem.h"
 #include "unsorted/tSphere.cpp"
+#include "unsorted/tVisObject.h"
 
 // Entry points: the lifted names, the guest calling convention.
 
@@ -1659,477 +1663,777 @@ extern "C" void sub_004413D8(void) {
     ::sfcop::guest::Entry< ::sfcop::guest::member< int( int ) >( &tShieldGroup::vfunction96 ) >::run();
 }
 
+// tListBox_Base::vfunction8(const tRect *), game/unsorted/tListBox_Base.cpp
+extern "C" void sub_004C6225(void) {
+    ::sfcop::guest::entered(270);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( const tRect * ) >( &tListBox_Base::vfunction8 ) >::run();
+}
+
+// tRect::mMakeClippedRect(const tRect *,tRect *) const, game/unsorted/tListBox_Base.cpp
+extern "C" void sub_004C6376(void) {
+    ::sfcop::guest::entered(271);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( const tRect *, tRect * ) const >( &tRect::mMakeClippedRect ) >::run();
+}
+
+// tListBox_Base::vfunction31(c_tListBox_Base_Event *), game/unsorted/tListBox_Base.cpp
+extern "C" void sub_004C63DD(void) {
+    ::sfcop::guest::entered(272);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< bool( c_tListBox_Base_Event * ) >( &tListBox_Base::vfunction31 ) >::run();
+}
+
+// tListBox_Base::vfunction37(tAsset *), game/unsorted/tListBox_Base.cpp
+extern "C" void sub_004C64C6(void) {
+    ::sfcop::guest::entered(273);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( tAsset * ) >( &tListBox_Base::vfunction37 ) >::run();
+}
+
+// tListBox_Base::vfunction42(c_tListBox_Base_Item *), game/unsorted/tListBox_Base.cpp
+extern "C" void sub_004C670C(void) {
+    ::sfcop::guest::entered(274);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( c_tListBox_Base_Item * ) >( &tListBox_Base::vfunction42 ) >::run();
+}
+
+// tListBox_Base::fn_004c676a(unsigned int), game/unsorted/tListBox_Base.cpp
+extern "C" void sub_004C676A(void) {
+    ::sfcop::guest::entered(275);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< c_tListBox_Base_Item *( unsigned int ) >( &tListBox_Base::fn_004c676a ) >::run();
+}
+
+// tListBox_Base::vfunction43(), game/unsorted/tListBox_Base.cpp
+extern "C" void sub_004C6787(void) {
+    ::sfcop::guest::entered(276);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< int() >( &tListBox_Base::vfunction43 ) >::run();
+}
+
+// tListBox_Base::vfunction44(c_tListBox_Base_DrawItem *), game/unsorted/tListBox_Base.cpp
+extern "C" void sub_004C679A(void) {
+    ::sfcop::guest::entered(277);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< bool( c_tListBox_Base_DrawItem * ) >( &tListBox_Base::vfunction44 ) >::run();
+}
+
+// tListBox_Base::fn_004c68dd(), game/unsorted/tListBox_Base.cpp
+extern "C" void sub_004C68DD(void) {
+    ::sfcop::guest::entered(278);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tScrollBar *() >( &tListBox_Base::fn_004c68dd ) >::run();
+}
+
+// fn_004c692a(tVisObject *,tString *), game/unsorted/tListBox_Base.cpp
+extern "C" void sub_004C692A(void) {
+    ::sfcop::guest::entered(279);
+    ::sfcop::guest::Entry< static_cast< tObjBase * (*)( tVisObject *, tString * ) >( &fn_004c692a ) >::run();
+}
+
+// tListBox_Base::fn_004c69b8(int), game/unsorted/tListBox_Base.cpp
+extern "C" void sub_004C69B8(void) {
+    ::sfcop::guest::entered(280);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int ) >( &tListBox_Base::fn_004c69b8 ) >::run();
+}
+
+// tListBox_Base::fn_004c6a16(int), game/unsorted/tListBox_Base.cpp
+extern "C" void sub_004C6A16(void) {
+    ::sfcop::guest::entered(281);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int ) >( &tListBox_Base::fn_004c6a16 ) >::run();
+}
+
+// tListBox_Base::vfunction47(unsigned int), game/unsorted/tListBox_Base.cpp
+extern "C" void sub_004C6A37(void) {
+    ::sfcop::guest::entered(282);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< bool( unsigned int ) >( &tListBox_Base::vfunction47 ) >::run();
+}
+
+// tListBox_Base::vfunction48(), game/unsorted/tListBox_Base.cpp
+extern "C" void sub_004C6A65(void) {
+    ::sfcop::guest::entered(283);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< int() >( &tListBox_Base::vfunction48 ) >::run();
+}
+
+// tListBox_Base::vfunction49(), game/unsorted/tListBox_Base.cpp
+extern "C" void sub_004C6A6C(void) {
+    ::sfcop::guest::entered(284);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< bool() >( &tListBox_Base::vfunction49 ) >::run();
+}
+
+// tListBox_Base::vfunction50(bool), game/unsorted/tListBox_Base.cpp
+extern "C" void sub_004C6A73(void) {
+    ::sfcop::guest::entered(285);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( bool ) >( &tListBox_Base::vfunction50 ) >::run();
+}
+
+// tListBox_Base::vfunction51(), game/unsorted/tListBox_Base.cpp
+extern "C" void sub_004C6A80(void) {
+    ::sfcop::guest::entered(286);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tListBox_Base::vfunction51 ) >::run();
+}
+
+// tListBox_Base::vfunction52(unsigned int), game/unsorted/tListBox_Base.cpp
+extern "C" void sub_004C6AB1(void) {
+    ::sfcop::guest::entered(287);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( unsigned int ) >( &tListBox_Base::vfunction52 ) >::run();
+}
+
+// tListBox_Base::vfunction53(unsigned short *), game/unsorted/tListBox_Base.cpp
+extern "C" void sub_004C6AF8(void) {
+    ::sfcop::guest::entered(288);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< int( unsigned short * ) >( &tListBox_Base::vfunction53 ) >::run();
+}
+
+// tListBox_Base::vfunction55(void *,short,int,unsigned int), game/unsorted/tListBox_Base.cpp
+extern "C" void sub_004C6B14(void) {
+    ::sfcop::guest::entered(289);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned int( void *, short, int, unsigned int ) >( &tListBox_Base::vfunction55 ) >::run();
+}
+
+// tListBox_Base::vfunction54(c_tListBox_Base_Item *,unsigned int), game/unsorted/tListBox_Base.cpp
+extern "C" void sub_004C6BAC(void) {
+    ::sfcop::guest::entered(290);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( c_tListBox_Base_Item *, unsigned int ) >( &tListBox_Base::vfunction54 ) >::run();
+}
+
+// tListBox_Base::vfunction56(unsigned int), game/unsorted/tListBox_Base.cpp
+extern "C" void sub_004C6BCB(void) {
+    ::sfcop::guest::entered(291);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< bool( unsigned int ) >( &tListBox_Base::vfunction56 ) >::run();
+}
+
+// tListBox_Base::vfunction57(unsigned int), game/unsorted/tListBox_Base.cpp
+extern "C" void sub_004C6C13(void) {
+    ::sfcop::guest::entered(292);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void *( unsigned int ) >( &tListBox_Base::vfunction57 ) >::run();
+}
+
+// tListBox_Base::vfunction58(unsigned int,int), game/unsorted/tListBox_Base.cpp
+extern "C" void sub_004C6C21(void) {
+    ::sfcop::guest::entered(293);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( unsigned int, int ) >( &tListBox_Base::vfunction58 ) >::run();
+}
+
+// tListBox_Base::vfunction59(unsigned int), game/unsorted/tListBox_Base.cpp
+extern "C" void sub_004C6C4F(void) {
+    ::sfcop::guest::entered(294);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< short( unsigned int ) >( &tListBox_Base::vfunction59 ) >::run();
+}
+
+// tListBox_Base::vfunction60(unsigned int), game/unsorted/tListBox_Base.cpp
+extern "C" void sub_004C6C69(void) {
+    ::sfcop::guest::entered(295);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< int( unsigned int ) >( &tListBox_Base::vfunction60 ) >::run();
+}
+
+// tListBox_Base::vfunction61(unsigned int,int), game/unsorted/tListBox_Base.cpp
+extern "C" void sub_004C6C80(void) {
+    ::sfcop::guest::entered(296);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< bool( unsigned int, int ) >( &tListBox_Base::vfunction61 ) >::run();
+}
+
+// tListBox_Base::vfunction62(short,c_tListBox_Base_Colors *), game/unsorted/tListBox_Base.cpp
+extern "C" void sub_004C6C9D(void) {
+    ::sfcop::guest::entered(297);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( short, c_tListBox_Base_Colors * ) >( &tListBox_Base::vfunction62 ) >::run();
+}
+
+// tListBox_Base::vfunction63(short), game/unsorted/tListBox_Base.cpp
+extern "C" void sub_004C6CE9(void) {
+    ::sfcop::guest::entered(298);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< c_tListBox_Base_Colors( short ) >( &tListBox_Base::vfunction63 ) >::run();
+}
+
+// tListBox_Base::vfunction64(), game/unsorted/tListBox_Base.cpp
+extern "C" void sub_004C6D2E(void) {
+    ::sfcop::guest::entered(299);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< std::map< int, c_tListBox_Base_Colors > *() >( &tListBox_Base::vfunction64 ) >::run();
+}
+
+// tListBox_Base::vfunction65(short), game/unsorted/tListBox_Base.cpp
+extern "C" void sub_004C6D35(void) {
+    ::sfcop::guest::entered(300);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( short ) >( &tListBox_Base::vfunction65 ) >::run();
+}
+
+// tListBox_Select::vfunction31(c_tListBox_Base_Event *), game/unsorted/tListBox_Select.cpp
+extern "C" void sub_004C70E1(void) {
+    ::sfcop::guest::entered(301);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< bool( c_tListBox_Base_Event * ) >( &tListBox_Select::vfunction31 ) >::run();
+}
+
+// tListBox_Select::vfunction51(), game/unsorted/tListBox_Select.cpp
+extern "C" void sub_004C7468(void) {
+    ::sfcop::guest::entered(302);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tListBox_Select::vfunction51 ) >::run();
+}
+
+// tListBox_Select::vfunction55(void *,short,int,unsigned int), game/unsorted/tListBox_Select.cpp
+extern "C" void sub_004C7474(void) {
+    ::sfcop::guest::entered(303);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned int( void *, short, int, unsigned int ) >( &tListBox_Select::vfunction55 ) >::run();
+}
+
+// tListBox_Select::vfunction56(unsigned int), game/unsorted/tListBox_Select.cpp
+extern "C" void sub_004C74BA(void) {
+    ::sfcop::guest::entered(304);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< bool( unsigned int ) >( &tListBox_Select::vfunction56 ) >::run();
+}
+
+// tListBox_Select::vfunction66(bool), game/unsorted/tListBox_Select.cpp
+extern "C" void sub_004C74E9(void) {
+    ::sfcop::guest::entered(305);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( bool ) >( &tListBox_Select::vfunction66 ) >::run();
+}
+
+// tListBox_Select::vfunction67(bool), game/unsorted/tListBox_Select.cpp
+extern "C" void sub_004C750B(void) {
+    ::sfcop::guest::entered(306);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( bool ) >( &tListBox_Select::vfunction67 ) >::run();
+}
+
+// tListBox_Select::vfunction68(bool,c_tListBox_Select_Field_D4 *), game/unsorted/tListBox_Select.cpp
+extern "C" void sub_004C7518(void) {
+    ::sfcop::guest::entered(307);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( bool, c_tListBox_Select_Field_D4 * ) >( &tListBox_Select::vfunction68 ) >::run();
+}
+
+// tListBox_Select::vfunction69(), game/unsorted/tListBox_Select.cpp
+extern "C" void sub_004C754B(void) {
+    ::sfcop::guest::entered(308);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< int() >( &tListBox_Select::vfunction69 ) >::run();
+}
+
+// tListBox_Select::vfunction70(int), game/unsorted/tListBox_Select.cpp
+extern "C" void sub_004C755E(void) {
+    ::sfcop::guest::entered(309);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< int( int ) >( &tListBox_Select::vfunction70 ) >::run();
+}
+
+// tListBox_Select::vfunction71(), game/unsorted/tListBox_Select.cpp
+extern "C" void sub_004C7579(void) {
+    ::sfcop::guest::entered(310);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< int() >( &tListBox_Select::vfunction71 ) >::run();
+}
+
+// tScrollBar::vfunction30(), game/unsorted/tScrollBar.cpp
+extern "C" void sub_004C828B(void) {
+    ::sfcop::guest::entered(311);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tScrollBar::vfunction30 ) >::run();
+}
+
+// tScrollBar::fn_004c82f8(tRect *), game/unsorted/tScrollBar.cpp
+extern "C" void sub_004C82F8(void) {
+    ::sfcop::guest::entered(312);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( tRect * ) >( &tScrollBar::fn_004c82f8 ) >::run();
+}
+
+// tScrollBar::vfunction8(const tRect *), game/unsorted/tScrollBar.cpp
+extern "C" void sub_004C8439(void) {
+    ::sfcop::guest::entered(313);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( const tRect * ) >( &tScrollBar::vfunction8 ) >::run();
+}
+
+// tScrollBar::fn_004c84d7(int,int), game/unsorted/tScrollBar.cpp
+extern "C" void sub_004C84D7(void) {
+    ::sfcop::guest::entered(314);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< int( int, int ) >( &tScrollBar::fn_004c84d7 ) >::run();
+}
+
+// tRect::mPointInside(int,int) const, game/unsorted/tScrollBar.cpp
+extern "C" void sub_004C855E(void) {
+    ::sfcop::guest::entered(315);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( int, int ) const >( &tRect::mPointInside ) >::run();
+}
+
+// tScrollBar::vfunction31(c_tListBox_Base_Event *), game/unsorted/tScrollBar.cpp
+extern "C" void sub_004C8587(void) {
+    ::sfcop::guest::entered(316);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( c_tListBox_Base_Event * ) >( &tScrollBar::vfunction31 ) >::run();
+}
+
+// tScrollBar::vfunction41(int,int,unsigned char), game/unsorted/tScrollBar.cpp
+extern "C" void sub_004C899B(void) {
+    ::sfcop::guest::entered(317);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( int, int, unsigned char ) >( &tScrollBar::vfunction41 ) >::run();
+}
+
+// tScrollBar::vfunction42(int *,int *), game/unsorted/tScrollBar.cpp
+extern "C" void sub_004C8A0E(void) {
+    ::sfcop::guest::entered(318);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( int *, int * ) >( &tScrollBar::vfunction42 ) >::run();
+}
+
+// tScrollBar::vfunction43(int,unsigned char), game/unsorted/tScrollBar.cpp
+extern "C" void sub_004C8A2D(void) {
+    ::sfcop::guest::entered(319);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( int, unsigned char ) >( &tScrollBar::vfunction43 ) >::run();
+}
+
 // tPhaserBank::mStreamOutSystemSpecificData(tSFCStream &,unsigned aFlags,unsigned mode), game/unsorted/tPhaserBank.cpp
 extern "C" void sub_004E1F61(void) {
-    ::sfcop::guest::entered(270);
+    ::sfcop::guest::entered(320);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned( tSFCStream &, unsigned aFlags, unsigned mode ) >( &tPhaserBank::mStreamOutSystemSpecificData ) >::run();
 }
 
 // tPhaserBank::fn_004e20d1(const char*,int), game/unsorted/tPhaserBank.cpp
 extern "C" void sub_004E20D1(void) {
-    ::sfcop::guest::entered(271);
+    ::sfcop::guest::entered(321);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( const char*, int ) >( &tPhaserBank::fn_004e20d1 ) >::run();
 }
 
 // tPhaserBank::fn_004e20f4(), game/unsorted/tPhaserBank.cpp
 extern "C" void sub_004E20F4(void) {
-    ::sfcop::guest::entered(272);
+    ::sfcop::guest::entered(322);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tPhaserBank::fn_004e20f4 ) >::run();
 }
 
 // tPhaserBank::fn_004e2243(int), game/unsorted/tPhaserBank.cpp
 extern "C" void sub_004E2243(void) {
-    ::sfcop::guest::entered(273);
+    ::sfcop::guest::entered(323);
     ::sfcop::guest::Entry< ::sfcop::guest::member< float( int ) >( &tPhaserBank::fn_004e2243 ) >::run();
 }
 
 // tPhaserBank::vfunction79(), game/unsorted/tPhaserBank.cpp
 extern "C" void sub_004E22D5(void) {
-    ::sfcop::guest::entered(274);
+    ::sfcop::guest::entered(324);
     ::sfcop::guest::Entry< ::sfcop::guest::member< float() >( &tPhaserBank::vfunction79 ) >::run();
 }
 
 // tPhaserBank::vfunction109(), game/unsorted/tPhaserBank.cpp
 extern "C" void sub_004E22DD(void) {
-    ::sfcop::guest::entered(275);
+    ::sfcop::guest::entered(325);
     ::sfcop::guest::Entry< ::sfcop::guest::member< float() >( &tPhaserBank::vfunction109 ) >::run();
 }
 
 // tPhaserBank::vfunction110(), game/unsorted/tPhaserBank.cpp
 extern "C" void sub_004E22E5(void) {
-    ::sfcop::guest::entered(276);
+    ::sfcop::guest::entered(326);
     ::sfcop::guest::Entry< ::sfcop::guest::member< float() >( &tPhaserBank::vfunction110 ) >::run();
 }
 
 // tPhaserBank::vfunction111(), game/unsorted/tPhaserBank.cpp
 extern "C" void sub_004E22ED(void) {
-    ::sfcop::guest::entered(277);
+    ::sfcop::guest::entered(327);
     ::sfcop::guest::Entry< ::sfcop::guest::member< float() >( &tPhaserBank::vfunction111 ) >::run();
 }
 
 // tPhaserBank::vfunction105(int), game/unsorted/tPhaserBank.cpp
 extern "C" void sub_004E22F5(void) {
-    ::sfcop::guest::entered(278);
+    ::sfcop::guest::entered(328);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( int ) >( &tPhaserBank::vfunction105 ) >::run();
 }
 
 // tPhaserBank::vfunction102(), game/unsorted/tPhaserBank.cpp
 extern "C" void sub_004E230C(void) {
-    ::sfcop::guest::entered(279);
+    ::sfcop::guest::entered(329);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tPhaserBank::vfunction102 ) >::run();
 }
 
 // tPhaserBank::vfunction74(float,float), game/unsorted/tPhaserBank.cpp
 extern "C" void sub_004E23B5(void) {
-    ::sfcop::guest::entered(280);
+    ::sfcop::guest::entered(330);
     ::sfcop::guest::Entry< ::sfcop::guest::member< float( float, float ) >( &tPhaserBank::vfunction74 ) >::run();
 }
 
 // tPhaserBank::vfunction143(float,float), game/unsorted/tPhaserBank.cpp
 extern "C" void sub_004E245E(void) {
-    ::sfcop::guest::entered(281);
+    ::sfcop::guest::entered(331);
     ::sfcop::guest::Entry< ::sfcop::guest::member< float( float, float ) >( &tPhaserBank::vfunction143 ) >::run();
 }
 
 // tPhaserBank::vfunction80(), game/unsorted/tPhaserBank.cpp
 extern "C" void sub_004E2542(void) {
-    ::sfcop::guest::entered(282);
+    ::sfcop::guest::entered(332);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tPhaserBank::vfunction80 ) >::run();
 }
 
 // tPhaserBank::vfunction114(unsigned char,int,int), game/unsorted/tPhaserBank.cpp
 extern "C" void sub_004E25C0(void) {
-    ::sfcop::guest::entered(283);
+    ::sfcop::guest::entered(333);
     ::sfcop::guest::Entry< ::sfcop::guest::member< float( unsigned char, int, int ) >( &tPhaserBank::vfunction114 ) >::run();
 }
 
 // tPhaserBank::vfunction116(unsigned char), game/unsorted/tPhaserBank.cpp
 extern "C" void sub_004E2711(void) {
-    ::sfcop::guest::entered(284);
+    ::sfcop::guest::entered(334);
     ::sfcop::guest::Entry< ::sfcop::guest::member< float( unsigned char ) >( &tPhaserBank::vfunction116 ) >::run();
 }
 
 // tPhaserBank::vfunction118(unsigned char), game/unsorted/tPhaserBank.cpp
 extern "C" void sub_004E27D3(void) {
-    ::sfcop::guest::entered(285);
+    ::sfcop::guest::entered(335);
     ::sfcop::guest::Entry< ::sfcop::guest::member< float( unsigned char ) >( &tPhaserBank::vfunction118 ) >::run();
 }
 
 // tPhaserBank::fn_004e2895(), game/unsorted/tPhaserBank.cpp
 extern "C" void sub_004E2895(void) {
-    ::sfcop::guest::entered(286);
+    ::sfcop::guest::entered(336);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tPhaserBank::fn_004e2895 ) >::run();
 }
 
 // tPhaserBank::vfunction136(char), game/unsorted/tPhaserBank.cpp
 extern "C" void sub_004E28FC(void) {
-    ::sfcop::guest::entered(287);
+    ::sfcop::guest::entered(337);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int( char ) >( &tPhaserBank::vfunction136 ) >::run();
 }
 
 // tPhaserBank::fn_004e2aaa(int,char), game/unsorted/tPhaserBank.cpp
 extern "C" void sub_004E2AAA(void) {
-    ::sfcop::guest::entered(288);
+    ::sfcop::guest::entered(338);
     ::sfcop::guest::Entry< ::sfcop::guest::member< float( int, char ) >( &tPhaserBank::fn_004e2aaa ) >::run();
 }
 
 // tPhaserBank::vfunction39(float), game/unsorted/tPhaserBank.cpp
 extern "C" void sub_004E2B02(void) {
-    ::sfcop::guest::entered(289);
+    ::sfcop::guest::entered(339);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( float ) >( &tPhaserBank::vfunction39 ) >::run();
 }
 
 // tPhaserXBank::mStreamOutSystemSpecificData(tSFCStream &,unsigned aFlags,unsigned mode), game/unsorted/tPhaserXBank.cpp
 extern "C" void sub_004E5403(void) {
-    ::sfcop::guest::entered(290);
+    ::sfcop::guest::entered(340);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned( tSFCStream &, unsigned aFlags, unsigned mode ) >( &tPhaserXBank::mStreamOutSystemSpecificData ) >::run();
 }
 
 // tPhaserXBank::vfunction105(int), game/unsorted/tPhaserXBank.cpp
 extern "C" void sub_004E5573(void) {
-    ::sfcop::guest::entered(291);
+    ::sfcop::guest::entered(341);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( int ) >( &tPhaserXBank::vfunction105 ) >::run();
 }
 
 // tPhaserXBank::fn_004e558a(), game/unsorted/tPhaserXBank.cpp
 extern "C" void sub_004E558A(void) {
-    ::sfcop::guest::entered(292);
+    ::sfcop::guest::entered(342);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tPhaserXBank::fn_004e558a ) >::run();
 }
 
 // tPhaserXBank::vfunction133(), game/unsorted/tPhaserXBank.cpp
 extern "C" void sub_004E55AF(void) {
-    ::sfcop::guest::entered(293);
+    ::sfcop::guest::entered(343);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int() >( &tPhaserXBank::vfunction133 ) >::run();
 }
 
 // tPhaserXBank::vfunction79(), game/unsorted/tPhaserXBank.cpp
 extern "C" void sub_004E55E9(void) {
-    ::sfcop::guest::entered(294);
+    ::sfcop::guest::entered(344);
     ::sfcop::guest::Entry< ::sfcop::guest::member< float() >( &tPhaserXBank::vfunction79 ) >::run();
 }
 
 // tPhaserXBank::vfunction109(), game/unsorted/tPhaserXBank.cpp
 extern "C" void sub_004E55F4(void) {
-    ::sfcop::guest::entered(295);
+    ::sfcop::guest::entered(345);
     ::sfcop::guest::Entry< ::sfcop::guest::member< float() >( &tPhaserXBank::vfunction109 ) >::run();
 }
 
 // tPhaserXBank::vfunction110(), game/unsorted/tPhaserXBank.cpp
 extern "C" void sub_004E55FF(void) {
-    ::sfcop::guest::entered(296);
+    ::sfcop::guest::entered(346);
     ::sfcop::guest::Entry< ::sfcop::guest::member< float() >( &tPhaserXBank::vfunction110 ) >::run();
 }
 
 // tPhaserXBank::vfunction111(), game/unsorted/tPhaserXBank.cpp
 extern "C" void sub_004E560A(void) {
-    ::sfcop::guest::entered(297);
+    ::sfcop::guest::entered(347);
     ::sfcop::guest::Entry< ::sfcop::guest::member< float() >( &tPhaserXBank::vfunction111 ) >::run();
 }
 
 // tPhaserXBank::vfunction149(int), game/unsorted/tPhaserXBank.cpp
 extern "C" void sub_004E5615(void) {
-    ::sfcop::guest::entered(298);
+    ::sfcop::guest::entered(348);
     ::sfcop::guest::Entry< ::sfcop::guest::member< float( int ) >( &tPhaserXBank::vfunction149 ) >::run();
 }
 
 // tPhaserXBank::vfunction65(char), game/unsorted/tPhaserXBank.cpp
 extern "C" void sub_004E562B(void) {
-    ::sfcop::guest::entered(299);
+    ::sfcop::guest::entered(349);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( char ) >( &tPhaserXBank::vfunction65 ) >::run();
 }
 
 // tPhaserBank::vfunction70(), game/unsorted/tPhaserBank.cpp
 extern "C" void sub_004E568C(void) {
-    ::sfcop::guest::entered(300);
+    ::sfcop::guest::entered(350);
     ::sfcop::guest::Entry< ::sfcop::guest::member< float() >( &tPhaserBank::vfunction70 ) >::run();
 }
 
 // tPhaserXBank::vfunction143(float,float), game/unsorted/tPhaserXBank.cpp
 extern "C" void sub_004E56DC(void) {
-    ::sfcop::guest::entered(301);
+    ::sfcop::guest::entered(351);
     ::sfcop::guest::Entry< ::sfcop::guest::member< float( float, float ) >( &tPhaserXBank::vfunction143 ) >::run();
 }
 
 // tPhaserXBank::vfunction74(float,float), game/unsorted/tPhaserXBank.cpp
 extern "C" void sub_004E57C0(void) {
-    ::sfcop::guest::entered(302);
+    ::sfcop::guest::entered(352);
     ::sfcop::guest::Entry< ::sfcop::guest::member< float( float, float ) >( &tPhaserXBank::vfunction74 ) >::run();
 }
 
 // tPhaserXBank::vfunction80(), game/unsorted/tPhaserXBank.cpp
 extern "C" void sub_004E5849(void) {
-    ::sfcop::guest::entered(303);
+    ::sfcop::guest::entered(353);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tPhaserXBank::vfunction80 ) >::run();
 }
 
 // tPhaserXBank::fn_004e5868(), game/unsorted/tPhaserXBank.cpp
 extern "C" void sub_004E5868(void) {
-    ::sfcop::guest::entered(304);
+    ::sfcop::guest::entered(354);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tPhaserXBank::fn_004e5868 ) >::run();
 }
 
 // tPhaserXBank::vfunction134(), game/unsorted/tPhaserXBank.cpp
 extern "C" void sub_004E58EC(void) {
-    ::sfcop::guest::entered(305);
+    ::sfcop::guest::entered(355);
     ::sfcop::guest::Entry< ::sfcop::guest::member< bool() >( &tPhaserXBank::vfunction134 ) >::run();
 }
 
 // tPhaserXBank::fn_004e5958(int), game/unsorted/tPhaserXBank.cpp
 extern "C" void sub_004E5958(void) {
-    ::sfcop::guest::entered(306);
+    ::sfcop::guest::entered(356);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int( int ) >( &tPhaserXBank::fn_004e5958 ) >::run();
 }
 
 // tPhaserXBank::vfunction114(unsigned char,int,int), game/unsorted/tPhaserXBank.cpp
 extern "C" void sub_004E5B75(void) {
-    ::sfcop::guest::entered(307);
+    ::sfcop::guest::entered(357);
     ::sfcop::guest::Entry< ::sfcop::guest::member< float( unsigned char, int, int ) >( &tPhaserXBank::vfunction114 ) >::run();
 }
 
 // tPhaserXBank::vfunction116(unsigned char), game/unsorted/tPhaserXBank.cpp
 extern "C" void sub_004E5BD9(void) {
-    ::sfcop::guest::entered(308);
+    ::sfcop::guest::entered(358);
     ::sfcop::guest::Entry< ::sfcop::guest::member< float( unsigned char ) >( &tPhaserXBank::vfunction116 ) >::run();
 }
 
 // tPhaserXBank::vfunction118(unsigned char), game/unsorted/tPhaserXBank.cpp
 extern "C" void sub_004E5C04(void) {
-    ::sfcop::guest::entered(309);
+    ::sfcop::guest::entered(359);
     ::sfcop::guest::Entry< ::sfcop::guest::member< float( unsigned char ) >( &tPhaserXBank::vfunction118 ) >::run();
 }
 
 // tPart::mValidateParts(), game/Tiger/tpart.cpp
 extern "C" void sub_00628A60(void) {
-    ::sfcop::guest::entered(310);
+    ::sfcop::guest::entered(360);
     ::sfcop::guest::Entry< static_cast< void (*)() >( &tPart::mValidateParts ) >::run();
 }
 
 // tPart::mActivateParts(), game/Tiger/tpart.cpp
 extern "C" void sub_00628C20(void) {
-    ::sfcop::guest::entered(311);
+    ::sfcop::guest::entered(361);
     ::sfcop::guest::Entry< static_cast< void (*)() >( &tPart::mActivateParts ) >::run();
 }
 
 // tPart::mDeactivateParts(), game/Tiger/tpart.cpp
 extern "C" void sub_00628DA0(void) {
-    ::sfcop::guest::entered(312);
+    ::sfcop::guest::entered(362);
     ::sfcop::guest::Entry< static_cast< void (*)() >( &tPart::mDeactivateParts ) >::run();
 }
 
 // tPart::mAddToPartCachePtrList(tPart **), game/Tiger/tpart.cpp
 extern "C" void sub_00628E50(void) {
-    ::sfcop::guest::entered(313);
+    ::sfcop::guest::entered(363);
     ::sfcop::guest::Entry< static_cast< void (*)( tPart ** ) >( &tPart::mAddToPartCachePtrList ) >::run();
 }
 
 // tAtomicLock::mAcquire(), game/Tiger/tatomic.cpp
 extern "C" void sub_00628EF0(void) {
-    ::sfcop::guest::entered(314);
+    ::sfcop::guest::entered(364);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth() >( &tAtomicLock::mAcquire ) >::run();
 }
 
 // tAtomicLock::mRelease(), game/Tiger/tatomic.cpp
 extern "C" void sub_00628F20(void) {
-    ::sfcop::guest::entered(315);
+    ::sfcop::guest::entered(365);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tAtomicLock::mRelease ) >::run();
 }
 
 // clib::memset(void *,int8u,iCount), game/Tiger/tcglue.cpp
 extern "C" void sub_0062DDB0(void) {
-    ::sfcop::guest::entered(316);
+    ::sfcop::guest::entered(366);
     ::sfcop::guest::Entry< static_cast< void (*)( void *, int8u, iCount ) >( &clib::memset ) >::run();
 }
 
 // clib::strcpy(char *,const char *), game/Tiger/tcglue.cpp
 extern "C" void sub_0062DDE0(void) {
-    ::sfcop::guest::entered(317);
+    ::sfcop::guest::entered(367);
     ::sfcop::guest::Entry< static_cast< void (*)( char *, const char * ) >( &clib::strcpy ) >::run();
 }
 
 // clib::memcpy(void *,const void *,size_t), game/Tiger/tcglue.cpp
 extern "C" void sub_0062DE10(void) {
-    ::sfcop::guest::entered(318);
+    ::sfcop::guest::entered(368);
     ::sfcop::guest::Entry< static_cast< void * (*)( void *, const void *, size_t ) >( &clib::memcpy ) >::run();
 }
 
 // tChannelGroup::mDump(unsigned long,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_006587F0(void) {
-    ::sfcop::guest::entered(319);
+    ::sfcop::guest::entered(369);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( unsigned long, long ) >( &tChannelGroup::mDump ) >::run();
 }
 
 // tChannelGroup::mDump(), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00658890(void) {
-    ::sfcop::guest::entered(320);
+    ::sfcop::guest::entered(370);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tChannelGroup::mDump ) >::run();
 }
 
 // tChannelGroup::mClose(), game/Tiger/taudiochannel.cpp
 extern "C" void sub_006589F0(void) {
-    ::sfcop::guest::entered(321);
+    ::sfcop::guest::entered(371);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tChannelGroup::mClose ) >::run();
 }
 
 // tChannelGroup::mLoad(long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00658E30(void) {
-    ::sfcop::guest::entered(322);
+    ::sfcop::guest::entered(372);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( long ) >( &tChannelGroup::mLoad ) >::run();
 }
 
 // tChannelGroup::mGetChannelNumberFromIndex(long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659470(void) {
-    ::sfcop::guest::entered(323);
+    ::sfcop::guest::entered(373);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( long ) >( &tChannelGroup::mGetChannelNumberFromIndex ) >::run();
 }
 
 // tChannelGroup::mGetIndex(unsigned long,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_006594A0(void) {
-    ::sfcop::guest::entered(324);
+    ::sfcop::guest::entered(374);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( unsigned long, long ) >( &tChannelGroup::mGetIndex ) >::run();
 }
 
 // tChannelGroup::mAddDuplicate(unsigned long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659530(void) {
-    ::sfcop::guest::entered(325);
+    ::sfcop::guest::entered(375);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( unsigned long ) >( &tChannelGroup::mAddDuplicate ) >::run();
 }
 
 // tChannelGroup::mAttachFileToChannel(unsigned long,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659540(void) {
-    ::sfcop::guest::entered(326);
+    ::sfcop::guest::entered(376);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( unsigned long, long ) >( &tChannelGroup::mAttachFileToChannel ) >::run();
 }
 
 // tChannelGroup::mAttachFileToBaseGroup(long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_006597F0(void) {
-    ::sfcop::guest::entered(327);
+    ::sfcop::guest::entered(377);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( long ) >( &tChannelGroup::mAttachFileToBaseGroup ) >::run();
 }
 
 // tChannelGroup::mKillRetainedMode(), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659A20(void) {
-    ::sfcop::guest::entered(328);
+    ::sfcop::guest::entered(378);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char() >( &tChannelGroup::mKillRetainedMode ) >::run();
 }
 
 // tChannelGroup::mClearAttachments(), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659B80(void) {
-    ::sfcop::guest::entered(329);
+    ::sfcop::guest::entered(379);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char() >( &tChannelGroup::mClearAttachments ) >::run();
 }
 
 // tChannelGroup::mGetAvailableChannel(unsigned long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659CA0(void) {
-    ::sfcop::guest::entered(330);
+    ::sfcop::guest::entered(380);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( unsigned long ) >( &tChannelGroup::mGetAvailableChannel ) >::run();
 }
 
 // tChannelGroup::mAttachSoundToChannel(unsigned long,tSoundSelection *,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_0065A0F0(void) {
-    ::sfcop::guest::entered(331);
+    ::sfcop::guest::entered(381);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( unsigned long, tSoundSelection *, long ) >( &tChannelGroup::mAttachSoundToChannel ) >::run();
 }
 
 // tChannelGroup::mPlayChannel(unsigned long,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_0065A370(void) {
-    ::sfcop::guest::entered(332);
+    ::sfcop::guest::entered(382);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( unsigned long, long ) >( &tChannelGroup::mPlayChannel ) >::run();
 }
 
 // tChannelGroup::mPauseChannel(unsigned long,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_0065A7C0(void) {
-    ::sfcop::guest::entered(333);
+    ::sfcop::guest::entered(383);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( unsigned long, long ) >( &tChannelGroup::mPauseChannel ) >::run();
 }
 
 // tCRandomSequence::mSetSeed(int32u), game/Tiger/tcrandsequence.cpp
 extern "C" void sub_0066C1C0(void) {
-    ::sfcop::guest::entered(334);
+    ::sfcop::guest::entered(384);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( int32u ) >( &tCRandomSequence::mSetSeed ) >::run();
 }
 
 // tCRandomSequence::mGenerateNumber(), game/Tiger/tcrandsequence.cpp
 extern "C" void sub_0066C1E0(void) {
-    ::sfcop::guest::entered(335);
+    ::sfcop::guest::entered(385);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32u() >( &tCRandomSequence::mGenerateNumber ) >::run();
 }
 
 // tSay::mHandleOutput(const int,const char *), game/Tiger/tsay.cpp
 extern "C" void sub_0066C6A0(void) {
-    ::sfcop::guest::entered(336);
+    ::sfcop::guest::entered(386);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( const int, const char * ) >( &tSay::mHandleOutput ) >::run();
 }
 
 // tSay::mSay(const char *,...), game/Tiger/tsay.cpp
 extern "C" void sub_0066C890(void) {
-    ::sfcop::guest::entered(337);
+    ::sfcop::guest::entered(387);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( const char *, ... ) >( &tSay::mSay ) >::run();
 }
 
 // tSay::mJustSayIt(const char *,...), game/Tiger/tsay.cpp
 extern "C" void sub_0066C8C0(void) {
-    ::sfcop::guest::entered(338);
+    ::sfcop::guest::entered(388);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( const char *, ... ) >( &tSay::mJustSayIt ) >::run();
 }
 
 // tItemBag::mAddToList(tBaseItemBag *,char *), game/Tiger/tBag.cpp
 extern "C" void sub_0066D7E0(void) {
-    ::sfcop::guest::entered(339);
+    ::sfcop::guest::entered(389);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( tBaseItemBag *, char * ) >( &tItemBag::mAddToList ) >::run();
 }
 
 // tItemBag::mFindItemWithLabel(char *), game/Tiger/tBag.cpp
 extern "C" void sub_0066D880(void) {
-    ::sfcop::guest::entered(340);
+    ::sfcop::guest::entered(390);
     ::sfcop::guest::Entry< ::sfcop::guest::member< tBaseItemBag *( char * ) >( &tItemBag::mFindItemWithLabel ) >::run();
 }
 
 // tSequencePart::mGetNumber(), game/Tiger/tsequence.cpp
 extern "C" void sub_00670180(void) {
-    ::sfcop::guest::entered(341);
+    ::sfcop::guest::entered(391);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32u() >( &tSequencePart::mGetNumber ) >::run();
 }
 
 // tSequencePart::mGetNumber(int32u), game/Tiger/tsequence.cpp
 extern "C" void sub_006701C0(void) {
-    ::sfcop::guest::entered(342);
+    ::sfcop::guest::entered(392);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32u( int32u ) >( &tSequencePart::mGetNumber ) >::run();
 }
 
 // tAllocatedClass::operator==(const type_info&), game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC4D0(void) {
-    ::sfcop::guest::entered(343);
+    ::sfcop::guest::entered(393);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32( const type_info& ) >( &tAllocatedClass::operator== ) >::run();
 }
 
 // tDynamicAllocator::tAllocatorInfo::operator==(const char*) const, game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC5A0(void) {
-    ::sfcop::guest::entered(344);
+    ::sfcop::guest::entered(394);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32( const char* ) const >( &tDynamicAllocator::tAllocatorInfo::operator== ) >::run();
 }
 
 // tDynamicAllocator::LockDownAllocator(), game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC750(void) {
-    ::sfcop::guest::entered(345);
+    ::sfcop::guest::entered(395);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tDynamicAllocator::LockDownAllocator ) >::run();
 }
 
 // tFileDatabaseMgr::tDatabaseInfo::StreamOut(nDataStore::tOutput&) const, game/Common/Database/FileDatabaseMgr.cpp
 extern "C" void sub_00707EF0(void) {
-    ::sfcop::guest::entered(346);
+    ::sfcop::guest::entered(396);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( nDataStore::tOutput& ) const >( &tFileDatabaseMgr::tDatabaseInfo::StreamOut ) >::run();
 }
 
 // tFileDatabaseMgr::GetCurDBInfo(), game/Common/Database/FileDatabaseMgr.cpp
 extern "C" void sub_00708FC0(void) {
-    ::sfcop::guest::entered(347);
+    ::sfcop::guest::entered(397);
     ::sfcop::guest::Entry< ::sfcop::guest::member< tFileDatabaseMgr::tDatabaseInfo() >( &tFileDatabaseMgr::GetCurDBInfo ) >::run();
 }
 
 // tFileDatabaseMgr::GetDBInfo(int32) const, game/Common/Database/FileDatabaseMgr.cpp
 extern "C" void sub_00709060(void) {
-    ::sfcop::guest::entered(348);
+    ::sfcop::guest::entered(398);
     ::sfcop::guest::Entry< ::sfcop::guest::member< const tFileDatabaseMgr::tDatabaseInfo*( int32 ) const >( &tFileDatabaseMgr::GetDBInfo ) >::run();
 }
 
@@ -2423,6 +2727,56 @@ const sfcop_guest_override sfcop_guest_overrides[] = {
     {0x00441261u, sub_00441261, "tShieldGroup::vfunction98(int)", "unsorted/tShieldGroup.cpp"},
     {0x0044127Fu, sub_0044127F, "tShieldGroup::vfunction97(int)", "unsorted/tShieldGroup.cpp"},
     {0x004413D8u, sub_004413D8, "tShieldGroup::vfunction96(int)", "unsorted/tShieldGroup.cpp"},
+    {0x004C6225u, sub_004C6225, "tListBox_Base::vfunction8(const tRect *)", "unsorted/tListBox_Base.cpp"},
+    {0x004C6376u, sub_004C6376, "tRect::mMakeClippedRect(const tRect *,tRect *) const", "unsorted/tListBox_Base.cpp"},
+    {0x004C63DDu, sub_004C63DD, "tListBox_Base::vfunction31(c_tListBox_Base_Event *)", "unsorted/tListBox_Base.cpp"},
+    {0x004C64C6u, sub_004C64C6, "tListBox_Base::vfunction37(tAsset *)", "unsorted/tListBox_Base.cpp"},
+    {0x004C670Cu, sub_004C670C, "tListBox_Base::vfunction42(c_tListBox_Base_Item *)", "unsorted/tListBox_Base.cpp"},
+    {0x004C676Au, sub_004C676A, "tListBox_Base::fn_004c676a(unsigned int)", "unsorted/tListBox_Base.cpp"},
+    {0x004C6787u, sub_004C6787, "tListBox_Base::vfunction43()", "unsorted/tListBox_Base.cpp"},
+    {0x004C679Au, sub_004C679A, "tListBox_Base::vfunction44(c_tListBox_Base_DrawItem *)", "unsorted/tListBox_Base.cpp"},
+    {0x004C68DDu, sub_004C68DD, "tListBox_Base::fn_004c68dd()", "unsorted/tListBox_Base.cpp"},
+    {0x004C692Au, sub_004C692A, "fn_004c692a(tVisObject *,tString *)", "unsorted/tListBox_Base.cpp"},
+    {0x004C69B8u, sub_004C69B8, "tListBox_Base::fn_004c69b8(int)", "unsorted/tListBox_Base.cpp"},
+    {0x004C6A16u, sub_004C6A16, "tListBox_Base::fn_004c6a16(int)", "unsorted/tListBox_Base.cpp"},
+    {0x004C6A37u, sub_004C6A37, "tListBox_Base::vfunction47(unsigned int)", "unsorted/tListBox_Base.cpp"},
+    {0x004C6A65u, sub_004C6A65, "tListBox_Base::vfunction48()", "unsorted/tListBox_Base.cpp"},
+    {0x004C6A6Cu, sub_004C6A6C, "tListBox_Base::vfunction49()", "unsorted/tListBox_Base.cpp"},
+    {0x004C6A73u, sub_004C6A73, "tListBox_Base::vfunction50(bool)", "unsorted/tListBox_Base.cpp"},
+    {0x004C6A80u, sub_004C6A80, "tListBox_Base::vfunction51()", "unsorted/tListBox_Base.cpp"},
+    {0x004C6AB1u, sub_004C6AB1, "tListBox_Base::vfunction52(unsigned int)", "unsorted/tListBox_Base.cpp"},
+    {0x004C6AF8u, sub_004C6AF8, "tListBox_Base::vfunction53(unsigned short *)", "unsorted/tListBox_Base.cpp"},
+    {0x004C6B14u, sub_004C6B14, "tListBox_Base::vfunction55(void *,short,int,unsigned int)", "unsorted/tListBox_Base.cpp"},
+    {0x004C6BACu, sub_004C6BAC, "tListBox_Base::vfunction54(c_tListBox_Base_Item *,unsigned int)", "unsorted/tListBox_Base.cpp"},
+    {0x004C6BCBu, sub_004C6BCB, "tListBox_Base::vfunction56(unsigned int)", "unsorted/tListBox_Base.cpp"},
+    {0x004C6C13u, sub_004C6C13, "tListBox_Base::vfunction57(unsigned int)", "unsorted/tListBox_Base.cpp"},
+    {0x004C6C21u, sub_004C6C21, "tListBox_Base::vfunction58(unsigned int,int)", "unsorted/tListBox_Base.cpp"},
+    {0x004C6C4Fu, sub_004C6C4F, "tListBox_Base::vfunction59(unsigned int)", "unsorted/tListBox_Base.cpp"},
+    {0x004C6C69u, sub_004C6C69, "tListBox_Base::vfunction60(unsigned int)", "unsorted/tListBox_Base.cpp"},
+    {0x004C6C80u, sub_004C6C80, "tListBox_Base::vfunction61(unsigned int,int)", "unsorted/tListBox_Base.cpp"},
+    {0x004C6C9Du, sub_004C6C9D, "tListBox_Base::vfunction62(short,c_tListBox_Base_Colors *)", "unsorted/tListBox_Base.cpp"},
+    {0x004C6CE9u, sub_004C6CE9, "tListBox_Base::vfunction63(short)", "unsorted/tListBox_Base.cpp"},
+    {0x004C6D2Eu, sub_004C6D2E, "tListBox_Base::vfunction64()", "unsorted/tListBox_Base.cpp"},
+    {0x004C6D35u, sub_004C6D35, "tListBox_Base::vfunction65(short)", "unsorted/tListBox_Base.cpp"},
+    {0x004C70E1u, sub_004C70E1, "tListBox_Select::vfunction31(c_tListBox_Base_Event *)", "unsorted/tListBox_Select.cpp"},
+    {0x004C7468u, sub_004C7468, "tListBox_Select::vfunction51()", "unsorted/tListBox_Select.cpp"},
+    {0x004C7474u, sub_004C7474, "tListBox_Select::vfunction55(void *,short,int,unsigned int)", "unsorted/tListBox_Select.cpp"},
+    {0x004C74BAu, sub_004C74BA, "tListBox_Select::vfunction56(unsigned int)", "unsorted/tListBox_Select.cpp"},
+    {0x004C74E9u, sub_004C74E9, "tListBox_Select::vfunction66(bool)", "unsorted/tListBox_Select.cpp"},
+    {0x004C750Bu, sub_004C750B, "tListBox_Select::vfunction67(bool)", "unsorted/tListBox_Select.cpp"},
+    {0x004C7518u, sub_004C7518, "tListBox_Select::vfunction68(bool,c_tListBox_Select_Field_D4 *)", "unsorted/tListBox_Select.cpp"},
+    {0x004C754Bu, sub_004C754B, "tListBox_Select::vfunction69()", "unsorted/tListBox_Select.cpp"},
+    {0x004C755Eu, sub_004C755E, "tListBox_Select::vfunction70(int)", "unsorted/tListBox_Select.cpp"},
+    {0x004C7579u, sub_004C7579, "tListBox_Select::vfunction71()", "unsorted/tListBox_Select.cpp"},
+    {0x004C828Bu, sub_004C828B, "tScrollBar::vfunction30()", "unsorted/tScrollBar.cpp"},
+    {0x004C82F8u, sub_004C82F8, "tScrollBar::fn_004c82f8(tRect *)", "unsorted/tScrollBar.cpp"},
+    {0x004C8439u, sub_004C8439, "tScrollBar::vfunction8(const tRect *)", "unsorted/tScrollBar.cpp"},
+    {0x004C84D7u, sub_004C84D7, "tScrollBar::fn_004c84d7(int,int)", "unsorted/tScrollBar.cpp"},
+    {0x004C855Eu, sub_004C855E, "tRect::mPointInside(int,int) const", "unsorted/tScrollBar.cpp"},
+    {0x004C8587u, sub_004C8587, "tScrollBar::vfunction31(c_tListBox_Base_Event *)", "unsorted/tScrollBar.cpp"},
+    {0x004C899Bu, sub_004C899B, "tScrollBar::vfunction41(int,int,unsigned char)", "unsorted/tScrollBar.cpp"},
+    {0x004C8A0Eu, sub_004C8A0E, "tScrollBar::vfunction42(int *,int *)", "unsorted/tScrollBar.cpp"},
+    {0x004C8A2Du, sub_004C8A2D, "tScrollBar::vfunction43(int,unsigned char)", "unsorted/tScrollBar.cpp"},
     {0x004E1F61u, sub_004E1F61, "tPhaserBank::mStreamOutSystemSpecificData(tSFCStream &,unsigned aFlags,unsigned mode)", "unsorted/tPhaserBank.cpp"},
     {0x004E20D1u, sub_004E20D1, "tPhaserBank::fn_004e20d1(const char*,int)", "unsorted/tPhaserBank.cpp"},
     {0x004E20F4u, sub_004E20F4, "tPhaserBank::fn_004e20f4()", "unsorted/tPhaserBank.cpp"},
@@ -2503,7 +2857,7 @@ const sfcop_guest_override sfcop_guest_overrides[] = {
     {0x00708FC0u, sub_00708FC0, "tFileDatabaseMgr::GetCurDBInfo()", "Common/Database/FileDatabaseMgr.cpp"},
     {0x00709060u, sub_00709060, "tFileDatabaseMgr::GetDBInfo(int32) const", "Common/Database/FileDatabaseMgr.cpp"},
 };
-const unsigned sfcop_guest_override_count = 349u;
+const unsigned sfcop_guest_override_count = 399u;
 
 }  // extern "C"
 
