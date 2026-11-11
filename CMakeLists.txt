@@ -47,6 +47,12 @@ if(APPLE AND SFCOP_LIFT)
     enable_language(OBJC)
 endif()
 enable_testing()
+# A Windows package build's binaries, SDL's included, name their .pdb by file name, not by its
+# path in the build folder (packaging/check_paths.py). SFCOP_PACKAGE_BUILD is declared below;
+# its value arrives here through -D (scripts/dist.sh), before the option() line runs.
+if(WIN32 AND SFCOP_PACKAGE_BUILD)
+    add_link_options("LINKER:/PDBALTPATH:%_PDB%")
+endif()
 add_subdirectory(third_party)
 # sfcop_src (the new code under src/) and sfcop_tests (doctest, CTest).
 include(SfcopSources)
@@ -148,8 +154,15 @@ target_include_directories(sfcop PRIVATE "${CMAKE_SOURCE_DIR}/src/app" "${CMAKE_
 sfcop_strict_warnings(sfcop)
 # pcrecomp's win32hle (the rows no module owns yet) reaches SDL3 only through sdl2-compat, which
 # loads libSDL3.dylib from beside sfcop; both libraries are written there (third_party/CMakeLists.txt).
+# On Windows SDL3-static comes before sdl2-compat's import library, or lld-link binds the platform
+# layer's SDL3 calls that share an SDL2 name (SDL_GetWindowFlags...) to sdl2-compat.
 target_link_libraries(sfcop PRIVATE sfcop_guest sfcop_spike_unowned sfcop_src sfcop_win32hle
-    sfcop_lifted SDL2::SDL2 pthread m)
+    sfcop_lifted $<$<PLATFORM_ID:Windows>:SDL3::SDL3-static> SDL2::SDL2
+    $<$<NOT:$<PLATFORM_ID:Windows>>:pthread> $<$<NOT:$<PLATFORM_ID:Windows>>:m>)
+if(WIN32)
+    # 8 MB, not Windows' 1 MB default: guest fault handlers run inside the vectored handler on this stack.
+    target_link_options(sfcop PRIVATE "LINKER:/STACK:8388608")
+endif()
 if(TARGET sfcop_hle_guest)
     target_link_libraries(sfcop PRIVATE sfcop_hle_guest)
 endif()
@@ -187,7 +200,8 @@ if(EXISTS "${SFCOP_EHTEST_DIR}/out/gen/recomp_dispatch.c")
     target_compile_options(sfcop_guest_tests PRIVATE -fno-strict-aliasing -fwrapv)
     sfcop_strict_warnings(sfcop_guest_tests)
     target_link_libraries(sfcop_guest_tests PRIVATE sfcop_spike_unowned sfcop_src sfcop_win32hle
-        sfcop_ehtest_lifted SDL2::SDL2 pthread m)
+        sfcop_ehtest_lifted $<$<PLATFORM_ID:Windows>:SDL3::SDL3-static> SDL2::SDL2
+        $<$<NOT:$<PLATFORM_ID:Windows>>:pthread> $<$<NOT:$<PLATFORM_ID:Windows>>:m>)
     if(TARGET sfcop_hle_guest)
         target_link_libraries(sfcop_guest_tests PRIVATE sfcop_hle_guest)
     endif()
@@ -210,11 +224,12 @@ target_include_directories(sfcop_machine_quantum_host PRIVATE "${_sfcop_win32hle
     "${SFCOP_PCRECOMP_DIR}/runtime/recomp32")
 target_compile_definitions(sfcop_machine_quantum_host PRIVATE ${SFCOP_RECOMP_DEFINITIONS})
 target_compile_options(sfcop_machine_quantum_host PRIVATE -w -fno-strict-aliasing -fwrapv)
+sfcop_win32hle_posix(sfcop_machine_quantum_host)
 add_executable(sfcop_machine_quantum_tests
     "${CMAKE_SOURCE_DIR}/src/app/guest/tests/MachineQuantumTest.cpp")
 target_include_directories(sfcop_machine_quantum_tests PRIVATE "${_sfcop_win32hle}"
     "${SFCOP_PCRECOMP_DIR}/runtime/recomp32")
 target_compile_definitions(sfcop_machine_quantum_tests PRIVATE ${SFCOP_RECOMP_DEFINITIONS})
 target_link_libraries(sfcop_machine_quantum_tests PRIVATE sfcop_machine_quantum_host sfcop_doctest
-    pthread)
+    $<$<NOT:$<PLATFORM_ID:Windows>>:pthread>)
 add_test(NAME sfcop_machine_quantum_tests COMMAND sfcop_machine_quantum_tests --no-version)

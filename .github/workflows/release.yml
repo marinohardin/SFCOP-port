@@ -57,9 +57,6 @@ jobs:
       # lift's inputs.
       WANT_LIFT: ${{ github.event_name == 'push' && 'true' || github.event.inputs.lift }}
       SFCOP_APPIMAGE: optional
-      # Empty once the lifted client builds for Windows; until then the two Windows steps are
-      # skipped and the draft's notes give this reason (cmake/toolchains/README.md, "Known failures").
-      WINDOWS_NOT_YET: "the lifted client does not build for Windows yet: pcrecomp's win32hle runtime includes POSIX headers, and the guest host's exception hooks are not declared on Windows"
     steps:
       - uses: actions/checkout@v4
 
@@ -163,14 +160,14 @@ jobs:
 
       - name: windows-x64
         id: windows_x64
-        if: env.LIFT == 'true' && env.WINDOWS_NOT_YET == ''
+        if: env.LIFT == 'true'
         continue-on-error: true
         timeout-minutes: 120
         run: sh packaging/release_step.sh windows-x64
 
       - name: windows-arm64
         id: windows_arm64
-        if: env.LIFT == 'true' && env.WINDOWS_NOT_YET == ''
+        if: env.LIFT == 'true'
         continue-on-error: true
         timeout-minutes: 120
         run: sh packaging/release_step.sh windows-arm64
@@ -195,7 +192,6 @@ jobs:
           python3 -I packaging/release_notes.py --dist "$SFCOP_DIST_DIR" --version "$SFCOP_VERSION" \
             --lift "$LIFT" --commit "$GITHUB_SHA" --outcomes "$OUTCOMES" \
             --hash-list analysis/results/retail_hashes.sha256 \
-            --reason "windows-x64=${WINDOWS_NOT_YET}" --reason "windows-arm64=${WINDOWS_NOT_YET}" \
             --notes "$RELEASE_ROOT/notes.md" --assets "$RELEASE_ROOT/assets.txt"
           if [ ! -s "$RELEASE_ROOT/assets.txt" ]; then
             echo "::error::no package was built; see the notes:"

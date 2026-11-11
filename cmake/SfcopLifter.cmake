@@ -74,7 +74,8 @@ else()
     foreach(_p IN ITEMS pcrecomp-tib-hook pcrecomp-kernel32-unnamed-objects
                         pcrecomp-manual-lookup-hook pcrecomp-wsock32-select-accept
                         pcrecomp-eh-landing-pads pcrecomp-mach-depth pcrecomp-div-fault
-                        pcrecomp-quantum)
+                        pcrecomp-quantum pcrecomp-win32-posix pcrecomp-win32-paths
+                        pcrecomp-win32-kernel32 pcrecomp-win32-cpuid)
         execute_process(
             COMMAND "${GIT_EXECUTABLE}" -C "${SFCOP_PCRECOMP_DIR}" apply --reverse --check
                     "${CMAKE_SOURCE_DIR}/cmake/lifter/patches/${_p}.patch"
@@ -142,6 +143,19 @@ target_include_directories(sfcop_win32hle PRIVATE ${SFCOP_RECOMP_INCLUDES})
 target_compile_definitions(sfcop_win32hle PRIVATE ${SFCOP_RECOMP_DEFINITIONS})
 target_compile_options(sfcop_win32hle PRIVATE -w -fno-strict-aliasing -fwrapv)
 target_link_libraries(sfcop_win32hle PUBLIC SDL2::SDL2)
+# The runtime is written against POSIX. On Windows its win32/ layer stands in
+# (pcrecomp-win32-posix.patch): posix.h first in every file, POSIX header names on the include path
+# that bring it in, the calls on the Windows API in posix.c, sockets on Winsock. Elsewhere this does
+# nothing. For every target that compiles runtime files.
+function(sfcop_win32hle_posix target)
+    if(WIN32)
+        target_sources(${target} PRIVATE "${_sfcop_win32hle}/win32/posix.c")
+        target_include_directories(${target} BEFORE PRIVATE "${_sfcop_win32hle}/win32/include")
+        target_compile_options(${target} PRIVATE "SHELL:-include \"${_sfcop_win32hle}/win32/posix.h\"")
+        target_link_libraries(${target} PUBLIC ws2_32)
+    endif()
+endfunction()
+sfcop_win32hle_posix(sfcop_win32hle)
 
 # --- A writable copy of the install for the boot probes and the proofs ------------------------------
 set(SFCOP_GAMEROOT "${CMAKE_BINARY_DIR}/gameroot")
