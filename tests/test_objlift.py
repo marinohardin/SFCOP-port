@@ -14,6 +14,7 @@ A test that cannot run says why on stderr (`skip`) and in pytest's -rs summary.
 import csv
 import hashlib
 import os
+import re
 import shutil
 import struct
 import subprocess
@@ -229,6 +230,90 @@ def test_evidence_from_an_exact_function_names_a_static(tmp_path):
     r = place(objs, [Claim(0x00401000, 6, '_f', 'f', 'Test/ev.cpp')], evidence=evidence)
     assert section(r, 'ev.obj:.bss#2').va == 0x00C80010
     assert dword(r, section(r, 'ev.obj:.text#1'), 1) == 0x00C80010
+
+
+REAL_HALF = '__real@4@3ffe8000000000000000'     # VC6's COMDAT literal for 0.5
+
+
+def literal_user_object(fn):
+    """fld qword ptr [__real@...] / ret in `fn`; the literal is a COMDAT (selection any) of its
+    own, as VC6 emits one in every unit that uses the constant."""
+    o = mc.Obj()
+    t = o.section('.text', b'\xdd\x05\0\0\0\0\xc3', mc.CODE | mc.COMDAT | mc.ALIGN_16,
+                  selection=mc.NODUPLICATES)
+    o.define(fn, t, 0, function=True)
+    r = o.section('.rdata', struct.pack('<d', 0.5), mc.RDATA | mc.COMDAT | mc.ALIGN_4,
+                  selection=mc.ANY)
+    o.define(REAL_HALF, r, 0)
+    o.reloc(t, 2, REAL_HALF, mc.DIR32)
+    return o
+
+
+def stub_relocation_check(monkeypatch, uses):
+    """harness/lib/target.build, stubbed: every claimed function is exact, and its references
+    are uses[its address] = [(referenced symbol, exe address)]."""
+    from types import SimpleNamespace
+    from harness.lib import target
+
+    def build(address, size, obj, symbol, exe, index):
+        return {'strict': True, 'relocs': [
+            SimpleNamespace(symbol=name, exe_address=addr, status='ok', detail='')
+            for name, addr in uses[address]]}
+    monkeypatch.setattr(target, 'build', build)
+
+
+def test_two_units_exact_functions_may_use_their_own_copy_of_a_literal(tmp_path, monkeypatch):
+    # The original link kept the literal once per unit: a's code reads 0x007959cc, b's 0x00795bf4.
+    objs = objects(tmp_path, a=literal_user_object('_fa'), b=literal_user_object('_fb'))
+    claims = [Claim(0x00401000, 7, '_fa', 'fa', 'Test/a.cpp'),
+              Claim(0x00402000, 7, '_fb', 'fb', 'Test/b.cpp')]
+    stub_relocation_check(monkeypatch, {0x00401000: [(REAL_HALF, 0x007959cc)],
+                                        0x00402000: [(REAL_HALF, 0x00795bf4)]})
+    evidence, notes = placement.exact_function_evidence(claims, objs, None, None)
+    assert evidence == {(objs[0].path, REAL_HALF): 0x007959cc,
+                        (objs[1].path, REAL_HALF): 0x00795bf4}
+    assert notes == [f'{REAL_HALF}: the exact functions of different units use different copies '
+                     'of it; each unit\'s references keep its own']
+    r = place(objs, claims, evidence=evidence)
+    assert (section(r, 'a.obj:.rdata#2').mode, section(r, 'a.obj:.rdata#2').va) == ('exe', 0x007959cc)
+    assert (section(r, 'b.obj:.rdata#2').mode, section(r, 'b.obj:.rdata#2').va) == ('exe', 0x00795bf4)
+    assert dword(r, section(r, 'a.obj:.text#1'), 2) == 0x007959cc
+    assert dword(r, section(r, 'b.obj:.text#1'), 2) == 0x00795bf4
+
+
+def test_units_that_agree_on_a_literal_share_one_copy(tmp_path, monkeypatch):
+    objs = objects(tmp_path, a=literal_user_object('_fa'), b=literal_user_object('_fb'))
+    claims = [Claim(0x00401000, 7, '_fa', 'fa', 'Test/a.cpp'),
+              Claim(0x00402000, 7, '_fb', 'fb', 'Test/b.cpp')]
+    stub_relocation_check(monkeypatch, {0x00401000: [(REAL_HALF, 0x007959cc)],
+                                        0x00402000: [(REAL_HALF, 0x007959cc)]})
+    evidence, notes = placement.exact_function_evidence(claims, objs, None, None)
+    assert evidence[(None, REAL_HALF)] == 0x007959cc and notes == []
+    r = place(objs, claims, evidence=evidence)
+    assert dict(r.dropped)['b.obj:.rdata#2'] == 'COMDAT duplicate (any)'
+    assert dword(r, section(r, 'b.obj:.text#1'), 2) == 0x007959cc
+
+
+def test_one_units_references_to_a_literal_must_agree(tmp_path, monkeypatch):
+    objs = objects(tmp_path, a=literal_user_object('_fa'))
+    claims = [Claim(0x00401000, 7, '_fa', 'fa', 'Test/a.cpp')]
+    stub_relocation_check(monkeypatch, {0x00401000: [(REAL_HALF, 0x007959cc),
+                                                     (REAL_HALF, 0x00795bf4)]})
+    with pytest.raises(PlacementError, match=f'{re.escape(REAL_HALF)}: exact functions of a.obj '
+                                             'use it at 0x007959cc and 0x00795bf4'):
+        placement.exact_function_evidence(claims, objs, None, None)
+
+
+def test_a_plain_external_used_at_two_addresses_is_refused(tmp_path, monkeypatch):
+    # _gValue is no object's COMDAT: one name, one variable, so two addresses is an error.
+    objs = objects(tmp_path, a=two_instruction_object())
+    claims = [Claim(0x00401000, 6, '?Value@@YAHXZ', 'Value', 'Test/a.cpp'),
+              Claim(0x00402000, 6, '?Value@@YAHXZ', 'Value', 'Test/a.cpp')]
+    stub_relocation_check(monkeypatch, {0x00401000: [('_gValue', 0x00838010)],
+                                        0x00402000: [('_gValue', 0x00838020)]})
+    with pytest.raises(PlacementError, match='_gValue: exact functions use it at 0x00838010 and '
+                                             '0x00838020'):
+        placement.exact_function_evidence(claims, objs, None, None)
 
 
 def global_initializer_object(body):
