@@ -13,15 +13,16 @@ endforeach()
 
 if(DEFINED ENV{SFCOP_TOOLS_DIR})
     set(SFCOP_TOOLS_DIR "$ENV{SFCOP_TOOLS_DIR}")
-    set(_sfcop_tools_named "SFCOP_TOOLS_DIR is set to")
+elseif(DEFINED ENV{SFCOP_LLVM_DIR})
+    set(SFCOP_TOOLS_DIR "")
 else()
-    # The owner's machine; any other machine sets SFCOP_TOOLS_DIR.
-    set(SFCOP_TOOLS_DIR "$SFCOP_ROOT/tools")
-    set(_sfcop_tools_named "SFCOP_TOOLS_DIR is not set, and the default folder is")
+    message(FATAL_ERROR "${SFCOP_PLATFORM}: SFCOP_TOOLS_DIR is not set. Set it to the folder "
+        "`sh cmake/toolchains/setup.sh` installs into (cmake/toolchains/README.md, \"The runner\"), "
+        "or set SFCOP_LLVM_DIR to an LLVM ${SFCOP_PIN_LLVM_VERSION} install.")
 endif()
 if(NOT DEFINED ENV{SFCOP_LLVM_DIR} AND NOT IS_DIRECTORY "${SFCOP_TOOLS_DIR}")
-    message(FATAL_ERROR "${SFCOP_PLATFORM}: the tools folder does not exist: ${_sfcop_tools_named} "
-        "${SFCOP_TOOLS_DIR}. Set SFCOP_TOOLS_DIR to the folder `sh cmake/toolchains/setup.sh` "
+    message(FATAL_ERROR "${SFCOP_PLATFORM}: the tools folder does not exist: SFCOP_TOOLS_DIR is set to "
+        "${SFCOP_TOOLS_DIR}. Set it to the folder `sh cmake/toolchains/setup.sh` "
         "installs into (cmake/toolchains/README.md, \"The runner\").")
 endif()
 if(DEFINED ENV{SFCOP_LLVM_DIR})
