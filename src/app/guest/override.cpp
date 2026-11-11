@@ -18,6 +18,9 @@
 #include "Tiger/tsay.h"
 #include "Tiger/tsequence.h"
 #include "unsorted/t3DListenerProfile.h"
+#include "unsorted/tAICaptain.cpp"
+#include "unsorted/tAIHelmOfficer.h"
+#include "unsorted/tAIWeaponOfficer.cpp"
 #include "unsorted/tApp3dBase.h"
 #include "unsorted/tApplication.h"
 #include "unsorted/tBattles.cpp"
@@ -2243,387 +2246,753 @@ extern "C" void sub_004E5C04(void) {
     ::sfcop::guest::Entry< ::sfcop::guest::member< float( unsigned char ) >( &tPhaserXBank::vfunction118 ) >::run();
 }
 
+// tAIWeaponOfficer::scalar_deleting_destructor(unsigned char), game/unsorted/tAIWeaponOfficer.cpp
+extern "C" void sub_00513E90(void) {
+    ::sfcop::guest::entered(366);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tAIWeaponOfficer *( unsigned char ) >( &tAIWeaponOfficer::scalar_deleting_destructor ) >::run();
+}
+
+// tAIWeaponOfficer::fn_00513fd4(), game/unsorted/tAIWeaponOfficer.cpp
+extern "C" void sub_00513FD4(void) {
+    ::sfcop::guest::entered(367);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< int8u() >( &tAIWeaponOfficer::fn_00513fd4 ) >::run();
+}
+
+// tAIWeaponOfficer::vfunction7_for_tAIOfficer(), game/unsorted/tAIWeaponOfficer.cpp
+extern "C" void sub_00513FD8(void) {
+    ::sfcop::guest::entered(368);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< short() >( &tAIWeaponOfficer::vfunction7_for_tAIOfficer ) >::run();
+}
+
+// tAIWeaponOfficer::fn_00514011(float), game/unsorted/tAIWeaponOfficer.cpp
+extern "C" void sub_00514011(void) {
+    ::sfcop::guest::entered(369);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< short( float ) >( &tAIWeaponOfficer::fn_00514011 ) >::run();
+}
+
+// tAIWeaponOfficer::fn_00514067(float), game/unsorted/tAIWeaponOfficer.cpp
+extern "C" void sub_00514067(void) {
+    ::sfcop::guest::entered(370);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< short( float ) >( &tAIWeaponOfficer::fn_00514067 ) >::run();
+}
+
+// tAIWeaponOfficer::vfunction9_for_tAIOfficer(), game/unsorted/tAIWeaponOfficer.cpp
+extern "C" void sub_005140C6(void) {
+    ::sfcop::guest::entered(371);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< short() >( &tAIWeaponOfficer::vfunction9_for_tAIOfficer ) >::run();
+}
+
+// tAIWeaponOfficer::vfunction8_for_tAIOfficer(), game/unsorted/tAIWeaponOfficer.cpp
+extern "C" void sub_00514108(void) {
+    ::sfcop::guest::entered(372);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< short() >( &tAIWeaponOfficer::vfunction8_for_tAIOfficer ) >::run();
+}
+
+// tAIWeaponOfficer::vfunction6_for_tAIOfficer(int *,char,int), game/unsorted/tAIWeaponOfficer.cpp
+extern "C" void sub_00514141(void) {
+    ::sfcop::guest::entered(373);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< int( int *, char, int ) >( &tAIWeaponOfficer::vfunction6_for_tAIOfficer ) >::run();
+}
+
+// tAIWeaponOfficer::vfunction10_for_tAIOfficer(int *), game/unsorted/tAIWeaponOfficer.cpp
+extern "C" void sub_0051426B(void) {
+    ::sfcop::guest::entered(374);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< bool( int * ) >( &tAIWeaponOfficer::vfunction10_for_tAIOfficer ) >::run();
+}
+
+// tAIWeaponOfficer::fn_005142a6(int8u), game/unsorted/tAIWeaponOfficer.cpp
+extern "C" void sub_005142A6(void) {
+    ::sfcop::guest::entered(375);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int8u ) >( &tAIWeaponOfficer::fn_005142a6 ) >::run();
+}
+
+// tAIWeaponOfficer::vfunction11_for_tAIOfficer(int *,int,tObject_005142b3 *,int), game/unsorted/tAIWeaponOfficer.cpp
+extern "C" void sub_005142B3(void) {
+    ::sfcop::guest::entered(376);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< float( int *, int, tObject_005142b3 *, int ) >( &tAIWeaponOfficer::vfunction11_for_tAIOfficer ) >::run();
+}
+
+// tAIWeaponOfficer::vfunction15(int *,tObject_00429103 *,tObject_005142b3 *,tObject_0096da08 *), game/unsorted/tAIWeaponOfficer.cpp
+extern "C" void sub_005143D2(void) {
+    ::sfcop::guest::entered(377);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< int8u( int *, tObject_00429103 *, tObject_005142b3 *, tObject_0096da08 * ) >( &tAIWeaponOfficer::vfunction15 ) >::run();
+}
+
+// tAIWeaponOfficer::vfunction18(int8u,tObject_00429103 *,tObject_005142b3_entry *), game/unsorted/tAIWeaponOfficer.cpp
+extern "C" void sub_00514599(void) {
+    ::sfcop::guest::entered(378);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< float( int8u, tObject_00429103 *, tObject_005142b3_entry * ) >( &tAIWeaponOfficer::vfunction18 ) >::run();
+}
+
+// tAIWeaponOfficer::vfunction19(float), game/unsorted/tAIWeaponOfficer.cpp
+extern "C" void sub_005145BD(void) {
+    ::sfcop::guest::entered(379);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< float( float ) >( &tAIWeaponOfficer::vfunction19 ) >::run();
+}
+
+// tAIWeaponOfficer::vfunction17(int,int8u,tObject_0096da08 *), game/unsorted/tAIWeaponOfficer.cpp
+extern "C" void sub_005145C6(void) {
+    ::sfcop::guest::entered(380);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< int8u( int, int8u, tObject_0096da08 * ) >( &tAIWeaponOfficer::vfunction17 ) >::run();
+}
+
+// tAIWeaponOfficer::vfunction2_for_tAIOfficer(int *,int), game/unsorted/tAIWeaponOfficer.cpp
+extern "C" void sub_005146F0(void) {
+    ::sfcop::guest::entered(381);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int *, int ) >( &tAIWeaponOfficer::vfunction2_for_tAIOfficer ) >::run();
+}
+
+// tAIWeaponOfficer::vfunction13(int *,int), game/unsorted/tAIWeaponOfficer.cpp
+extern "C" void sub_005147AB(void) {
+    ::sfcop::guest::entered(382);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int *, int ) >( &tAIWeaponOfficer::vfunction13 ) >::run();
+}
+
+// tAIWeaponOfficer::vfunction3_for_tPriorityPowerRequest(int *,int,float), game/unsorted/tAIWeaponOfficer.cpp
+extern "C" void sub_0051492B(void) {
+    ::sfcop::guest::entered(383);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< float( int *, int, float ) >( &tAIWeaponOfficer::vfunction3_for_tPriorityPowerRequest ) >::run();
+}
+
+// tAIHelmOfficer::fn_00515db1(), game/unsorted/tAIHelmOfficer.cpp
+extern "C" void sub_00515DB1(void) {
+    ::sfcop::guest::entered(384);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tAIHelmOfficer::fn_00515db1 ) >::run();
+}
+
+// tAIHelmOfficer::fn_00515e79(), game/unsorted/tAIHelmOfficer.cpp
+extern "C" void sub_00515E79(void) {
+    ::sfcop::guest::entered(385);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tAIHelmOfficer::fn_00515e79 ) >::run();
+}
+
+// tAIHelmOfficer::fn_00515ea9(), game/unsorted/tAIHelmOfficer.cpp
+extern "C" void sub_00515EA9(void) {
+    ::sfcop::guest::entered(386);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tAIHelmOfficer::fn_00515ea9 ) >::run();
+}
+
+// tAIHelmOfficer::fn_00515f27(), game/unsorted/tAIHelmOfficer.cpp
+extern "C" void sub_00515F27(void) {
+    ::sfcop::guest::entered(387);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tAIHelmOfficer::fn_00515f27 ) >::run();
+}
+
+// fn_00516670(short,short), game/unsorted/tAIHelmOfficer.cpp
+extern "C" void sub_00516670(void) {
+    ::sfcop::guest::entered(388);
+    ::sfcop::guest::Entry< static_cast< bool (*)( short, short ) >( &fn_00516670 ) >::run();
+}
+
+// fn_005166ed(short,short,short), game/unsorted/fn_00516000.cpp
+extern "C" void sub_005166ED(void) {
+    ::sfcop::guest::entered(389);
+    ::sfcop::guest::Entry< static_cast< int (*)( short, short, short ) >( &fn_005166ed ) >::run();
+}
+
+// fn_00516733(float), game/unsorted/tAIHelmOfficer.cpp
+extern "C" void sub_00516733(void) {
+    ::sfcop::guest::entered(390);
+    ::sfcop::guest::Entry< static_cast< float (*)( float ) >( &fn_00516733 ) >::run();
+}
+
+// fn_005167ee(float), game/unsorted/tAIHelmOfficer.cpp
+extern "C" void sub_005167EE(void) {
+    ::sfcop::guest::entered(391);
+    ::sfcop::guest::Entry< static_cast< float (*)( float ) >( &fn_005167ee ) >::run();
+}
+
+// fn_00516825(float), game/unsorted/tAIHelmOfficer.cpp
+extern "C" void sub_00516825(void) {
+    ::sfcop::guest::entered(392);
+    ::sfcop::guest::Entry< static_cast< short (*)( float ) >( &fn_00516825 ) >::run();
+}
+
+// tAIHelmOfficer::fn_00516879(), game/unsorted/tAIHelmOfficer.cpp
+extern "C" void sub_00516879(void) {
+    ::sfcop::guest::entered(393);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tAIHelmOfficer::fn_00516879 ) >::run();
+}
+
+// tAIHelmOfficer::fn_0051692e(), game/unsorted/tAIHelmOfficer.cpp
+extern "C" void sub_0051692E(void) {
+    ::sfcop::guest::entered(394);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tAIHelmOfficer::fn_0051692e ) >::run();
+}
+
+// tAIHelmOfficer::fn_0051696c(float), game/unsorted/tAIHelmOfficer.cpp
+extern "C" void sub_0051696C(void) {
+    ::sfcop::guest::entered(395);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( float ) >( &tAIHelmOfficer::fn_0051696c ) >::run();
+}
+
+// tAIHelmOfficer::fn_005169d6(float), game/unsorted/tAIHelmOfficer.cpp
+extern "C" void sub_005169D6(void) {
+    ::sfcop::guest::entered(396);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( float ) >( &tAIHelmOfficer::fn_005169d6 ) >::run();
+}
+
+// tAIHelmOfficer::fn_005169e0(int,int), game/unsorted/tAIHelmOfficer.cpp
+extern "C" void sub_005169E0(void) {
+    ::sfcop::guest::entered(397);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int, int ) >( &tAIHelmOfficer::fn_005169e0 ) >::run();
+}
+
+// tAIHelmOfficer::vfunction3_for_tPriorityPowerRequest(int *,int,float), game/unsorted/tAIHelmOfficer.cpp
+extern "C" void sub_00516C79(void) {
+    ::sfcop::guest::entered(398);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< float( int *, int, float ) >( &tAIHelmOfficer::vfunction3_for_tPriorityPowerRequest ) >::run();
+}
+
+// tAICaptain::vfunction18(), game/unsorted/tAICaptain.cpp
+extern "C" void sub_0051E09A(void) {
+    ::sfcop::guest::entered(399);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< int() >( &tAICaptain::vfunction18 ) >::run();
+}
+
+// tAICaptain::scalar_deleting_destructor(unsigned char), game/unsorted/tAICaptain.cpp
+extern "C" void sub_0051E09E(void) {
+    ::sfcop::guest::entered(400);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tAICaptain *( unsigned char ) >( &tAICaptain::scalar_deleting_destructor ) >::run();
+}
+
+// tAICaptain::vfunction7(tObject_0041018e_arg *,int), game/unsorted/tAICaptain.cpp
+extern "C" void sub_0051E1F7(void) {
+    ::sfcop::guest::entered(401);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( tObject_0041018e_arg *, int ) >( &tAICaptain::vfunction7 ) >::run();
+}
+
+// tAICaptain::fn_0051e275(int), game/unsorted/tAICaptain.cpp
+extern "C" void sub_0051E275(void) {
+    ::sfcop::guest::entered(402);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int ) >( &tAICaptain::fn_0051e275 ) >::run();
+}
+
+// tAICaptain::fn_0051e32e(), game/unsorted/tAICaptain.cpp
+extern "C" void sub_0051E32E(void) {
+    ::sfcop::guest::entered(403);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tObject_0051e0c4_35b8 *() >( &tAICaptain::fn_0051e32e ) >::run();
+}
+
+// tAICaptain::fn_0051e33f(tShipCommand *), game/unsorted/tAICaptain.cpp
+extern "C" void sub_0051E33F(void) {
+    ::sfcop::guest::entered(404);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( tShipCommand * ) >( &tAICaptain::fn_0051e33f ) >::run();
+}
+
+// tAICaptain::fn_0051e37d(), game/unsorted/tAICaptain.cpp
+extern "C" void sub_0051E37D(void) {
+    ::sfcop::guest::entered(405);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tPoint3() >( &tAICaptain::fn_0051e37d ) >::run();
+}
+
+// tAICaptain::fn_0051e3a1(), game/unsorted/tAICaptain.cpp
+extern "C" void sub_0051E3A1(void) {
+    ::sfcop::guest::entered(406);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tAICaptain::fn_0051e3a1 ) >::run();
+}
+
+// tAICaptain::fn_0051e3ac(int,int), game/unsorted/tAICaptain.cpp
+extern "C" void sub_0051E3AC(void) {
+    ::sfcop::guest::entered(407);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< bool( int, int ) >( &tAICaptain::fn_0051e3ac ) >::run();
+}
+
+// tAICaptain::fn_0051e44d(), game/unsorted/tAICaptain.cpp
+extern "C" void sub_0051E44D(void) {
+    ::sfcop::guest::entered(408);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tObject_0051e0c4_3a34 *() >( &tAICaptain::fn_0051e44d ) >::run();
+}
+
+// tAICaptain::fn_0051f0c3(char), game/unsorted/tAICaptain.cpp
+extern "C" void sub_0051F0C3(void) {
+    ::sfcop::guest::entered(409);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( char ) >( &tAICaptain::fn_0051f0c3 ) >::run();
+}
+
+// tAICaptain::fn_0051f0d0(), game/unsorted/tAICaptain.cpp
+extern "C" void sub_0051F0D0(void) {
+    ::sfcop::guest::entered(410);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< char() >( &tAICaptain::fn_0051f0d0 ) >::run();
+}
+
+// tAICaptain::fn_0051f153(int,int), game/unsorted/tAICaptain.cpp
+extern "C" void sub_0051F153(void) {
+    ::sfcop::guest::entered(411);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int, int ) >( &tAICaptain::fn_0051f153 ) >::run();
+}
+
+// tAICaptain::fn_0051f16e(int), game/unsorted/tAICaptain.cpp
+extern "C" void sub_0051F16E(void) {
+    ::sfcop::guest::entered(412);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int ) >( &tAICaptain::fn_0051f16e ) >::run();
+}
+
+// tAICaptain::fn_0051f184(tObject_00525081 *), game/unsorted/tAICaptain.cpp
+extern "C" void sub_0051F184(void) {
+    ::sfcop::guest::entered(413);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( tObject_00525081 * ) >( &tAICaptain::fn_0051f184 ) >::run();
+}
+
+// tAICaptain::fn_0051f1ed(), game/unsorted/tAICaptain.cpp
+extern "C" void sub_0051F1ED(void) {
+    ::sfcop::guest::entered(414);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tAICaptain::fn_0051f1ed ) >::run();
+}
+
+// tAICaptain::fn_0051f559(), game/unsorted/tAICaptain.cpp
+extern "C" void sub_0051F559(void) {
+    ::sfcop::guest::entered(415);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tAICaptain::fn_0051f559 ) >::run();
+}
+
+// tAICaptain::fn_0051f602(), game/unsorted/tAICaptain.cpp
+extern "C" void sub_0051F602(void) {
+    ::sfcop::guest::entered(416);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tAICaptain::fn_0051f602 ) >::run();
+}
+
+// tAICaptain::fn_0051f958(int,char), game/unsorted/tAICaptain.cpp
+extern "C" void sub_0051F958(void) {
+    ::sfcop::guest::entered(417);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int, char ) >( &tAICaptain::fn_0051f958 ) >::run();
+}
+
+// tAICaptain::fn_0051f9d1(int), game/unsorted/tAICaptain.cpp
+extern "C" void sub_0051F9D1(void) {
+    ::sfcop::guest::entered(418);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int ) >( &tAICaptain::fn_0051f9d1 ) >::run();
+}
+
+// tAICaptain::fn_0051f9e9(int), game/unsorted/tAICaptain.cpp
+extern "C" void sub_0051F9E9(void) {
+    ::sfcop::guest::entered(419);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int ) >( &tAICaptain::fn_0051f9e9 ) >::run();
+}
+
+// tAICaptain::fn_0051fa3c(), game/unsorted/tAICaptain.cpp
+extern "C" void sub_0051FA3C(void) {
+    ::sfcop::guest::entered(420);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tAICaptain::fn_0051fa3c ) >::run();
+}
+
+// tAICaptain::fn_0051fce4(), game/unsorted/tAICaptain.cpp
+extern "C" void sub_0051FCE4(void) {
+    ::sfcop::guest::entered(421);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tAICaptain::fn_0051fce4 ) >::run();
+}
+
+// tAICaptain::fn_0051ff8b(int,char), game/unsorted/tAICaptain.cpp
+extern "C" void sub_0051FF8B(void) {
+    ::sfcop::guest::entered(422);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int, char ) >( &tAICaptain::fn_0051ff8b ) >::run();
+}
+
+// tAICaptain::fn_0051ffae(tPoint3), game/unsorted/tAICaptain.cpp
+extern "C" void sub_0051FFAE(void) {
+    ::sfcop::guest::entered(423);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( tPoint3 ) >( &tAICaptain::fn_0051ffae ) >::run();
+}
+
+// tAICaptain::fn_00520004(float,unsigned char,char *), game/unsorted/tAICaptain.cpp
+extern "C" void sub_00520004(void) {
+    ::sfcop::guest::entered(424);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( float, unsigned char, char * ) >( &tAICaptain::fn_00520004 ) >::run();
+}
+
+// tAICaptain::fn_0052008f(), game/unsorted/tAICaptain.cpp
+extern "C" void sub_0052008F(void) {
+    ::sfcop::guest::entered(425);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tAICaptain::fn_0052008f ) >::run();
+}
+
+// tAICaptain::vfunction4(tObject_00413ac3_arg *), game/unsorted/tAICaptain.cpp
+extern "C" void sub_005200C8(void) {
+    ::sfcop::guest::entered(426);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( tObject_00413ac3_arg * ) >( &tAICaptain::vfunction4 ) >::run();
+}
+
 // tMetaMapDesc::StreamOut(nDataStore::tOutput&) const, game/unsorted/tMetaMapDesc.cpp
 extern "C" void sub_00538D00(void) {
-    ::sfcop::guest::entered(366);
+    ::sfcop::guest::entered(427);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( nDataStore::tOutput& ) const >( &tMetaMapDesc::StreamOut ) >::run();
 }
 
 // tMetaMapDesc::StreamIn(nDataStore::tInput&), game/unsorted/tMetaMapDesc.cpp
 extern "C" void sub_00538D3F(void) {
-    ::sfcop::guest::entered(367);
+    ::sfcop::guest::entered(428);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( nDataStore::tInput& ) >( &tMetaMapDesc::StreamIn ) >::run();
 }
 
 // tMetaMapDesc::SQLFillInsertStream(std::stringstream*,bool), game/unsorted/tMetaMapDesc.cpp
 extern "C" void sub_00538DA5(void) {
-    ::sfcop::guest::entered(368);
+    ::sfcop::guest::entered(429);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( std::stringstream*, bool ) >( &tMetaMapDesc::SQLFillInsertStream ) >::run();
 }
 
 // tMetaMapDesc::SQLFillUpdateStream(std::stringstream*,bool), game/unsorted/tMetaMapDesc.cpp
 extern "C" void sub_00538DFE(void) {
-    ::sfcop::guest::entered(369);
+    ::sfcop::guest::entered(430);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( std::stringstream*, bool ) >( &tMetaMapDesc::SQLFillUpdateStream ) >::run();
 }
 
 // tMetaMapDesc::SQLTableName() const, game/unsorted/tMetaMapDesc.cpp
 extern "C" void sub_00538E66(void) {
-    ::sfcop::guest::entered(370);
+    ::sfcop::guest::entered(431);
     ::sfcop::guest::Entry< ::sfcop::guest::member< const char*() const >( &tMetaMapDesc::SQLTableName ) >::run();
 }
 
 // tMetaMapDesc::SQLFieldNames() const, game/unsorted/tMetaMapDesc.cpp
 extern "C" void sub_00538E6C(void) {
-    ::sfcop::guest::entered(371);
+    ::sfcop::guest::entered(432);
     ::sfcop::guest::Entry< ::sfcop::guest::member< const char*() const >( &tMetaMapDesc::SQLFieldNames ) >::run();
 }
 
 // mAssignAllocID(iAllocatorID), game/unsorted/tMetaMapDesc.cpp
 extern "C" void sub_0053900A(void) {
-    ::sfcop::guest::entered(372);
+    ::sfcop::guest::entered(433);
     ::sfcop::guest::Entry< static_cast< template<> void tClassAllocator<tMetaMapDesc>:: (*)( iAllocatorID ) >( &mAssignAllocID ) >::run();
 }
 
 // scalar_deleting_destructor(unsigned char), game/unsorted/tMetaMapDesc.cpp
 extern "C" void sub_00539016(void) {
-    ::sfcop::guest::entered(373);
+    ::sfcop::guest::entered(434);
     ::sfcop::guest::Entry< static_cast< template<> tClassAllocator<tMetaMapDesc>* tClassAllocator<tMetaMapDesc>:: (*)( unsigned char ) >( &scalar_deleting_destructor ) >::run();
 }
 
 // tBattles::scalar_deleting_destructor(unsigned char), game/unsorted/tBattles.cpp
 extern "C" void sub_00547BC5(void) {
-    ::sfcop::guest::entered(374);
+    ::sfcop::guest::entered(435);
     ::sfcop::guest::Entry< ::sfcop::guest::member< tBattles*( unsigned char ) >( &tBattles::scalar_deleting_destructor ) >::run();
 }
 
 // tBattles::operator=(const tBattles&), game/unsorted/tBattles.cpp
 extern "C" void sub_00547CCE(void) {
-    ::sfcop::guest::entered(375);
+    ::sfcop::guest::entered(436);
     ::sfcop::guest::Entry< ::sfcop::guest::member< tBattles&( const tBattles& ) >( &tBattles::operator= ) >::run();
 }
 
 // tMissionCompleteResults::operator=(const tMissionCompleteResults&), game/unsorted/tBattles.cpp
 extern "C" void sub_00547D3B(void) {
-    ::sfcop::guest::entered(376);
+    ::sfcop::guest::entered(437);
     ::sfcop::guest::Entry< ::sfcop::guest::member< tMissionCompleteResults&( const tMissionCompleteResults& ) >( &tMissionCompleteResults::operator= ) >::run();
 }
 
 // tBattles::StreamOut(nDataStore::tOutput&) const, game/unsorted/tBattles.cpp
 extern "C" void sub_00547D6E(void) {
-    ::sfcop::guest::entered(377);
+    ::sfcop::guest::entered(438);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( nDataStore::tOutput& ) const >( &tBattles::StreamOut ) >::run();
 }
 
 // tBattles::StreamIn(nDataStore::tInput&), game/unsorted/tBattles.cpp
 extern "C" void sub_00547DE9(void) {
-    ::sfcop::guest::entered(378);
+    ::sfcop::guest::entered(439);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( nDataStore::tInput& ) >( &tBattles::StreamIn ) >::run();
 }
 
 // fn_005480e3(time_t), game/unsorted/tBattles.cpp
 extern "C" void sub_005480E3(void) {
-    ::sfcop::guest::entered(379);
+    ::sfcop::guest::entered(440);
     ::sfcop::guest::Entry< static_cast< std::string (*)( time_t ) >( &fn_005480e3 ) >::run();
 }
 
 // tBattles::SQLFillUpdateStream(std::stringstream*,bool), game/unsorted/tBattles.cpp
 extern "C" void sub_0054814E(void) {
-    ::sfcop::guest::entered(380);
+    ::sfcop::guest::entered(441);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( std::stringstream*, bool ) >( &tBattles::SQLFillUpdateStream ) >::run();
 }
 
 // tBattles::SQLTableName() const, game/unsorted/tBattles.cpp
 extern "C" void sub_00548151(void) {
-    ::sfcop::guest::entered(381);
+    ::sfcop::guest::entered(442);
     ::sfcop::guest::Entry< ::sfcop::guest::member< const char*() const >( &tBattles::SQLTableName ) >::run();
 }
 
 // tBattles::SQLFieldNames() const, game/unsorted/tBattles.cpp
 extern "C" void sub_00548157(void) {
-    ::sfcop::guest::entered(382);
+    ::sfcop::guest::entered(443);
     ::sfcop::guest::Entry< ::sfcop::guest::member< const char*() const >( &tBattles::SQLFieldNames ) >::run();
 }
 
 // tBattles::fn_0054815d(int32u), game/unsorted/tBattles.cpp
 extern "C" void sub_0054815D(void) {
-    ::sfcop::guest::entered(383);
+    ::sfcop::guest::entered(444);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( int32u ) >( &tBattles::fn_0054815d ) >::run();
 }
 
 // tBattles::fn_00548167(int32u), game/unsorted/tBattles.cpp
 extern "C" void sub_00548167(void) {
-    ::sfcop::guest::entered(384);
+    ::sfcop::guest::entered(445);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( int32u ) >( &tBattles::fn_00548167 ) >::run();
 }
 
 // tBattles::fn_00548171(nDatabase::tID), game/unsorted/tBattles.cpp
 extern "C" void sub_00548171(void) {
-    ::sfcop::guest::entered(385);
+    ::sfcop::guest::entered(446);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( nDatabase::tID ) >( &tBattles::fn_00548171 ) >::run();
 }
 
 // tBattles::fn_00548192(int32u), game/unsorted/tBattles.cpp
 extern "C" void sub_00548192(void) {
-    ::sfcop::guest::entered(386);
+    ::sfcop::guest::entered(447);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( int32u ) >( &tBattles::fn_00548192 ) >::run();
 }
 
 // tBattles::fn_0054819c(const tMetaMapHex&), game/unsorted/tBattles.cpp
 extern "C" void sub_0054819C(void) {
-    ::sfcop::guest::entered(387);
+    ::sfcop::guest::entered(448);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( const tMetaMapHex& ) >( &tBattles::fn_0054819c ) >::run();
 }
 
 // tBattles::fn_005481ab(const tMissionCompleteResults&), game/unsorted/tBattles.cpp
 extern "C" void sub_005481AB(void) {
-    ::sfcop::guest::entered(388);
+    ::sfcop::guest::entered(449);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( const tMissionCompleteResults& ) >( &tBattles::fn_005481ab ) >::run();
 }
 
 // operator=(const std::vector< tObject_0053d20b >&), game/unsorted/tBattles.cpp
 extern "C" void sub_005481BD(void) {
-    ::sfcop::guest::entered(389);
+    ::sfcop::guest::entered(450);
     ::sfcop::guest::Entry< static_cast< template<> std::vector< tObject_0053d20b >& std::vector< tObject_0053d20b >:: (*)( const std::vector< tObject_0053d20b >& ) >( &operator= ) >::run();
 }
 
 // mAssignAllocID(iAllocatorID), game/unsorted/tBattles.cpp
 extern "C" void sub_0054841D(void) {
-    ::sfcop::guest::entered(390);
+    ::sfcop::guest::entered(451);
     ::sfcop::guest::Entry< static_cast< template<> void tClassAllocator<tBattles>:: (*)( iAllocatorID ) >( &mAssignAllocID ) >::run();
 }
 
 // tPart::mValidateParts(), game/Tiger/tpart.cpp
 extern "C" void sub_00628A60(void) {
-    ::sfcop::guest::entered(391);
+    ::sfcop::guest::entered(452);
     ::sfcop::guest::Entry< static_cast< void (*)() >( &tPart::mValidateParts ) >::run();
 }
 
 // tPart::mActivateParts(), game/Tiger/tpart.cpp
 extern "C" void sub_00628C20(void) {
-    ::sfcop::guest::entered(392);
+    ::sfcop::guest::entered(453);
     ::sfcop::guest::Entry< static_cast< void (*)() >( &tPart::mActivateParts ) >::run();
 }
 
 // tPart::mDeactivateParts(), game/Tiger/tpart.cpp
 extern "C" void sub_00628DA0(void) {
-    ::sfcop::guest::entered(393);
+    ::sfcop::guest::entered(454);
     ::sfcop::guest::Entry< static_cast< void (*)() >( &tPart::mDeactivateParts ) >::run();
 }
 
 // tPart::mAddToPartCachePtrList(tPart **), game/Tiger/tpart.cpp
 extern "C" void sub_00628E50(void) {
-    ::sfcop::guest::entered(394);
+    ::sfcop::guest::entered(455);
     ::sfcop::guest::Entry< static_cast< void (*)( tPart ** ) >( &tPart::mAddToPartCachePtrList ) >::run();
 }
 
 // tAtomicLock::mAcquire(), game/Tiger/tatomic.cpp
 extern "C" void sub_00628EF0(void) {
-    ::sfcop::guest::entered(395);
+    ::sfcop::guest::entered(456);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth() >( &tAtomicLock::mAcquire ) >::run();
 }
 
 // tAtomicLock::mRelease(), game/Tiger/tatomic.cpp
 extern "C" void sub_00628F20(void) {
-    ::sfcop::guest::entered(396);
+    ::sfcop::guest::entered(457);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tAtomicLock::mRelease ) >::run();
 }
 
 // clib::memset(void *,int8u,iCount), game/Tiger/tcglue.cpp
 extern "C" void sub_0062DDB0(void) {
-    ::sfcop::guest::entered(397);
+    ::sfcop::guest::entered(458);
     ::sfcop::guest::Entry< static_cast< void (*)( void *, int8u, iCount ) >( &clib::memset ) >::run();
 }
 
 // clib::strcpy(char *,const char *), game/Tiger/tcglue.cpp
 extern "C" void sub_0062DDE0(void) {
-    ::sfcop::guest::entered(398);
+    ::sfcop::guest::entered(459);
     ::sfcop::guest::Entry< static_cast< void (*)( char *, const char * ) >( &clib::strcpy ) >::run();
 }
 
 // clib::memcpy(void *,const void *,size_t), game/Tiger/tcglue.cpp
 extern "C" void sub_0062DE10(void) {
-    ::sfcop::guest::entered(399);
+    ::sfcop::guest::entered(460);
     ::sfcop::guest::Entry< static_cast< void * (*)( void *, const void *, size_t ) >( &clib::memcpy ) >::run();
 }
 
 // tChannelGroup::mDump(unsigned long,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_006587F0(void) {
-    ::sfcop::guest::entered(400);
+    ::sfcop::guest::entered(461);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( unsigned long, long ) >( &tChannelGroup::mDump ) >::run();
 }
 
 // tChannelGroup::mDump(), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00658890(void) {
-    ::sfcop::guest::entered(401);
+    ::sfcop::guest::entered(462);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tChannelGroup::mDump ) >::run();
 }
 
 // tChannelGroup::mClose(), game/Tiger/taudiochannel.cpp
 extern "C" void sub_006589F0(void) {
-    ::sfcop::guest::entered(402);
+    ::sfcop::guest::entered(463);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tChannelGroup::mClose ) >::run();
 }
 
 // tChannelGroup::mLoad(long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00658E30(void) {
-    ::sfcop::guest::entered(403);
+    ::sfcop::guest::entered(464);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( long ) >( &tChannelGroup::mLoad ) >::run();
 }
 
 // tChannelGroup::mGetChannelNumberFromIndex(long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659470(void) {
-    ::sfcop::guest::entered(404);
+    ::sfcop::guest::entered(465);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( long ) >( &tChannelGroup::mGetChannelNumberFromIndex ) >::run();
 }
 
 // tChannelGroup::mGetIndex(unsigned long,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_006594A0(void) {
-    ::sfcop::guest::entered(405);
+    ::sfcop::guest::entered(466);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( unsigned long, long ) >( &tChannelGroup::mGetIndex ) >::run();
 }
 
 // tChannelGroup::mAddDuplicate(unsigned long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659530(void) {
-    ::sfcop::guest::entered(406);
+    ::sfcop::guest::entered(467);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( unsigned long ) >( &tChannelGroup::mAddDuplicate ) >::run();
 }
 
 // tChannelGroup::mAttachFileToChannel(unsigned long,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659540(void) {
-    ::sfcop::guest::entered(407);
+    ::sfcop::guest::entered(468);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( unsigned long, long ) >( &tChannelGroup::mAttachFileToChannel ) >::run();
 }
 
 // tChannelGroup::mAttachFileToBaseGroup(long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_006597F0(void) {
-    ::sfcop::guest::entered(408);
+    ::sfcop::guest::entered(469);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( long ) >( &tChannelGroup::mAttachFileToBaseGroup ) >::run();
 }
 
 // tChannelGroup::mKillRetainedMode(), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659A20(void) {
-    ::sfcop::guest::entered(409);
+    ::sfcop::guest::entered(470);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char() >( &tChannelGroup::mKillRetainedMode ) >::run();
 }
 
 // tChannelGroup::mClearAttachments(), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659B80(void) {
-    ::sfcop::guest::entered(410);
+    ::sfcop::guest::entered(471);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char() >( &tChannelGroup::mClearAttachments ) >::run();
 }
 
 // tChannelGroup::mGetAvailableChannel(unsigned long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659CA0(void) {
-    ::sfcop::guest::entered(411);
+    ::sfcop::guest::entered(472);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( unsigned long ) >( &tChannelGroup::mGetAvailableChannel ) >::run();
 }
 
 // tChannelGroup::mAttachSoundToChannel(unsigned long,tSoundSelection *,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_0065A0F0(void) {
-    ::sfcop::guest::entered(412);
+    ::sfcop::guest::entered(473);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( unsigned long, tSoundSelection *, long ) >( &tChannelGroup::mAttachSoundToChannel ) >::run();
 }
 
 // tChannelGroup::mPlayChannel(unsigned long,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_0065A370(void) {
-    ::sfcop::guest::entered(413);
+    ::sfcop::guest::entered(474);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( unsigned long, long ) >( &tChannelGroup::mPlayChannel ) >::run();
 }
 
 // tChannelGroup::mPauseChannel(unsigned long,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_0065A7C0(void) {
-    ::sfcop::guest::entered(414);
+    ::sfcop::guest::entered(475);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( unsigned long, long ) >( &tChannelGroup::mPauseChannel ) >::run();
 }
 
 // tCRandomSequence::mSetSeed(int32u), game/Tiger/tcrandsequence.cpp
 extern "C" void sub_0066C1C0(void) {
-    ::sfcop::guest::entered(415);
+    ::sfcop::guest::entered(476);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( int32u ) >( &tCRandomSequence::mSetSeed ) >::run();
 }
 
 // tCRandomSequence::mGenerateNumber(), game/Tiger/tcrandsequence.cpp
 extern "C" void sub_0066C1E0(void) {
-    ::sfcop::guest::entered(416);
+    ::sfcop::guest::entered(477);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32u() >( &tCRandomSequence::mGenerateNumber ) >::run();
 }
 
 // tSay::mHandleOutput(const int,const char *), game/Tiger/tsay.cpp
 extern "C" void sub_0066C6A0(void) {
-    ::sfcop::guest::entered(417);
+    ::sfcop::guest::entered(478);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( const int, const char * ) >( &tSay::mHandleOutput ) >::run();
 }
 
 // tSay::mSay(const char *,...), game/Tiger/tsay.cpp
 extern "C" void sub_0066C890(void) {
-    ::sfcop::guest::entered(418);
+    ::sfcop::guest::entered(479);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( const char *, ... ) >( &tSay::mSay ) >::run();
 }
 
 // tSay::mJustSayIt(const char *,...), game/Tiger/tsay.cpp
 extern "C" void sub_0066C8C0(void) {
-    ::sfcop::guest::entered(419);
+    ::sfcop::guest::entered(480);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( const char *, ... ) >( &tSay::mJustSayIt ) >::run();
 }
 
 // tItemBag::mAddToList(tBaseItemBag *,char *), game/Tiger/tBag.cpp
 extern "C" void sub_0066D7E0(void) {
-    ::sfcop::guest::entered(420);
+    ::sfcop::guest::entered(481);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( tBaseItemBag *, char * ) >( &tItemBag::mAddToList ) >::run();
 }
 
 // tItemBag::mFindItemWithLabel(char *), game/Tiger/tBag.cpp
 extern "C" void sub_0066D880(void) {
-    ::sfcop::guest::entered(421);
+    ::sfcop::guest::entered(482);
     ::sfcop::guest::Entry< ::sfcop::guest::member< tBaseItemBag *( char * ) >( &tItemBag::mFindItemWithLabel ) >::run();
 }
 
 // tSequencePart::mGetNumber(), game/Tiger/tsequence.cpp
 extern "C" void sub_00670180(void) {
-    ::sfcop::guest::entered(422);
+    ::sfcop::guest::entered(483);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32u() >( &tSequencePart::mGetNumber ) >::run();
 }
 
 // tSequencePart::mGetNumber(int32u), game/Tiger/tsequence.cpp
 extern "C" void sub_006701C0(void) {
-    ::sfcop::guest::entered(423);
+    ::sfcop::guest::entered(484);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32u( int32u ) >( &tSequencePart::mGetNumber ) >::run();
 }
 
 // tAllocatedClass::operator==(const type_info&), game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC4D0(void) {
-    ::sfcop::guest::entered(424);
+    ::sfcop::guest::entered(485);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32( const type_info& ) >( &tAllocatedClass::operator== ) >::run();
 }
 
 // tDynamicAllocator::tAllocatorInfo::operator==(const char*) const, game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC5A0(void) {
-    ::sfcop::guest::entered(425);
+    ::sfcop::guest::entered(486);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32( const char* ) const >( &tDynamicAllocator::tAllocatorInfo::operator== ) >::run();
 }
 
 // tDynamicAllocator::LockDownAllocator(), game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC750(void) {
-    ::sfcop::guest::entered(426);
+    ::sfcop::guest::entered(487);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tDynamicAllocator::LockDownAllocator ) >::run();
 }
 
 // tFileDatabaseMgr::tDatabaseInfo::StreamOut(nDataStore::tOutput&) const, game/Common/Database/FileDatabaseMgr.cpp
 extern "C" void sub_00707EF0(void) {
-    ::sfcop::guest::entered(427);
+    ::sfcop::guest::entered(488);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( nDataStore::tOutput& ) const >( &tFileDatabaseMgr::tDatabaseInfo::StreamOut ) >::run();
 }
 
 // tFileDatabaseMgr::GetCurDBInfo(), game/Common/Database/FileDatabaseMgr.cpp
 extern "C" void sub_00708FC0(void) {
-    ::sfcop::guest::entered(428);
+    ::sfcop::guest::entered(489);
     ::sfcop::guest::Entry< ::sfcop::guest::member< tFileDatabaseMgr::tDatabaseInfo() >( &tFileDatabaseMgr::GetCurDBInfo ) >::run();
 }
 
 // tFileDatabaseMgr::GetDBInfo(int32) const, game/Common/Database/FileDatabaseMgr.cpp
 extern "C" void sub_00709060(void) {
-    ::sfcop::guest::entered(429);
+    ::sfcop::guest::entered(490);
     ::sfcop::guest::Entry< ::sfcop::guest::member< const tFileDatabaseMgr::tDatabaseInfo*( int32 ) const >( &tFileDatabaseMgr::GetDBInfo ) >::run();
 }
 
@@ -3013,6 +3382,67 @@ const sfcop_guest_override sfcop_guest_overrides[] = {
     {0x004E5B75u, sub_004E5B75, "tPhaserXBank::vfunction114(unsigned char,int,int)", "unsorted/tPhaserXBank.cpp"},
     {0x004E5BD9u, sub_004E5BD9, "tPhaserXBank::vfunction116(unsigned char)", "unsorted/tPhaserXBank.cpp"},
     {0x004E5C04u, sub_004E5C04, "tPhaserXBank::vfunction118(unsigned char)", "unsorted/tPhaserXBank.cpp"},
+    {0x00513E90u, sub_00513E90, "tAIWeaponOfficer::scalar_deleting_destructor(unsigned char)", "unsorted/tAIWeaponOfficer.cpp"},
+    {0x00513FD4u, sub_00513FD4, "tAIWeaponOfficer::fn_00513fd4()", "unsorted/tAIWeaponOfficer.cpp"},
+    {0x00513FD8u, sub_00513FD8, "tAIWeaponOfficer::vfunction7_for_tAIOfficer()", "unsorted/tAIWeaponOfficer.cpp"},
+    {0x00514011u, sub_00514011, "tAIWeaponOfficer::fn_00514011(float)", "unsorted/tAIWeaponOfficer.cpp"},
+    {0x00514067u, sub_00514067, "tAIWeaponOfficer::fn_00514067(float)", "unsorted/tAIWeaponOfficer.cpp"},
+    {0x005140C6u, sub_005140C6, "tAIWeaponOfficer::vfunction9_for_tAIOfficer()", "unsorted/tAIWeaponOfficer.cpp"},
+    {0x00514108u, sub_00514108, "tAIWeaponOfficer::vfunction8_for_tAIOfficer()", "unsorted/tAIWeaponOfficer.cpp"},
+    {0x00514141u, sub_00514141, "tAIWeaponOfficer::vfunction6_for_tAIOfficer(int *,char,int)", "unsorted/tAIWeaponOfficer.cpp"},
+    {0x0051426Bu, sub_0051426B, "tAIWeaponOfficer::vfunction10_for_tAIOfficer(int *)", "unsorted/tAIWeaponOfficer.cpp"},
+    {0x005142A6u, sub_005142A6, "tAIWeaponOfficer::fn_005142a6(int8u)", "unsorted/tAIWeaponOfficer.cpp"},
+    {0x005142B3u, sub_005142B3, "tAIWeaponOfficer::vfunction11_for_tAIOfficer(int *,int,tObject_005142b3 *,int)", "unsorted/tAIWeaponOfficer.cpp"},
+    {0x005143D2u, sub_005143D2, "tAIWeaponOfficer::vfunction15(int *,tObject_00429103 *,tObject_005142b3 *,tObject_0096da08 *)", "unsorted/tAIWeaponOfficer.cpp"},
+    {0x00514599u, sub_00514599, "tAIWeaponOfficer::vfunction18(int8u,tObject_00429103 *,tObject_005142b3_entry *)", "unsorted/tAIWeaponOfficer.cpp"},
+    {0x005145BDu, sub_005145BD, "tAIWeaponOfficer::vfunction19(float)", "unsorted/tAIWeaponOfficer.cpp"},
+    {0x005145C6u, sub_005145C6, "tAIWeaponOfficer::vfunction17(int,int8u,tObject_0096da08 *)", "unsorted/tAIWeaponOfficer.cpp"},
+    {0x005146F0u, sub_005146F0, "tAIWeaponOfficer::vfunction2_for_tAIOfficer(int *,int)", "unsorted/tAIWeaponOfficer.cpp"},
+    {0x005147ABu, sub_005147AB, "tAIWeaponOfficer::vfunction13(int *,int)", "unsorted/tAIWeaponOfficer.cpp"},
+    {0x0051492Bu, sub_0051492B, "tAIWeaponOfficer::vfunction3_for_tPriorityPowerRequest(int *,int,float)", "unsorted/tAIWeaponOfficer.cpp"},
+    {0x00515DB1u, sub_00515DB1, "tAIHelmOfficer::fn_00515db1()", "unsorted/tAIHelmOfficer.cpp"},
+    {0x00515E79u, sub_00515E79, "tAIHelmOfficer::fn_00515e79()", "unsorted/tAIHelmOfficer.cpp"},
+    {0x00515EA9u, sub_00515EA9, "tAIHelmOfficer::fn_00515ea9()", "unsorted/tAIHelmOfficer.cpp"},
+    {0x00515F27u, sub_00515F27, "tAIHelmOfficer::fn_00515f27()", "unsorted/tAIHelmOfficer.cpp"},
+    {0x00516670u, sub_00516670, "fn_00516670(short,short)", "unsorted/tAIHelmOfficer.cpp"},
+    {0x005166EDu, sub_005166ED, "fn_005166ed(short,short,short)", "unsorted/fn_00516000.cpp"},
+    {0x00516733u, sub_00516733, "fn_00516733(float)", "unsorted/tAIHelmOfficer.cpp"},
+    {0x005167EEu, sub_005167EE, "fn_005167ee(float)", "unsorted/tAIHelmOfficer.cpp"},
+    {0x00516825u, sub_00516825, "fn_00516825(float)", "unsorted/tAIHelmOfficer.cpp"},
+    {0x00516879u, sub_00516879, "tAIHelmOfficer::fn_00516879()", "unsorted/tAIHelmOfficer.cpp"},
+    {0x0051692Eu, sub_0051692E, "tAIHelmOfficer::fn_0051692e()", "unsorted/tAIHelmOfficer.cpp"},
+    {0x0051696Cu, sub_0051696C, "tAIHelmOfficer::fn_0051696c(float)", "unsorted/tAIHelmOfficer.cpp"},
+    {0x005169D6u, sub_005169D6, "tAIHelmOfficer::fn_005169d6(float)", "unsorted/tAIHelmOfficer.cpp"},
+    {0x005169E0u, sub_005169E0, "tAIHelmOfficer::fn_005169e0(int,int)", "unsorted/tAIHelmOfficer.cpp"},
+    {0x00516C79u, sub_00516C79, "tAIHelmOfficer::vfunction3_for_tPriorityPowerRequest(int *,int,float)", "unsorted/tAIHelmOfficer.cpp"},
+    {0x0051E09Au, sub_0051E09A, "tAICaptain::vfunction18()", "unsorted/tAICaptain.cpp"},
+    {0x0051E09Eu, sub_0051E09E, "tAICaptain::scalar_deleting_destructor(unsigned char)", "unsorted/tAICaptain.cpp"},
+    {0x0051E1F7u, sub_0051E1F7, "tAICaptain::vfunction7(tObject_0041018e_arg *,int)", "unsorted/tAICaptain.cpp"},
+    {0x0051E275u, sub_0051E275, "tAICaptain::fn_0051e275(int)", "unsorted/tAICaptain.cpp"},
+    {0x0051E32Eu, sub_0051E32E, "tAICaptain::fn_0051e32e()", "unsorted/tAICaptain.cpp"},
+    {0x0051E33Fu, sub_0051E33F, "tAICaptain::fn_0051e33f(tShipCommand *)", "unsorted/tAICaptain.cpp"},
+    {0x0051E37Du, sub_0051E37D, "tAICaptain::fn_0051e37d()", "unsorted/tAICaptain.cpp"},
+    {0x0051E3A1u, sub_0051E3A1, "tAICaptain::fn_0051e3a1()", "unsorted/tAICaptain.cpp"},
+    {0x0051E3ACu, sub_0051E3AC, "tAICaptain::fn_0051e3ac(int,int)", "unsorted/tAICaptain.cpp"},
+    {0x0051E44Du, sub_0051E44D, "tAICaptain::fn_0051e44d()", "unsorted/tAICaptain.cpp"},
+    {0x0051F0C3u, sub_0051F0C3, "tAICaptain::fn_0051f0c3(char)", "unsorted/tAICaptain.cpp"},
+    {0x0051F0D0u, sub_0051F0D0, "tAICaptain::fn_0051f0d0()", "unsorted/tAICaptain.cpp"},
+    {0x0051F153u, sub_0051F153, "tAICaptain::fn_0051f153(int,int)", "unsorted/tAICaptain.cpp"},
+    {0x0051F16Eu, sub_0051F16E, "tAICaptain::fn_0051f16e(int)", "unsorted/tAICaptain.cpp"},
+    {0x0051F184u, sub_0051F184, "tAICaptain::fn_0051f184(tObject_00525081 *)", "unsorted/tAICaptain.cpp"},
+    {0x0051F1EDu, sub_0051F1ED, "tAICaptain::fn_0051f1ed()", "unsorted/tAICaptain.cpp"},
+    {0x0051F559u, sub_0051F559, "tAICaptain::fn_0051f559()", "unsorted/tAICaptain.cpp"},
+    {0x0051F602u, sub_0051F602, "tAICaptain::fn_0051f602()", "unsorted/tAICaptain.cpp"},
+    {0x0051F958u, sub_0051F958, "tAICaptain::fn_0051f958(int,char)", "unsorted/tAICaptain.cpp"},
+    {0x0051F9D1u, sub_0051F9D1, "tAICaptain::fn_0051f9d1(int)", "unsorted/tAICaptain.cpp"},
+    {0x0051F9E9u, sub_0051F9E9, "tAICaptain::fn_0051f9e9(int)", "unsorted/tAICaptain.cpp"},
+    {0x0051FA3Cu, sub_0051FA3C, "tAICaptain::fn_0051fa3c()", "unsorted/tAICaptain.cpp"},
+    {0x0051FCE4u, sub_0051FCE4, "tAICaptain::fn_0051fce4()", "unsorted/tAICaptain.cpp"},
+    {0x0051FF8Bu, sub_0051FF8B, "tAICaptain::fn_0051ff8b(int,char)", "unsorted/tAICaptain.cpp"},
+    {0x0051FFAEu, sub_0051FFAE, "tAICaptain::fn_0051ffae(tPoint3)", "unsorted/tAICaptain.cpp"},
+    {0x00520004u, sub_00520004, "tAICaptain::fn_00520004(float,unsigned char,char *)", "unsorted/tAICaptain.cpp"},
+    {0x0052008Fu, sub_0052008F, "tAICaptain::fn_0052008f()", "unsorted/tAICaptain.cpp"},
+    {0x005200C8u, sub_005200C8, "tAICaptain::vfunction4(tObject_00413ac3_arg *)", "unsorted/tAICaptain.cpp"},
     {0x00538D00u, sub_00538D00, "tMetaMapDesc::StreamOut(nDataStore::tOutput&) const", "unsorted/tMetaMapDesc.cpp"},
     {0x00538D3Fu, sub_00538D3F, "tMetaMapDesc::StreamIn(nDataStore::tInput&)", "unsorted/tMetaMapDesc.cpp"},
     {0x00538DA5u, sub_00538DA5, "tMetaMapDesc::SQLFillInsertStream(std::stringstream*,bool)", "unsorted/tMetaMapDesc.cpp"},
@@ -3078,7 +3508,7 @@ const sfcop_guest_override sfcop_guest_overrides[] = {
     {0x00708FC0u, sub_00708FC0, "tFileDatabaseMgr::GetCurDBInfo()", "Common/Database/FileDatabaseMgr.cpp"},
     {0x00709060u, sub_00709060, "tFileDatabaseMgr::GetDBInfo(int32) const", "Common/Database/FileDatabaseMgr.cpp"},
 };
-const unsigned sfcop_guest_override_count = 430u;
+const unsigned sfcop_guest_override_count = 491u;
 
 }  // extern "C"
 
