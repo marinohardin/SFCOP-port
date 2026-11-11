@@ -319,6 +319,13 @@ class Placer:
         # (object path or None for an external name, symbol name) -> exe address, from the
         # original bytes of exact claimed functions (exact_function_evidence)
         self.evidence = evidence or {}
+        # name -> sorted addresses, for an external name whose COMDAT copies the exact functions
+        # of different units use at different addresses (so it has no (None, name) evidence)
+        self.ambiguous = {}
+        for (path, name), addr in self.evidence.items():
+            if path is not None and (None, name) not in self.evidence:
+                self.ambiguous.setdefault(name, set()).add(addr)
+        self.ambiguous = {n: sorted(a) for n, a in self.ambiguous.items() if len(a) > 1}
         # [(start, end)] of the exe's sections, for SECTION and SECREL relocations
         self.exe_sections = exe_sections
         self.base, self.size = reserved
@@ -328,9 +335,15 @@ class Placer:
     # -- liveness -------------------------------------------------------------------------------
 
     def _target_section(self, obj, sym):
-        """The input section a reference to `sym` (from obj) lands in, or None for the exe."""
+        """The input section a reference to `sym` (from obj) lands in, or None for the exe. A
+        COMDAT copy that exact functions of different units place at different exe addresses is
+        each referencing object's own, whichever copy COMDAT selection chose: the original link
+        kept a copy per unit (a `__real@` literal) and each unit's code uses its own."""
         if sym.section > 0:
             sec = obj.sections[sym.section]
+            if sec.is_comdat and (obj.path, sym.name) in self.evidence \
+                    and (None, sym.name) not in self.evidence:
+                return sec
             if sym.storage == coff.SYM_CLASS_EXTERNAL and sym.name in self.defs:
                 return self.defs[sym.name][0]
             return sec
@@ -376,7 +389,9 @@ class Placer:
             external = sym.storage == coff.SYM_CLASS_EXTERNAL
             addr = self._exe_address(sym.name) if external else None
             how = 'exe symbol'
-            seen = self.evidence.get((None if external else sec.obj.path, sym.name))
+            seen = self.evidence.get((sec.obj.path, sym.name))
+            if seen is None and external:
+                seen = self.evidence.get((None, sym.name))
             if addr is None and seen is not None:
                 addr, how = seen, 'used by an exact function'
             if addr is not None:
@@ -477,6 +492,10 @@ class Placer:
                 return Resolved(addr, 'exe symbol')
             if (None, sym.name) in self.evidence:
                 return Resolved(self.evidence[(None, sym.name)], 'used by an exact function')
+            if sym.name in self.ambiguous:
+                raise PlacementError(f'{sym.name} (referenced from {sec.label}, which does not '
+                                     'define it): exact functions of different units use it at '
+                                     + ' and '.join(f'0x{a:08x}' for a in self.ambiguous[sym.name]))
             raise PlacementError(f'unresolved external symbol {sym.name} (referenced from '
                                  f'{sec.label}): it is neither in the input objects nor in the '
                                  'exe\'s symbol evidence')
@@ -542,11 +561,23 @@ class Placer:
 
 def exact_function_evidence(claims, objects, exe, index):
     """Addresses the original bytes of exact claimed functions use for symbols the exe evidence
-    does not name: {symbol: address}. Uses the harness's own relocation check
-    (harness/lib/target.py): only a function whose masked bytes match the original exactly, and
-    only relocations it calls consistent ('ok' or 'unverified'), count. Returns (evidence, notes)."""
+    does not name: {(object path or None, symbol): address}. Uses the harness's own relocation
+    check (harness/lib/target.py): only a function whose masked bytes match the original exactly,
+    and only relocations it calls consistent ('ok' or 'unverified'), count. Returns (evidence,
+    notes).
+
+    A static symbol is keyed by its object. So is an external one defined in a COMDAT section of
+    the referencing object: the original link may have kept one copy per unit (the `__real@`
+    literal of a floating-point constant, at a different .rdata address for each unit), so two
+    units may disagree. An external name is also keyed by None (any object) while every unit
+    agrees on it, and left without that key when they do not. Two references from one object
+    that disagree are refused."""
     from harness.lib import target
     out, notes = {}, []
+    shared, clash = {}, set()
+    comdat_names = {sym.name for obj in objects for sym in obj.coff.by_name.values()
+                    if sym.section > 0 and sym.storage == coff.SYM_CLASS_EXTERNAL
+                    and obj.coff.sections[sym.section].characteristics & SCN_LNK_COMDAT}
     by_symbol = {}
     for obj in objects:
         for name, sym in obj.coff.by_name.items():
@@ -569,10 +600,29 @@ def exact_function_evidence(claims, objects, exe, index):
                     or r.detail in ('own section', 'absolute'):
                 continue
             sym = obj.coff.by_name[r.symbol]
-            key = (None if sym.storage == coff.SYM_CLASS_EXTERNAL else obj.path, r.symbol)
-            prev = out.get(key)
-            if prev is not None and prev != r.exe_address:
-                raise PlacementError(f'{r.symbol}: exact functions use it at 0x{prev:08x} and '
-                                     f'0x{r.exe_address:08x}')
-            out[key] = r.exe_address
+            external = sym.storage == coff.SYM_CLASS_EXTERNAL
+            own_comdat = sym.section > 0 and \
+                bool(obj.coff.sections[sym.section].characteristics & SCN_LNK_COMDAT)
+            if not external or own_comdat:
+                key = (obj.path, r.symbol)
+                prev = out.get(key)
+                if prev is not None and prev != r.exe_address:
+                    raise PlacementError(f'{r.symbol}: exact functions of {os.path.basename(obj.path)} '
+                                         f'use it at 0x{prev:08x} and 0x{r.exe_address:08x}')
+                out[key] = r.exe_address
+            if external:
+                prev = shared.get(r.symbol)
+                if prev is None:
+                    shared[r.symbol] = r.exe_address
+                elif prev != r.exe_address:
+                    if r.symbol not in comdat_names:
+                        raise PlacementError(f'{r.symbol}: exact functions use it at 0x{prev:08x} '
+                                             f'and 0x{r.exe_address:08x}')
+                    clash.add(r.symbol)
+    for name, addr in shared.items():
+        if name not in clash:
+            out[(None, name)] = addr
+    for name in sorted(clash):
+        notes.append(f'{name}: the exact functions of different units use different copies of '
+                     'it; each unit\'s references keep its own')
     return out, notes
