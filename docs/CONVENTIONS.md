@@ -157,7 +157,7 @@ Branches follow §7.1. Commit scopes are the top-level directory or the componen
 **Decompiling a function**
 1. Find it in `ghidra/exports/functions.csv`; take the unit path from its evidence, or `game/unsorted/`.
 2. Write it at its address position in the unit with its `// FUNCTION:` line and the original identifiers.
-3. `harness/build-and-verify.sh 0x<address>` until exact, or stop at the attempt cap and record it in `difficult_functions.tsv` through the harness.
+3. `harness/build-and-verify.sh 0x<address>` until exact, or until the harness's stop rule ends the run; the harness records it in `difficult_functions.tsv` or `revisit_functions.tsv` (harness/README.md, "Model tiers and the stop rule").
 4. `harness/update-matched-set.sh 0x<address>`; `python3 scripts/progress.py --gate`.
 5. Commit: `feat(game/<dir>): decompile <Class>::<Method>`; the matched set change in the same commit.
 
