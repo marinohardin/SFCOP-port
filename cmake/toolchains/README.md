@@ -187,7 +187,7 @@ The runner needs no installer step; CI never downloads a toolchain. Its environm
 
 | Variable | Meaning |
 | --- | --- |
-| `SFCOP_TOOLS_DIR` | The tools folder `setup.sh` installed into; the scripts stop with an error when it is unset |
+| `SFCOP_TOOLS_DIR` | The tools folder `setup.sh` installed into; the scripts and the cross toolchains stop with an error when it is unset (the sysroot defaults hang off it, so the part overrides below do not stand in for it) |
 | `SFCOP_LLVM_DIR`, `SFCOP_LINUX_SYSROOT`, `SFCOP_WINDOWS_SYSROOT` | Optional: one part somewhere else |
 | `SFCOP_WINE_BIN` | Optional: the folder holding `wine` and `wineserver` (default: the Wine under the tools folder) |
 | `SFCOP_CROSS_WINEPREFIX` | Optional: the Wine prefix the Windows tests use (default: `wine-prefix` in the build folder) |
