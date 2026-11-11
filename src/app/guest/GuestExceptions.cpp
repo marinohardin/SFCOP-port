@@ -17,10 +17,20 @@ extern const uint32_t recomp_dispatch_count;
 #include <csetjmp>
 #include <csignal>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <vector>
 
-#if !defined(_WIN32)
+#if defined(_WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#include <io.h>
+#else
 #include <dlfcn.h>
 #include <unistd.h>
 #if defined(__APPLE__)
@@ -111,6 +121,9 @@ void onDivideFault(std::uint32_t code) {
     RaiseFromHost(code, 0, nullptr); // a handler that continues gets the lift's result, 0
 }
 
+CodeRanges g_liftedCode; // set once by InstallExceptionHooks, read by the handler
+std::uint32_t g_raiseShim = 0; // the RaiseException row, bound by BindRaiseException
+
 #if !defined(_WIN32)
 
 // What the fault context says, where this platform's layout is known; else "unknown" (the
@@ -147,9 +160,6 @@ std::uintptr_t faultPc(void *context) {
     return 0;
 #endif
 }
-
-CodeRanges g_liftedCode; // set once by InstallExceptionHooks, read by the handler
-std::uint32_t g_raiseShim = 0; // the RaiseException row, bound by BindRaiseException
 
 // A fault is the guest's own when the instruction that faulted is lifted code, or a leaf memory
 // routine that lifted code calls for a block move (no host frame lies between it and its lifted
@@ -223,8 +233,122 @@ void installFaultHandlers() {
 
 #else
 
-// pcrecomp's win32hle host is POSIX-only; the lift does not build on Windows yet.
-void installFaultHandlers() {}
+// A Windows host reports a fault as an exception, first to the vectored handlers, on the faulting
+// thread's own stack; the guest's handlers run there, inside the vectored handler, until one
+// leaves by a longjmp, as they run inside the signal handler on a POSIX host. The main thread's
+// stack is 8 MB for that (the sfcop target's /STACK).
+
+std::uintptr_t faultPc(const CONTEXT *context) {
+#if defined(_M_X64) || defined(__x86_64__)
+    return static_cast<std::uintptr_t>(context->Rip);
+#elif defined(_M_ARM64) || defined(__aarch64__)
+    return static_cast<std::uintptr_t>(context->Pc);
+#else
+    static_cast<void>(context);
+    return 0;
+#endif
+}
+
+// The leaf memory routines' spans, found once, before any fault (InstallExceptionHooks).
+CodeRanges g_memoryRoutines;
+
+bool faultInLiftedCode(std::uintptr_t pc) {
+    return pc == 0 || g_liftedCode.Contains(pc) || g_memoryRoutines.Contains(pc);
+}
+
+[[noreturn]] void endRun(const EXCEPTION_RECORD *record) {
+    std::fprintf(stderr, "\n=== fault: exception 0x%08lX at %.3f s, in lifted sub_%08X, last import %s ===\n",
+                 record->ExceptionCode, Elapsed(), g_cur_func,
+                 g_cur_import != nullptr ? g_cur_import : "(none)");
+    std::fflush(stderr);
+    _exit(1);
+}
+
+// The signal handler's counterpart (onFault, on a POSIX host): a guest memory fault in lifted code
+// is raised as the guest's access violation; a guest address touched by host code is a defect of
+// the host and ends the run. Any other hardware fault is left to the frames that may handle it
+// (Windows code may take its own with __try), and ends the run when none does (onUnhandled).
+// Exceptions that are not faults (a C++ throw, a debugger's notice) are not touched.
+LONG CALLBACK onException(EXCEPTION_POINTERS *pointers) {
+    const EXCEPTION_RECORD *record = pointers->ExceptionRecord;
+    const auto code = static_cast<std::uint32_t>(record->ExceptionCode);
+    if (!IsWindowsHardwareFault(code)) {
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
+    if (!IsWindowsMemoryFault(code) || record->NumberParameters < 2) {
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
+    const auto address = static_cast<std::uintptr_t>(record->ExceptionInformation[1]);
+    const auto base = static_cast<std::uintptr_t>(g_mem_base); // RECOMP_MEM_BASE
+    const bool guestMemory = address >= base && address - base < 0x100000000ull;
+    if (!guestMemory) {
+        return EXCEPTION_CONTINUE_SEARCH; // host memory: left to host frames and onUnhandled
+    }
+    // Guest memory outside the machine lock, or faulting again while a fault is dispatched, ends
+    // the run with the fault line alone, as the signal handler does.
+    if (hle_mach_depth() <= 0 || t_inFault) {
+        endRun(record);
+    }
+    const std::uintptr_t pc = faultPc(pointers->ContextRecord);
+    if (faultInLiftedCode(pc)) {
+        // The guest's access violation first: a guest frame (catch(...), __except) may take it,
+        // as on Windows. A handler that takes it longjmps out of this handler.
+        t_inFault = true;
+        const std::uint32_t parameters[2] = {
+            AccessViolationFlag(AccessOfWindowsFault(record->ExceptionInformation[0])),
+            static_cast<std::uint32_t>(address - base)};
+        std::fprintf(stderr, "[eh] access violation: %s of guest 0x%08X in sub_%08X at %.3f s\n",
+                     parameters[0] != 0 ? "write" : "read", parameters[1], g_cur_func, Elapsed());
+        RaiseFromHost(kAccessViolation, 2, parameters);
+        std::fprintf(stderr, "[eh] a handler continued after an access violation at 0x%08X in "
+                             "sub_%08X; lifted code cannot retry the access\n",
+                     parameters[1], g_cur_func);
+    } else {
+        std::fprintf(stderr, "\n=== host fault: guest address 0x%08X touched by host code at "
+                             "pc %p (a programming error; not a guest exception) ===\n",
+                     static_cast<std::uint32_t>(address - base), reinterpret_cast<void *>(pc));
+    }
+    endRun(record);
+}
+
+LONG WINAPI onUnhandled(EXCEPTION_POINTERS *pointers) {
+    if (IsWindowsHardwareFault(static_cast<std::uint32_t>(pointers->ExceptionRecord->ExceptionCode))) {
+        endRun(pointers->ExceptionRecord);
+    }
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+
+PVOID g_vectoredHandler = nullptr; // removed at exit
+
+void removeFaultHandlers() {
+    if (g_vectoredHandler != nullptr) {
+        RemoveVectoredExceptionHandler(g_vectoredHandler);
+        g_vectoredHandler = nullptr;
+    }
+}
+
+// Installs once; a second call does nothing.
+void installFaultHandlers() {
+    static bool installed = false;
+    if (installed) {
+        return;
+    }
+    installed = true;
+    for (const void *routine : {reinterpret_cast<const void *>(&std::memmove),
+                                reinterpret_cast<const void *>(&std::memcpy),
+                                reinterpret_cast<const void *>(&std::memset),
+                                reinterpret_cast<const void *>(&std::memcmp)}) {
+        const CodeRange span = MemoryRoutineSpan(routine);
+        g_memoryRoutines.Add(span);
+        if (win32hle_trace) {
+            std::fprintf(stderr, "[eh] block-move routine %p: %zu bytes\n", routine,
+                         static_cast<std::size_t>(span.end - span.begin));
+        }
+    }
+    g_vectoredHandler = AddVectoredExceptionHandler(1, onException);
+    SetUnhandledExceptionFilter(onUnhandled);
+    std::atexit(removeFaultHandlers);
+}
 
 #endif
 

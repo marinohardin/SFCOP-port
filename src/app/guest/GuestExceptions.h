@@ -12,6 +12,11 @@
 // A hardware fault on guest memory and a zero divisor are raised as the guest's own exceptions
 // (EXCEPTION_ACCESS_VIOLATION, EXCEPTION_INT_DIVIDE_BY_ZERO), as Windows delivers them, so the
 // game's catch(...) and __except blocks see them.
+//
+// One difference on a Windows host: a hardware fault that is not on guest memory (host memory,
+// an illegal instruction, a stack overflow) is first left to host code's own __try frames, and
+// ends the run with the same fault line only when none takes it; on a POSIX host it ends the run
+// at once. Faults on guest memory are handled alike on both.
 #pragma once
 
 #include <cstdint>

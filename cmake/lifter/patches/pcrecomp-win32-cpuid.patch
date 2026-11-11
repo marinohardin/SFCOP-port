@@ -1,0 +1,15 @@
+diff --git a/runtime/recomp32/recomp_types.h b/runtime/recomp32/recomp_types.h
+index 6133726..adfcf78 100644
+--- a/runtime/recomp32/recomp_types.h
++++ b/runtime/recomp32/recomp_types.h
+@@ -1079,7 +1079,9 @@ RECOMP_WEAK uint32_t g_cpuid_edx_ext = 0xFFFFFFFFu;
+ RECOMP_WEAK uint32_t g_cpuid_signature = 0;
+ 
+ static inline void CPUID_impl(uint32_t eax_val, uint32_t ebx_val, uint32_t ecx_val, uint32_t edx_val) {
+-#ifdef _MSC_VER
++/* The host's own CPUID, on an x86 host built by MSVC rules; a Windows Arm host
++ * has no such instruction and leaves the registers, as other hosts do. */
++#if defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64))
+     int info[4];
+     __cpuidex(info, eax_val, ecx_val);
+     g_eax = info[0]; g_ebx = info[1]; g_ecx = info[2]; g_edx = info[3];

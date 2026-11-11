@@ -1,0 +1,63 @@
+diff --git a/runtime/win32hle/hle_path.c b/runtime/win32hle/hle_path.c
+index 436a89e..fd8d3a7 100644
+--- a/runtime/win32hle/hle_path.c
++++ b/runtime/win32hle/hle_path.c
+@@ -32,6 +32,12 @@
+ #include <sys/stat.h>
+ #include "win32hle.h"
+ 
++#ifdef _WIN32                    /* a host path is also absolute as C:/... */
++#define HOST_DRIVE(p) ((p)[0] && (p)[1] == ':' && ((p)[2] == '/' || (p)[2] == '\\'))
++#else
++#define HOST_DRIVE(p) 0
++#endif
++
+ static char *g_drive[26];
+ 
+ void hle_set_drive(char letter, const char *host_root) {
+@@ -181,7 +187,7 @@ void hle_set_overlay(const char *base, const char *overlay) {
+ /* host as an absolute path, if it is relative (to the cwd). */
+ static void absolute(const char *host, char *out, size_t n) {
+     char cwd[768];
+-    if (host[0] == '/' || !getcwd(cwd, sizeof cwd)) snprintf(out, n, "%s", host);
++    if (host[0] == '/' || HOST_DRIVE(host) || !getcwd(cwd, sizeof cwd)) snprintf(out, n, "%s", host);
+     else snprintf(out, n, "%s/%s", cwd, strcmp(host, ".") ? host : "");
+     size_t l = strlen(out);
+     while (l > 1 && out[l - 1] == '/') out[--l] = 0;
+@@ -196,6 +202,10 @@ static int under(const char *path, const char *dir) {
+ /* Lexically canonicalize an absolute POSIX path without resolving symlinks.
+  * This is used for overlay prefix classification, not filesystem isolation. */
+ static int normalize_absolute(const char *path, char *out, size_t n) {
++    if (path && HOST_DRIVE(path) && n > 2) {               /* the drive, then the rest as rooted */
++        out[0] = path[0], out[1] = ':';
++        return normalize_absolute(path + 2, out + 2, n - 2);
++    }
+     if (!path || path[0] != '/' || !n) return 0;
+     if (snprintf(out, n, "/") >= (int)n) return 0;
+     const char *p = path;
+@@ -324,7 +334,7 @@ static int host_path_plain(const char *guest, char *out, size_t n) {
+  * drive; otherwise Z: and the whole path. Backslashes. */
+ void hle_guest_path(const char *host, char *out, size_t n) {
+     char abs[1024];
+-    if (host[0] != '/') {
++    if (host[0] != '/' && !HOST_DRIVE(host)) {
+         char cwd[768];
+         if (!getcwd(cwd, sizeof cwd)) cwd[0] = 0;
+         snprintf(abs, sizeof abs, "%s/%s", cwd, host);
+diff --git a/runtime/win32hle/kernel32.c b/runtime/win32hle/kernel32.c
+index 8056332..6f89c7d 100644
+--- a/runtime/win32hle/kernel32.c
++++ b/runtime/win32hle/kernel32.c
+@@ -59,6 +59,12 @@ int hle_exe_path(char *out, size_t n) {
+     if (!n || _NSGetExecutablePath(raw, &len) != 0 || !realpath(raw, real) || strlen(real) >= n) return 0;
+     memcpy(out, real, strlen(real) + 1);
+     return 1;
++#elif defined(_WIN32)
++    char *path = NULL;
++    if (!n || _get_pgmptr(&path) != 0 || !path || strlen(path) >= n) return 0;
++    memcpy(out, path, strlen(path) + 1);
++    for (char *c = out; *c; c++) if (*c == '\\') *c = '/';
++    return 1;
+ #else
+     ssize_t len = n ? readlink("/proc/self/exe", out, n - 1) : -1;
+     if (len <= 0) return 0;

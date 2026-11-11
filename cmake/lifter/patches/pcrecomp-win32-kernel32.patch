@@ -1,0 +1,43 @@
+diff --git a/runtime/win32hle/kernel32_ext.c b/runtime/win32hle/kernel32_ext.c
+index 8ec90c5..3c60acb 100644
+--- a/runtime/win32hle/kernel32_ext.c
++++ b/runtime/win32hle/kernel32_ext.c
+@@ -91,8 +91,13 @@ static int is_device(const char *p, char *host, size_t n) {
+     const char *b = p + strlen(p);
+     while (b > p && b[-1] != '\\' && b[-1] != '/' && b[-1] != ':') b--;
+     if (!strncmp(p, "\\\\.\\", 4) || is_port(b)) { host[0] = 0; return 1; }
++#ifdef _WIN32                    /* the host's own devices by their own names */
++    if (!strcasecmp(b, "NUL")) { snprintf(host, n, "NUL"); return 1; }
++    if (!strcasecmp(b, "CON")) { snprintf(host, n, "CON"); return 1; }
++#else
+     if (!strcasecmp(b, "NUL")) { snprintf(host, n, "/dev/null"); return 1; }
+     if (!strcasecmp(b, "CON")) { snprintf(host, n, "/dev/tty"); return 1; }
++#endif
+     return 0;
+ }
+ 
+@@ -268,7 +273,12 @@ static void k_SystemTimeToFileTime(void) {               /* (&st, &ft) */
+ }
+ static int32_t tz_bias_s(void) {                         /* local - UTC, seconds */
+     time_t now = time(NULL); struct tm t; localtime_r(&now, &t);
++#ifdef _WIN32                    /* no tm_gmtoff: the local fields read as UTC, less UTC */
++    struct tm u; gmtime_r(&now, &u);
++    return (int32_t)(timegm(&t) - timegm(&u));
++#else
+     return (int32_t)t.tm_gmtoff;
++#endif
+ }
+ static void k_FileTimeToLocalFileTime(void) { put_ft(A32(1), get_ft(A32(0)) + (int64_t)tz_bias_s() * 10000000); RET(1, 2); }
+ static void k_LocalFileTimeToFileTime(void) { put_ft(A32(1), get_ft(A32(0)) - (int64_t)tz_bias_s() * 10000000); RET(1, 2); }
+@@ -805,8 +815,9 @@ static void k_MapViewOfFile(void) {                      /* (hMap, access, offHi
+      * it (a pagefile mapping is the reservation's own zeroed pages) */
+     uint32_t va = hle_vm_reserve(0, (uint32_t)len);
+     if (!va) { hle_set_last_error(8); RET(0, 5); }       /* ERROR_NOT_ENOUGH_MEMORY */
+-#ifdef __EMSCRIPTEN__
+-    /* no mmap of a file at an address: the view is a copy (writes to it do
++#if defined(__EMSCRIPTEN__) || defined(_WIN32)
++    /* no mmap of a file at an address (Windows cannot place a file view
++     * inside the guest's reservation): the view is a copy (writes to it do
+      * not reach the file) */
+     (void)prot;
+     for (size_t done = 0; m->fd >= 0 && done < len;) {
