@@ -369,6 +369,25 @@ TEST_CASE("--import copies the fixture install and the next run starts from the 
     CHECK(hostFileSystem().readText(data + "/install.txt") == std::optional<std::string>("game\n"));
 }
 
+TEST_CASE("--verify-import checks the imported copy and exits") {
+    const ScratchDir home("sfcop-verify-startup");
+    const std::string game = home.str() + "/.local/share/SFCOP/game";
+    {
+        const Run none({"--verify-import"}, home.str());
+        CHECK(none.result.exitCode == std::optional<int>(3));
+        CHECK(none.err.str() ==
+              "sfcop: There is no imported game in " + game + ". Import the game first.\n");
+        CHECK_FALSE(fs::exists(home.str() + "/.local/share/SFCOP"));
+    }
+    REQUIRE(Run({"--import", fixturesDir() + "/install"}, home.str()).result.exitCode ==
+            std::optional<int>(0));
+    const Run run({"--verify-import"}, home.str());
+    CHECK(run.result.exitCode == std::optional<int>(0));
+    CHECK(run.err.str() == "");
+    CHECK(run.out.str().find("sfcop: The imported game in " + game + " is complete: ") !=
+          std::string::npos);
+}
+
 TEST_CASE("a file the import accepted as changed is accepted by the next run, with a warning") {
     const ScratchDir home("sfcop-l2a-startup-changed");
     const std::string install = home.str() + "/op";

@@ -30,4 +30,10 @@ struct ImportCommand {
 int runImportCommand(const ImportCommand &command, FileSystem &files, ImportFiles &importFiles,
                      std::ostream &out, std::ostream &err);
 
+// `sfcop --verify-import`: verifyImportedGame over command.gameDir (`source` is not used), its
+// progress and report printed; nothing is written. 0 the copy is whole, 3 it is missing or
+// damaged, 1 the check could not finish (ImportReport::exitCode).
+int runVerifyImportCommand(const ImportCommand &command, FileSystem &files,
+                           ImportFiles &importFiles, std::ostream &out, std::ostream &err);
+
 } // namespace sfcop::app

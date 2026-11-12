@@ -138,6 +138,67 @@ public:
         return finish(ImportStatus::kImported);
     }
 
+    // The copy in request_.gameDir checked in place: nothing is written.
+    ImportReport verify() {
+        report_.verify = true;
+        report_.installDir = request_.gameDir;
+        if (!request_.manifest.ok() || request_.manifest.exe() == nullptr) {
+            report_.manifestError = request_.manifest.ok()
+                                        ? std::string("it names no ") + kGameExe
+                                        : request_.manifest.error;
+            return finish(ImportStatus::kBadManifest);
+        }
+        announce(ImportPhase::kCheckingGame);
+        if (files_.kindFollowing(request_.gameDir) != EntryKind::kFolder ||
+            !exePath(request_.gameDir)) {
+            return finish(ImportStatus::kNotFound);
+        }
+        if (!checkExe() || !survey()) {
+            return report_;
+        }
+        // The executable was hashed by checkExe; a mod script and an unchecked row have no hash.
+        // The progress totals cover the files hashed here; the report's counts include the
+        // executable too, so they are its size and one file more.
+        std::vector<const Item *> hashed;
+        progress_.bytesTotal = 0;
+        for (const Item &item : items_) {
+            if (item.entry != nullptr && item.entry->checked() &&
+                item.entry != request_.manifest.exe()) {
+                hashed.push_back(&item);
+                progress_.bytesTotal += item.size;
+            }
+        }
+        progress_.fileCount = hashed.size();
+        report_.filesHashed = 1;
+        report_.bytesHashed = request_.manifest.exe()->size;
+        announce(ImportPhase::kVerifying);
+        std::vector<unsigned char> piece(kPiece);
+        for (std::size_t i = 0; i < hashed.size(); ++i) {
+            const Item &item = *hashed[i];
+            progress_.fileIndex = i;
+            progress_.path = item.to;
+            const std::unique_ptr<FileReader> reader = files_.openRead(item.from);
+            std::uint64_t size = 0;
+            std::string hash;
+            const CopyOutcome outcome =
+                reader ? pump(*reader, nullptr, piece, size, hash) : CopyOutcome::kFailed;
+            if (outcome == CopyOutcome::kCancelled) {
+                return finish(ImportStatus::kCancelled);
+            }
+            ++report_.filesHashed;
+            report_.bytesHashed += size;
+            if (outcome == CopyOutcome::kFailed) {
+                report_.damaged.push_back({item.to, "unreadable", size, item.entry->size});
+            } else if (size < item.entry->size) {
+                // Shortened between the survey and the read: damage, as in the survey.
+                report_.damaged.push_back({item.to, "truncated", size, item.entry->size});
+            } else if (hash != item.entry->sha256) {
+                report_.changed.push_back(item.to);
+            }
+        }
+        return finish(report_.damaged.empty() ? ImportStatus::kVerified : ImportStatus::kDamaged);
+    }
+
 private:
     struct Item {
         // In the install, and in the game folder.
@@ -555,7 +616,6 @@ private:
     // the system reports as failed stops the import, but the copy is not read back).
     CopyOutcome copyOne(const std::string &from, const std::string &to,
                         std::vector<unsigned char> &piece, std::uint64_t &size, std::string &hex) {
-        Sha256 hash;
         const bool cloned = files_.clone(from, to);
         report_.filesCloned += cloned ? 1 : 0;
         const std::unique_ptr<FileReader> reader = files_.openRead(cloned ? to : from);
@@ -563,7 +623,15 @@ private:
         if (!reader || (!cloned && !writer)) {
             return CopyOutcome::kFailed;
         }
-        while (const std::size_t got = reader->read(piece.data(), piece.size())) {
+        return pump(*reader, writer.get(), piece, size, hex);
+    }
+
+    // Reads `reader` to its end, handing each piece to `writer` when there is one, hashing it and
+    // reporting progress; cancel is polled between pieces.
+    CopyOutcome pump(FileReader &reader, FileWriter *writer, std::vector<unsigned char> &piece,
+                     std::uint64_t &size, std::string &hex) {
+        Sha256 hash;
+        while (const std::size_t got = reader.read(piece.data(), piece.size())) {
             if (cancelled()) {
                 return CopyOutcome::kCancelled;
             }
@@ -577,7 +645,7 @@ private:
                 callbacks_.progress(progress_);
             }
         }
-        if (reader->failed() || (writer && !writer->close())) {
+        if (reader.failed() || (writer && !writer->close())) {
             return CopyOutcome::kFailed;
         }
         if (cancelled()) {
@@ -766,6 +834,7 @@ std::string installManifestBeside(const std::string &hashListPath) {
 int ImportReport::exitCode() const {
     switch (status) {
     case ImportStatus::kImported:
+    case ImportStatus::kVerified:
         return kExitSuccess;
     case ImportStatus::kNotFound:
     case ImportStatus::kDiscOrInstaller:
@@ -790,7 +859,58 @@ std::string ImportReport::message() const {
                                   "2.5.5.2 patch on Windows, or under Wine or CrossOver, then "
                                   "import the folder it was installed in.";
     std::string text;
+    if (verify) {
+        switch (status) {
+        case ImportStatus::kVerified:
+            text = "The imported game in " + gameDir + " is complete: " +
+                   std::to_string(filesHashed) + " files (" + megabytes(bytesHashed) +
+                   ") checked against the 2.5.5.2 release.";
+            if (!changed.empty()) {
+                text += "\nThese files differ from the 2.5.5.2 release (imported so, or changed "
+                        "since):";
+                for (const std::string &file : changed) {
+                    text += "\n  " + file;
+                }
+            }
+            for (const std::string &file : modScripts) {
+                text += "\n  mod script: " + file;
+            }
+            return text;
+        case ImportStatus::kNotFound:
+            return "There is no imported game in " + gameDir + ". Import the game first.";
+        case ImportStatus::kDamaged:
+            text = "The imported game in " + gameDir +
+                   " is damaged: these files are missing, empty, shorter than in the 2.5.5.2 "
+                   "release or unreadable:";
+            for (const DamagedFile &file : damaged) {
+                text += "\n  " + file.problem + ": " + file.path;
+                if (file.problem == "truncated") {
+                    text += " (" + std::to_string(file.size) + " of " +
+                            std::to_string(file.expectedSize) + " bytes)";
+                }
+            }
+            return text + "\nImport the game again from the installed game.";
+        case ImportStatus::kCancelled:
+            return "The check was cancelled.";
+        case ImportStatus::kBadManifest:
+            return "The install manifest cannot be used (" + manifestError +
+                   "), so the imported game cannot be checked. The client's files are "
+                   "incomplete.";
+        case ImportStatus::kVersion2500:
+            return path + " is version 2.5.0.0, not 2.5.5.2 as imported. Import the game again "
+                          "from an install patched to 2.5.5.2.";
+        case ImportStatus::kExeModified:
+            return path + " has been changed since it was imported. Import the game again from "
+                          "the installed game.";
+        case ImportStatus::kNotTheGame:
+            return path + " is not Starfleet Command: Orion Pirates 2.5.5.2. Import the game "
+                          "again from the installed game.";
+        default:
+            break; // verifyImportedGame reports no other status
+        }
+    }
     switch (status) {
+    case ImportStatus::kVerified: // only a check reports it, answered above
     case ImportStatus::kImported:
         text = "Imported " + std::to_string(filesCopied) + " files (" + megabytes(bytesCopied) +
                ") from " + installDir + " into " + gameDir + ".";
@@ -874,6 +994,15 @@ std::string ImportReport::message() const {
 ImportReport importGame(const ImportRequest &request, ImportFiles &files,
                         const ImportCallbacks &callbacks) {
     return Importer(request, files, callbacks).run();
+}
+
+ImportReport verifyImportedGame(const std::string &gameDir, const InstallManifest &manifest,
+                                ImportFiles &files, const ImportCallbacks &callbacks) {
+    ImportRequest request;
+    request.source = gameDir;
+    request.gameDir = gameDir;
+    request.manifest = manifest;
+    return Importer(request, files, callbacks).verify();
 }
 
 } // namespace sfcop::app

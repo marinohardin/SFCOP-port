@@ -293,3 +293,15 @@ TEST_CASE("--import takes a folder and cannot go with --install") {
                  "--import and --install cannot be given together");
     CHECK(sfcop::app::helpText().find("  --import DIR") != std::string::npos);
 }
+
+TEST_CASE("--verify-import takes no value and goes with neither --import nor --install") {
+    const ParseResult result = parse({"--verify-import", "--data", "/d"});
+    REQUIRE(result.outcome == ParseOutcome::kRun);
+    CHECK(result.options.verifyImport);
+    CHECK_FALSE(parse({}).options.verifyImport);
+    requireError({"--verify-import", "--import", "/a"},
+                 "--verify-import goes with neither --import nor --install");
+    requireError({"--verify-import", "--install", "/a"},
+                 "--verify-import goes with neither --import nor --install");
+    CHECK(sfcop::app::helpText().find("  --verify-import ") != std::string::npos);
+}

@@ -10,7 +10,7 @@ verifying it. DESIGN §5.1, §5.3, §6.6, §6.8 and §8 define the behavior.
 | `input/` | `--input SCRIPT`: the steps file read, played frame by frame and injected through a `Window` wrapper, so the game takes it as real input (`input/README.md`). A bad file, or a wait in it that runs out, ends the run with exit 2 |
 | `ExitCodes.h` | 0 success, 1 the game started and then failed, 2 bad input, 3 install not found or refused, 4 oracle mismatch |
 | `Install.h` | Reads the hash list (sha256sum's format), picks out the install's entries, finds the install (`--install`, else the remembered path, else the caller's and the platform's usual folders, else asks once) and verifies every listed file by SHA-256 except the boot stub `SFCOP.exe` and the SDK's `.lib` files (`runtimeEntries`), read in 1 MiB pieces with a progress callback. The first missing, unreadable or different file, in list order, is refused by name with exit 3, and the message says to reinstall and re-patch to 2.5.5.2 |
-| `Import.h` | `--import DIR`: copies the installed game into the client's own folder (below, "Importing the game"). A library with progress and cancel callbacks for the launcher; `ImportCommand.h` is the command line's thin caller, `ImportFiles.h` the file operations it needs (`ImportClone_<platform>.cpp` the copy-on-write clone) |
+| `Import.h` | `--import DIR`: copies the installed game into the client's own folder (below, "Importing the game"), and `--verify-import` checks that copy again. A library with progress and cancel callbacks for the launcher; `ImportCommand.h` is the command line's thin caller, `ImportFiles.h` the file operations it needs (`ImportClone_<platform>.cpp` the copy-on-write clone) |
 | `DataDir.h` | The per-user data folder on each platform (`--data` overrides it), its subfolders `settings/`, `saves/`, `replays/`, `logs/` and `mods/`, created on first use, `game/`, the imported game (`gameDirFor`), `install.txt`, the install path remembered after the first verified run (`game` for the imported copy), and `mission-modules.txt`, the folder of translated mission modules, which the player writes once (below) |
 | `Startup.h` | All of the above in order, for `main()`, then the fix switches: their defaults, `settings/fixes.gf` in the data folder when it exists, then each `--fix`, installed with `fixes::install` before the game starts; each problem with a switch (an unknown name, a bad value, a build switch asked for in its other position) is printed once and the run goes on (`src/fixes/README.md`) |
 | `Sha256.h` | SHA-256, fed in pieces |
@@ -89,6 +89,17 @@ any install. Only the record in the client's own `game/` is read, and it never e
 executable. The start-up check covers what the hash list names: with the repository's list,
 whose only runtime entry is `StarFleetOP.exe`, that is the executable alone, so an imported
 copy's other files are checked once, by the import, against the manifest.
+
+`sfcop --verify-import [--data DIR]` checks the copy again, on demand, and changes nothing; the
+launcher's verify action calls the same `verifyImportedGame`. It checks the executable as the
+import does, then every file of the manifest as the survey does (there, not empty, not shorter than
+in 2.5.5.2, a BMP of an unchecked row as long as its header says) and hashes each checked row, with
+the import's progress (phase `kVerifying`) and cancel. The progress totals leave out the
+executable, hashed before them by the executable's check; the report's counts include it. The
+report has the import's shape: complete (exit 0) with the files whose hash differs, whether
+imported so or changed since, and the mod scripts; no copy, a wrong executable or damaged files,
+each named (exit 3); cancelled or no usable manifest (exit 1). A damaged copy is mended by
+importing again.
 
 `game/` is `game` in the data folder; on Windows without `--data` it is
 `%LOCALAPPDATA%\SFCOP\game`, so a roaming profile does not carry the game's 750 MB. On
