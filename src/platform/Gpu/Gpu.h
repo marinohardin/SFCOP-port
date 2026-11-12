@@ -81,6 +81,15 @@ struct TextureDesc {
     PixelFormat format = PixelFormat::kRgb565;
     std::uint8_t mipLevels = 1; // 1 = no mipmaps; level n is (width >> n) by (height >> n)
     bool renderTarget = false;  // may be a colour or depth target of BeginScene()
+    // The render scale k: the texture's image is k times its logical size in each dimension
+    // (width * k by height * k pixels, each at most GpuCaps::maxTextureSize), so that the game's
+    // geometry rasterises at a finer pixel density while the game sees its own size. Everything a
+    // caller passes or reads stays in logical pixels: rectangles, viewports, clears, blits,
+    // vertex positions, and the pixels of WriteTexture() and ReadTexture(). A write is shown
+    // enlarged by k (each logical pixel a k by k block); a read returns each k by k block's
+    // average; a draw covers the same logical area as at k = 1, with k times the detail. 1 is
+    // the texture as it always was. k > 1 requires mipLevels 1 and a format other than kIndexed8.
+    std::uint8_t renderScale = 1;
 };
 
 struct PaletteEntry {
@@ -425,8 +434,8 @@ public:
 
     // Starts drawing into `targets`; the viewport is reset to the whole colour target. Errors:
     // kUnsupported; kWrongState if not attached or already in a scene; kInvalidHandle;
-    // kInvalidArgument for a texture that is not a render target, a depth target of another size,
-    // or kDepth16 as colour.
+    // kInvalidArgument for a texture that is not a render target, a depth target of another size
+    // or render scale, or kDepth16 as colour.
     virtual Status BeginScene(const RenderTargets &targets) = 0;
 
     // Sets the viewport for later clears and draws in this scene. Errors: kUnsupported;
@@ -450,8 +459,10 @@ public:
     virtual Status EndScene() = 0;
 
     // Copies a rectangle from one texture to another (the same texture only if the rectangles
-    // do not overlap). The formats must match, except that kIndexed8 converts through the
-    // source's palette into a direct-colour destination. Outside a scene only. Errors:
+    // do not overlap). The rectangles are logical pixels of each texture; between textures of
+    // different render scales the copy stretches as between rectangles of different sizes. The
+    // formats must match, except that kIndexed8 converts through the source's palette into a
+    // direct-colour destination. Outside a scene only. Errors:
     // kUnsupported; kWrongState inside a scene; kInvalidHandle; kInvalidArgument for rectangles
     // outside their textures, a format mismatch, or kDepth16.
     virtual Status Blit(const BlitDesc &blit) = 0;
@@ -461,9 +472,26 @@ public:
     // kInvalidHandle; kInvalidArgument for an area outside the texture.
     virtual Status Fill(TextureId texture, Rect area, std::uint32_t value) = 0;
 
+    // As ConfigureBackBuffer(), with a render scale (TextureDesc::renderScale): the back buffer's
+    // image is renderScale times its logical size, and Present() scales that image into the
+    // window. A scale of 1 is ConfigureBackBuffer(). Errors: as ConfigureBackBuffer(), and
+    // kInvalidArgument for a scale of 0, a scaled size over maxTextureSize, or kIndexed8 with a
+    // scale over 1. A Gpu that does not implement render scales answers kUnsupported for every
+    // scale but 1.
+    virtual Result<TextureId> ConfigureScaledBackBuffer(std::uint32_t width, std::uint32_t height,
+                                                        PixelFormat format,
+                                                        std::uint8_t renderScale) {
+        if (renderScale == 1) {
+            return ConfigureBackBuffer(width, height, format);
+        }
+        return Error::kUnsupported;
+    }
+
     // Shows the back buffer in the window at presentRect() of the window's size in pixels, scaled
     // with the filter SetPresentFilter() set, with its aspect kept, and waits as the
-    // window's frame cap requires. Main thread only. The back buffer's content is kept. Errors:
+    // window's frame cap requires; a back buffer with a render scale is sampled from its full
+    // image, placed by its logical size. Main thread only. The back buffer's content is kept.
+    // Errors:
     // kUnsupported; kWrongState if not attached, inside a scene, or no back buffer is configured;
     // kIoError if the device was lost (the caller reconfigures and redraws).
     virtual Status Present() = 0;

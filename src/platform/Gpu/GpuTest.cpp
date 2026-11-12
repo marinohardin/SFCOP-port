@@ -4,6 +4,7 @@
 
 #include <doctest/doctest.h>
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -271,6 +272,47 @@ TEST_CASE("the mock records the present filter, the stub and an older Gpu refuse
     CHECK(stub->SetPresentFilter(TextureFilter::kLinear).Code() == Error::kUnsupported);
     OlderGpu older;
     CHECK(older.SetPresentFilter(TextureFilter::kLinear).Code() == Error::kUnsupported);
+}
+
+TEST_CASE("the mock keeps each texture's render scale and logs scale 1 as before") {
+    GpuMock mock;
+    TextureDesc desc;
+    desc.width = 800;
+    desc.height = 600;
+    desc.format = PixelFormat::kRgb565;
+    desc.renderTarget = true;
+    mock.createTextureResult = TextureId{5};
+    REQUIRE(mock.CreateTexture(desc).Ok());
+    desc.renderScale = 3;
+    mock.createTextureResult = TextureId{6};
+    REQUIRE(mock.CreateTexture(desc).Ok());
+    mock.backBufferResult = TextureId{7};
+    REQUIRE(mock.ConfigureScaledBackBuffer(800, 600, PixelFormat::kRgb565, 1).Ok());
+    mock.backBufferResult = TextureId{8};
+    REQUIRE(mock.ConfigureScaledBackBuffer(800, 600, PixelFormat::kRgb565, 2).Ok());
+    CHECK(mock.log.Calls() == std::vector<std::string>{
+                                  "CreateTexture(800, 600, 0)",
+                                  "CreateTexture(800, 600, 0, \"scale\", 3)",
+                                  "ConfigureBackBuffer(800, 600, 0)",
+                                  "ConfigureScaledBackBuffer(800, 600, 0, 2)",
+                              });
+    CHECK(mock.textureScales == std::map<std::uint32_t, std::uint8_t>{{5, 1}, {6, 3}, {7, 1}, {8, 2}});
+    CHECK(mock.lastTextureDesc.renderScale == 3);
+}
+
+TEST_CASE("a Gpu without render scales configures scale 1 and refuses others") {
+    OlderGpu older;
+    auto plain = older.ConfigureScaledBackBuffer(640, 480, PixelFormat::kRgb565, 1);
+    REQUIRE(plain.Ok());
+    CHECK(plain.Value() == TextureId{1});
+    CHECK(older.ConfigureScaledBackBuffer(640, 480, PixelFormat::kRgb565, 2).Code() ==
+          Error::kUnsupported);
+    auto stub = makeGpuStub();
+    CHECK(stub->ConfigureScaledBackBuffer(640, 480, PixelFormat::kRgb565, 1).Code() ==
+          Error::kUnsupported);
+    CHECK(stub->ConfigureScaledBackBuffer(640, 480, PixelFormat::kRgb565, 2).Code() ==
+          Error::kUnsupported);
+    CHECK(TextureDesc{}.renderScale == 1);
 }
 
 } // namespace sfcop::platform
