@@ -287,6 +287,9 @@ int main(int argc, char **argv) {
     }
 
     // Headless: the stub Window and Gpu, so nothing is shown and no display is needed.
+    // The oracle's frames are the game's own: its runs keep every target at render scale 1.
+    options.renderScale = oracleJob ? 1 : start.options.renderScale;
+
     std::unique_ptr<platform::Window> window =
         options.headless ? platform::makeWindowStub() : platform::makeWindow();
     std::unique_ptr<platform::Gpu> gpu =

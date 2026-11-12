@@ -283,6 +283,19 @@ TEST_CASE("--help lists the caller's extra flags under their own heading") {
           std::string::npos);
 }
 
+TEST_CASE("--render-scale takes a whole number from 0 to 16, 0 when absent") {
+    CHECK(parse({}).options.renderScale == 0);
+    CHECK(parse({"--render-scale", "0"}).options.renderScale == 0);
+    CHECK(parse({"--render-scale", "1"}).options.renderScale == 1);
+    CHECK(parse({"--render-scale", "16"}).options.renderScale == 16);
+    CHECK(parse({"--render-scale", "17"}).error ==
+          "--render-scale takes a whole number from 0 to 16, not '17'");
+    CHECK(parse({"--render-scale", "x"}).error ==
+          "--render-scale takes a whole number from 0 to 16, not 'x'");
+    CHECK(parse({"--render-scale", "-1"}).error ==
+          "--render-scale takes a whole number from 0 to 16, not '-1'");
+}
+
 TEST_CASE("--import takes a folder and cannot go with --install") {
     const ParseResult result = parse({"--import", "/games/op", "--data", "/d"});
     REQUIRE(result.outcome == ParseOutcome::kRun);

@@ -55,6 +55,11 @@ public:
                           std::uint32_t value) override;
     platform::Status Present() override;
     platform::Status SetPresentFilter(platform::TextureFilter filter) override;
+    platform::Result<platform::TextureId> ConfigureScaledBackBuffer(
+        std::uint32_t width, std::uint32_t height, platform::PixelFormat format,
+        std::uint8_t renderScale) override {
+        return inner_.ConfigureScaledBackBuffer(width, height, format, renderScale);
+    }
 
 private:
     platform::Gpu &inner_;

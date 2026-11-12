@@ -5,7 +5,11 @@
 // texture that blits, Direct3D and the display use. Each copy knows whether it is current. Lock
 // and GetDC bring the host copy up to date (a Gpu read) and mark the locked area changed. Nothing
 // is uploaded at Unlock or ReleaseDC: the changed areas merge into one rectangle, uploaded once at
-// the surface's next Gpu use (a bind, a draw, a Gpu blit, Flip). Invariant: a texture-backed
+// the surface's next Gpu use (a bind, a draw, a Gpu blit, Flip). A Direct3D target with a render
+// scale is the exception: its host copy is the average of a finer image, so Lock and GetDC keep a
+// copy of the area handed out and the next flush uploads only the pixels that differ from it
+// (ChangedPixels.h), through a keyed blit that leaves the rest of the finer image as it was; a
+// read-only lock uploads nothing. Invariant: a texture-backed
 // surface's Gpu copy is stale between a host write and the next flush, so every Gpu use goes
 // through GpuTexture(), which flushes. A Gpu fill or unkeyed Gpu blit that covers the whole
 // changed area drops it instead. Blt and BltFast run on the Gpu when both surfaces have a texture
@@ -20,6 +24,7 @@
 // chain at Flip only.
 #pragma once
 
+#include "hle/ddraw4/ChangedPixels.h"
 #include "hle/ddraw4/ComObject.h"
 #include "hle/ddraw4/Ddraw4Defs.h"
 
@@ -139,6 +144,15 @@ public:
     // Records that the Gpu drew into the texture, so the host copy is stale.
     void MarkGpuWritten();
 
+    // The render scale of the surface's own texture (platform::TextureDesc::renderScale), for a
+    // Direct3D target and its z-buffer: Direct3D gives each scene's targets the scale
+    // DirectDraw::BeginSceneScale() chose. A change makes the texture again at the new scale,
+    // with the old texture's content read back to the host copy first and uploaded into the new
+    // one (a z-buffer's is not kept: each scene clears it). Mipmap levels and 8-bit surfaces
+    // stay at 1.
+    void UseRenderScale(std::uint8_t scale);
+    std::uint8_t RenderScale() const { return renderScale_; }
+
     // Brings the host copy up to date from the Gpu. If the read fails the host copy stays
     // stale and the next sync tries again.
     void SyncToHost();
@@ -163,6 +177,17 @@ private:
     platform::Result<platform::TextureId> ensureTexture();
     platform::Status flush();
     void markHostWritten(const RectL &area);
+    // Whether host writes are tracked pixel by pixel: a Direct3D target with a render scale.
+    bool tracksChanges() const;
+    // Lock and GetDC: keeps a copy of `area` when tracksChanges(). Unlock and ReleaseDC: marks
+    // the pixels of `area` that differ from it, or the whole area when nothing was kept.
+    void beginHostEdit(const RectL &area);
+    void endHostEdit(const RectL &area);
+    // Whether host writes wait for an upload, and the rectangle that holds them all.
+    bool hasHostWrites() const { return dirty_ || !changes_.Empty(); }
+    RectL hostWriteArea() const;
+    void dropHostWrites();
+    platform::Status flushChanges(platform::TextureId texture);
     HResult afterWrite();
     HResult fill(const RectL &area, std::uint32_t value);
     HResult copy(Surface &source, const RectL &sourceArea, const RectL &area,
@@ -186,9 +211,15 @@ private:
     platform::TextureId texture_;  // own texture (never the display's), zero until made
     platform::TextureId display_;  // the display texture the primary last drew into
     bool renderTarget_ = false;    // texture_ was made as a render target
+    std::uint8_t renderScale_ = 1; // the render scale texture_ is made with (a target only)
     bool hostCurrent_ = true;      // the host copy has the latest pixels
     bool dirty_ = false;           // the host copy has pixels the Gpu has not seen
     RectL dirtyArea_;
+    ChangedPixels changes_;               // host writes to a scaled target, pixel by pixel
+    bool editKept_ = false;               // editBefore_ holds the area of the open lock or DC
+    std::vector<std::uint8_t> editBefore_; // that area as it was handed out, rows packed
+    std::vector<std::uint8_t> patch_;     // the packed upload of changes_
+    platform::TextureId patchTexture_;    // the logical-size texture the patch is blitted from
     bool locked_ = false;
     bool lockReadOnly_ = false;
     RectL lockArea_;

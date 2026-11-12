@@ -1,6 +1,7 @@
 #include "hle/d3d3/Vertices.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstring>
 
 namespace sfcop::hle::d3d3 {
@@ -96,6 +97,70 @@ std::vector<std::uint8_t> repackVertices(const VertexPlan &plan, const std::uint
         std::memcpy(to, &diffuse, 4);
         std::memcpy(to + 4, &specular, 4);
         std::memcpy(to + 8, in, 8u * plan.layout.texCoordSets);
+    }
+    return out;
+}
+
+std::vector<std::uint8_t> widenPrimitives(platform::PrimitiveType primitive,
+                                          const std::uint8_t *data, std::uint32_t stride,
+                                          const std::uint16_t *indices, std::uint32_t drawn) {
+    std::vector<std::uint8_t> out;
+    const auto vertex = [&](std::uint32_t i) {
+        return data + static_cast<std::size_t>(indices != nullptr ? indices[i] : i) * stride;
+    };
+    const auto corner = [&](const std::uint8_t *from, float dx, float dy) {
+        const std::size_t at = out.size();
+        out.insert(out.end(), from, from + stride);
+        float xy[2];
+        std::memcpy(xy, from, sizeof xy);
+        xy[0] += dx;
+        xy[1] += dy;
+        std::memcpy(out.data() + at, xy, sizeof xy);
+    };
+    const auto position = [](const std::uint8_t *from, float &x, float &y) {
+        float xy[2];
+        std::memcpy(xy, from, sizeof xy);
+        x = xy[0];
+        y = xy[1];
+    };
+    if (primitive == platform::PrimitiveType::kPointList) {
+        out.reserve(static_cast<std::size_t>(drawn) * 6 * stride);
+        for (std::uint32_t i = 0; i < drawn; ++i) {
+            const std::uint8_t *p = vertex(i);
+            corner(p, -0.5f, -0.5f);
+            corner(p, 0.5f, -0.5f);
+            corner(p, -0.5f, 0.5f);
+            corner(p, 0.5f, -0.5f);
+            corner(p, 0.5f, 0.5f);
+            corner(p, -0.5f, 0.5f);
+        }
+        return out;
+    }
+    const bool strip = primitive == platform::PrimitiveType::kLineStrip;
+    const std::uint32_t segments = strip ? drawn - 1 : drawn / 2;
+    out.reserve(static_cast<std::size_t>(segments) * 6 * stride);
+    for (std::uint32_t n = 0; n < segments; ++n) {
+        const std::uint8_t *a = vertex(strip ? n : 2 * n);
+        const std::uint8_t *b = vertex(strip ? n + 1 : 2 * n + 1);
+        float ax = 0.0f;
+        float ay = 0.0f;
+        float bx = 0.0f;
+        float by = 0.0f;
+        position(a, ax, ay);
+        position(b, bx, by);
+        const float length = std::hypot(bx - ax, by - ay);
+        if (!(length > 0.0f)) {
+            continue;
+        }
+        // Half a logical pixel to each side of the line.
+        const float nx = -(by - ay) / length * 0.5f;
+        const float ny = (bx - ax) / length * 0.5f;
+        corner(a, nx, ny);
+        corner(a, -nx, -ny);
+        corner(b, nx, ny);
+        corner(a, -nx, -ny);
+        corner(b, -nx, -ny);
+        corner(b, nx, ny);
     }
     return out;
 }

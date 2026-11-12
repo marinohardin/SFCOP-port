@@ -62,6 +62,9 @@ struct ClientOptions {
     bool headless = false;
     // 0 means no watchdog, as when the flag is absent.
     unsigned watchdogSeconds = 0;
+    // --render-scale N: 0, the default, takes the Direct3D targets' render scale from the window;
+    // 1 keeps them at the game's own size; N > 1 is the most it may be (1 to 16).
+    std::uint8_t renderScale = 0;
     // --fixed-step: the frame in whole microseconds (1 to 1,000,000; MS has at most three
     // decimals).
     std::optional<std::uint32_t> fixedStepMicroseconds;

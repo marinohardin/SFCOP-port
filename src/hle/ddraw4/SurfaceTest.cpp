@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstring>
 #include <utility>
 
 namespace sfcop::hle::ddraw4 {
@@ -807,6 +808,217 @@ TEST_CASE("the main menu's frame uploads the back buffer once and presents it") 
     }
     back->Release();
     front->Release();
+}
+
+TEST_CASE("a Direct3D target made again at a render scale keeps its content") {
+    Rig rig;
+    SurfaceDesc desc = test::plainDesc(4, 2, PixelFormat::kRgb565);
+    desc.caps.caps = kDdscaps3dDevice | kDdscapsOffscreenPlain;
+    Surface *target = rig.Create(desc);
+    giveTexture(rig, *target, 2);
+    drawnByGpu(*target);
+    rig.gpu.readValue = 0xAB;
+    rig.gpu.log.Clear();
+    target->UseRenderScale(2);
+    // What the Gpu drew is read back before the texture goes; the host copy is then current.
+    CHECK(rig.gpu.log.Calls() == Calls{"ReadTexture(2, 0, 0, 0, 4, 2, 8)", "DestroyTexture(2)"});
+    CHECK(target->RenderScale() == 2);
+    rig.gpu.log.Clear();
+    rig.gpu.createTextureResult = TextureId{3};
+    REQUIRE(target->GpuTexture().Ok());
+    // The new texture is made at 2 in the game's size and takes the host copy whole.
+    CHECK(rig.gpu.log.Calls() == Calls{"CreateTexture(4, 2, 0, \"scale\", 2)",
+                                       "SetColorKey(3, \"none\")",
+                                       "WriteTexture(3, 0, 0, 0, 4, 2, 8)"});
+    CHECK(rig.gpu.textureScales.at(3) == 2);
+    CHECK(test::readPixels16(*target)[0] == 0xABAB); // a lock reads no texture back
+    CHECK(rig.gpu.log.Count("ReadTexture") == 0);
+
+    // The same scale again changes nothing.
+    rig.gpu.log.Clear();
+    target->UseRenderScale(2);
+    CHECK(rig.gpu.log.Calls().empty());
+    target->Release();
+}
+
+TEST_CASE("a surface not yet on the Gpu takes its render scale when its texture is made") {
+    Rig rig;
+    SurfaceDesc desc = test::plainDesc(8, 8, PixelFormat::kRgb565);
+    desc.caps.caps = kDdscaps3dDevice | kDdscapsOffscreenPlain;
+    Surface *target = rig.Create(desc);
+    target->UseRenderScale(3);
+    CHECK(rig.gpu.log.Count("DestroyTexture") == 0);
+    giveTexture(rig, *target, 4);
+    CHECK(rig.gpu.textureScales.at(4) == 3);
+    target->Release();
+}
+
+TEST_CASE("8-bit surfaces and mipmap levels stay at render scale 1") {
+    Rig rig;
+    Surface *indexed = rig.Create(test::plainDesc(8, 8, PixelFormat::kIndexed8));
+    indexed->UseRenderScale(2);
+    CHECK(indexed->RenderScale() == 1);
+
+    SurfaceDesc desc = test::plainDesc(16, 16, PixelFormat::kRgb565);
+    desc.flags |= kDdsdMipMapCount;
+    desc.caps.caps = kDdscapsTexture | kDdscapsMipMap | kDdscapsComplex;
+    desc.mipMapCount = 2;
+    Surface *top = rig.Create(desc);
+    Surface *level = nullptr;
+    REQUIRE(top->GetAttachedSurface(SurfaceCaps{kDdscapsMipMap, 0, 0, 0}, &level) == kDdOk);
+    level->UseRenderScale(2);
+    CHECK(level->RenderScale() == 1);
+    indexed->Release();
+    top->Release();
+}
+
+namespace {
+
+// A 4 by 2 Direct3D target with texture 2 at render scale `scale`, last drawn by the Gpu, whose
+// read-back is 0x1111 in every pixel; the log is clear.
+Surface *scaledTarget(Rig &rig, std::uint8_t scale) {
+    SurfaceDesc desc = test::plainDesc(4, 2, PixelFormat::kRgb565);
+    desc.caps.caps = kDdscaps3dDevice | kDdscapsOffscreenPlain;
+    Surface *target = rig.Create(desc);
+    target->UseRenderScale(scale);
+    giveTexture(rig, *target, 2);
+    drawnByGpu(*target);
+    rig.gpu.readValue = 0x11;
+    rig.gpu.log.Clear();
+    return target;
+}
+
+void poke16(const SurfaceDesc &locked, std::int32_t x, std::int32_t y, std::uint16_t value) {
+    std::memcpy(locked.surface + static_cast<std::size_t>(y) * locked.pitch +
+                    static_cast<std::size_t>(x) * 2,
+                &value, sizeof value);
+}
+
+} // namespace
+
+TEST_CASE("a lock of a scaled target uploads only the pixels the game changed, through a key") {
+    Rig rig;
+    Surface *target = scaledTarget(rig, 3);
+    SurfaceDesc locked;
+    REQUIRE(target->Lock(nullptr, locked, kDdlockWait) == kDdOk);
+    poke16(locked, 1, 0, 0x22);
+    poke16(locked, 2, 1, 0x33);
+    REQUIRE(target->Unlock() == kDdOk);
+    rig.gpu.createTextureResult = TextureId{7};
+    REQUIRE(target->GpuTexture().Ok());
+    // The two changes span x 1-2, y 0-1. They go up in a logical-size texture at scale 1, with
+    // the area's other two pixels set to the key 0, and are blitted with that key: the target's
+    // own pixels, finer than the read-back, stay where the game wrote nothing.
+    CHECK(rig.gpu.log.Calls() == Calls{"ReadTexture(2, 0, 0, 0, 4, 2, 8)",
+                                       "CreateTexture(4, 2, 0)",
+                                       "WriteTexture(7, 0, 1, 0, 2, 2, 4)", "SetColorKey(7, 0)",
+                                       "Blit(7, 2, true)"});
+    CHECK(rig.gpu.lastBlit.sourceRect.x == 1);
+    CHECK(rig.gpu.lastBlit.destinationRect.x == 1);
+    CHECK(rig.gpu.lastBlit.destinationRect.width == 2);
+    CHECK(rig.gpu.lastBlit.destinationRect.height == 2);
+
+    // The next frame's patch reuses that texture.
+    REQUIRE(target->Lock(nullptr, locked, kDdlockWait) == kDdOk);
+    poke16(locked, 0, 0, 0x44);
+    poke16(locked, 3, 1, 0x44);
+    REQUIRE(target->Unlock() == kDdOk);
+    rig.gpu.log.Clear();
+    REQUIRE(target->GpuTexture().Ok());
+    CHECK(rig.gpu.log.Calls() == Calls{"WriteTexture(7, 0, 0, 0, 4, 2, 8)", "SetColorKey(7, 0)",
+                                       "Blit(7, 2, true)"});
+    rig.gpu.log.Clear();
+    target->Release();
+    CHECK(rig.gpu.log.Calls() == Calls{"DestroyTexture(2)", "DestroyTexture(7)"});
+}
+
+TEST_CASE("a lock of a scaled target that changes nothing, or reads only, uploads nothing") {
+    Rig rig;
+    Surface *target = scaledTarget(rig, 3);
+    SurfaceDesc locked;
+    REQUIRE(target->Lock(nullptr, locked, kDdlockWait) == kDdOk);
+    REQUIRE(target->Unlock() == kDdOk);
+    REQUIRE(target->Lock(nullptr, locked, kDdlockReadOnly) == kDdOk);
+    poke16(locked, 0, 0, 0x55); // a read-only lock's writes are not the game's to keep
+    REQUIRE(target->Unlock() == kDdOk);
+    REQUIRE(target->GpuTexture().Ok());
+    CHECK(rig.gpu.log.Calls() == Calls{"ReadTexture(2, 0, 0, 0, 4, 2, 8)"});
+    target->Release();
+}
+
+TEST_CASE("a partial lock of a scaled target compares only its own area") {
+    Rig rig;
+    Surface *target = scaledTarget(rig, 3);
+    const RectL area{2, 0, 4, 2};
+    SurfaceDesc locked;
+    REQUIRE(target->Lock(&area, locked, kDdlockWait) == kDdOk);
+    poke16(locked, 1, 1, 0x66); // the surface's x 3, y 1
+    REQUIRE(target->Unlock() == kDdOk);
+    REQUIRE(target->GpuTexture().Ok());
+    // One changed pixel is a whole rectangle by itself: it goes up as it is, without a key.
+    CHECK(rig.gpu.log.Calls() == Calls{"ReadTexture(2, 0, 0, 0, 4, 2, 8)",
+                                       "WriteTexture(2, 0, 3, 1, 1, 1, 8)"});
+    target->Release();
+}
+
+TEST_CASE("a lock of a target at render scale 1 uploads its area whole, as before") {
+    Rig rig;
+    Surface *target = scaledTarget(rig, 1);
+    SurfaceDesc locked;
+    REQUIRE(target->Lock(nullptr, locked, kDdlockWait) == kDdOk);
+    poke16(locked, 1, 0, 0x22);
+    REQUIRE(target->Unlock() == kDdOk);
+    REQUIRE(target->GpuTexture().Ok());
+    CHECK(rig.gpu.log.Calls() == Calls{"ReadTexture(2, 0, 0, 0, 4, 2, 8)",
+                                       "WriteTexture(2, 0, 0, 0, 4, 2, 8)"});
+    target->Release();
+}
+
+TEST_CASE("a Gpu blit over a scaled target's changes drops them") {
+    Rig rig;
+    Surface *target = scaledTarget(rig, 3);
+    Surface *source = rig.Create(test::plainDesc(4, 2, PixelFormat::kRgb565));
+    giveTexture(rig, *source, 9);
+    drawnByGpu(*source); // its pixels are on the Gpu only, so the copy runs there
+    SurfaceDesc locked;
+    REQUIRE(target->Lock(nullptr, locked, kDdlockWait) == kDdOk);
+    poke16(locked, 1, 0, 0x22);
+    REQUIRE(target->Unlock() == kDdOk);
+    rig.gpu.log.Clear();
+    REQUIRE(target->Blt(nullptr, source, nullptr, kDdbltWait, nullptr) == kDdOk);
+    REQUIRE(target->GpuTexture().Ok());
+    CHECK(rig.gpu.log.Count("WriteTexture") == 0);
+    CHECK(rig.gpu.log.Count("Blit") == 1);
+    source->Release();
+    target->Release();
+}
+
+TEST_CASE("two locks in one frame each compare against the host copy as their lock found it") {
+    Rig rig;
+    Surface *target = scaledTarget(rig, 3);
+    SurfaceDesc locked;
+    // The first lock of the frame reads back, writes x 0, y 0 and rewrites x 3, y 1 with the
+    // value it read: only the first is a change.
+    REQUIRE(target->Lock(nullptr, locked, kDdlockWait) == kDdOk);
+    poke16(locked, 0, 0, 0x22);
+    poke16(locked, 3, 1, 0x1111);
+    REQUIRE(target->Unlock() == kDdOk);
+    // The second lock finds the first one's write and rewrites it unchanged, then writes x 2, y 1.
+    REQUIRE(target->Lock(nullptr, locked, kDdlockWait) == kDdOk);
+    poke16(locked, 0, 0, 0x22);
+    poke16(locked, 2, 1, 0x33);
+    REQUIRE(target->Unlock() == kDdOk);
+    // A third lock writes nothing.
+    REQUIRE(target->Lock(nullptr, locked, kDdlockWait) == kDdOk);
+    REQUIRE(target->Unlock() == kDdOk);
+    rig.gpu.createTextureResult = TextureId{7};
+    REQUIRE(target->GpuTexture().Ok());
+    // One read-back for the frame, and one keyed patch over x 0-2, y 0-1 holding the two changes.
+    CHECK(rig.gpu.log.Calls() == Calls{"ReadTexture(2, 0, 0, 0, 4, 2, 8)",
+                                       "CreateTexture(4, 2, 0)",
+                                       "WriteTexture(7, 0, 0, 0, 3, 2, 6)", "SetColorKey(7, 0)",
+                                       "Blit(7, 2, true)"});
+    target->Release();
 }
 
 } // namespace sfcop::hle::ddraw4

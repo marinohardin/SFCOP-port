@@ -32,3 +32,6 @@ SFCOP_FIX_SWITCH(fix_smooth_scaled_frame, Runtime, 1, Project,
 
 SFCOP_FIX_SWITCH(fix_integer_scaled_frame, Runtime, 0, Project,
     "The frame is shown at the largest whole-number scale that fits the window, with bars beyond")
+
+SFCOP_FIX_SWITCH(fix_render_scale, Runtime, 1, Project,
+    "Direct3D targets are rendered at the window's pixel density; off, at the game's own size")
