@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <optional>
 #include <ostream>
+#include <utility>
 
 #include "app/DataDir.h"
 #include "app/ExitCodes.h"
@@ -44,35 +45,24 @@ const char *phaseText(ImportPhase phase) {
         return "copying";
     case ImportPhase::kFinishing:
         return "finishing";
+    case ImportPhase::kVerifying:
+        return "hashing";
     }
     return "";
 }
 
-} // namespace
-
-int runImportCommand(const ImportCommand &command, FileSystem &files, ImportFiles &importFiles,
-                     std::ostream &out, std::ostream &err) {
-    const std::optional<std::string> text = files.readText(command.manifestPath);
-    if (!text) {
-        err << "sfcop: the install manifest " << command.manifestPath
-            << " cannot be read, so nothing can be imported.\n";
-        return kExitFailure;
-    }
-    ImportRequest request;
-    request.source = files.absolutePath(command.source);
-    request.gameDir = command.gameDir;
-    request.manifest = parseInstallManifest(*text);
-
-    const double started = command.seconds ? command.seconds() : 0.0;
-    std::optional<ImportPhase> lastPhase;
-    int lastTenth = -1;
-    ImportCallbacks callbacks;
-    callbacks.progress = [&out, &lastPhase, &lastTenth](const ImportProgress &progress) {
+// Prints each phase once and the bytes copied or hashed in tenths, after `prefix`.
+std::function<void(const ImportProgress &)> progressPrinter(std::ostream &out,
+                                                            std::string prefix) {
+    return [&out, prefix = std::move(prefix), lastPhase = std::optional<ImportPhase>(),
+            lastTenth = -1](const ImportProgress &progress) mutable {
         if (lastPhase != progress.phase) {
             lastPhase = progress.phase;
-            out << "sfcop: import: " << phaseText(progress.phase) << "\n" << std::flush;
+            out << prefix << phaseText(progress.phase) << "\n" << std::flush;
         }
-        if (progress.phase != ImportPhase::kCopying || progress.bytesDone == 0) {
+        const bool counted =
+            progress.phase == ImportPhase::kCopying || progress.phase == ImportPhase::kVerifying;
+        if (!counted || progress.bytesDone == 0) {
             return;
         }
         const int tenth = progress.bytesTotal == 0
@@ -81,12 +71,43 @@ int runImportCommand(const ImportCommand &command, FileSystem &files, ImportFile
         if (tenth != lastTenth) {
             lastTenth = tenth;
             char line[96];
-            std::snprintf(line, sizeof line, "sfcop: import: %d%% (%.1f of %.1f MB)\n",
-                          tenth * 10, static_cast<double>(progress.bytesDone) / 1e6,
+            std::snprintf(line, sizeof line, "%d%% (%.1f of %.1f MB)\n", tenth * 10,
+                          static_cast<double>(progress.bytesDone) / 1e6,
                           static_cast<double>(progress.bytesTotal) / 1e6);
-            out << line << std::flush;
+            out << prefix << line << std::flush;
         }
     };
+}
+
+// The manifest, or a message on `err` saying why there is none.
+std::optional<InstallManifest> readManifest(const ImportCommand &command, FileSystem &files,
+                                            std::ostream &err, const char *what) {
+    const std::optional<std::string> text = files.readText(command.manifestPath);
+    if (!text) {
+        err << "sfcop: the install manifest " << command.manifestPath << " cannot be read, so "
+            << what << ".\n";
+        return std::nullopt;
+    }
+    return parseInstallManifest(*text);
+}
+
+} // namespace
+
+int runImportCommand(const ImportCommand &command, FileSystem &files, ImportFiles &importFiles,
+                     std::ostream &out, std::ostream &err) {
+    std::optional<InstallManifest> manifest =
+        readManifest(command, files, err, "nothing can be imported");
+    if (!manifest) {
+        return kExitFailure;
+    }
+    ImportRequest request;
+    request.source = files.absolutePath(command.source);
+    request.gameDir = command.gameDir;
+    request.manifest = std::move(*manifest);
+
+    const double started = command.seconds ? command.seconds() : 0.0;
+    ImportCallbacks callbacks;
+    callbacks.progress = progressPrinter(out, "sfcop: import: ");
     std::optional<InterruptCancels> interrupt;
     if (command.cancelled) {
         callbacks.cancelled = command.cancelled;
@@ -116,6 +137,29 @@ int runImportCommand(const ImportCommand &command, FileSystem &files, ImportFile
     }
     out << "sfcop: the next run starts from " << command.gameDir << ".\n";
     return kExitSuccess;
+}
+
+int runVerifyImportCommand(const ImportCommand &command, FileSystem &files,
+                           ImportFiles &importFiles, std::ostream &out, std::ostream &err) {
+    const std::optional<InstallManifest> manifest =
+        readManifest(command, files, err, "the imported game cannot be checked");
+    if (!manifest) {
+        return kExitFailure;
+    }
+    ImportCallbacks callbacks;
+    callbacks.progress = progressPrinter(out, "sfcop: verify: ");
+    std::optional<InterruptCancels> interrupt;
+    if (command.cancelled) {
+        callbacks.cancelled = command.cancelled;
+    } else {
+        interrupt.emplace();
+        callbacks.cancelled = [] { return gInterrupted != 0; };
+    }
+    const ImportReport report =
+        verifyImportedGame(command.gameDir, *manifest, importFiles, callbacks);
+    interrupt.reset();
+    (report.exitCode() == kExitSuccess ? out : err) << "sfcop: " << report.message() << "\n";
+    return report.exitCode();
 }
 
 } // namespace sfcop::app

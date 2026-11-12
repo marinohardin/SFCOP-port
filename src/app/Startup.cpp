@@ -105,23 +105,28 @@ Startup startClient(int argc, const char *const *argv, const StartupConfig &conf
     }
     // Absolute, so that what is remembered holds from any folder the next run starts in.
     const std::string dataDir = files.absolutePath(*data.dir);
-    if (const std::string problem = ensureDataDir(dataDir, files); !problem.empty()) {
+    // A check writes nothing, so it does not make the data folder either.
+    if (const std::string problem =
+            options.verifyImport ? std::string() : ensureDataDir(dataDir, files);
+        !problem.empty()) {
         err << "sfcop: " << problem << "\n";
         return stop(kExitFailure);
     }
     const std::string gameDir =
         gameDirFor(config.platform, config.env, options.dataDir.has_value(), dataDir);
 
-    if (options.importFrom) {
+    if (options.importFrom || options.verifyImport) {
         ImportCommand command;
-        command.source = *options.importFrom;
+        command.source = options.importFrom.value_or(std::string());
         command.dataDir = dataDir;
         command.gameDir = gameDir;
         command.manifestPath = installManifestBeside(config.hashListPath);
         command.seconds = config.seconds;
         ImportFiles &importFiles =
             config.importFiles != nullptr ? *config.importFiles : hostImportFiles();
-        return stop(runImportCommand(command, files, importFiles, out, err));
+        return stop(options.verifyImport
+                        ? runVerifyImportCommand(command, files, importFiles, out, err)
+                        : runImportCommand(command, files, importFiles, out, err));
     }
 
     const std::optional<std::string> listText = files.readText(config.hashListPath);

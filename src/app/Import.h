@@ -17,7 +17,8 @@
 // lines starting with '#' are skipped. It holds no byte of any file.
 //
 // This is the headless core: the command line (`--import DIR`, ImportCommand.h) and the launcher
-// both call importGame and print or draw its progress and report.
+// both call importGame and print or draw its progress and report. verifyImportedGame checks an
+// imported copy again, on demand, without changing it (`--verify-import`, the launcher's verify).
 #pragma once
 
 #include <cstddef>
@@ -74,13 +75,14 @@ enum class ImportPhase {
     kCheckingGame,  // hashing the executable, then sizing the import set
     kCopying,       // copying and hashing; bytesDone/bytesTotal count the import set
     kFinishing,     // writing the record and moving the copy into place
+    kVerifying,     // verifyImportedGame hashing the copy; bytesDone/bytesTotal count those bytes
 };
 
 struct ImportProgress {
     ImportPhase phase = ImportPhase::kSearching;
-    std::size_t fileIndex = 0; // 0-based, during kCopying
+    std::size_t fileIndex = 0; // 0-based, during kCopying and kVerifying
     std::size_t fileCount = 0;
-    // The file being copied, relative to the install.
+    // The file being copied or hashed, relative to the install.
     std::string path;
     std::uint64_t bytesDone = 0;
     std::uint64_t bytesTotal = 0;
@@ -115,11 +117,12 @@ enum class ImportStatus {
     kBadManifest,
     kOwnCopy,           // the folder, or a link in it, is the client's own copy or in it
     kTooManyFolders,    // files not found, and the install too big or deep to look at all
+    kVerified,          // verifyImportedGame: every file is there and whole (changed ones listed)
 };
 
 struct DamagedFile {
     std::string path;
-    // "missing", "empty" or "truncated"
+    // "missing", "empty" or "truncated"; verifyImportedGame also "unreadable"
     std::string problem;
     std::uint64_t size = 0;
     std::uint64_t expectedSize = 0;
@@ -151,10 +154,15 @@ struct ImportReport {
     // When the install found holds a link into the client's own copy (kOwnCopy): the link, as a
     // path in the install.
     std::string ownCopyLink;
+    // verifyImportedGame: true, and how many files it hashed (the executable, then each checked
+    // row of the manifest).
+    bool verify = false;
+    std::size_t filesHashed = 0;
+    std::uint64_t bytesHashed = 0;
 
     bool imported() const { return status == ImportStatus::kImported; }
-    // 0 imported; 3 the folder is refused (not found, disc, wrong or damaged game); 1 the import
-    // could not finish (space, a write, a cancel, the manifest).
+    // 0 imported or verified; 3 the folder is refused (not found, disc, wrong or damaged game); 1
+    // the import or the check could not finish (space, a write, a cancel, the manifest).
     int exitCode() const;
     // For the player: what happened, every file at fault by name, and what to do.
     std::string message() const;
@@ -162,6 +170,17 @@ struct ImportReport {
 
 ImportReport importGame(const ImportRequest &request, ImportFiles &files,
                         const ImportCallbacks &callbacks = {});
+
+// Checks the imported copy in `gameDir` again and changes nothing: its executable as the import
+// checks one, then every file of the manifest there (matched ignoring case), not empty, not
+// shorter than in 2.5.5.2, a BMP of an unchecked row as long as its header says, and each checked
+// row hashed (kVerifying progress; cancel polled between pieces). The report has the import's
+// shape: kVerified with `changed` (a hash other than the manifest's, whether imported so or
+// changed since) and `modScripts`; kNotFound when there is no copy; the executable's statuses;
+// kDamaged with every file at fault ("unreadable" for one that cannot be read through);
+// kCancelled; kBadManifest. For the launcher's verify action and `--verify-import`.
+ImportReport verifyImportedGame(const std::string &gameDir, const InstallManifest &manifest,
+                                ImportFiles &files, const ImportCallbacks &callbacks = {});
 
 // What the record of an import says was accepted though it may differ from 2.5.5.2: the files
 // imported with a hash other than the manifest's ("changed", warned about at the import) and the

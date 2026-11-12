@@ -129,6 +129,11 @@ const Flag kFlags[] = {
          o.importFrom = v;
          return true;
      }},
+    {"--verify-import", "", "check the imported game against the 2.5.5.2 release, then exit",
+     [](ClientOptions &o, const std::string &, std::string &) {
+         o.verifyImport = true;
+         return true;
+     }},
     {"--data", "DIR", "the per-user data folder (default: the platform's own)",
      [](ClientOptions &o, const std::string &v, std::string &) {
          o.dataDir = v;
@@ -342,6 +347,9 @@ ParseResult parseCommandLine(const std::vector<std::string> &args,
     const ClientOptions &options = result.options;
     if (options.importFrom && options.installDir) {
         return failWith("--import and --install cannot be given together");
+    }
+    if (options.verifyImport && (options.importFrom || options.installDir)) {
+        return failWith("--verify-import goes with neither --import nor --install");
     }
     if (options.oracleTrace && !options.inputScript) {
         return failWith("--oracle needs --input SCRIPT as well");
