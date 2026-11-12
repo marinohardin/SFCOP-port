@@ -57,6 +57,11 @@ public:
     // The bytes free for this user on the volume `path` is on, or would be on (the nearest folder
     // above it that exists); nothing when it cannot be found.
     virtual std::optional<std::uint64_t> freeBytes(const std::string &path) const = 0;
+    // `path` absolute, with every link in the part that exists resolved and "." and ".." gone;
+    // the part that does not exist yet is kept as given. A Windows short (8.3) name is not
+    // expanded, and only ASCII letters are compared without case, so a path spelt either way
+    // there is not recognised as the same folder.
+    virtual std::string resolved(const std::string &path) const = 0;
 };
 
 // The real file system.

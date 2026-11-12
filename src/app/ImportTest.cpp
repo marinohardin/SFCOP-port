@@ -580,15 +580,33 @@ TEST_CASE("an earlier import is kept when moving the new one in fails, or was cu
         const ImportReport report = importGame(requestFor(s), files);
         CHECK(report.status == ImportStatus::kWriteFailed);
         CHECK(report.path == s.path("data/game"));
+        CHECK(report.earlierAt == s.path("data/game.old"));
         CHECK(s.read("data/game.old/earlier.txt") == "earlier import\n");
         CHECK_FALSE(s.exists("data/game"));
         CHECK_FALSE(s.exists("data/game.partial"));
         CHECK(files.renames == 1);
+        fs::rename(s.path("data/game.old"), s.path("data/game"));
+    }
+    {
+        // The new copy cannot be moved in, nor the earlier one back: the report says where the
+        // earlier one is.
+        ControlledImportFiles files;
+        files.failRenamesFrom = 2;
+        const ImportReport report = importGame(requestFor(s), files);
+        CHECK(report.status == ImportStatus::kWriteFailed);
+        CHECK(files.renames == 3);
+        CHECK(report.earlierAt == s.path("data/game.old"));
+        CHECK(s.read("data/game.old/earlier.txt") == "earlier import\n");
+        CHECK(report.message() == "The import could not write " + s.path("data/game") +
+                                      ". The earlier import is in " + s.path("data/game.old") +
+                                      "; the next import puts it back first. Check that the "
+                                      "folder is writable, then import again.");
     }
 }
 
 TEST_CASE("an unfinished or set-aside import is never taken as the install to import") {
     const Scratch s("sfcop-l2a-own");
+    writeGoodInstall(s, "data/game");
     writeGoodInstall(s, "data/game.partial");
     writeGoodInstall(s, "data/game.old/inside");
     ControlledImportFiles files;
@@ -596,6 +614,109 @@ TEST_CASE("an unfinished or set-aside import is never taken as the install to im
     CHECK(report.status == ImportStatus::kNotFound);
     CHECK(files.changes == 0);
     CHECK(s.exists("data/game.old/inside/StarFleetOP.exe"));
+}
+
+TEST_CASE("the client's own copy is refused as the source, however it is reached") {
+    const Scratch s("sfcop-l2a-own-source");
+    writeGoodInstall(s, "data/game");
+    writeGoodInstall(s, "data/game.partial");
+    writeGoodInstall(s, "data/game.old");
+    const bool links = makeLink(s.path("data/game.old"), s.path("to-old"), true) &&
+                       makeLink(s.path("data/game.partial/Assets"), s.path("to-assets"), true);
+    std::vector<std::string> sources = {"data/game",        "data/game.partial",
+                                        "data/game.old",    "data/game/Assets",
+                                        "data/game.old/Assets/Models", "data/GAME.OLD",
+                                        "data/game.old/../game.partial"};
+    if (links) {
+        sources.push_back("to-old");
+        sources.push_back("to-assets");
+    }
+    for (const std::string &source : sources) {
+        CAPTURE(source);
+        ControlledImportFiles files;
+        const ImportReport report = importGame(requestFor(s, source), files);
+        CHECK(report.status == ImportStatus::kOwnCopy);
+        CHECK(report.exitCode() == 3);
+        CHECK(files.changes == 0);
+    }
+    CHECK(s.read("data/game.old/Assets/Models/test.mod") == "invented model\n");
+    CHECK(s.read("data/game.partial/Assets/Models/test.mod") == "invented model\n");
+    ControlledImportFiles files;
+    CHECK(importGame(requestFor(s, "data/game.old"), files).message() ==
+          s.path("data/game.old") + " is the client's own copy of the game, or a folder of it, "
+                                    "not an installed game. Choose the folder Starfleet Command: "
+                                    "Orion Pirates is installed in.");
+    // A folder beside them whose name only starts the same is not one of them.
+    writeGoodInstall(s, "data/game.older");
+    CHECK(importGame(requestFor(s, "data/game.older"), files).imported());
+}
+
+TEST_CASE("an install holding a link into the client's own copy is refused before any write") {
+    const Scratch s("sfcop-l2a-own-link");
+    writeGoodInstall(s);
+    writeGoodInstall(s, "data/game.old");
+    if (!makeLink(s.path("data/game.old/Assets"), s.path("install/Assets/Spare"), true)) {
+        MESSAGE("links cannot be made here: the link cases are not tested");
+        return;
+    }
+    ControlledImportFiles files;
+    // A link to a folder that holds the copy is refused as well.
+    fs::remove(s.path("install/Assets/Spare"));
+    REQUIRE(makeLink(s.path("data"), s.path("install/Data"), true));
+    const ImportReport above = importGame(requestFor(s), files);
+    CHECK(above.status == ImportStatus::kOwnCopy);
+    CHECK(above.ownCopyLink == "Data");
+    CHECK(files.changes == 0);
+    fs::remove(s.path("install/Data"));
+    REQUIRE(makeLink(s.path("data/game.old/Assets"), s.path("install/Assets/Spare"), true));
+    const ImportReport report = importGame(requestFor(s), files);
+    CHECK(report.status == ImportStatus::kOwnCopy);
+    CHECK(report.exitCode() == 3);
+    CHECK(report.ownCopyLink == "Assets/Spare");
+    CHECK(files.changes == 0);
+    CHECK(s.read("data/game.old/Assets/Models/test.mod") == "invented model\n");
+    CHECK(report.message() == "Assets/Spare in the install at " + s.path("install") +
+                                  " links into the client's own copy of the game, or to a "
+                                  "folder holding it, and the import replaces that copy, so "
+                                  "nothing was imported. Remove the link, then import again.");
+}
+
+TEST_CASE("files past the listing's limits are not called missing, and a loop is passed over") {
+    const Scratch s("sfcop-l2a-deep");
+    writeGoodInstall(s);
+    // A link back to a folder above is passed over, so a file truly missing is called missing.
+    if (!makeLink(s.path("install/Assets"), s.path("install/Assets/loop"), true)) {
+        MESSAGE("links cannot be made here: the loop case is not tested");
+        return;
+    }
+    ControlledImportFiles files;
+    CHECK(importGame(requestFor(s), files).imported());
+    fs::rename(s.path("install/Assets/Models/test.mod"), s.path("test.mod"));
+    const ImportReport missing = importGame(requestFor(s), files);
+    CHECK(missing.status == ImportStatus::kDamaged);
+    REQUIRE(missing.damaged.size() == 1);
+    CHECK(missing.damaged[0].path == "Assets/Models/test.mod");
+    CHECK(missing.damaged[0].problem == "missing");
+    fs::rename(s.path("test.mod"), s.path("install/Assets/Models/test.mod"));
+
+    // A listed file below the limit cannot be found: the listing was cut, not the install.
+    std::string deep;
+    for (int i = 1; i <= 18; ++i) {
+        deep += "d" + std::to_string(i) + "/";
+    }
+    deep += "x.txt";
+    s.write("install/" + deep, "deep\n");
+    ImportRequest request = requestFor(s);
+    request.manifest = parseInstallManifest(std::string(kManifest) + deep + "\t\t\n");
+    REQUIRE(request.manifest.ok());
+    const ImportReport report = importGame(request, files);
+    CHECK(report.status == ImportStatus::kTooManyFolders);
+    CHECK(report.exitCode() == 3);
+    CHECK(report.message() == "The install at " + s.path("install") +
+                                  " holds more than 20000 folders, or folders more than 16 deep "
+                                  "through its links, so it was not all looked at and nothing "
+                                  "was imported. Choose the folder Starfleet Command: Orion "
+                                  "Pirates is installed in.");
 }
 
 TEST_CASE("an unusable manifest stops the import before the folder is looked at") {
