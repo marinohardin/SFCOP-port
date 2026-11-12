@@ -105,15 +105,23 @@ elif [ -n "$have_install" ] && [ -n "$have_image" ]; then
 else
     skip "no sfcop-msvc6 image or no install: the matched functions are not rebuilt; only their scores are held to $base"
     python3 - "$base" <<'EOF'
+import os
 import sys
 sys.path.insert(0, '.')
-from harness.lib import matched, paths, verify
+from harness.lib import funcs, matched, paths, verify
 base, label = verify.load_base(sys.argv[1])
 data = matched.load(paths.MATCHED_SET)
 base, released = matched.release_listed(base, data, matched.boundary_listed(paths.BOUNDARIES),
                                          verify.claimed_keys())
 for k in released:
     print('released %s: on the boundary-error list and never exact in %s' % (k, label))
+sizes = verify.load_base_sizes(sys.argv[1])
+if sizes is not None and os.path.isfile(paths.FUNCTIONS_CSV):
+    index = funcs.FunctionIndex(paths.FUNCTIONS_CSV, paths.SYMBOL_TSVS)
+    base, reshaped = matched.release_reshaped(base, sizes, verify.function_sizes(index),
+                                              verify.joined_keys(index))
+    for k in reshaped:
+        print('released %s: the analysis joined its prolog and body; never exact in %s' % (k, label))
 bad = 0
 for k, old in sorted(base['functions'].items()):
     new = data['functions'].get(k)
