@@ -122,13 +122,7 @@ def undefined(obj):
 
 def generate(pcrecomp):
     cc = os.environ.get('CC', 'cc')
-    contract, script = scr2native.loader_constants()
-    flags = ['-c', '-w', '-O1', '-fPIC', '-fno-strict-aliasing', '-fwrapv', '-fcommon',
-             '-fvisibility=hidden', '-include', os.path.join(scr2native.RUNTIME, 'module_rt.h'),
-             '-I', os.path.join(pcrecomp, 'runtime', 'recomp32'), '-I', scr2native.ABI_HEADER_DIR]
-    flags += ['-D' + d for d in scr2native.RECOMP_DEFINITIONS]
-    flags += ['-DSFCOP_ABI_TAG="%s"' % scr2native.host_abi_tag(), '-DSFCOP_SCRIPT_VERSION=%sf' % script,
-              '-DSFCOP_CONTRACT_VERSION=%du' % contract]
+    flags = scr2native.compile_flags(pcrecomp)
     plain = [f for f in flags if f not in ('-include', os.path.join(scr2native.RUNTIME, 'module_rt.h'))]
     library, used = library_probe(pcrecomp)
     names = set()
