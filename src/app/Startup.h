@@ -1,7 +1,8 @@
 // The client's front door, in the order it runs: the command line (CommandLine.h), the per-user
 // data folder (DataDir.h), finding and verifying the install (Install.h), remembering it, and
 // installing the fix switches' positions (src/fixes/README.md). main()
-// calls startClient() and either returns the exit code it gives or starts the game.
+// calls startClient() and either returns the exit code it gives or starts the game. With
+// --import, startClient imports the game (ImportCommand.h) and stops with its exit code.
 #pragma once
 
 #include <functional>
@@ -13,6 +14,7 @@
 #include "app/CommandLine.h"
 #include "app/Files.h"
 #include "app/HostPlatform.h"
+#include "app/ImportFiles.h"
 #include "app/Install.h"
 
 namespace sfcop::app {
@@ -29,6 +31,10 @@ struct StartupConfig {
     EnvLookup env = hostEnvironment();
     // The real file system when null.
     FileSystem *files = nullptr;
+    // For --import; the real file system when null.
+    ImportFiles *importFiles = nullptr;
+    // Seconds on a steady clock, for the time --import took; not printed when empty.
+    std::function<double()> seconds;
     // Asks the player where the install is, on a run that found none; never on a headless run.
     std::function<std::optional<std::string>()> ask;
     // Called while the install is hashed.

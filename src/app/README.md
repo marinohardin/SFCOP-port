@@ -9,8 +9,9 @@ verifying it. DESIGN §5.1, §5.3, §6.6, §6.8 and §8 define the behavior.
 | `oracle/` | `--oracle TRACE`, `--record-trace OUT` and `--logs DIR`: the replay oracle around the game (`oracle/README.md`). The mission's log leaves the data folder through `--logs`; the run waits for its `END`, makes the trace with `oracle/trace/mklog.py`, compares with `compare.py` and exits 0 or 4 |
 | `input/` | `--input SCRIPT`: the steps file read, played frame by frame and injected through a `Window` wrapper, so the game takes it as real input (`input/README.md`). A bad file, or a wait in it that runs out, ends the run with exit 2 |
 | `ExitCodes.h` | 0 success, 1 the game started and then failed, 2 bad input, 3 install not found or refused, 4 oracle mismatch |
-| `Install.h` | Reads the hash list (sha256sum's format), picks out the install's entries, finds the install (`--install`, else the remembered path, else the caller's and the platform's usual folders, else asks once) and verifies every listed file by SHA-256, read in 1 MiB pieces with a progress callback. The first missing, unreadable or different file, in list order, is refused by name with exit 3, and the message says to reinstall and re-patch to 2.5.5.2 |
-| `DataDir.h` | The per-user data folder on each platform (`--data` overrides it), its subfolders `settings/`, `saves/`, `replays/`, `logs/` and `mods/`, created on first use, `install.txt`, the install path remembered after the first verified run, and `mission-modules.txt`, the folder of translated mission modules, which the player writes once (below) |
+| `Install.h` | Reads the hash list (sha256sum's format), picks out the install's entries, finds the install (`--install`, else the remembered path, else the caller's and the platform's usual folders, else asks once) and verifies every listed file by SHA-256 except the boot stub `SFCOP.exe` and the SDK's `.lib` files (`runtimeEntries`), read in 1 MiB pieces with a progress callback. The first missing, unreadable or different file, in list order, is refused by name with exit 3, and the message says to reinstall and re-patch to 2.5.5.2 |
+| `Import.h` | `--import DIR`: copies the installed game into the client's own folder (below, "Importing the game"). A library with progress and cancel callbacks for the launcher; `ImportCommand.h` is the command line's thin caller, `ImportFiles.h` the file operations it needs (`ImportClone_<platform>.cpp` the copy-on-write clone) |
+| `DataDir.h` | The per-user data folder on each platform (`--data` overrides it), its subfolders `settings/`, `saves/`, `replays/`, `logs/` and `mods/`, created on first use, `game/`, the imported game (`gameDirFor`), `install.txt`, the install path remembered after the first verified run (`game` for the imported copy), and `mission-modules.txt`, the folder of translated mission modules, which the player writes once (below) |
 | `Startup.h` | All of the above in order, for `main()`, then the fix switches: their defaults, `settings/fixes.gf` in the data folder when it exists, then each `--fix`, installed with `fixes::install` before the game starts; each problem with a switch (an unknown name, a bad value, a build switch asked for in its other position) is printed once and the run goes on (`src/fixes/README.md`) |
 | `Sha256.h` | SHA-256, fed in pieces |
 | `ServiceHosts.h` | The hosts of the Dynaverse stand-ins, from the `services` object of `servers.json` in the data folder, as the alias map the winsock module resolves the original's service host names by (`src/net/DIRECTORY_API.md`, "Pointing the client at the stand-ins"). With no `servers.json`, or a service it does not name, the host is a reserved name that resolves nowhere: the client fails closed and reaches no one's server until the file names the services (the integrator's decision; the original hosts are gone). A malformed file is reported on stderr and has the same effect |
@@ -33,6 +34,59 @@ defined by `cmake/sfcop_build_config.h.in`.
 `kDataSubdirs` is built from `Store`'s `userFolderName` (`src/platform/Store/Store.h`), so the
 per-user subfolders have one list. `Files.h` stays until a real `Store` backend lands (B5); the
 swap to `Store` is the integrator's, in its own pull request, once that backend exists.
+
+## Importing the game
+
+`sfcop --import DIR [--data DIR]` copies a player's installed game into the client's own folder
+and exits: 0 imported, 3 the folder refused, 1 the import could not finish. Later runs start from
+the copy with no `--install`. A launcher calls the same `importGame` (`Import.h`).
+
+1. **Find.** DIR itself, or the first folder below it, breadth first and in name order, that
+   holds `StarFleetOP.exe` (any case), at most 8 levels down and 20,000 folders. The search never
+   follows a link to a folder (a Wine prefix links the whole disk); DIR itself may be a link, and
+   inside the install found every link is followed. Among up to 8 installs found, the
+   first whose executable is 2.5.5.2 wins. A disc image, installer or archive chosen as a file,
+   or a folder of InstallShield cabinets, is refused with what to do instead.
+2. **Check the executable** against the manifest: 2.5.0.0's size (8,122,368 bytes) asks for the
+   official 2.5.5.2 patch; 2.5.5.2's size with another hash is "modified"; any other is not the
+   game.
+3. **Survey** the import set: the files `analysis/results/install_manifest.tsv` lists (path,
+   size, SHA-256; written by `tools/install_manifest.py`; it sits beside the
+   hash list, wherever `Bundle.h` finds that), matched ignoring case, plus every `.scr` in
+   `Assets/Scripts/` it does not list, imported as a mod script. A missing or empty file, or one
+   shorter than in 2.5.5.2, is refused by name, all of them in one message, before anything is
+   written. A row with no size or hash is unchecked: the file must be there, not empty and, for a
+   BMP, as long as its own header says; its content is not compared.
+4. **Space.** The import set plus a tenth must be free on the target's volume, or nothing is
+   written.
+5. **Copy** into `<game>.partial`: a clone where the file system can (APFS `clonefile`, a Linux
+   reflink), a copy otherwise. A clone is hashed as read back; a copy is hashed as it is written
+   (the bytes read from the install; the copy is not read back). A file whose hash differs is
+   imported and listed as a warning. Ctrl-C, or the launcher's cancel, removes the partial copy;
+   a second Ctrl-C ends the process at once.
+6. **Move into place.** The verified copy gets `.sfcop-import.txt` (source, counts, changed files,
+   mod scripts, the files of unchecked rows) and is renamed to `game`; an earlier import is moved
+   aside first and removed only once the new one is in place (a run stopped between the two
+   renames leaves it as `game.old`, which the next import puts back before it starts, or stops,
+   leaving it, when it cannot). `install.txt` then holds `game`.
+
+A run that starts from the copy accepts it as the import did: the start-up check
+(`verifyInstall`) lets the files the record lists as changed or unchecked differ from the hash
+list, and prints one line on each start saying how many changed files are in use and where they
+are listed. Any other difference, a file changed after the import included, is refused as for
+any install. Only the record in the client's own `game/` is read, and it never excuses the
+executable. The start-up check covers what the hash list names: with the repository's list,
+whose only runtime entry is `StarFleetOP.exe`, that is the executable alone, so an imported
+copy's other files are checked once, by the import, against the manifest.
+
+`game/` is `game` in the data folder; on Windows without `--data` it is
+`%LOCALAPPDATA%\SFCOP\game`, so a roaming profile does not carry the game's 750 MB. On
+another machine of the same roaming profile `install.txt` says `game` but there is no copy, and
+the client looks for an install as it would with no remembered one. A relative `install.txt`
+value other than `game` is taken relative to the data folder.
+`--install DIR` still uses DIR in place, for developers and CI. While `install.txt` says `game`
+and the copy is there, such a run does not replace it, so a one-off developer run keeps the
+player's link to the copy; with no copy, DIR is remembered as on any first run.
 
 ## Hash list
 

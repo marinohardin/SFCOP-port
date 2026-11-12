@@ -45,6 +45,14 @@ HashList parseHashList(const std::string &text);
 // list names no kGameExe.
 HashList installEntries(const HashList &list);
 
+// The boot stub beside the game executable; the client never runs it.
+inline constexpr const char kBootStubExe[] = "SFCOP.exe";
+
+// The entries a run verifies before it starts the game: the install's entries without the boot
+// stub and the SDK's static libraries (*.lib), which the game never reads and an imported copy
+// (Import.h) leaves out. In list order.
+std::vector<HashEntry> runtimeEntries(const std::vector<HashEntry> &entries);
+
 struct VerifyProgress {
     std::size_t fileIndex = 0; // 0-based, in list order
     std::size_t fileCount = 0;
@@ -62,6 +70,8 @@ struct VerifyResult {
     // The first file at fault, as the hash list names it.
     std::string path;
     std::string root;
+    // When accepted: the files that differ from the list but were allowed to, in list order.
+    std::vector<std::string> differing;
 
     bool accepted() const { return status == VerifyStatus::kAccepted; }
     // 0 when accepted, 3 (install refused) otherwise.
@@ -72,8 +82,11 @@ struct VerifyResult {
 
 // Hashes every entry under `root`, in list order, reading each file in pieces, and stops at the
 // first file that is missing, unreadable or different. `progress` is called after every piece.
+// A file `mayDiffer` names (compared ignoring case) is accepted with any content and listed in
+// `differing` when it is different; it must still be there and readable.
 VerifyResult verifyInstall(const std::string &root, const std::vector<HashEntry> &entries,
-                           const FileSystem &files, const ProgressFn &progress = {});
+                           const FileSystem &files, const ProgressFn &progress = {},
+                           const std::vector<std::string> &mayDiffer = {});
 
 enum class InstallSource { kNone, kFlag, kRemembered, kDefault, kAsked };
 

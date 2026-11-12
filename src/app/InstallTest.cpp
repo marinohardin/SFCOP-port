@@ -146,6 +146,30 @@ TEST_CASE("one altered byte in the fixture install is refused, naming the file")
               "its disc and apply the official 2.5.5.2 patch, then start sfcop again.");
 }
 
+TEST_CASE("a file allowed to differ is accepted and listed; others are still refused") {
+    const std::string target = fixtureInstall() + "/Assets/Missions/Skirmish/Test Patrol.ini";
+    const OneByteAltered altered(hostFileSystem(), target, 30);
+    // Allowed by another spelling: the import matched names ignoring case.
+    const VerifyResult allowed =
+        verifyInstall(fixtureInstall(), fixtureEntries(), altered, {},
+                      {"assets/missions/skirmish/test patrol.INI", "Sounds/hail.wav"});
+    CHECK(allowed.accepted());
+    CHECK(allowed.differing == std::vector<std::string>{"Assets/Missions/Skirmish/Test Patrol.ini"});
+
+    const VerifyResult other =
+        verifyInstall(fixtureInstall(), fixtureEntries(), altered, {}, {"Sounds/hail.wav"});
+    CHECK(other.status == VerifyStatus::kMismatch);
+    CHECK(other.path == "Assets/Missions/Skirmish/Test Patrol.ini");
+
+    // Allowed to differ is not allowed to be missing.
+    std::vector<HashEntry> entries = fixtureEntries();
+    entries.push_back({kEmptyHash, "Sounds/not there.wav", 9});
+    const VerifyResult missing =
+        verifyInstall(fixtureInstall(), entries, hostFileSystem(), {}, {"Sounds/not there.wav"});
+    CHECK(missing.status == VerifyStatus::kMissing);
+    CHECK(missing.path == "Sounds/not there.wav");
+}
+
 TEST_CASE("verification stops at the first bad file in list order") {
     MemoryFileSystem files;
     files.files["/op/StarFleetOP.exe"] = "x";
@@ -317,4 +341,19 @@ TEST_CASE("the retail install matches the repository's hash list" *
     const VerifyResult result =
         verifyInstall(*retailInstall(), repositoryInstallEntries().entries, hostFileSystem());
     CHECK_MESSAGE(result.accepted(), result.message());
+}
+
+TEST_CASE("a run verifies the install without the boot stub and the SDK's libraries") {
+    const HashList list = parseHashList(
+        "1111111111111111111111111111111111111111111111111111111111111111  StarFleetOP.exe\n"
+        "2222222222222222222222222222222222222222222222222222222222222222  SDK/Libs/Shared.LIB\n"
+        "3333333333333333333333333333333333333333333333333333333333333333  SFCOP.exe\n"
+        "4444444444444444444444444444444444444444444444444444444444444444  Assets/a.mod\n"
+        "5555555555555555555555555555555555555555555555555555555555555555  Assets/SFCOP.exe\n");
+    REQUIRE(list.ok());
+    const std::vector<HashEntry> kept = runtimeEntries(list.entries);
+    REQUIRE(kept.size() == 3);
+    CHECK(kept[0].path == "StarFleetOP.exe");
+    CHECK(kept[1].path == "Assets/a.mod");
+    CHECK(kept[2].path == "Assets/SFCOP.exe");
 }

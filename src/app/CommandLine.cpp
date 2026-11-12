@@ -123,6 +123,12 @@ const Flag kFlags[] = {
          o.installDir = v;
          return true;
      }},
+    {"--import", "DIR", "copy the installed game in or below DIR into the client's own folder, "
+     "verified, then exit; later runs need no --install",
+     [](ClientOptions &o, const std::string &v, std::string &) {
+         o.importFrom = v;
+         return true;
+     }},
     {"--data", "DIR", "the per-user data folder (default: the platform's own)",
      [](ClientOptions &o, const std::string &v, std::string &) {
          o.dataDir = v;
@@ -334,6 +340,9 @@ ParseResult parseCommandLine(const std::vector<std::string> &args,
     }
 
     const ClientOptions &options = result.options;
+    if (options.importFrom && options.installDir) {
+        return failWith("--import and --install cannot be given together");
+    }
     if (options.oracleTrace && !options.inputScript) {
         return failWith("--oracle needs --input SCRIPT as well");
     }
