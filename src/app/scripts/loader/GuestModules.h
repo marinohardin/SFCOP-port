@@ -11,8 +11,11 @@
 //
 // The modules root is $SFCOP_MISSION_MODULES when it is set, else the folder named in the per-user
 // data folder's mission-modules.txt (app/DataDir.h; a run started from Finder has no environment),
-// else mods/missions/ under the working directory, which the guest host makes the per-user data
-// folder. The install is never read for a module and never written.
+// else mods/missions/ under the data folder. The guest host names the data folder at start
+// (setMissionModulesDataDir()); the working directory is not used for it, because the game moves
+// the process's working directory to its install during boot. The root is found once, at the
+// game's first LoadLibraryA, and kept for the run. The install is never read for a module and
+// never written.
 //
 // Threading: every call is made with the guest machine held, so one thread at a time. The native
 // loader behind MissionModules() checks and opens the modules under the root ahead, on a host
@@ -76,7 +79,7 @@ public:
     sfcop_guest_fn Lookup(std::uint32_t address) const;
 
     // Where the module of a script name lives: <root>/<Name>/<Name><library suffix>. An empty root
-    // is missionModulesRoot(), found at the first load, once the host has set the working directory.
+    // is missionModulesRoot() at each call.
     std::filesystem::path LibraryFor(std::string_view scriptName) const;
 
 private:
@@ -100,7 +103,13 @@ private:
     std::map<std::uint32_t, Module> byBase_; // the loaded modules, by base (their handle)
 };
 
-// The modules root as the client finds it (above), in the working directory.
+// The per-user data folder the modules root is found in (above). The guest host sets it before the
+// game runs; an empty path, the default, means the working directory, for programs that never set
+// it (the tests, the tools). Called before the game's first LoadLibraryA, on one thread: it is
+// read without a lock.
+void setMissionModulesDataDir(std::filesystem::path dataDir);
+
+// The modules root as the client finds it (above), in the data folder set above.
 std::filesystem::path missionModulesRoot();
 
 // The same rule with its inputs passed in: the value of $SFCOP_MISSION_MODULES (nothing when it is

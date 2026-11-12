@@ -74,6 +74,9 @@ void say(const char *format, const std::string &a) {
     std::fprintf(stderr, format, a.c_str());
 }
 
+// The data folder the guest host named (setMissionModulesDataDir), or empty.
+std::filesystem::path g_dataDir;
+
 // The provider the lifter's dispatch asks, and the hook it replaced.
 GuestModuleProvider *g_active = nullptr;
 sfcop_guest_fn (*g_previousLookup)(std::uint32_t) = nullptr;
@@ -162,14 +165,19 @@ std::filesystem::path missionModulesRootFor(const std::optional<std::string> &fr
     return std::filesystem::path(dataDir) / "mods" / "missions";
 }
 
+void setMissionModulesDataDir(std::filesystem::path dataDir) {
+    g_dataDir = std::move(dataDir);
+}
+
 std::filesystem::path missionModulesRoot() {
     std::optional<std::string> fromEnvironment;
     if (const char *root = std::getenv("SFCOP_MISSION_MODULES"); root != nullptr) {
         fromEnvironment = root;
     }
     std::error_code error;
-    return missionModulesRootFor(fromEnvironment, std::filesystem::current_path(error).string(),
-                                 app::hostFileSystem());
+    const std::filesystem::path dataDir =
+        g_dataDir.empty() ? std::filesystem::current_path(error) : g_dataDir;
+    return missionModulesRootFor(fromEnvironment, dataDir.string(), app::hostFileSystem());
 }
 
 std::vector<std::filesystem::path> missionLibraries(const std::filesystem::path &root) {
@@ -405,14 +413,16 @@ namespace sfcop::hle::kernel32rt {
 ModuleProvider &MissionModules() {
     // The game loads every script once at boot, one after another; each module is opened ahead
     // while the game is still on its loading screen (makeNativeModuleLoader). The first call is
-    // the game's first LoadLibraryA, once the host has set the working directory.
+    // the game's first LoadLibraryA, after the host has named the data folder. The root is found
+    // once, so the modules opened ahead and every later load name the same folder.
+    static const std::filesystem::path root = scripts::missionModulesRoot();
     static const std::unique_ptr<scripts::ModuleLoader> loader = [] {
-        std::vector<std::filesystem::path> ahead = scripts::missionLibraries(scripts::missionModulesRoot());
+        std::vector<std::filesystem::path> ahead = scripts::missionLibraries(root);
         std::fprintf(stderr, "[scripts] opening %zu mission modules ahead\n", ahead.size());
         return scripts::makeNativeModuleLoader(scripts::builtInAllowList(), scripts::builtInHostBaseline(),
                                                ahead);
     }();
-    static scripts::GuestModuleProvider provider(*loader, scripts::clientRuntime(), {},
+    static scripts::GuestModuleProvider provider(*loader, scripts::clientRuntime(), root,
                                                  scripts::builtInAllowList());
     return provider;
 }
