@@ -308,6 +308,38 @@ TEST_CASE("the environment wins, then the folder named in the data folder, then 
           std::filesystem::path("/elsewhere/modules"));
 }
 
+TEST_CASE("the data folder the host names wins over the working directory the game moves") {
+    const std::filesystem::path top =
+        std::filesystem::temp_directory_path() /
+        ("sfcop-modulesroot-" + std::to_string(std::random_device{}()));
+    std::error_code ignored;
+    std::filesystem::remove_all(top, ignored);
+    const std::filesystem::path data = top / "data", install = top / "install";
+    std::filesystem::create_directories(data);
+    std::filesystem::create_directories(install); // no mission-modules.txt here
+    std::ofstream(data / "mission-modules.txt") << "/work/missions/modules\n";
+    const std::filesystem::path before = std::filesystem::current_path();
+
+    setMissionModulesDataDir(data);
+    std::filesystem::current_path(install); // as the game's SetCurrentDirectoryA does during boot
+    const std::filesystem::path root = missionModulesRoot();
+    setMissionModulesDataDir({});
+    const std::filesystem::path unset = missionModulesRoot();
+    const std::filesystem::path moved = std::filesystem::current_path(); // the install, as the OS spells it
+    std::filesystem::current_path(before);
+    std::filesystem::remove_all(top, ignored);
+
+    // Read only, as above: the tests do not change the process environment.
+    const char *set = std::getenv("SFCOP_MISSION_MODULES");
+    if (set == nullptr || *set == '\0') {
+        CHECK(root == std::filesystem::path("/work/missions/modules"));
+        // Unset, the working directory serves as the data folder, as for the tests and the tools.
+        CHECK(unset == moved / "mods" / "missions");
+    } else {
+        CHECK(root == std::filesystem::path(set));
+    }
+}
+
 TEST_CASE("two missions lifted at one base: the second is refused while the first is loaded") {
     g_calls = Calls{};
     FakeLoader loader; // every library it hands out holds the same guest image

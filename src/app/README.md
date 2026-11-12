@@ -79,5 +79,7 @@ in the data folder,
 echo /path/to/missions/modules > ~/Library/Application\ Support/SFCOP/mission-modules.txt
 ```
 
-and every later run finds them there. `SFCOP_MISSION_MODULES` still wins when it is set, and
-without either the client looks in `mods/missions` in the data folder.
+and every later run finds them there, however it was started: the client reads the file from the
+data folder it was given, not from its working directory, which the game moves to the install
+while it boots. `SFCOP_MISSION_MODULES` still wins when it is set, and without either the client
+looks in `mods/missions` in the data folder.
