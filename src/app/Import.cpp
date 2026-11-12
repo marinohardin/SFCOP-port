@@ -21,7 +21,7 @@ constexpr std::size_t kPiece = 1 << 20;
 constexpr std::size_t kMaxFolders = 20000;
 // Installs found below the chosen folder that are looked at, at most.
 constexpr std::size_t kMaxCandidates = 8;
-// How deep the index of the install found goes (links followed).
+// How deep the index of the install found goes, every folder counted, links followed.
 constexpr int kMaxInstallDepth = 16;
 // The mission scripts' folder, in lower case; a .scr in it that the manifest does not list is a
 // mod script.
@@ -276,20 +276,17 @@ private:
     // would be deleted under it.
     bool isOwnCopy(const std::string &dir) const {
         const std::string where = files_.resolved(dir);
-        for (const std::string &own : {request_.gameDir, partial(), old()}) {
-            if (isWithin(where, files_.resolved(own))) {
+        for (const std::string &own : ownCopies()) {
+            if (isWithin(where, own)) {
                 return true;
             }
         }
         return false;
     }
 
-    // Finds the install: the chosen folder, or the first folder below it, breadth first and in
-    // name order, whose executable is 2.5.5.2; failing that the first that holds one at all.
     // Whether `target`, resolved, is in the client's own copy or holds it.
     bool touchesOwnCopy(const std::string &target) const {
-        for (const std::string &own : {request_.gameDir, partial(), old()}) {
-            const std::string where = files_.resolved(own);
+        for (const std::string &where : ownCopies()) {
             if (isWithin(target, where) || isWithin(where, target)) {
                 return true;
             }
@@ -297,6 +294,18 @@ private:
         return false;
     }
 
+    // The client's own copy, its unfinished and its set-aside one, resolved once.
+    const std::vector<std::string> &ownCopies() const {
+        if (ownCopies_.empty()) {
+            for (const std::string &own : {request_.gameDir, partial(), old()}) {
+                ownCopies_.push_back(files_.resolved(own));
+            }
+        }
+        return ownCopies_;
+    }
+
+    // Finds the install: the chosen folder, or the first folder below it, breadth first and in
+    // name order, whose executable is 2.5.5.2; failing that the first that holds one at all.
     bool locate() {
         if (isOwnCopy(request_.source)) {
             finish(ImportStatus::kOwnCopy);
@@ -373,7 +382,7 @@ private:
         return joinPath(dir, *name);
     }
 
-    // The file's SHA-256 in hex; empty when it cannot be read.
+    // The file's SHA-256 in hex; empty when it cannot be read or the run is cancelled.
     std::string hashOf(const std::string &path) const {
         const std::unique_ptr<FileReader> reader = files_.openRead(path);
         if (!reader) {
@@ -382,12 +391,19 @@ private:
         std::vector<unsigned char> piece(kPiece);
         Sha256 hash;
         while (const std::size_t got = reader->read(piece.data(), piece.size())) {
+            if (cancelled()) {
+                return std::string();
+            }
             hash.update(piece.data(), got);
         }
         return reader->failed() ? std::string() : Sha256::toHex(hash.finish());
     }
 
     bool checkExe() {
+        if (cancelled()) {
+            finish(ImportStatus::kCancelled);
+            return false;
+        }
         const ManifestEntry &expected = *request_.manifest.exe();
         const std::optional<std::string> exe = exePath(report_.installDir);
         const std::uint64_t size = exe ? files_.fileSize(*exe).value_or(0) : 0;
@@ -400,7 +416,12 @@ private:
             finish(ImportStatus::kNotTheGame, path);
             return false;
         }
-        if (hashOf(path) != expected.sha256) {
+        const std::string hash = hashOf(path);
+        if (cancelled()) {
+            finish(ImportStatus::kCancelled);
+            return false;
+        }
+        if (hash != expected.sha256) {
             finish(ImportStatus::kExeModified, path);
             return false;
         }
@@ -410,7 +431,9 @@ private:
     // Every file of the install, keyed by its path in lower case; the first in byte order wins
     // when two differ only in case.
     // Links are followed, to a bounded depth. A link back to a folder above is passed over:
-    // what it leads to is listed already.
+    // what it leads to is listed already. For an import, a folder that is the client's own copy
+    // (the data folder inside the install) is passed over too, and a link into the copy or to a
+    // folder holding it refuses the install; a check lists the copy itself, so neither applies.
     void index(const std::string &dir, const std::string &relative, std::size_t &folders,
                int depth = 0) {
         if (++folders > kMaxFolders || depth > kMaxInstallDepth) {
@@ -420,11 +443,15 @@ private:
         for (const FolderEntry &entry : files_.list(dir)) {
             const std::string path = relative.empty() ? entry.name : relative + "/" + entry.name;
             const std::optional<EntryKind> kind = kindOf(dir, entry);
+            if (kind == EntryKind::kFolder && entry.kind == EntryKind::kFolder &&
+                !report_.verify && isOwnCopy(joinPath(dir, entry.name))) {
+                continue; // removed before the copy, and never part of the game
+            }
             if (entry.kind == EntryKind::kOther && kind) {
                 const std::string target = files_.resolved(joinPath(dir, entry.name));
                 // A link into the client's own copy, or to a folder holding it, would be read
                 // after the import removed it.
-                if (touchesOwnCopy(target)) {
+                if (!report_.verify && touchesOwnCopy(target)) {
                     if (report_.ownCopyLink.empty()) {
                         report_.ownCopyLink = path;
                     }
@@ -713,6 +740,7 @@ private:
     std::vector<Item> items_;
     // Whether index() stopped at a limit.
     bool indexCut_ = false;
+    mutable std::vector<std::string> ownCopies_;
 };
 
 } // namespace
@@ -905,12 +933,19 @@ std::string ImportReport::message() const {
         case ImportStatus::kNotTheGame:
             return path + " is not Starfleet Command: Orion Pirates 2.5.5.2. Import the game "
                           "again from the installed game.";
+        case ImportStatus::kTooManyFolders:
+            return "The imported game in " + gameDir + " holds more than " +
+                   std::to_string(kMaxFolders) + " folders, or folders more than " +
+                   std::to_string(kMaxInstallDepth) +
+                   " deep, so it was not all looked at. Import the game again from the "
+                   "installed game.";
         default:
-            break; // verifyImportedGame reports no other status
+            break; // a check reports no other status (kOwnCopy is an import's alone)
         }
     }
     switch (status) {
-    case ImportStatus::kVerified: // only a check reports it, answered above
+    case ImportStatus::kVerified:
+        return "The imported game in " + gameDir + " was checked."; // a check answers above
     case ImportStatus::kImported:
         text = "Imported " + std::to_string(filesCopied) + " files (" + megabytes(bytesCopied) +
                ") from " + installDir + " into " + gameDir + ".";
@@ -982,7 +1017,7 @@ std::string ImportReport::message() const {
         return "The install at " + installDir + " holds more than " +
                std::to_string(kMaxFolders) + " folders, or folders more than " +
                std::to_string(kMaxInstallDepth) +
-               " deep through its links, so it was not all looked at and nothing was imported. "
+               " deep, so it was not all looked at and nothing was imported. "
                "Choose the folder Starfleet Command: Orion Pirates is installed in.";
     case ImportStatus::kBadManifest:
         return "The install manifest cannot be used (" + manifestError +

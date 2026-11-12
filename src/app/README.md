@@ -41,32 +41,32 @@ swap to `Store` is the integrator's, in its own pull request, once that backend 
 and exits: 0 imported, 3 the folder refused, 1 the import could not finish. Later runs start from
 the copy with no `--install`. A launcher calls the same `importGame` (`Import.h`).
 
-1. **Find.** DIR itself, or the first folder below it, breadth first and in name order, that
-   holds `StarFleetOP.exe` (any case), at most 8 levels down and 20,000 folders. The search never
-   follows a link to a folder (a Wine prefix links the whole disk); DIR itself may be a link, and
-   inside the install found every link is followed. Among up to 8 installs found, the
-   first whose executable is 2.5.5.2 wins. A disc image, installer or archive chosen as a file,
-   or a folder of InstallShield cabinets, is refused with what to do instead. So is the
-   client's own copy: `game`, `game.partial` or `game.old`, or a folder in one, reached as it is
-   or through a link, `..` or another case of ASCII letters (a Windows short 8.3 name is not
-   recognised), since the import removes the last two before it copies; found below DIR, the
-   copy is passed over. An install holding a link into the copy, or to a folder holding it, is
-   refused too; a link back to a folder above in the install is passed over. Case is ignored in
-   this check on every platform, so on a case-sensitive Linux volume a folder differing from the
-   copy only in case is refused as well.
+1. **Find.** DIR itself, or the first folder below it, breadth first and in name order, that holds
+   `StarFleetOP.exe` (any case), at most 8 levels down and 20,000 folders. The search never follows
+   a link to a folder (a Wine prefix links the whole disk); DIR itself may be a link, and inside
+   the install found every link is followed. Among up to 8 installs found, the first whose
+   executable is 2.5.5.2 wins. A disc image, installer or archive chosen as a file, or a folder of
+   InstallShield cabinets, is refused with what to do instead. So is the client's own copy: `game`,
+   `game.partial` or `game.old`, or a folder in one, reached as it is or through a link, `..` or
+   another case of ASCII letters (a Windows short 8.3 name is not recognised), since the import
+   removes the last two before it copies; found below DIR, the copy is passed over. Inside the
+   install found, a folder that is the copy (the data folder kept inside the install) is passed
+   over, and a link into the copy, or to a folder holding it, refuses the install; a link back to a
+   folder above in the install is passed over. Case is ignored in this check on every platform, so
+   on a case-sensitive Linux volume a folder differing from the copy only in case is refused as
+   well.
 2. **Check the executable** against the manifest: 2.5.0.0's size (8,122,368 bytes) asks for the
    official 2.5.5.2 patch; 2.5.5.2's size with another hash is "modified"; any other is not the
    game.
-3. **Survey** the import set: the files `analysis/results/install_manifest.tsv` lists (path,
-   size, SHA-256; written by `tools/install_manifest.py`; it sits beside the
-   hash list, wherever `Bundle.h` finds that), matched ignoring case, plus every `.scr` in
-   `Assets/Scripts/` it does not list, imported as a mod script. A missing or empty file, or one
-   shorter than in 2.5.5.2, is refused by name, all of them in one message, before anything is
-   written. A row with no size or hash is unchecked: the file must be there, not empty and, for a
-   BMP, as long as its own header says; its content is not compared. The install's listing
-   follows links at most 16 folders deep and 20,000 folders in all; when it was cut short and a
-   listed file was not found, the import says so rather than call the file missing (a link that
-   loops is cut harmlessly when every file was found above it).
+3. **Survey** the import set: the files `analysis/results/install_manifest.tsv` lists (path, size,
+   SHA-256; written by `tools/install_manifest.py`; it sits beside the hash list, wherever
+   `Bundle.h` finds that), matched ignoring case, plus every `.scr` in `Assets/Scripts/` it does
+   not list, imported as a mod script. A missing or empty file, or one shorter than in 2.5.5.2, is
+   refused by name, all of them in one message, before anything is written. A row with no size or
+   hash is unchecked: the file must be there, not empty and, for a BMP, as long as its own header
+   says; its content is not compared. The install's listing goes at most 16 folders deep, every
+   folder counted and links followed, and 20,000 folders in all; when it was cut short and a listed
+   file was not found, the import says so rather than call the file missing.
 4. **Space.** The import set plus a tenth must be free on the target's volume, or nothing is
    written.
 5. **Copy** into `<game>.partial`: a clone where the file system can (APFS `clonefile`, a Linux
@@ -94,12 +94,15 @@ copy's other files are checked once, by the import, against the manifest.
 launcher's verify action calls the same `verifyImportedGame`. It checks the executable as the
 import does, then every file of the manifest as the survey does (there, not empty, not shorter than
 in 2.5.5.2, a BMP of an unchecked row as long as its header says) and hashes each checked row, with
-the import's progress (phase `kVerifying`) and cancel. The progress totals leave out the
-executable, hashed before them by the executable's check; the report's counts include it. The
-report has the import's shape: complete (exit 0) with the files whose hash differs, whether
-imported so or changed since, and the mod scripts; no copy, a wrong executable or damaged files,
-each named (exit 3); cancelled or no usable manifest (exit 1). A damaged copy is mended by
-importing again.
+the import's progress (phase `kVerifying`) and cancel. A file the survey refuses ends the check
+there, so a changed or unreadable file is found once nothing is missing or short. Mod scripts and
+the files of unchecked rows are sized, not read. The copy's own links are followed like any other
+folder's, and a `game.partial` or `game.old` beside the copy is not looked at. The progress totals
+leave out the executable, hashed before them by the executable's check; the report's counts include
+it. The report has the import's shape: complete (exit 0) with the files whose hash differs, whether
+imported so or changed since, and the mod scripts; no copy, a wrong executable, damaged files or a
+copy too big to list, each named (exit 3); cancelled or no usable manifest (exit 1). A damaged copy
+is mended by importing again.
 
 `game/` is `game` in the data folder; on Windows without `--data` it is
 `%LOCALAPPDATA%\SFCOP\game`, so a roaming profile does not carry the game's 750 MB. On

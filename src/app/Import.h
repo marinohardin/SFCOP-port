@@ -115,7 +115,7 @@ enum class ImportStatus {
     kCancelled,
     kWriteFailed,       // the copy could not be written or moved into place
     kBadManifest,
-    kOwnCopy,           // the folder, or a link in it, is the client's own copy or in it
+    kOwnCopy,           // import only: the folder, or a link in it, is or holds the client's copy
     kTooManyFolders,    // files not found, and the install too big or deep to look at all
     kVerified,          // verifyImportedGame: every file is there and whole (changed ones listed)
 };
@@ -174,11 +174,13 @@ ImportReport importGame(const ImportRequest &request, ImportFiles &files,
 // Checks the imported copy in `gameDir` again and changes nothing: its executable as the import
 // checks one, then every file of the manifest there (matched ignoring case), not empty, not
 // shorter than in 2.5.5.2, a BMP of an unchecked row as long as its header says, and each checked
-// row hashed (kVerifying progress; cancel polled between pieces). The report has the import's
+// row hashed (kVerifying progress; cancel polled between pieces). A file the survey refuses ends
+// the check before any hashing; mod scripts and unchecked rows are sized, not read. The copy's
+// own links are followed; the import's own-copy rules do not apply. The report has the import's
 // shape: kVerified with `changed` (a hash other than the manifest's, whether imported so or
 // changed since) and `modScripts`; kNotFound when there is no copy; the executable's statuses;
 // kDamaged with every file at fault ("unreadable" for one that cannot be read through);
-// kCancelled; kBadManifest. For the launcher's verify action and `--verify-import`.
+// kTooManyFolders; kCancelled; kBadManifest. For the launcher's verify action and `--verify-import`.
 ImportReport verifyImportedGame(const std::string &gameDir, const InstallManifest &manifest,
                                 ImportFiles &files, const ImportCallbacks &callbacks = {});
 
