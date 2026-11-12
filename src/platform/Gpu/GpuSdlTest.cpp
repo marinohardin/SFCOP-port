@@ -1045,4 +1045,278 @@ TEST_CASE("a blit between two indexed textures copies the indices, not the colou
     }
 }
 
+// Render scales. A texture with scale k holds k*k physical pixels per logical pixel. A blit of a
+// whole k-scaled texture into a k=1 texture k times its size samples one physical texel per
+// destination pixel (point sampling, texel centres line up), so it shows the physical image.
+
+namespace {
+
+TextureId makeScaledTarget(Gpu &gpu, std::uint32_t width, std::uint32_t height,
+                           std::uint8_t scale, PixelFormat format = PixelFormat::kArgb8888) {
+    TextureDesc desc;
+    desc.width = width;
+    desc.height = height;
+    desc.format = format;
+    desc.renderTarget = true;
+    desc.renderScale = scale;
+    auto made = gpu.CreateTexture(desc);
+    REQUIRE(made.Ok());
+    return made.Value();
+}
+
+// The physical image of a whole k-scaled texture, read through a blit into a k=1 texture.
+std::vector<std::uint32_t> readPhysical(Gpu &gpu, TextureId scaled, std::uint32_t width,
+                                        std::uint32_t height, std::uint32_t scale) {
+    const TextureId copy = makeTarget(gpu, width * scale, height * scale);
+    BlitDesc blit;
+    blit.source = scaled;
+    blit.sourceRect = Rect{0, 0, width, height};
+    blit.destination = copy;
+    blit.destinationRect = Rect{0, 0, width * scale, height * scale};
+    REQUIRE(gpu.Blit(blit).Ok());
+    return readArgb(gpu, copy, width * scale, height * scale);
+}
+
+} // namespace
+
+TEST_CASE("a triangle drawn at render scale 3 is the same triangle rasterised 3 times larger") {
+    Rig rig;
+    REQUIRE_GPU(rig);
+    Gpu &gpu = *rig.gpu;
+    const PipelineId pipeline = makePipeline(gpu, argbPipeline());
+
+    // Logical vertex p lands on physical pixel position 3 * (p + 0.5), the same place as vertex
+    // 3p + 1 on a k=1 target: (8, 8) is (25, 25), (56, 8) is (169, 25), (8, 56) is (25, 169).
+    const TextureId scaled = makeScaledTarget(gpu, 64, 64, 3);
+    drawScene(gpu, scaled, pipeline, makeVertices(gpu, greenTriangle()), 3, kNavy);
+    const TextureId large = makeTarget(gpu, 192, 192);
+    drawScene(gpu, large, pipeline,
+              makeVertices(gpu, {at(25, 25, kGreen), at(169, 25, kGreen), at(25, 169, kGreen)}),
+              3, kNavy);
+    const std::vector<std::uint32_t> physical = readPhysical(gpu, scaled, 64, 64, 3);
+    CHECK(physical == readArgb(gpu, large, 192, 192));
+
+    // Read back, each 3x3 block is averaged: the k=1 image, except on the triangle's edges, where
+    // a block partly inside is a mix of green and navy. Tolerance: a pixel may differ from the
+    // k=1 image only where its 3x3 neighbourhood in the k=1 image holds both colours, and then
+    // only as a mix (alpha 255, red 0, green + blue weights summing to one block).
+    const TextureId plain = makeTarget(gpu, 64, 64);
+    drawScene(gpu, plain, pipeline, makeVertices(gpu, greenTriangle()), 3, kNavy);
+    const std::vector<std::uint32_t> reference = readArgb(gpu, plain, 64, 64);
+    const std::vector<std::uint32_t> averaged = readArgb(gpu, scaled, 64, 64);
+    const auto onEdge = [&reference](int x, int y) {
+        bool green = false;
+        bool navy = false;
+        for (int dy = -1; dy <= 1; ++dy) {
+            for (int dx = -1; dx <= 1; ++dx) {
+                const int nx = x + dx;
+                const int ny = y + dy;
+                if (nx < 0 || ny < 0 || nx >= 64 || ny >= 64) {
+                    continue;
+                }
+                green |= reference[std::size_t(ny) * 64 + nx] == kGreen;
+                navy |= reference[std::size_t(ny) * 64 + nx] == kNavy;
+            }
+        }
+        return green && navy;
+    };
+    int differing = 0;
+    for (int y = 0; y < 64; ++y) {
+        for (int x = 0; x < 64; ++x) {
+            const std::uint32_t got = averaged[std::size_t(y) * 64 + x];
+            if (got == reference[std::size_t(y) * 64 + x]) {
+                continue;
+            }
+            ++differing;
+            CAPTURE(x);
+            CAPTURE(y);
+            CHECK(onEdge(x, y));
+            CHECK((got & 0xFFFF0000u) == 0xFF000000u);
+            // n green physical pixels of 9: green = round(255n/9), blue = round(128(9-n)/9).
+            const std::uint32_t green = (got >> 8) & 0xFF;
+            const std::uint32_t blue = got & 0xFF;
+            bool mix = false;
+            for (std::uint32_t n = 0; n <= 9; ++n) {
+                mix |= green == (255 * n + 4) / 9 && blue == (128 * (9 - n) + 4) / 9;
+            }
+            CHECK(mix);
+        }
+    }
+    // The three edges are 48 + 48 + 68 pixels long; no more than that can be mixed.
+    CHECK(differing <= 164);
+    MESSAGE("edge pixels that differ at render scale 3: " << differing);
+}
+
+TEST_CASE("an upload and a read-back round-trip a pattern at render scale 2") {
+    Rig rig;
+    REQUIRE_GPU(rig);
+    Gpu &gpu = *rig.gpu;
+    const TextureId texture = makeScaledTarget(gpu, 4, 2, 2);
+    const std::vector<std::uint32_t> pattern = {kRed,   kGreen, kBlue,  kNavy,
+                                                kGreen, kNavy,  kRed,   0x80402010u};
+    REQUIRE(gpu.WriteTexture(texture, 0, Rect{}, pattern.data(), 16).Ok());
+    CHECK(readArgb(gpu, texture, 4, 2) == pattern);
+
+    // Each logical pixel is a 2x2 block of physical pixels.
+    const std::vector<std::uint32_t> expected = {
+        kRed,   kRed,   kGreen, kGreen, kBlue, kBlue, kNavy,       kNavy,
+        kRed,   kRed,   kGreen, kGreen, kBlue, kBlue, kNavy,       kNavy,
+        kGreen, kGreen, kNavy,  kNavy,  kRed,  kRed,  0x80402010u, 0x80402010u,
+        kGreen, kGreen, kNavy,  kNavy,  kRed,  kRed,  0x80402010u, 0x80402010u,
+    };
+    CHECK(readPhysical(gpu, texture, 4, 2, 2) == expected);
+
+    // A region upload and a region read stay in logical pixels.
+    const std::uint32_t one[1] = {kBlue};
+    REQUIRE(gpu.WriteTexture(texture, 0, Rect{1, 1, 1, 1}, one, 4).Ok());
+    std::uint32_t back[2] = {};
+    REQUIRE(gpu.ReadTexture(texture, 0, Rect{0, 1, 2, 1}, back, 8).Ok());
+    CHECK(back[0] == kGreen);
+    CHECK(back[1] == kBlue);
+
+    // 16-bit pixels too.
+    const TextureId texture565 = makeScaledTarget(gpu, 2, 1, 2, PixelFormat::kRgb565);
+    const std::uint16_t pixels565[2] = {0xF800, 0x07E0};
+    REQUIRE(gpu.WriteTexture(texture565, 0, Rect{}, pixels565, 4).Ok());
+    std::uint16_t back565[2] = {};
+    REQUIRE(gpu.ReadTexture(texture565, 0, Rect{}, back565, 4).Ok());
+    CHECK(back565[0] == 0xF800);
+    CHECK(back565[1] == 0x07E0);
+}
+
+TEST_CASE("fills, clears, viewports, blits and depth stay logical at render scale 2") {
+    Rig rig;
+    REQUIRE_GPU(rig);
+    Gpu &gpu = *rig.gpu;
+    const TextureId target = makeScaledTarget(gpu, 8, 8, 2);
+    REQUIRE(gpu.Fill(target, Rect{}, kNavy).Ok());
+    REQUIRE(gpu.Fill(target, Rect{6, 0, 2, 1}, kRed).Ok());
+    std::vector<std::uint32_t> pixels = readArgb(gpu, target, 8, 8);
+    CHECK(pixels[0] == kNavy);
+    CHECK(pixels[5] == kNavy);
+    CHECK(pixels[6] == kRed);
+    CHECK(pixels[7] == kRed);
+    CHECK(pixels[8 + 6] == kNavy);
+
+    // A clear rectangle and a viewport, both logical.
+    const BufferId vertices = makeVertices(
+        gpu, {at(-0.5f, -0.5f, kGreen), at(15.5f, -0.5f, kGreen), at(-0.5f, 15.5f, kGreen)});
+    REQUIRE(gpu.BeginScene(RenderTargets{target, TextureId{}}).Ok());
+    ClearDesc clear;
+    clear.colorValue = kBlue;
+    clear.area = Rect{0, 4, 8, 4};
+    REQUIRE(gpu.Clear(clear).Ok());
+    Viewport top;
+    top.width = 4;
+    top.height = 4;
+    REQUIRE(gpu.SetViewport(top).Ok());
+    DrawCall draw;
+    draw.pipeline = makePipeline(gpu, argbPipeline());
+    draw.vertices = vertices;
+    draw.vertexCount = 3;
+    REQUIRE(gpu.Draw(draw).Ok());
+    REQUIRE(gpu.EndScene().Ok());
+    pixels = readArgb(gpu, target, 8, 8);
+    CHECK(pixels[0] == kGreen);
+    CHECK(pixels[3 * 8 + 3] == kGreen);
+    CHECK(pixels[4] == kNavy);       // right of the viewport
+    CHECK(pixels[6] == kRed);        // the earlier fill
+    CHECK(pixels[4 * 8 + 0] == kBlue); // the cleared lower half
+    CHECK(pixels[7 * 8 + 7] == kBlue);
+
+    // A k=1 sprite blitted in lands on logical pixels; a same-texture blit too.
+    const TextureId sprite = makeTarget(gpu, 2, 2);
+    REQUIRE(gpu.Fill(sprite, Rect{}, kRed).Ok());
+    BlitDesc blit;
+    blit.source = sprite;
+    blit.sourceRect = Rect{0, 0, 2, 2};
+    blit.destination = target;
+    blit.destinationRect = Rect{5, 5, 2, 2};
+    REQUIRE(gpu.Blit(blit).Ok());
+    blit.source = target;
+    blit.sourceRect = Rect{5, 5, 1, 1};
+    blit.destinationRect = Rect{0, 7, 1, 1};
+    REQUIRE(gpu.Blit(blit).Ok());
+    pixels = readArgb(gpu, target, 8, 8);
+    CHECK(pixels[5 * 8 + 5] == kRed);
+    CHECK(pixels[6 * 8 + 6] == kRed);
+    CHECK(pixels[4 * 8 + 4] == kBlue);
+    CHECK(pixels[7 * 8 + 7] == kBlue);
+    CHECK(pixels[7 * 8 + 0] == kRed);
+    CHECK(pixels[7 * 8 + 1] == kBlue);
+
+    // A depth target of the same scale works; one of another scale is refused.
+    const TextureId depth = makeScaledTarget(gpu, 8, 8, 2, PixelFormat::kDepth16);
+    REQUIRE(gpu.Fill(depth, Rect{}, 0).Ok());
+    PipelineDesc depthDesc = argbPipeline();
+    depthDesc.depthTarget = true;
+    depthDesc.depthTest = true;
+    depthDesc.depthFunction = CompareFunction::kLess;
+    draw.pipeline = makePipeline(gpu, depthDesc);
+    REQUIRE(gpu.BeginScene(RenderTargets{target, depth}).Ok());
+    REQUIRE(gpu.Draw(draw).Ok()); // depth 0 everywhere: nothing passes "less"
+    REQUIRE(gpu.EndScene().Ok());
+    CHECK(readArgb(gpu, target, 8, 8)[7 * 8 + 7] == kBlue);
+    REQUIRE(gpu.BeginScene(RenderTargets{target, depth}).Ok());
+    ClearDesc depthClear;
+    depthClear.depth = true;
+    depthClear.colorValue = kNavy;
+    REQUIRE(gpu.Clear(depthClear).Ok());
+    REQUIRE(gpu.Draw(draw).Ok());
+    REQUIRE(gpu.EndScene().Ok());
+    CHECK(readArgb(gpu, target, 8, 8)[0] == kGreen);
+    const TextureId flatDepth = makeTarget(gpu, 8, 8, PixelFormat::kDepth16);
+    CHECK(gpu.BeginScene(RenderTargets{target, flatDepth}).Code() == Error::kInvalidArgument);
+}
+
+TEST_CASE("render scales are refused where they cannot apply") {
+    Rig rig;
+    REQUIRE_GPU(rig);
+    Gpu &gpu = *rig.gpu;
+    TextureDesc desc;
+    desc.width = 64;
+    desc.height = 64;
+    desc.format = PixelFormat::kArgb8888;
+    desc.renderTarget = true;
+    desc.renderScale = 0;
+    CHECK(gpu.CreateTexture(desc).Code() == Error::kInvalidArgument);
+    desc.renderScale = 2;
+    desc.mipLevels = 2;
+    CHECK(gpu.CreateTexture(desc).Code() == Error::kInvalidArgument);
+    desc.mipLevels = 1;
+    desc.format = PixelFormat::kIndexed8;
+    desc.renderTarget = false;
+    CHECK(gpu.CreateTexture(desc).Code() == Error::kInvalidArgument);
+    desc.format = PixelFormat::kArgb8888;
+    desc.renderTarget = true;
+    desc.width = 4097; // 8194 physical
+    CHECK(gpu.CreateTexture(desc).Code() == Error::kInvalidArgument);
+    desc.width = 4096;
+    CHECK(gpu.CreateTexture(desc).Ok());
+
+    CHECK(gpu.ConfigureScaledBackBuffer(640, 480, PixelFormat::kRgb565, 0).Code() ==
+          Error::kInvalidArgument);
+    CHECK(gpu.ConfigureScaledBackBuffer(4097, 480, PixelFormat::kRgb565, 2).Code() ==
+          Error::kInvalidArgument);
+    CHECK(gpu.ConfigureScaledBackBuffer(640, 480, PixelFormat::kIndexed8, 2).Code() ==
+          Error::kInvalidArgument);
+    CHECK(gpu.ConfigureScaledBackBuffer(640, 480, PixelFormat::kDepth16, 2).Code() ==
+          Error::kInvalidArgument);
+}
+
+TEST_CASE("a back buffer at render scale 2 starts black and presents headless") {
+    Rig rig;
+    REQUIRE_GPU(rig);
+    Gpu &gpu = *rig.gpu;
+    auto back = gpu.ConfigureScaledBackBuffer(640, 480, PixelFormat::kRgb565, 2);
+    REQUIRE(back.Ok());
+    std::uint16_t corner[1] = {0xFFFF};
+    REQUIRE(gpu.ReadTexture(back.Value(), 0, Rect{639, 479, 1, 1}, corner, 2).Ok());
+    CHECK(corner[0] == 0x0000);
+    REQUIRE(gpu.Fill(back.Value(), Rect{}, 0xF800).Ok());
+    REQUIRE(gpu.ReadTexture(back.Value(), 0, Rect{639, 479, 1, 1}, corner, 2).Ok());
+    CHECK(corner[0] == 0xF800);
+    CHECK(gpu.Present().Ok());
+}
+
 } // namespace sfcop::platform

@@ -2,13 +2,16 @@
 // method returns `failWith` (success while it is kNone; with `failOnly` set, only the method of
 // that name fails); the methods that return a handle or caps return their `...Result` member.
 // Descriptions passed by reference are kept whole in `last...` members. ReadTexture() fills the
-// region with `readValue` bytes.
+// region with `readValue` bytes. Render scales are kept per handle in `textureScales` (the handle
+// CreateTexture() or ConfigureScaledBackBuffer() returned, mapped to the scale asked for); a call
+// with a scale of 1 logs exactly as before render scales existed.
 #pragma once
 
 #include "platform/Core/MockLog.h"
 #include "platform/Gpu/Gpu.h"
 
 #include <cstring>
+#include <map>
 #include <string>
 #include <string_view>
 
@@ -28,6 +31,7 @@ public:
     ClearDesc lastClear;
     DrawCall lastDraw;
     BlitDesc lastBlit;
+    std::map<std::uint32_t, std::uint8_t> textureScales; // handle value -> render scale
 
     Result<GpuCaps> capsResult = GpuCaps{};
     Result<TextureId> backBufferResult = TextureId{1};
@@ -51,7 +55,16 @@ public:
     Result<TextureId> ConfigureBackBuffer(std::uint32_t width, std::uint32_t height,
                                           PixelFormat format) override {
         log.Record("ConfigureBackBuffer", width, height, format);
-        return backBufferResult;
+        return remember(backBufferResult, 1);
+    }
+    Result<TextureId> ConfigureScaledBackBuffer(std::uint32_t width, std::uint32_t height,
+                                                PixelFormat format,
+                                                std::uint8_t renderScale) override {
+        if (renderScale == 1) {
+            return ConfigureBackBuffer(width, height, format);
+        }
+        log.Record("ConfigureScaledBackBuffer", width, height, format, renderScale);
+        return remember(backBufferResult, renderScale);
     }
     Result<BufferId> CreateBuffer(BufferKind kind, std::uint32_t bytes) override {
         log.Record("CreateBuffer", kind, bytes);
@@ -67,9 +80,14 @@ public:
         return status("DestroyBuffer");
     }
     Result<TextureId> CreateTexture(const TextureDesc &desc) override {
-        log.Record("CreateTexture", desc.width, desc.height, desc.format);
+        if (desc.renderScale == 1) {
+            log.Record("CreateTexture", desc.width, desc.height, desc.format);
+        } else {
+            log.Record("CreateTexture", desc.width, desc.height, desc.format, "scale",
+                       desc.renderScale);
+        }
         lastTextureDesc = desc;
-        return createTextureResult;
+        return remember(createTextureResult, desc.renderScale);
     }
     Status WriteTexture(TextureId texture, std::uint8_t level, Rect region, const void *,
                         std::uint32_t rowPitch) override {
@@ -169,6 +187,13 @@ public:
     }
 
 private:
+    Result<TextureId> remember(const Result<TextureId> &result, std::uint8_t renderScale) {
+        if (result.Ok()) {
+            textureScales[result.Value().value] = renderScale;
+        }
+        return result;
+    }
+
     Status status(std::string_view method) const {
         if (failWith != Error::kNone && (failOnly.empty() || failOnly == method)) {
             return failWith;
