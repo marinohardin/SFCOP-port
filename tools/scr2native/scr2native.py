@@ -56,7 +56,7 @@ import gen_allowlist  # noqa: E402
 import pe32  # noqa: E402
 from harness.lib import paths  # noqa: E402
 
-TRANSLATOR_VERSION = '1.0.0'
+TRANSLATOR_VERSION = '1.2.1'
 RUNTIME = os.path.join(HERE, 'runtime')
 SCRIPTS = os.path.join(REPO, 'src', 'app', 'scripts')
 ABI_HEADER_DIR = os.path.join(SCRIPTS, 'guest')
@@ -71,6 +71,11 @@ LIFT_FILES = 4                     # lifted .c files per module
 GUEST_FIRST, GUEST_SLOT, GUEST_SLOTS = 0x60000000, 0x00100000, 256
 GRANULE = 0x10000                  # the guest allocator's reservation unit
 EXPORTS = ('MissionSpecEntry', 'ScriptEntry')
+# The optimisation level of a module's C. A module's attach runs thousands of lifted static
+# initialisers. -O2 is the level the direct runtime view (module_rt_direct.h) was measured at; on
+# its own it leaves module size unchanged against -O1 and compiled in 18.1 s a module against
+# 17.0 s on a 10-module sample (README).
+OPTIMISATION = '-O2'
 
 EXIT_OK, EXIT_REFUSED, EXIT_INPUT, EXIT_TOOL, EXIT_MISMATCH = 0, 1, 2, 3, 4
 
@@ -309,27 +314,40 @@ def emit_image(path, rebased, base, size, imports, exports, dispatch):
         f.write('\n'.join(lines) + '\n')
 
 
+def compile_flags(pcrecomp, gen=None, lifted=False):
+    """The host compiler's flags for a C file of a module (gen_baseline.py compiles its probes
+    with the same). A lifted file (recomp_*.c) also gets module_rt_direct.h, which gives it a
+    const view of the runtime pointers; the glue and the image, which define and fill them, do
+    not."""
+    contract, script = loader_constants()
+    flags = ['-c', '-w', OPTIMISATION, '-fPIC', '-fno-strict-aliasing', '-fwrapv', '-fcommon',
+             '-fno-lto', '-fvisibility=hidden', '-include', os.path.join(RUNTIME, 'module_rt.h')]
+    if lifted:
+        flags += ['-include', os.path.join(RUNTIME, 'module_rt_direct.h')]
+    if gen:
+        flags += ['-I', gen]
+    flags += ['-I', os.path.join(pcrecomp, 'runtime', 'recomp32'), '-I', ABI_HEADER_DIR]
+    flags += ['-D' + d for d in RECOMP_DEFINITIONS]
+    flags += ['-DSFCOP_ABI_TAG="%s"' % host_abi_tag(), '-DSFCOP_SCRIPT_VERSION=%sf' % script,
+              '-DSFCOP_CONTRACT_VERSION=%du' % contract]
+    return flags
+
+
 def compile_module(work, name, gen, imports, pcrecomp, jobs, log):
     """Compiles and links the module; returns the library's path in work/build."""
     cc = os.environ.get('CC', 'cc')
     if not shutil.which(cc):
         raise Stop(EXIT_TOOL, 'no C compiler (%s)' % cc)
-    contract, script = loader_constants()
     build = os.path.join(work, 'build')
     os.makedirs(build, exist_ok=True)
-    flags = ['-c', '-w', '-O1', '-fPIC', '-fno-strict-aliasing', '-fwrapv', '-fcommon',
-             '-fvisibility=hidden', '-include', os.path.join(RUNTIME, 'module_rt.h'),
-             '-I', gen, '-I', os.path.join(pcrecomp, 'runtime', 'recomp32'), '-I', ABI_HEADER_DIR]
-    flags += ['-D' + d for d in RECOMP_DEFINITIONS]
-    flags += ['-DSFCOP_ABI_TAG="%s"' % host_abi_tag(), '-DSFCOP_SCRIPT_VERSION=%sf' % script,
-              '-DSFCOP_CONTRACT_VERSION=%du' % contract]
-    sources = sorted(os.path.join(gen, f) for f in os.listdir(gen)
-                     if f.startswith('recomp_') and f.endswith('.c'))
-    sources += [os.path.join(RUNTIME, 'module_glue.c'), os.path.join(work, 'module_image.c')]
+    lifted = sorted(os.path.join(gen, f) for f in os.listdir(gen)
+                    if f.startswith('recomp_') and f.endswith('.c'))
+    sources = lifted + [os.path.join(RUNTIME, 'module_glue.c'), os.path.join(work, 'module_image.c')]
     objects = []
 
     def one(src):
         obj = os.path.join(build, os.path.basename(src)[:-2] + '.o')
+        flags = compile_flags(pcrecomp, gen, lifted=src in lifted)
         run(['nice', '-n', '19', cc] + flags + [src, '-o', obj], log)
         return obj
 
@@ -436,7 +454,9 @@ def translate(args):
     os.makedirs(work, exist_ok=True)
     log = os.path.join(work, 'scr2native.log')
     open(log, 'w').close()
+    lift_started = time.monotonic()
     gen = lift(work, name, rebased, exports, args.pcrecomp, log)
+    lift_seconds = time.monotonic() - lift_started
     dispatch = dispatch_entries(gen)
     for export, rva in sorted(exports.items()):
         if export in EXPORTS and base + rva not in dispatch:
@@ -444,7 +464,9 @@ def translate(args):
     if dll.entry_rva and base + dll.entry_rva not in dispatch:
         raise Stop(EXIT_REFUSED, '%s: the entry point at 0x%08X was not lifted' % (name, base + dll.entry_rva))
     emit_image(os.path.join(work, 'module_image.c'), rebased, base, size, imports, exports, dispatch)
+    compile_started = time.monotonic()
     lib = compile_module(work, name, gen, imports, args.pcrecomp, args.jobs, log)
+    compile_seconds = time.monotonic() - compile_started
     verify(name, lib, allowed, read_list(baseline_path()))
     os.makedirs(args.out, exist_ok=True)
     staging = package(args.out, name, lib, pe32.sha256(data))
@@ -460,7 +482,8 @@ def translate(args):
         clean_work(work)
     lib_size = os.path.getsize(os.path.join(final, os.path.basename(lib)))
     with open(os.path.join(work, 'result.json'), 'w', encoding='utf-8', newline='\n') as f:
-        json.dump({'functions': len(dispatch), 'seconds': round(time.monotonic() - started, 1)}, f)
+        json.dump({'functions': len(dispatch), 'seconds': round(time.monotonic() - started, 1),
+                   'lift_seconds': round(lift_seconds, 1), 'compile_seconds': round(compile_seconds, 1)}, f)
     print('scr2native: %s: 0x%08X, %d functions, %d imports, %s, %d bytes' % (
         name, base, len(dispatch), len(imports), os.path.basename(lib), lib_size))
     return EXIT_OK

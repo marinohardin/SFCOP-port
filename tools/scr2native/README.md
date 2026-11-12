@@ -62,15 +62,33 @@ working directory (the per-user data folder). It never reads the install for a m
              relocation outside the code holds (virtual tables, callback and exception tables)
 5. emit      module_image.c: the image's sections as data, its import slots by DLL!Name, the
              lifted functions by guest address, and the guest image descriptor
-6. compile   the lifted C with the host compiler, with the game's lift definitions, against
+6. compile   the lifted C with the host compiler at -O2, with the game's lift definitions, against
              runtime/module_rt.h (the machine is the client's, bound by name at load) and
-             runtime/module_glue.c (the binding, the version tag, the contract's exports)
+             runtime/module_glue.c (the binding, the version tag, the contract's exports);
+             the lifted files also get runtime/module_rt_direct.h (below)
 7. verify    every undefined symbol of the library is an allowed sfcop_import:DLL!Name or on the
              host baseline list; anything else refuses the module
 8. --check   oracle/trace/compare.py on the two traces given; a difference writes no module
 9. install   <modules root>/<Name>/<Name>.<dylib|so|dll> and module.json
              (name, source_sha256, translator_version)
 ```
+
+### How lifted code reaches the client's machine
+
+`module_rt.h` makes every runtime name (the registers, the x87 stack, the lifter's hooks) a pointer
+the module holds, which `sfcop_bind` fills once from the client's resolver before any lifted code
+runs. Lifted code stores to guest memory constantly, and with `-fno-strict-aliasing` any such store
+might, as far as the compiler knows, have changed one of those pointers, so it would reload each one
+after every store. `module_rt_direct.h`, forced into the lifted files only, declares the same
+symbols again as `const` pointers under other C names (an `__asm__` label keeps the symbol) and
+points the register names at those: each address is then loaded once per function and kept in a
+register. The library's symbols, imports and exports are unchanged, and so is the module contract;
+the shipped missions' code is about a fifth smaller.
+
+This is sound because the glue alone defines and writes the pointers, only in `sfcop_bind`, before
+the client first calls into the module; the lifted files never write them. The `const` in one
+translation unit against the plain definition in another is a qualifier difference the separate
+compile never sees together. Never build a module with link-time optimisation, which would.
 
 ### Where module code runs
 
@@ -118,6 +136,15 @@ are answered by pcrecomp's win32hle rows, registered when the first module needs
   At that rate 88 scripts take about an hour and three quarters when nothing is cached. Running
   `--all` again with every module current takes seconds (the record run below checked 87 modules and
   translated one in 73 s).
+- **The kept lift is keyed on the lift's inputs, not on the compile.** `lift.key` hashes the
+  rebased image, the pcrecomp revision `cmake/lifter/lift.sh` pins, the seeds, the file count and
+  `run_lift.py`, `eh_frames.py` and the `Dockerfile`. Compile flags and `TRANSLATOR_VERSION` are
+  not in it, which is right: they change only what is done with the lifted C, so a translator
+  bump that changes the compile reuses every kept lift. Three inputs of the lift are missing from
+  it, though: the patches `setup.sh` applies to the clone (`cmake/lifter/patches/`), the steps of
+  `lift()` itself (the rtti and disassembly runs and the seed merge), and the clone's real state
+  (the key names the pinned revision, not what is checked out). After a change to any of those,
+  delete the work folder's `lift.key` files, or a stale lift is reused.
 - **No retries.** A script that fails stops with its exit status and its reason (below); nothing is
   run twice. `--all` records a refused script (exit 1), a bad input (2) or a mismatch (4) and goes on
   to the next; after a tool failure (3: Docker, the compiler, memory), which would repeat, it stops
@@ -271,6 +298,36 @@ times (`-`). Whether each module behaves as its original is `--check`'s question
 
 The record run translated one script and kept 87, and left 1.5 MB of work files (the lift and the
 objects are removed once a module is installed).
+
+## Compile flags: -O1, -O2 and the direct runtime view
+
+Translator 1.0.0 compiled at `-O1`; 1.1.0 at `-O2`; 1.2.0 adds `runtime/module_rt_direct.h` to the
+lifted files; 1.2.1 makes the glue's `sfcop_bind` refuse a later bind to other addresses, which the direct
+view relies on, and passes `-fno-lto` (the glue only changes, so the 1.2.0 measurements below hold
+for it). Measured on a sample of 10 modules (the smallest and the largest script, campaign,
+bonus and skirmish missions, and the oracle's skirmish), each lifted once and compiled three
+times from the same lift, macOS arm64, `--jobs 4`, with other work on the machine (load averages
+18 to 36, so the compile times are within noise of each other):
+
+| Module | Functions | Compile s: -O1 | -O2 | 1.2.0 | Bytes: -O1 | -O2 | 1.2.0 | 1.2.0 vs -O1 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Gen_Playback | 3800 | 14.6 | 15.0 | 12.5 | 7912416 | 7928912 | 6343760 | -19.8 % |
+| Met_10Patrol | 4456 | 23.0 | 20.2 | 18.2 | 8973824 | 8990352 | 7256592 | -19.1 % |
+| Met_11ConvoyRaid | 4117 | 18.4 | 17.8 | 15.8 | 8451032 | 8451064 | 6783352 | -19.7 % |
+| Met_12ConvoyEscort | 4148 | 15.0 | 17.3 | 17.3 | 8468552 | 8468568 | 6800856 | -19.7 % |
+| Bon_Heater | 4169 | 15.4 | 17.4 | 18.9 | 8436256 | 8452768 | 6801552 | -19.4 % |
+| Bon_Hit | 4157 | 18.9 | 17.9 | 19.3 | 8402848 | 8419360 | 6768144 | -19.5 % |
+| Bon_PieceAction | 4135 | 18.7 | 17.3 | 15.9 | 8418664 | 8435176 | 6783960 | -19.4 % |
+| Met_1Scout | 3978 | 14.5 | 17.5 | 16.0 | 8215376 | 8231888 | 6613712 | -19.5 % |
+| Ski_1Free4All | 3843 | 14.0 | 16.6 | 15.0 | 8045792 | 8045792 | 6444112 | -19.9 % |
+| OracleSkirmish | 3607 | 17.2 | 24.2 | 16.4 | 7724376 | 7724376 | 6188744 | -19.9 % |
+| mean | | 17.0 | 18.1 | 16.5 | 8304913 | 8314825 | 6678478 | -19.6 % |
+
+`-O2` alone leaves the size where it was; the direct view takes a fifth off every module. The lift
+(22 to 31 s a module on the same machine) is the same for all three. Two 1.2.0 builds of the same
+lift are byte-identical, and a 1.2.0 module has the same undefined and exported symbols as its
+`-O1` build. The table above for all 88 scripts was made at 1.0.0; for the whole set at 1.2.0 the
+sizes are extrapolated from this sample (about 590 MB against 737 MB), not measured.
 
 ## What C8 fixed, and why
 
