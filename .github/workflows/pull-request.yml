@@ -32,13 +32,14 @@ jobs:
 
   # The native build (DESIGN §7.4), one job per preset: macos-arm64 with Apple clang, windows-x64
   # and linux-x64 cross-compiled on the same Mac (cmake/toolchains/README.md). A pull request that
-  # changes only game/, analysis/results/ and the generated override table builds macos-arm64
-  # alone (oracle/presets/ci.py, "builds"). Every job that builds makes sfcop_tests and runs it
-  # (windows-x64 under Wine, linux-x64 in a linux/amd64 container), builds sfcop with the lift
-  # where the runner has the install and pcrecomp, and keeps sfcop_tests and the configure and test
-  # logs for 7 days as an artifact of this private repository, for the owner's own review. The
-  # lifted sfcop is derived from the retail executable and is never uploaded; nothing is released
-  # or published (DESIGN §12.2).
+  # changes only decompiled source, its records and the lift's own inputs builds macos-arm64
+  # alone, and one that changes only what no build reads (documentation, the Python tests, the
+  # harness's tools) builds no preset (oracle/presets/ci.py, "builds"). Every job that builds
+  # makes sfcop_tests and runs it (windows-x64 under Wine, linux-x64 in a linux/amd64
+  # container), builds sfcop with the lift where the runner has the install and pcrecomp, and
+  # keeps sfcop_tests and the configure and test logs for 7 days as an artifact of this private
+  # repository, for the owner's own review. The lifted sfcop is derived from the retail
+  # executable and is never uploaded; nothing is released or published (DESIGN §12.2).
   #
   # The jobs run one after another (max-parallel: 1) on one shared runner, so a hang costs every
   # other pull request: each step has its own timeout, well under the job's. The build trees live
@@ -73,8 +74,8 @@ jobs:
         with:
           fetch-depth: 2
 
-      # A pull request that changes only decompiled source and its records builds macOS alone
-      # (oracle/presets/ci.py, "builds"); the other presets' steps are skipped and the job passes.
+      # Which presets a pull request builds is oracle/presets/ci.py, "builds"; a preset it does
+      # not build skips its steps and the job passes.
       - name: Is ${{ matrix.preset }} built for this pull request
         id: want
         shell: bash
@@ -83,7 +84,7 @@ jobs:
         run: |
           set -eu -o pipefail
           build=$(git diff --name-only HEAD^1 HEAD | python3 -I oracle/presets/ci.py builds "$PRESET")
-          [ "$build" = yes ] || echo "::notice::skip: $PRESET: this pull request changes only decompiled source; macos-arm64 builds it"
+          [ "$build" = yes ] || echo "::notice::skip: $PRESET: this pull request changes nothing this preset needs built: only paths no build reads, or decompiled source and lift inputs that macos-arm64 alone builds, or the preset is paused (oracle/presets/ci.py, builds)"
           echo "build=$build" >> "$GITHUB_OUTPUT"
 
       # A missing macOS permission to read the external tools volume would otherwise stall the
