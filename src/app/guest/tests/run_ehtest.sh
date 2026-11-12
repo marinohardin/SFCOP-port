@@ -4,7 +4,7 @@
 #
 #   run_ehtest.sh HOST ROOT SCRATCH
 #
-# Passes when all 17 cases pass with exit status 0, and the uncaught throw is reported (its C++
+# Passes when all 20 cases pass with exit status 0, and the uncaught throw is reported (its C++
 # type is int, ".H"), the C runtime's top-level filter ends it with "abnormal program termination",
 # and the run exits with status 1.
 set -u
@@ -26,10 +26,10 @@ echo "uncaught: exit status $rc2"
 
 passes=$(grep -c '^PASS' "$scratch/run.out" || true)
 fails=$(grep -c '^FAIL' "$scratch/run.out" || true)
-if [ "$rc" -ne 0 ] || [ "$fails" -ne 0 ] || [ "$passes" -ne 17 ] || [ "$rc2" -ne 1 ] \
+if [ "$rc" -ne 0 ] || [ "$fails" -ne 0 ] || [ "$passes" -ne 20 ] || [ "$rc2" -ne 1 ] \
     || ! grep -q 'unhandled guest exception 0xE06D7363, C++ type .H ' "$scratch/uncaught.err" \
     || ! grep -q '^abnormal program termination' "$scratch/uncaught.err"; then
     echo "guest tests: FAILED"
     exit 1
 fi
-echo "guest tests: all 17 cases pass; the uncaught throw is reported and terminates the run"
+echo "guest tests: all 20 cases pass; the uncaught throw is reported and terminates the run"
