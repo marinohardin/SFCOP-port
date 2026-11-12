@@ -112,7 +112,9 @@ def claimed_symbol(address, source, obj_path, game, fallback, name='', recorded=
     """The compiled symbol the annotation for `address` claims: from the object's /FAs listing,
     with the harness's own rule (harness/lib/source.symbol_for_claim, given the evidence: the
     address's matched-set entry `recorded`, functions.csv's mangled name `fallback` and `name`),
-    else the mangled name in functions.csv."""
+    else the mangled name in functions.csv. The annotation is in the unit `source`, or in a
+    header that game/UNITS.tsv places in that unit (harness/lib/claims.py), whose line records
+    the unit's listing then holds."""
     from harness.lib import source as hsource
     listing = os.path.splitext(obj_path)[0] + '.asm'
     unit = os.path.join(game, source)
@@ -120,13 +122,27 @@ def claimed_symbol(address, source, obj_path, game, fallback, name='', recorded=
         anns = hsource.scan_annotations(os.path.dirname(unit), MODULE)
         mine = [a for a in anns.get(address, []) if a.kind == 'FUNCTION'
                 and os.path.samefile(a.path, unit)]
+        if not mine:
+            anns = hsource.scan_annotations(game, MODULE)
+            mine = [a for a in anns.get(address, []) if a.kind == 'FUNCTION'
+                    and hsource.claims.is_header(a.path)]
+            if len(mine) == 1:
+                try:
+                    placed = hsource.claim_unit(mine[0], game)
+                except hsource.SourceError as e:
+                    raise PlacementError(f'0x{address:08x} ({source}): {e}') from e
+                if not os.path.samefile(placed, unit):
+                    raise PlacementError(f'0x{address:08x} ({source}): its claim in '
+                                         f'{os.path.relpath(mine[0].path, game)} is compiled in '
+                                         f'{os.path.relpath(placed, game)}, not in {source}')
         if len(mine) == 1:
+            here = mine[0].path
             others = [a.line for lst in anns.values() for a in lst
-                      if os.path.samefile(a.path, unit) and a.line != mine[0].line]
+                      if os.path.samefile(a.path, here) and a.line != mine[0].line]
             try:
                 sym = hsource.symbol_for_claim(
-                    open(listing, encoding='latin1').read(), unit, mine[0].line, others,
-                    recorded=recorded, mangled=fallback, name=name)
+                    open(listing, encoding='latin1').read(), here, mine[0].line, others,
+                    recorded=recorded, mangled=fallback, name=name, unit=unit)
             except hsource.SourceError as e:
                 raise PlacementError(f'0x{address:08x} ({source}): {e}') from e
             if isinstance(sym, str):

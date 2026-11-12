@@ -994,3 +994,49 @@ def test_the_lift_claims_a_deleting_destructor_the_matched_set_alone_names(tmp_p
                                   recorded) == '??_GtShip@@UAEPAXI@Z'
     assert objlift.claimed_symbol(0x00401500, 'Test/ship.cpp', obj, str(game), '',
                                   'FUN_00401500') == '??1tShip@@UAE@XZ'
+
+
+# tShip's destructor written inline in its header, with the claim of its scalar deleting
+# destructor on it (line 3), and the listing of the unit the unit map assigns 0x00401500 to: VC6
+# inlined the destructor, so there is no ??1tShip to start from.
+INLINE_DELETING_HEADER = ('class tShip { public: virtual ~tShip(); void mClear(); };\n'
+                          '\n'
+                          '// FUNCTION: STARFLEETOP 0x00401500\n'
+                          'inline tShip::~tShip()\n{\n\tmClear();\n}\n')
+INLINED_LISTING = (
+    '\tTITLE\tship.cpp\n'
+    '_TEXT\tSEGMENT\n'
+    '??_GtShip@@UAEPAXI@Z PROC NEAR\t\t; tShip::`scalar deleting destructor\', COMDAT\n'
+    '\tcall\t?mClear@tShip@@QAEXXZ\t\t; tShip::mClear\n'
+    '\tret\t4\n'
+    '??_GtShip@@UAEPAXI@Z ENDP\n'
+    '_TEXT\tENDS\n'
+    'END\n')
+
+
+def _header_tree(tmp_path, units):
+    game = tmp_path / 'game'
+    (game / 'Test').mkdir(parents=True)
+    (game / 'Include').mkdir()
+    (game / 'Include' / 'ship.h').write_text(INLINE_DELETING_HEADER)
+    (game / 'Test' / 'ship.cpp').write_text('#include "Include/ship.h"\n')
+    (game / 'Test' / 'other.cpp').write_text('#include "Include/ship.h"\n')
+    (game / 'UNITS.tsv').write_text('unit\tfirst\tlast\n' + units)
+    (tmp_path / 'ship.asm').write_text(INLINED_LISTING)
+    return game
+
+
+def test_the_lift_claims_a_deleting_destructor_claimed_in_a_header(tmp_path):
+    game = _header_tree(tmp_path, 'Test/ship.cpp\t0x00401000\t0x004016ff\n')
+    recorded = {'symbol': '??_GtShip@@UAEPAXI@Z', 'name': 'FUN_00401500', 'exact': True}
+    assert objlift.claimed_symbol(0x00401500, 'Test/ship.cpp', str(tmp_path / 'ship.obj'),
+                                  str(game), '', 'FUN_00401500', recorded) == '??_GtShip@@UAEPAXI@Z'
+
+
+def test_the_lift_refuses_a_header_claim_the_unit_map_places_in_another_unit(tmp_path):
+    game = _header_tree(tmp_path, 'Test/other.cpp\t0x00401000\t0x004016ff\n')
+    recorded = {'symbol': '??_GtShip@@UAEPAXI@Z', 'name': 'FUN_00401500', 'exact': True}
+    with pytest.raises(objlift.PlacementError, match='its claim in Include/ship.h is compiled in '
+                       'Test/other.cpp, not in Test/ship.cpp'):
+        objlift.claimed_symbol(0x00401500, 'Test/ship.cpp', str(tmp_path / 'ship.obj'), str(game),
+                               '', 'FUN_00401500', recorded)
