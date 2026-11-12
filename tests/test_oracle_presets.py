@@ -408,12 +408,49 @@ def test_a_decompilation_only_change_builds_macos_alone(unpaused):
 
 def test_any_other_change_builds_every_preset(unpaused):
     for files in (['src/app/main.cpp'], ['game/Tiger/tsay.cpp', 'cmake/SfcopLifter.cmake'],
-                  ['src/app/guest/override.h'], ['docs/DESIGN.md'], [],
+                  ['src/app/guest/override.h'], ['docs/DESIGN.md', 'src/app/main.cpp'], [],
                   ['game/port/types.h'], ['game/unsorted/tSphere.cpp', 'game/port/guest.h'],
                   ['game/UNITS.tsv'], ['analysis/results/retail_hashes.sha256'],
-                  ['analysis/results/progress/progress.json']):
+                  ['scripts/dist.sh'], ['harness/lib/paths.py', 'cmake/SfcopLifter.cmake'],
+                  ['analysis/results/matched_set.json', 'src/app/guest/GuestHost.cpp']):
         for preset in ('macos-arm64', 'linux-x64', 'windows-x64'):
             assert ci.builds(preset, files), (preset, files)
+
+
+def test_a_change_to_the_lift_inputs_builds_macos_alone(unpaused):
+    for files in (['harness/lib/verify.py', 'harness/tests/test_verify_base.py'],
+                  ['ghidra/exports/functions.csv', 'harness/units.json'],
+                  ['analysis/results/boundary_errors.tsv', 'docs/DESIGN.md'],
+                  ['tools/objlift/placement.py'],
+                  ['game/unsorted/tSphere.cpp', 'ghidra/scripts/join_eh_prologs.py']):
+        assert ci.builds('macos-arm64', files), files
+        assert not ci.builds('linux-x64', files), files
+        assert not ci.builds('windows-x64', files), files
+
+
+def test_a_change_no_build_reads_builds_no_preset(unpaused):
+    for files in (['docs/DESIGN.md', 'AGENTS.md'], ['tests/test_units.py'],
+                  ['harness/queue.py', 'harness/README.md', 'harness/tests/test_queue.py'],
+                  ['analysis/results/progress/progress.json', 'scripts/progress.py'],
+                  ['ghidra/scripts/join_eh_prologs.py', 'ghidra/README.md'],
+                  ['analysis/scripts/fuzzymatch.py'], ['scripts/check.sh', 'pytest.ini']):
+        for preset in ('macos-arm64', 'linux-x64', 'windows-x64'):
+            assert not ci.builds(preset, files), (preset, files)
+
+
+def test_the_edges_of_the_no_build_list_still_build(unpaused):
+    # tests/fixtures/ is read by the C++ tests; other analysis/results/ folders and nested Markdown
+    # are not on the list; a library path mixed with a no-build path still builds macOS.
+    for files in (['tests/fixtures/install/StarFleetOP.exe'], ['tests/fixtures/install.sha256'],
+                  ['analysis/results/other/table.tsv'], ['src/app/README.md']):
+        for preset in ('macos-arm64', 'linux-x64', 'windows-x64'):
+            assert ci.builds(preset, files), (preset, files)
+    # Every preset's configure reads harness/lib/paths.py.
+    for preset in ('macos-arm64', 'linux-x64', 'windows-x64'):
+        assert ci.builds(preset, ['harness/lib/paths.py']), preset
+    mixed = ['harness/lib/verify.py', 'docs/DESIGN.md', 'tests/test_units.py']
+    assert ci.builds('macos-arm64', mixed)
+    assert not ci.builds('linux-x64', mixed)
 
 
 def test_builds_reads_paths_on_standard_input(unpaused, monkeypatch, capsys):
