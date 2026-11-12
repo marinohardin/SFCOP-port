@@ -4,6 +4,7 @@
 #include "GuestPump.h"
 #include "GuestShots.h"
 #include "app/guest/override.h"
+#include "app/scripts/loader/GuestModules.h"
 #include "hle/ddraw4/DirectDraw.h"
 #include "hle/ddraw4/GuestViews.h"
 #include "hle/dinput/DinputBridge.h"
@@ -695,6 +696,11 @@ int Run(const Options &options, Components &components) {
         std::fprintf(stderr, "[guest] cannot use the data folder as the working directory\n");
         return 1;
     }
+    // The game moves the working directory to its install during boot; the mission modules' root
+    // is found in the data folder itself, named here as an absolute path while it is still the
+    // working directory (the folder as given, should the system not answer).
+    const std::filesystem::path dataDir = std::filesystem::current_path(error);
+    scripts::setMissionModulesDataDir(error ? std::filesystem::path(options.dataDir) : dataDir);
     // Headless runs on the stub Window and Gpu, which refuse to open: the game draws into
     // surfaces nobody presents.
     if (!options.headless && !openWindow(options, components)) {
