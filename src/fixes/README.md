@@ -17,8 +17,9 @@ Every change to the original's behavior is a named switch with a default (DESIGN
 - **runtime**: read in `src/` with `sfcop::fixes::isEnabled("fix_name")`. Its position is the
   default, then `settings/fixes.gf`, then `--fix fix_name=on|off`; the later source wins whatever
   order they are applied in. The command line parser hands its `--fix` values to
-  `Settings::applyCommandLine`, the start-up code reads the file with `Settings::loadFile`, prints
-  each `Problem`, and calls `install` before the game's threads start.
+  `Settings::applyCommandLine`, the start-up code (`src/app/Startup.cpp`) hands the file's text
+  to `Settings::applyFile`, prints each `Problem` once without stopping the run, and calls
+  `install` before the game's threads start.
 - **build**: selects an override unit under `overrides/`, a copy of the fixed function with the
   change made; `game/` is never edited for a fix. Its position is fixed when the build is
   configured; the registry reports that position, and the file or the command line may name it

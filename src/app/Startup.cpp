@@ -4,6 +4,7 @@
 
 #include "app/DataDir.h"
 #include "app/ExitCodes.h"
+#include "fixes/fixes.h"
 
 namespace sfcop::app {
 
@@ -27,6 +28,38 @@ std::string trimmed(const std::string &text) {
         value = value.substr(1, value.size() - 2);
     }
     return value;
+}
+
+void printFixProblems(const std::vector<fixes::Problem> &problems, std::ostream &err) {
+    for (const fixes::Problem &problem : problems) {
+        if (problem.source == "--fix") {
+            err << "sfcop: --fix: " << problem.message << "; it is ignored.\n";
+        } else {
+            err << "sfcop: " << problem.source << ", line " << problem.line << ": "
+                << problem.message << "; it is ignored.\n";
+        }
+    }
+}
+
+// The fix switches' positions (src/fixes/README.md): the defaults, then settings/fixes.gf in the
+// data folder when it exists, then each --fix. Each problem is printed once and stops nothing.
+fixes::Settings fixSettings(const ClientOptions &options, const std::string &dataDir,
+                            const FileSystem &files, std::ostream &err) {
+    fixes::Settings settings;
+    const std::string path = joinPath(dataDir, "settings/fixes.gf");
+    if (files.fileSize(path)) {
+        if (const std::optional<std::string> text = files.readText(path)) {
+            printFixProblems(settings.applyFile(*text, path), err);
+        } else {
+            err << "sfcop: " << path << " cannot be read; the fixes keep their defaults.\n";
+        }
+    }
+    std::vector<std::string> values;
+    for (const FixSetting &fix : options.fixes) {
+        values.push_back(fix.name + (fix.on ? "=on" : "=off"));
+    }
+    printFixProblems(settings.applyCommandLine(values), err);
+    return settings;
 }
 
 } // namespace
@@ -101,6 +134,8 @@ Startup startClient(int argc, const char *const *argv, const StartupConfig &conf
         err << "sfcop: the install's path could not be saved in " << dataDir
             << "; the next run will look for it again.\n";
     }
+    // Before the game's threads start, which is after this returns.
+    fixes::install(fixSettings(options, dataDir, files, err));
 
     Startup result;
     result.options = options;
