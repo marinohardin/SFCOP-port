@@ -1,5 +1,6 @@
 // The client's front door, in the order it runs: the command line (CommandLine.h), the per-user
-// data folder (DataDir.h), finding and verifying the install (Install.h), remembering it. main()
+// data folder (DataDir.h), finding and verifying the install (Install.h), remembering it, and
+// installing the fix switches' positions (src/fixes/README.md). main()
 // calls startClient() and either returns the exit code it gives or starts the game.
 #pragma once
 
