@@ -110,6 +110,10 @@ sys.path.insert(0, '.')
 from harness.lib import matched, paths, verify
 base, label = verify.load_base(sys.argv[1])
 data = matched.load(paths.MATCHED_SET)
+base, released = matched.release_listed(base, data, matched.boundary_listed(paths.BOUNDARIES),
+                                         verify.claimed_keys())
+for k in released:
+    print('released %s: on the boundary-error list and never exact in %s' % (k, label))
 bad = 0
 for k, old in sorted(base['functions'].items()):
     new = data['functions'].get(k)
