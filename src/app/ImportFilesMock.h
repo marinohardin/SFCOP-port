@@ -24,6 +24,12 @@ public:
     std::size_t failRename = 0;
     // Every rename from this one on fails, counted as failRename; 0 for none.
     std::size_t failRenamesFrom = 0;
+    // A path openRead refuses, as a file that cannot be read; empty for none.
+    std::string unreadable;
+    // A path whose reads stop after `shortenedTo` bytes, as a file shortened after the survey
+    // sized it; empty for none.
+    std::string shortened;
+    std::size_t shortenedTo = 0;
     std::size_t renames = 0;
     // FileWriter::write calls so far.
     std::size_t writes = 0;
@@ -43,6 +49,12 @@ public:
         return host().list(dir);
     }
     std::unique_ptr<FileReader> openRead(const std::string &path) const override {
+        if (!unreadable.empty() && path == unreadable) {
+            return nullptr;
+        }
+        if (!shortened.empty() && path == shortened) {
+            return std::make_unique<ShortReader>(host().openRead(path), shortenedTo);
+        }
         return host().openRead(path);
     }
     std::unique_ptr<FileWriter> openWrite(const std::string &path) override {
@@ -92,6 +104,22 @@ public:
     std::size_t clones = 0;
 
 private:
+    class ShortReader final : public FileReader {
+    public:
+        ShortReader(std::unique_ptr<FileReader> inner, std::size_t left)
+            : inner_(std::move(inner)), left_(left) {}
+        std::size_t read(unsigned char *buffer, std::size_t size) override {
+            const std::size_t got = inner_ ? inner_->read(buffer, size < left_ ? size : left_) : 0;
+            left_ -= got;
+            return got;
+        }
+        bool failed() const override { return inner_ == nullptr || inner_->failed(); }
+
+    private:
+        std::unique_ptr<FileReader> inner_;
+        std::size_t left_;
+    };
+
     class CountingWriter final : public FileWriter {
     public:
         CountingWriter(std::unique_ptr<FileWriter> inner, ControlledImportFiles &owner)

@@ -779,3 +779,188 @@ TEST_CASE("the command imports, prints its progress and remembers the copy in in
     CHECK(err3.str() == "sfcop: the install manifest " + s.path("results/none.tsv") +
                             " cannot be read, so nothing can be imported.\n");
 }
+
+TEST_CASE("an imported copy is verified in place, changed files and mod scripts listed") {
+    const Scratch s("sfcop-verify-good");
+    writeGoodInstall(s);
+    ControlledImportFiles importer;
+    REQUIRE(importGame(requestFor(s), importer).imported());
+    s.write("data/game/Assets/Models/test.mod", "invented modeL\n");
+    s.write("data/game/Assets/Scripts/MyMission.scr", "invented mod script\n");
+
+    ControlledImportFiles files;
+    std::vector<ImportPhase> phases;
+    std::uint64_t lastDone = 0;
+    std::uint64_t total = 0;
+    ImportCallbacks callbacks;
+    callbacks.progress = [&](const ImportProgress &p) {
+        if (phases.empty() || phases.back() != p.phase) {
+            phases.push_back(p.phase);
+        }
+        lastDone = p.bytesDone;
+        total = p.bytesTotal;
+    };
+    const ImportReport report = verifyImportedGame(s.path("data/game"), requestFor(s).manifest,
+                                                   files, callbacks);
+
+    CHECK(report.status == ImportStatus::kVerified);
+    CHECK(report.exitCode() == 0);
+    CHECK(report.filesHashed == 5);
+    CHECK(report.bytesHashed == 83);
+    CHECK(report.changed == std::vector<std::string>{"Assets/Models/test.mod"});
+    CHECK(report.modScripts == std::vector<std::string>{"Assets/Scripts/MyMission.scr"});
+    CHECK(report.damaged.empty());
+    CHECK(phases == std::vector<ImportPhase>{ImportPhase::kCheckingGame, ImportPhase::kVerifying});
+    // The four checked rows other than the executable: 15 + 16 + 15 + 16 bytes.
+    CHECK(total == 62);
+    CHECK(lastDone == 62);
+    CHECK(files.changes == 0);
+    CHECK(report.message() ==
+          "The imported game in " + s.path("data/game") +
+              " is complete: 5 files (0.0 MB) checked against the 2.5.5.2 release.\n"
+              "These files differ from the 2.5.5.2 release (imported so, or changed since):\n"
+              "  Assets/Models/test.mod\n"
+              "  mod script: Assets/Scripts/MyMission.scr");
+}
+
+TEST_CASE("verifying a copy names every missing, empty, short or unreadable file") {
+    const Scratch s("sfcop-verify-damaged");
+    writeGoodInstall(s);
+    ControlledImportFiles importer;
+    REQUIRE(importGame(requestFor(s), importer).imported());
+    s.write("data/game/Assets/Scripts/Patrol.scr", "");
+    fs::remove(s.path("data/game/MetaAssets/shiplist.txt"));
+    s.write("data/game/sfc.ini", "[3D");
+
+    ControlledImportFiles files;
+    const InstallManifest manifest = requestFor(s).manifest;
+    const ImportReport report = verifyImportedGame(s.path("data/game"), manifest, files);
+    CHECK(report.status == ImportStatus::kDamaged);
+    CHECK(report.exitCode() == 3);
+    CHECK(files.changes == 0);
+    CHECK(report.message() ==
+          "The imported game in " + s.path("data/game") +
+              " is damaged: these files are missing, empty, shorter than in the 2.5.5.2 release "
+              "or unreadable:\n"
+              "  empty: Assets/Scripts/Patrol.scr\n"
+              "  missing: MetaAssets/shiplist.txt\n"
+              "  truncated: sfc.ini (3 of 16 bytes)\n"
+              "Import the game again from the installed game.");
+
+    // A file that is there and long enough but cannot be read through is damaged too.
+    const Scratch t("sfcop-verify-unreadable");
+    writeGoodInstall(t);
+    REQUIRE(importGame(requestFor(t), importer).imported());
+    ControlledImportFiles refusing;
+    refusing.unreadable = t.path("data/game/Assets/Models/test.mod");
+    const ImportReport unreadable =
+        verifyImportedGame(t.path("data/game"), manifest, refusing);
+    CHECK(unreadable.status == ImportStatus::kDamaged);
+    REQUIRE(unreadable.damaged.size() == 1);
+    CHECK(unreadable.damaged[0].path == "Assets/Models/test.mod");
+    CHECK(unreadable.damaged[0].problem == "unreadable");
+
+    // A file shortened after the survey sized it reads short when hashed: damaged, not changed.
+    ControlledImportFiles shortening;
+    shortening.shortened = t.path("data/game/Assets/Models/test.mod");
+    shortening.shortenedTo = 4;
+    const ImportReport shortened = verifyImportedGame(t.path("data/game"), manifest, shortening);
+    CHECK(shortened.status == ImportStatus::kDamaged);
+    CHECK(shortened.changed.empty());
+    REQUIRE(shortened.damaged.size() == 1);
+    CHECK(shortened.damaged[0].path == "Assets/Models/test.mod");
+    CHECK(shortened.damaged[0].problem == "truncated");
+    CHECK(shortened.damaged[0].size == 4);
+    CHECK(shortened.damaged[0].expectedSize == 15);
+}
+
+TEST_CASE("verifying with no copy, or a copy whose executable changed, says what to do") {
+    const Scratch s("sfcop-verify-exe");
+    const InstallManifest manifest = parseInstallManifest(kManifest);
+    ControlledImportFiles files;
+    const ImportReport none = verifyImportedGame(s.path("data/game"), manifest, files);
+    CHECK(none.status == ImportStatus::kNotFound);
+    CHECK(none.exitCode() == 3);
+    CHECK(none.message() ==
+          "There is no imported game in " + s.path("data/game") + ". Import the game first.");
+
+    writeGoodInstall(s);
+    REQUIRE(importGame(requestFor(s), files).imported());
+    s.write("data/game/StarFleetOP.exe", "invented exe 2.5.5.3\n");
+    const ImportReport modified = verifyImportedGame(s.path("data/game"), manifest, files);
+    CHECK(modified.status == ImportStatus::kExeModified);
+    CHECK(modified.exitCode() == 3);
+    CHECK(modified.path == s.path("data/game/StarFleetOP.exe"));
+    CHECK(modified.message() == s.path("data/game/StarFleetOP.exe") +
+                                    " has been changed since it was imported. Import the game "
+                                    "again from the installed game.");
+}
+
+TEST_CASE("a cancelled check stops between pieces and leaves the copy as it was") {
+    const Scratch s("sfcop-verify-cancel");
+    writeGoodInstall(s);
+    ControlledImportFiles files;
+    REQUIRE(importGame(requestFor(s), files).imported());
+    bool hashing = false;
+    ImportCallbacks callbacks;
+    callbacks.progress = [&](const ImportProgress &p) {
+        hashing = p.phase == ImportPhase::kVerifying && p.bytesDone > 0;
+    };
+    callbacks.cancelled = [&] { return hashing; };
+    const ImportReport report =
+        verifyImportedGame(s.path("data/game"), parseInstallManifest(kManifest), files, callbacks);
+    CHECK(report.status == ImportStatus::kCancelled);
+    CHECK(report.exitCode() == 1);
+    CHECK(report.message() == "The check was cancelled.");
+    CHECK(s.read("data/game/Assets/Models/test.mod") == "invented model\n");
+
+    const ImportReport bad =
+        verifyImportedGame(s.path("data/game"), parseInstallManifest("a.mod\t1\tzz\n"), files);
+    CHECK(bad.status == ImportStatus::kBadManifest);
+    CHECK(bad.message() == "The install manifest cannot be used (line 1: expected 64 hex digits "
+                           "of SHA-256), so the imported game cannot be checked. The client's "
+                           "files are incomplete.");
+}
+
+TEST_CASE("the verify command prints its progress and report and writes nothing") {
+    const Scratch s("sfcop-verify-command");
+    writeGoodInstall(s);
+    s.write("results/install_manifest.tsv", kManifest);
+    ControlledImportFiles files;
+    REQUIRE(importGame(requestFor(s), files).imported());
+    const std::uint64_t changesAfterImport = files.changes;
+    ImportCommand command;
+    command.dataDir = s.path("data");
+    command.gameDir = s.path("data/game");
+    command.manifestPath = s.path("results/install_manifest.tsv");
+    command.cancelled = [] { return false; };
+    std::ostringstream out;
+    std::ostringstream err;
+    CHECK(runVerifyImportCommand(command, hostFileSystem(), files, out, err) == 0);
+    CHECK(err.str().empty());
+    // 15, 31, 46 and 62 of 62 bytes hashed.
+    CHECK(out.str() == "sfcop: verify: checking the game\n"
+                       "sfcop: verify: hashing\n"
+                       "sfcop: verify: 20% (0.0 of 0.0 MB)\n"
+                       "sfcop: verify: 50% (0.0 of 0.0 MB)\n"
+                       "sfcop: verify: 70% (0.0 of 0.0 MB)\n"
+                       "sfcop: verify: 100% (0.0 of 0.0 MB)\n"
+                       "sfcop: The imported game in " +
+                           s.path("data/game") +
+                           " is complete: 5 files (0.0 MB) checked against the 2.5.5.2 "
+                           "release.\n");
+    CHECK(files.changes == changesAfterImport);
+
+    command.gameDir = s.path("data/none");
+    std::ostringstream out2;
+    std::ostringstream err2;
+    CHECK(runVerifyImportCommand(command, hostFileSystem(), files, out2, err2) == 3);
+    CHECK(err2.str() == "sfcop: There is no imported game in " + s.path("data/none") +
+                            ". Import the game first.\n");
+
+    command.manifestPath = s.path("results/none.tsv");
+    std::ostringstream err3;
+    CHECK(runVerifyImportCommand(command, hostFileSystem(), files, out2, err3) == 1);
+    CHECK(err3.str() == "sfcop: the install manifest " + s.path("results/none.tsv") +
+                            " cannot be read, so the imported game cannot be checked.\n");
+}
