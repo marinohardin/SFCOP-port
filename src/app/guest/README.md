@@ -146,10 +146,11 @@ with the chain, then the program's top-level filter runs, as on Windows.
 
 The guest tests run `tests/ehtest.cpp`, built by VC6 SP4 with `/GX` and the static C runtime and
 lifted by the same driver as the game, on this host (`tests/GuestTestMain.cpp`: the real `Threads`
-and `Clock`, stubs for the rest). Seventeen cases each print `PASS` or `FAIL`: C++ throws by value,
+and `Clock`, stubs for the rest). Twenty cases each print `PASS` or `FAIL`: C++ throws by value,
 by reference, nested, rethrown, thrown from a catch, unwinding two frames, 100 in a loop, every
 exception object destroyed; `__try`/`__except` around `RaiseException`; static TLS and a throw
-caught on a second thread; access violations caught by `catch(...)` and by `__except`, with a read
+caught on a second thread; thread ids that are never 0 and differ per thread; a critical section
+left free by a thread that ended inside it, by returning or through `ExitThread`; access violations caught by `catch(...)` and by `__except`, with a read
 and a write told apart; a throw out of a system callback with the lock depth unchanged; a divide by
 zero caught by `__except`; 300 `TlsAlloc`/`TlsFree` pairs, which fail when a module's `TlsFree` is not answered by kernel32rt. A second run throws an `int` nothing catches: it is reported, and the C
 runtime's own filter ends it with `abnormal program termination`.

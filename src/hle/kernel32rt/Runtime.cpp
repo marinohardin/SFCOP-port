@@ -12,7 +12,7 @@ void Runtime::Attach(platform::Threads &threads, platform::Clock &clock) {
     threads_ = &threads;
     clock_ = &clock;
     sync_ = std::make_unique<Sync>(threads);
-    sections_ = std::make_unique<CriticalSections>(threads);
+    sections_ = std::make_unique<CriticalSections>();
     slots_ = std::make_unique<ThreadLocal>(threads);
     time_ = std::make_unique<Time>(clock);
     timers_ = std::make_unique<Timers>(threads, clock);

@@ -167,6 +167,14 @@ void k_CreateThread() { // (attributes, stack, start, parameter, flags, &id)
             hle_mach_set_depth(0); // ExitThread gave the machine up from inside the guest call
         }
         t_exit = nullptr;
+        // Either way the thread is out of guest code without the machine. Sections it still owns
+        // are released (CriticalSections.h says why), under the machine.
+        mach_enter();
+        for (const std::uint32_t address : runtime().Sections().ThreadEnded(id)) {
+            std::fprintf(stderr, "[kernel32rt] thread %u ended inside critical section 0x%08X: released\n",
+                         id, address);
+        }
+        mach_leave();
         return ending.code;
     };
     Object thread;
@@ -363,35 +371,56 @@ void k_Sleep() { // (milliseconds)
 
 // ---- critical sections and interlocked operations ----
 
-// The guest's CRITICAL_SECTION (24 bytes) only names the section; its lock is the module's.
+// The guest's CRITICAL_SECTION (24 bytes) holds the owner and the counts (CriticalSections.h). Every
+// row runs with the machine held, so an uncontended Enter or Leave is a few reads and writes of
+// those bytes; only a wait for another thread's section gives the machine up.
+class HeldMachine final : public Machine {
+public:
+    void GiveUp() override { hle_block_begin(); }
+    void TakeBack() override { hle_block_end(); }
+};
+
+GuestSection sectionAt(std::uint32_t address) {
+    return GuestSection{address, static_cast<std::uint8_t *>(hle_ptr(address))};
+}
+
 void k_InitializeCriticalSection() { // (section)
     const std::uint32_t section = A32(0);
     if (section != 0) {
-        std::memset(hle_ptr(section), 0, 24);
-        MEM32(section + 4) = 0xFFFFFFFFu; // LockCount, as Windows leaves it
-        runtime().Sections().Initialize(section);
+        runtime().Sections().Initialize(sectionAt(section));
     }
     RET(0, 1);
 }
 
 void k_DeleteCriticalSection() {
-    runtime().Sections().Delete(A32(0));
+    const std::uint32_t section = A32(0);
+    if (section != 0) {
+        runtime().Sections().Delete(sectionAt(section));
+    }
     RET(0, 1);
 }
 
 void k_EnterCriticalSection() {
     const std::uint32_t section = A32(0);
-    if (!runtime().Sections().TryEnter(section)) {
-        withoutMachine([&] {
-            runtime().Sections().Enter(section);
-            return true;
-        });
+    if (section != 0) {
+        HeldMachine machine;
+        runtime().Sections().Enter(sectionAt(section), hle_thread_id(), machine);
     }
     RET(0, 1);
 }
 
+// Not one of the exe's imports (so no surface row); a mission module's or a looked-up one.
+void k_TryEnterCriticalSection() {
+    const std::uint32_t section = A32(0);
+    const bool entered = section != 0 && runtime().Sections().TryEnter(sectionAt(section), hle_thread_id());
+    RET(entered ? 1u : 0u, 1);
+}
+
 void k_LeaveCriticalSection() {
-    static_cast<void>(runtime().Sections().Leave(A32(0))); // Windows reports nothing either
+    const std::uint32_t section = A32(0);
+    if (section != 0) { // a stray Leave changes nothing; Windows reports nothing either
+        static_cast<void>(runtime().Sections().Leave(sectionAt(section), hle_thread_id()));
+    }
     RET(0, 1);
 }
 
@@ -1389,6 +1418,9 @@ extern "C" const win32hle_shim sfcop_hle_kernel32rt[] = {
     {"DeleteCriticalSection", k::k_DeleteCriticalSection},
     {"EnterCriticalSection", k::k_EnterCriticalSection},
     {"LeaveCriticalSection", k::k_LeaveCriticalSection},
+    // Not one of the exe's imports (so no surface row): without it pcrecomp's own row answered,
+    // through the unowned-row path, on bytes this module's Enter and Leave did not keep.
+    {"TryEnterCriticalSection", k::k_TryEnterCriticalSection},
     {"InterlockedIncrement", k::k_InterlockedIncrement},
     {"InterlockedDecrement", k::k_InterlockedDecrement},
     {"InterlockedExchange", k::k_InterlockedExchange},
