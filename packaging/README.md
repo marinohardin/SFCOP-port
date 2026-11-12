@@ -19,25 +19,28 @@ tag without its `v`).
 Only the client's own files, listed in `check_package.py` (`LAYOUTS`) and in
 `macos/check_bundle.py` (`EXPECTED`): the client, its two SDL libraries (SDL3 and sdl2-compat,
 which the lifted runtime still uses), the hash list `retail_hashes.sha256` the client verifies
-the player's install against, and on Linux and Windows a `README.txt`, on Linux a launcher, a
-desktop entry and the icon.
+the player's install against, the install manifest `install_manifest.tsv` beside it, which
+`--import` copies the install by (`src/app/Import.h`), and on Linux and Windows a `README.txt`,
+on Linux a launcher, a desktop entry and the icon.
 
 - **macOS.** `SFCOP.app` as `macos/make_bundle.sh` builds it, signed ad hoc and not notarized,
   in a compressed HFS+ image beside a link to `/Applications`.
 - **Linux.** `sfcop` (a launcher that puts `lib/` on the library path), `bin/sfcop` with the hash
-  list beside it, `lib/libSDL2-2.0.so.0` and `lib/libSDL3.so.0`. libstdc++ is linked statically;
-  the client needs glibc 2.31 (x64, the Steam Runtime 3 sysroot) or 2.36 (arm64, a Debian 12
-  sysroot, because the Steam Runtime 3 has no arm64 build) and nothing else beyond what SDL loads
-  at run time (X11, GL or Vulkan, audio). `make_tree.sh` checks the client's needed libraries
-  with the pinned LLVM's `llvm-readobj`. The AppImage holds the same files as an AppDir
-  (`AppRun`, `usr/bin`, `usr/lib`) and is made by the pinned `appimagetool` with the pinned type 2
-  runtime (`linux/appimage.env`, downloaded by `linux/fetch_appimage_tools.sh`), run in the
-  linux-arm64 run image under Docker.
-- **Windows.** `sfcop.exe` with `SDL2.dll`, `SDL3.dll` and the hash list beside it. The CRT is
-  linked statically. Not signed.
+  list and the install manifest beside it, `lib/libSDL2-2.0.so.0` and `lib/libSDL3.so.0`.
+  libstdc++ is linked statically; the client needs glibc 2.31 (x64, the Steam Runtime 3
+  sysroot) or 2.36 (arm64, a Debian 12 sysroot, because the Steam Runtime 3 has no arm64 build)
+  and nothing else beyond what SDL loads at run time (X11, GL or Vulkan, audio). `make_tree.sh`
+  checks the client's needed libraries with the pinned LLVM's `llvm-readobj`. The AppImage holds
+  the same files as an AppDir (`AppRun`, `usr/bin`, `usr/lib`) and is made by the pinned
+  `appimagetool` with the pinned type 2 runtime (`linux/appimage.env`, downloaded by
+  `linux/fetch_appimage_tools.sh`), run in the linux-arm64 run image under Docker.
+- **Windows.** `sfcop.exe` with `SDL2.dll`, `SDL3.dll`, the hash list and the install
+  manifest beside it. The CRT is linked statically. Not signed.
 
 The client finds the hash list in the bundle's `Contents/Resources` on macOS and beside its own
-executable otherwise (`src/app/Bundle.h`).
+executable otherwise (`src/app/Bundle.h`), and the install manifest beside the hash list. Both
+are the repository's `analysis/results/` files, copied as they are; neither is a file of the
+original game, so neither hash is in the list.
 
 ## The checks
 

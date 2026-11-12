@@ -67,6 +67,41 @@ def test_each_kind_of_stray_file_is_refused(tmp_path, hashes, kind, relative, da
     assert refusals(tree, hashes, kind) == [f"{relative}: {reason}"]
 
 
+# Where each package keeps the import's manifest: beside the hash list, where the client looks.
+MANIFEST_PLACES = [
+    ("linux", "bin/install_manifest.tsv", "bin/retail_hashes.sha256"),
+    ("appdir", "usr/bin/install_manifest.tsv", "usr/bin/retail_hashes.sha256"),
+    ("windows", "install_manifest.tsv", "retail_hashes.sha256"),
+]
+
+
+@pytest.mark.parametrize("kind,manifest,hash_list", MANIFEST_PLACES)
+def test_each_package_holds_the_install_manifest_beside_the_hash_list(kind, manifest, hash_list):
+    assert manifest in check_package.LAYOUTS[kind]
+    assert hash_list in check_package.LAYOUTS[kind]
+
+
+@pytest.mark.parametrize("kind,manifest,hash_list", MANIFEST_PLACES)
+def test_a_package_without_the_install_manifest_is_refused(tmp_path, hashes, kind, manifest,
+                                                            hash_list):
+    tree = tmp_path / "pkg"
+    make_tree(tree, check_package.LAYOUTS[kind])
+    (tree / manifest).unlink()
+    assert refusals(tree, hashes, kind) == [f"{manifest}: missing"]
+
+
+def test_the_bundle_holds_the_install_manifest_and_is_refused_without_it(tmp_path, hashes):
+    bundle = check_package.check_bundle
+    assert "Contents/Resources/install_manifest.tsv" in bundle.EXPECTED
+    assert "Contents/Resources/retail_hashes.sha256" in bundle.EXPECTED
+    app = tmp_path / "SFCOP.app"
+    make_tree(app, check_bundle_expected())
+    assert bundle.refusals(str(app), bundle.read_hashes(hashes)) == []
+    (app / "Contents" / "Resources" / "install_manifest.tsv").unlink()
+    assert bundle.refusals(str(app), bundle.read_hashes(hashes)) == [
+        "Contents/Resources/install_manifest.tsv: missing"]
+
+
 def test_a_retail_file_under_a_client_name_and_a_missing_file_are_refused(tmp_path, hashes):
     tree = tmp_path / "pkg"
     make_tree(tree, check_package.LAYOUTS["windows"])
@@ -222,6 +257,9 @@ def test_the_linux_icon_is_the_png_inside_the_icns(tmp_path):
     assert data in (open(os.path.join(ROOT, "packaging", "macos", "SFCOP.icns"), "rb").read())
 
 
+REPO_MANIFEST = os.path.join(ROOT, "analysis", "results", "install_manifest.tsv")
+
+
 def invented(path, text):
     path.write_text(text)
     return str(path)
@@ -236,6 +274,7 @@ def test_windows_make_tree_lays_out_the_folder_the_check_expects(tmp_path):
         capture_output=True, text=True, env={**os.environ, "SFCOP_PYTHON": sys.executable})
     assert run.returncode == 0, run.stderr
     assert sorted(os.listdir(out)) == sorted(check_package.LAYOUTS["windows"])
+    assert (out / "install_manifest.tsv").read_bytes() == open(REPO_MANIFEST, "rb").read()
     readme = (out / "README.txt").read_bytes()
     assert readme.startswith(b"SFCOP 0.1.0-alpha for Windows arm64\r\n")
     assert b"\n" not in readme.replace(b"\r\n", b"")
@@ -256,6 +295,7 @@ def test_linux_make_tree_lays_out_the_tree_the_check_expects(tmp_path):
         os.path.join(ROOT, "analysis", "results", "retail_hashes.sha256"))
     assert check_package.tree_refusals(str(out), hashes, check_package.LAYOUTS["linux"]) == []
     assert os.access(out / "sfcop", os.X_OK) and os.access(out / "bin" / "sfcop", os.X_OK)
+    assert (out / "bin" / "install_manifest.tsv").read_bytes() == open(REPO_MANIFEST, "rb").read()
     assert (out / "README.txt").read_text().startswith("SFCOP 0.1.0-alpha for Linux x64\n")
     assert "glibc 2.31 or later" in (out / "README.txt").read_text()
 
