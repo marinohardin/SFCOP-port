@@ -66,11 +66,11 @@ no file of the original game, and it plays from your own Orion Pirates install, 
 | Mac with Apple silicon, macOS 11 or later | `SFCOP-<version>-macos-arm64.dmg` |
 | Linux x86-64 (glibc 2.31 or later: SteamOS 3, Ubuntu 20.04 and later) | `SFCOP-<version>-linux-x64.tar.gz`, or the `.AppImage` |
 | Linux arm64 (glibc 2.36 or later: Debian 12, Ubuntu 22.10 and later) | `SFCOP-<version>-linux-arm64.tar.gz`, or the `.AppImage` |
-| Windows 10 or 11, x64 | `SFCOP-<version>-windows-x64.zip` (not in the first alpha) |
-| Windows 11 on Arm | `SFCOP-<version>-windows-arm64.zip` (not in the first alpha) |
+| Windows 10 or 11, x64 | `SFCOP-<version>-windows-x64.zip` |
+| Windows 11 on Arm | `SFCOP-<version>-windows-arm64.zip` |
 
-The first alpha has no Windows packages: the client does not build for Windows yet. A release
-lists what it carries in its notes.
+A release lists what it carries in its notes. The Windows packages have been exercised under
+Wine on the build machine, not yet on a Windows PC; say what you see.
 
 **macOS.** Open the `.dmg` and drag `SFCOP.app` onto Applications. The app is not signed, so
 macOS refuses it the first time: open System Settings > Privacy & Security and choose Open

@@ -42,7 +42,7 @@ The open questions of DESIGN §12, with what each blocks here.
 | # | Decision | Status | Blocks |
 | --- | --- | --- | --- |
 | 12.1 | Licence | Open (owner) | Wave 5 release |
-| 12.2 | No binary until complete; source plus build tool if earlier; a signed launcher at the end | Decided 2026-11-03 | L1 |
+| 12.2 | Native client packages may be published as alpha releases while they carry translated code; unsigned until complete, a signed launcher at the end | Decided 2026-11-09 (supersedes 2026-11-03) | L1, release packaging |
 | 12.3 | The key prompt and online key check in the native client | Open (owner) | N6, V1 |
 | 12.4 | Guest mode or lift the VC6 object | Decided 2026-11-04: lift the object (DESIGN §12.4); B9 builds the lifter | D in the native build |
 | 12.5 | Scripting library sources: committed or copied from the install | Open (owner) | A3, C8 (the build copies until decided) |
@@ -275,6 +275,8 @@ Gate G2 passed with findings: traces differed between two runs of one binary, on
 | F2 | Fix override units | `tools/manifest.py` lists the `// OVERRIDE:` annotations under `src/fixes/overrides/`; the lift links an override's object in place of the original's when its build switch is on (DESIGN §6.9); built with the first fix to game code |
 | M1 | Mod manager | `tools/modman/` or in the launcher |
 | L1 | Launcher and release | A signed launcher from the owner's account; the one-command build tool; the tag |
+
+Wave 4 so far (2026-11-10): N5a (DirectPlay over the transport on a LAN, #74), V1 (directory and auth stand-ins, #76), T2 (oracle epoch, #75), S1 (module open-ahead, #81), L1a (the application bundle, #71), R1 (the release pipeline and the five packages, #97) and W1 (the Windows lifted client, #113) are merged. The first release is `v0.1.0-alpha`, cut from `main` after `develop` is merged into it; DESIGN §12.2 records the decision to ship translated code before the decompilation is complete. Still to brief: V1b (the campaign list service), N6, V2, V3, F2, M1 and the signed launcher half of L1.
 
 **Gates G4 and G5.** G4: a logon and one mission against the kit through the stand-ins. G5: the mod manager resolves a two-mod conflict by order; a release is tagged.
 
