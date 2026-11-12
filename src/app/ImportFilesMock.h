@@ -22,6 +22,8 @@ public:
     std::size_t failWrite = 0;
     // The rename that fails, counted from 1 over every rename; 0 for none.
     std::size_t failRename = 0;
+    // Every rename from this one on fails, counted as failRename; 0 for none.
+    std::size_t failRenamesFrom = 0;
     std::size_t renames = 0;
     // FileWriter::write calls so far.
     std::size_t writes = 0;
@@ -71,7 +73,7 @@ public:
     }
     bool rename(const std::string &from, const std::string &to) override {
         ++changes;
-        if (++renames == failRename) {
+        if (++renames == failRename || (failRenamesFrom != 0 && renames >= failRenamesFrom)) {
             return false;
         }
         return host().rename(from, to);
@@ -85,6 +87,7 @@ public:
     std::optional<std::uint64_t> freeBytes(const std::string &path) const override {
         return free ? free : host().freeBytes(path);
     }
+    std::string resolved(const std::string &path) const override { return host().resolved(path); }
 
     std::size_t clones = 0;
 

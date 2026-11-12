@@ -113,6 +113,8 @@ enum class ImportStatus {
     kCancelled,
     kWriteFailed,       // the copy could not be written or moved into place
     kBadManifest,
+    kOwnCopy,           // the folder, or a link in it, is the client's own copy or in it
+    kTooManyFolders,    // files not found, and the install too big or deep to look at all
 };
 
 struct DamagedFile {
@@ -143,6 +145,12 @@ struct ImportReport {
     std::uint64_t bytesCopied = 0;
     // How many files were cloned rather than copied.
     std::size_t filesCloned = 0;
+    // When the import failed with the earlier import set aside and could not put it back: where
+    // it is (`<game>.old`); the next import puts it back first.
+    std::string earlierAt;
+    // When the install found holds a link into the client's own copy (kOwnCopy): the link, as a
+    // path in the install.
+    std::string ownCopyLink;
 
     bool imported() const { return status == ImportStatus::kImported; }
     // 0 imported; 3 the folder is refused (not found, disc, wrong or damaged game); 1 the import

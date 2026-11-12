@@ -45,6 +45,16 @@ public:
         return kindFrom(status);
     }
 
+    std::string resolved(const std::string &path) const override {
+        std::error_code error;
+        const fs::path absolute = fs::absolute(toPath(path), error);
+        if (error) {
+            return path;
+        }
+        const fs::path canonical = fs::weakly_canonical(absolute, error);
+        return (error ? absolute.lexically_normal() : canonical).generic_u8string();
+    }
+
     std::optional<EntryKind> kindFollowing(const std::string &path) const override {
         std::error_code error;
         const fs::file_status status = fs::status(toPath(path), error);
