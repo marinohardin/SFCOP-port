@@ -1,14 +1,32 @@
 #include "app/Startup.h"
 
+#include <chrono>
 #include <iostream>
 
 #include "app/DataDir.h"
 #include "app/ExitCodes.h"
+#include "app/Import.h"
+#include "app/ImportCommand.h"
 #include "fixes/fixes.h"
 
 namespace sfcop::app {
 
 namespace {
+
+bool sameIgnoringCase(const std::string &a, const std::string &b) {
+    if (a.size() != b.size()) {
+        return false;
+    }
+    for (std::size_t i = 0; i < a.size(); ++i) {
+        const auto fold = [](char c) {
+            return (c >= 'A' && c <= 'Z') ? static_cast<char>(c - 'A' + 'a') : c;
+        };
+        if (fold(a[i]) != fold(b[i])) {
+            return false;
+        }
+    }
+    return true;
+}
 
 Startup stop(int code) {
     Startup result;
@@ -91,6 +109,20 @@ Startup startClient(int argc, const char *const *argv, const StartupConfig &conf
         err << "sfcop: " << problem << "\n";
         return stop(kExitFailure);
     }
+    const std::string gameDir =
+        gameDirFor(config.platform, config.env, options.dataDir.has_value(), dataDir);
+
+    if (options.importFrom) {
+        ImportCommand command;
+        command.source = *options.importFrom;
+        command.dataDir = dataDir;
+        command.gameDir = gameDir;
+        command.manifestPath = installManifestBeside(config.hashListPath);
+        command.seconds = config.seconds;
+        ImportFiles &importFiles =
+            config.importFiles != nullptr ? *config.importFiles : hostImportFiles();
+        return stop(runImportCommand(command, files, importFiles, out, err));
+    }
 
     const std::optional<std::string> listText = files.readText(config.hashListPath);
     if (!listText) {
@@ -109,7 +141,7 @@ Startup startClient(int argc, const char *const *argv, const StartupConfig &conf
     if (options.installDir) {
         request.flag = files.absolutePath(*options.installDir);
     }
-    request.remembered = rememberedInstall(dataDir, files);
+    request.remembered = rememberedInstallDir(dataDir, gameDir, files);
     request.defaults = config.installDirs;
     for (const std::string &dir : defaultInstallDirs(config.platform, config.env)) {
         request.defaults.push_back(dir);
@@ -124,13 +156,49 @@ Startup startClient(int argc, const char *const *argv, const StartupConfig &conf
     }
     const std::string installDir = files.absolutePath(*located.dir);
 
-    const VerifyResult verified =
-        verifyInstall(installDir, entries.entries, files, config.progress);
+    // The client's own imported copy is accepted as its import accepted it: the files its record
+    // lists as changed or unchecked may differ from the hash list (Import.h, ImportRecord). A
+    // record in any other folder is not ours and is ignored, and the executable is always checked,
+    // as the import checks it.
+    const std::string recordPath = joinPath(installDir, kImportRecordFile);
+    const std::optional<std::string> recordText =
+        installDir == files.absolutePath(gameDir) ? files.readText(recordPath) : std::nullopt;
+    const ImportRecord record = recordText ? parseImportRecord(*recordText) : ImportRecord{};
+    std::vector<std::string> mayDiffer;
+    for (const std::vector<std::string> *list : {&record.changed, &record.unchecked}) {
+        for (const std::string &path : *list) {
+            if (!sameIgnoringCase(path, kGameExe)) {
+                mayDiffer.push_back(path);
+            }
+        }
+    }
+    const VerifyResult verified = verifyInstall(installDir, runtimeEntries(entries.entries), files,
+                                                config.progress, mayDiffer);
     if (!verified.accepted()) {
         err << "sfcop: " << verified.message() << "\n";
         return stop(verified.exitCode());
     }
-    if (request.remembered != installDir && !rememberInstall(dataDir, installDir, files)) {
+    std::size_t changedInUse = 0;
+    for (const std::string &path : verified.differing) {
+        for (const std::string &changed : record.changed) {
+            if (sameIgnoringCase(path, changed)) {
+                ++changedInUse;
+                break;
+            }
+        }
+    }
+    if (changedInUse > 0) {
+        const bool one = changedInUse == 1;
+        err << "sfcop: " << changedInUse << (one ? " file" : " files") << " of the imported game "
+            << (one ? "differs" : "differ") << " from the 2.5.5.2 release and "
+            << (one ? "is" : "are") << " used as imported; " << recordPath << " lists "
+            << (one ? "it" : "them") << ".\n";
+    }
+    // A one-off --install does not replace the link to an imported copy that is still there.
+    const bool keepImport = options.installDir && request.remembered == gameDir &&
+                            holdsInstall(gameDir, files);
+    if (request.remembered != installDir && !keepImport &&
+        !rememberInstall(dataDir, installDir, files)) {
         err << "sfcop: the install's path could not be saved in " << dataDir
             << "; the next run will look for it again.\n";
     }
@@ -151,6 +219,10 @@ StartupConfig consoleStartup(std::string hashListPath, std::vector<ExtraFlag> ex
     config.extraFlags = std::move(extraFlags);
     config.installDirs = std::move(installDirs);
     config.ask = askOnConsole(std::cin, std::cout);
+    config.seconds = [] {
+        return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch())
+            .count();
+    };
     return config;
 }
 

@@ -3,7 +3,11 @@
 //   sfcop [--install DIR] [--data DIR] [--logs DIR] [--windowed [WxH]|--fullscreen]
 //         [--fix NAME=on|off] [--oracle TRACE --input SCRIPT --headless --watchdog S]
 //         [--fixed-step MS]
+//   sfcop --import DIR [--data DIR]
 //
+// --import DIR copies the installed game in or below DIR into the client's own folder, verified
+// (app/Import.h), remembers it, and exits; later runs use that copy with no --install. It cannot
+// be given with --install.
 // --windowed WxH opens the window W by H points with the game's frame scaled into it; without
 // WxH the window takes the game's own size. --fullscreen scales the frame to the display.
 // --input may be given alone: a script with no trace is a menu run. --oracle needs --input.
@@ -40,6 +44,8 @@ struct FixSetting {
 
 struct ClientOptions {
     std::optional<std::string> installDir;
+    // --import DIR: import the game from DIR and exit.
+    std::optional<std::string> importFrom;
     std::optional<std::string> dataDir;
     std::optional<std::string> logsDir;
     WindowMode window = WindowMode::kDefault;

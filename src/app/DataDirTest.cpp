@@ -136,3 +136,32 @@ TEST_CASE("the mission modules folder named once in the data folder is read back
     CHECK_FALSE(rememberedMissionModules("/d", files).has_value());
     CHECK(files.written.empty()); // read only: the player writes the file
 }
+
+TEST_CASE("the imported game goes in the data folder, and on Windows in the local folder") {
+    const EnvLookup env = envOf({{"LOCALAPPDATA", "C:\\Users\\tc\\AppData\\Local"},
+                                 {"APPDATA", "C:\\Users\\tc\\AppData\\Roaming"}});
+    CHECK(gameDirFor(Platform::kMacos, env, false, "/Users/tc/Library/Application Support/SFCOP") ==
+          "/Users/tc/Library/Application Support/SFCOP/game");
+    CHECK(gameDirFor(Platform::kLinux, env, false, "/home/tc/.local/share/SFCOP") ==
+          "/home/tc/.local/share/SFCOP/game");
+    CHECK(gameDirFor(Platform::kWindows, env, false, "C:\\Users\\tc\\AppData\\Roaming\\SFCOP") ==
+          "C:\\Users\\tc\\AppData\\Local\\SFCOP\\game");
+    // --data keeps everything in the folder given; without LOCALAPPDATA the data folder is used.
+    CHECK(gameDirFor(Platform::kWindows, env, true, "D:\\sfcop-data") == "D:\\sfcop-data\\game");
+    CHECK(gameDirFor(Platform::kWindows, envOf({}), false, "C:\\Roaming\\SFCOP") ==
+          "C:\\Roaming\\SFCOP\\game");
+}
+
+TEST_CASE("install.txt's value game is the imported copy; other relative values the data folder's") {
+    MemoryFileSystem files;
+    CHECK_FALSE(rememberedInstallDir("/d", "/local/game", files).has_value());
+    files.files["/d/install.txt"] = "game\n";
+    CHECK(rememberedInstallDir("/d", "/local/game", files) ==
+          std::optional<std::string>("/local/game"));
+    files.files["/d/install.txt"] = "/games/Orion Pirates\n";
+    CHECK(rememberedInstallDir("/d", "/local/game", files) ==
+          std::optional<std::string>("/games/Orion Pirates"));
+    files.files["/d/install.txt"] = "older/copy\n";
+    CHECK(rememberedInstallDir("/d", "/local/game", files) ==
+          std::optional<std::string>("/d/older/copy"));
+}

@@ -345,3 +345,117 @@ TEST_CASE("the console asks once and reads one line, dropping quotes and spaces"
     CHECK_FALSE(ask().has_value());
     CHECK_FALSE(ask().has_value());
 }
+
+TEST_CASE("--import copies the fixture install and the next run starts from the copy") {
+    const ScratchDir home("sfcop-l2a-startup-import");
+    const std::string data = home.str() + "/.local/share/SFCOP";
+    const std::string game = data + "/game";
+    {
+        const Run run({"--import", fixturesDir() + "/install"}, home.str());
+        CHECK(run.result.exitCode == std::optional<int>(0));
+        CHECK(run.err.str() == "");
+        CHECK(run.out.str().find("sfcop: Imported 5 files (0.0 MB) from " + fixturesDir() +
+                                 "/install into " + game + ".\n") != std::string::npos);
+        CHECK(run.out.str().find("sfcop: the next run starts from " + game + ".\n") !=
+              std::string::npos);
+        CHECK(hostFileSystem().readText(data + "/install.txt") ==
+              std::optional<std::string>("game\n"));
+    }
+    const Run next({"--headless"}, home.str());
+    CHECK(next.err.str() == "");
+    CHECK_FALSE(next.result.exitCode.has_value());
+    CHECK(next.result.installDir == game);
+    // install.txt still names the copy, not its absolute path.
+    CHECK(hostFileSystem().readText(data + "/install.txt") == std::optional<std::string>("game\n"));
+}
+
+TEST_CASE("a file the import accepted as changed is accepted by the next run, with a warning") {
+    const ScratchDir home("sfcop-l2a-startup-changed");
+    const std::string install = home.str() + "/op";
+    const std::string data = home.str() + "/.local/share/SFCOP";
+    const std::string game = data + "/game";
+    fs::copy(fixturesDir() + "/install", install, fs::copy_options::recursive);
+    flipByte(install + "/Assets/Models/test_frigate.mod", 7);
+    {
+        const Run run({"--import", install}, home.str());
+        CHECK(run.result.exitCode == std::optional<int>(0));
+        CHECK(run.out.str().find("These files differ from the 2.5.5.2 release and were imported "
+                                 "as they are:\n  Assets/Models/test_frigate.mod\n") !=
+              std::string::npos);
+    }
+    {
+        const Run next({"--headless"}, home.str());
+        CHECK_FALSE(next.result.exitCode.has_value());
+        CHECK(next.result.installDir == game);
+        CHECK(next.err.str() == "sfcop: 1 file of the imported game differs from the 2.5.5.2 "
+                                "release and is used as imported; " +
+                                    game + "/.sfcop-import.txt lists it.\n");
+    }
+    // A file changed after the import is not one the import accepted: refused as before.
+    flipByte(game + "/Sounds/hail.wav", 3);
+    const Run after({"--headless"}, home.str());
+    CHECK(after.result.exitCode == std::optional<int>(3));
+    CHECK(after.err.str() == "sfcop: Sounds/hail.wav in the install at " + game +
+                                 " differs from the 2.5.5.2 release. Reinstall Starfleet Command: "
+                                 "Orion Pirates from its disc and apply the official 2.5.5.2 "
+                                 "patch, then start sfcop again.\n");
+}
+
+TEST_CASE("an import record is trusted only in the imported copy, and never for the executable") {
+    const ScratchDir home("sfcop-l2a-startup-record");
+    const std::string data = home.str() + "/.local/share/SFCOP";
+    const std::string game = data + "/game";
+    const std::string refusal = " differs from the 2.5.5.2 release. Reinstall Starfleet Command: "
+                                "Orion Pirates from its disc and apply the official 2.5.5.2 "
+                                "patch, then start sfcop again.\n";
+    // A record in a folder given by --install is not the client's: ignored.
+    const std::string other = home.str() + "/op";
+    fs::copy(fixturesDir() + "/install", other, fs::copy_options::recursive);
+    flipByte(other + "/Sounds/hail.wav", 3);
+    std::ofstream(other + "/.sfcop-import.txt") << "changed\tSounds/hail.wav\n";
+    const Run elsewhere({"--install", other, "--headless"}, home.str());
+    CHECK(elsewhere.result.exitCode == std::optional<int>(3));
+    CHECK(elsewhere.err.str() ==
+          "sfcop: Sounds/hail.wav in the install at " + other + refusal);
+
+    // In the copy, a record naming the executable does not switch its check off.
+    REQUIRE(Run({"--import", fixturesDir() + "/install"}, home.str()).result.exitCode ==
+            std::optional<int>(0));
+    std::ofstream(game + "/.sfcop-import.txt", std::ios::app) << "changed\tstarfleetop.exe\n"
+                                                                << "unchecked\tStarFleetOP.exe\n";
+    flipByte(game + "/StarFleetOP.exe", 5);
+    const Run copy({"--headless"}, home.str());
+    CHECK(copy.result.exitCode == std::optional<int>(3));
+    CHECK(copy.err.str() == "sfcop: StarFleetOP.exe in the install at " + game + refusal);
+}
+
+TEST_CASE("a one-off --install keeps install.txt on the imported copy while the copy is there") {
+    const ScratchDir home("sfcop-l2a-startup-oneoff");
+    const std::string data = home.str() + "/.local/share/SFCOP";
+    const std::string install = fixturesDir() + "/install";
+    REQUIRE(Run({"--import", install}, home.str()).result.exitCode == std::optional<int>(0));
+    {
+        const Run run({"--install", install, "--headless"}, home.str());
+        CHECK(run.err.str() == "");
+        CHECK(run.result.installDir == install);
+        CHECK(hostFileSystem().readText(data + "/install.txt") ==
+              std::optional<std::string>("game\n"));
+    }
+    // With the copy gone, --install is remembered as on a first run.
+    fs::remove_all(data + "/game");
+    const Run run({"--install", install, "--headless"}, home.str());
+    CHECK(run.err.str() == "");
+    CHECK(hostFileSystem().readText(data + "/install.txt") ==
+          std::optional<std::string>(install + "\n"));
+}
+
+TEST_CASE("--import of a folder without the game stops with 3 and remembers nothing") {
+    const ScratchDir home("sfcop-l2a-startup-refused");
+    const Run run({"--import", home.str()}, home.str());
+    CHECK(run.result.exitCode == std::optional<int>(3));
+    CHECK(run.err.str() == "sfcop: No StarFleetOP.exe was found in " + home.str() +
+                               " or in the folders below it. Choose the folder Starfleet Command: "
+                               "Orion Pirates is installed in.\n");
+    CHECK_FALSE(fs::exists(home.str() + "/.local/share/SFCOP/install.txt"));
+    CHECK_FALSE(fs::exists(home.str() + "/.local/share/SFCOP/game"));
+}

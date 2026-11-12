@@ -94,8 +94,31 @@ std::string ensureDataDir(const std::string &dir, FileSystem &files) {
     return std::string();
 }
 
+std::string gameDirFor(Platform platform, const EnvLookup &env, bool dataFlag,
+                       const std::string &dataDir) {
+    if (platform == Platform::kWindows && !dataFlag) {
+        if (const std::optional<std::string> local = nonEmpty(env, "LOCALAPPDATA")) {
+            return joinPath(joinPath(*local, kFolder), kImportedGame);
+        }
+    }
+    return joinPath(dataDir, kImportedGame);
+}
+
 std::optional<std::string> rememberedInstall(const std::string &dataDir, const FileSystem &files) {
     return firstLineOf(joinPath(dataDir, kRememberedInstallFile), files);
+}
+
+std::optional<std::string> rememberedInstallDir(const std::string &dataDir,
+                                                const std::string &gameDir,
+                                                const FileSystem &files) {
+    std::optional<std::string> dir = rememberedInstall(dataDir, files);
+    if (!dir || isAbsolutePath(*dir)) {
+        return dir;
+    }
+    if (*dir == kImportedGame) {
+        return gameDir;
+    }
+    return joinPath(dataDir, *dir);
 }
 
 bool rememberInstall(const std::string &dataDir, const std::string &installDir, FileSystem &files) {

@@ -282,3 +282,14 @@ TEST_CASE("--help lists the caller's extra flags under their own heading") {
     CHECK(help.find("\nother options:\n  --game DIR            a writable copy\n") !=
           std::string::npos);
 }
+
+TEST_CASE("--import takes a folder and cannot go with --install") {
+    const ParseResult result = parse({"--import", "/games/op", "--data", "/d"});
+    REQUIRE(result.outcome == ParseOutcome::kRun);
+    CHECK(result.options.importFrom == std::optional<std::string>("/games/op"));
+    CHECK_FALSE(parse({}).options.importFrom.has_value());
+    requireError({"--import"}, "--import needs DIR");
+    requireError({"--import", "/a", "--install", "/b"},
+                 "--import and --install cannot be given together");
+    CHECK(sfcop::app::helpText().find("  --import DIR") != std::string::npos);
+}
