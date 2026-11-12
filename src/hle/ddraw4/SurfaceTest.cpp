@@ -331,6 +331,30 @@ TEST_CASE("the frame is presented with the filter fix_smooth_scaled_frame names,
     CHECK(rig.gpu.log.Count("Present") == 3);
 }
 
+TEST_CASE("each present gives the window the whole-number scale fix_integer_scaled_frame names") {
+    Rig rig;
+    REQUIRE(rig.dd->SetDisplayMode(800, 600, 16, 0, 0) == kDdOk);
+    Surface *front = rig.Create(test::flipChainDesc());
+    rig.window.log.Clear();
+    // Off by default.
+    CHECK(front->Flip(nullptr, kDdflipWait) == kDdOk);
+    CHECK(rig.window.log.Calls() == Calls{"SetWholeScale(false)"});
+
+    fixes::Settings on;
+    REQUIRE(on.applyCommandLine({"fix_integer_scaled_frame=on"}).empty());
+    fixes::install(on);
+    rig.window.log.Clear();
+    CHECK(front->Flip(nullptr, kDdflipWait) == kDdOk);
+    CHECK(rig.window.log.Calls() == Calls{"SetWholeScale(true)"});
+    fixes::install(fixes::Settings());
+
+    // A Window that does not know the call still presents.
+    rig.window.setWholeScaleResult = Error::kUnsupported;
+    rig.gpu.log.Clear();
+    CHECK(front->Flip(nullptr, kDdflipWait) == kDdOk);
+    CHECK(rig.gpu.log.Count("Present") == 1);
+}
+
 TEST_CASE("a resized window changes nothing the game's frame costs: the same calls per frame") {
     Rig rig;
     REQUIRE(rig.dd->SetDisplayMode(1024, 768, 16, 0, 0) == kDdOk);

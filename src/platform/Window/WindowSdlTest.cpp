@@ -540,6 +540,50 @@ TEST_CASE("the mouse maps through a letterboxed window at scale 2, carrying frac
     CHECK(sink.events[3].y == 479);
 }
 
+TEST_CASE("with the whole-number scale on, the mouse maps through its bars") {
+    DummyVideo video;
+    auto window = makeWindow();
+    REQUIRE(window->Create(smallWindow()).Ok()); // logical 640x480
+    const SDL_WindowID id = onlyWindowId();
+    SDL_Window *sdl = SDL_GetWindowFromID(id);
+    REQUIRE(sdl != nullptr);
+    REQUIRE(SDL_SetWindowSize(sdl, 1600, 1080)); // the dummy driver: a point is a pixel
+    SDL_SyncWindow(sdl);
+    REQUIRE(window->PumpEvents().Ok());
+    REQUIRE(window->GetState().Value().drawableWidth == 1600);
+    CHECK(window->GetWholeScale().Value() == false);
+
+    // Off: 1600x1080 holds 640x480 at 2.25x, 1440x1080 at x 80. (160, 60) is logical
+    // (80 * 0.444, 60 * 0.444) = (35.6, 26.7); (100, 500) is (8.9, 222.2).
+    CHECK(clicksAt(*window, id, {{160.0f, 60.0f}, {100.0f, 500.0f}}) == Points{{35, 26}, {8, 222}});
+
+    // On: 2x, 1280x960 at (160, 60), bars of 160 at the sides and 60 above and below.
+    REQUIRE(window->SetWholeScale(true).Ok());
+    CHECK(window->GetWholeScale().Value() == true);
+    CHECK(clicksAt(*window, id,
+                   {{160.0f, 60.0f},     // the frame's top-left corner
+                    {1439.0f, 1019.0f},  // its bottom-right pixel: (1279 / 2, 959 / 2)
+                    {800.0f, 540.0f},    // the middle: (640 / 2, 480 / 2)
+                    {100.0f, 500.0f},    // the left bar: x clamps to 0, y (500 - 60) / 2
+                    {1500.0f, 30.0f}}) == // the top-right corner bar: clamped both ways
+          Points{{0, 0}, {639, 479}, {320, 240}, {0, 220}, {639, 0}});
+
+    // Relative motion moves at the placement's 2 points per logical pixel.
+    RecordingSink sink;
+    REQUIRE(window->AttachInput(sink).Ok());
+    pushMotion(id, 802.0f, 544.0f, 2.0f, 4.0f);
+    REQUIRE(window->PumpEvents().Ok());
+    REQUIRE(sink.events.size() == 1);
+    CHECK(sink.events[0].x == 321);
+    CHECK(sink.events[0].y == 242);
+    CHECK(sink.events[0].dx == 1);
+    CHECK(sink.events[0].dy == 2);
+    REQUIRE(window->DetachInput().Ok());
+
+    REQUIRE(window->SetWholeScale(false).Ok());
+    CHECK(clicksAt(*window, id, {{160.0f, 60.0f}}) == Points{{35, 26}});
+}
+
 TEST_CASE("a frame the player resized keeps its size when SetMode changes the logical size") {
     DummyVideo video;
     auto window = makeWindow();

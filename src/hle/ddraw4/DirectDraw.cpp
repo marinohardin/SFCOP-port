@@ -449,6 +449,9 @@ HResult DirectDraw::PresentPrimary(Surface &primary) {
         (void)gpu_.SetPresentFilter(filter);
         presentFilter_ = filter;
     }
+    // At the largest whole-number scale that fits, or any scale (fix_integer_scaled_frame); the
+    // window keeps it for the Gpu's placement and the mouse mapping alike.
+    (void)window_.SetWholeScale(fixes::isEnabled("fix_integer_scaled_frame"));
     const platform::Status presented = gpu_.Present();
     if (!presented.Ok()) {
         return fromError(presented.Code());

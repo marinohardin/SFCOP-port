@@ -26,5 +26,9 @@ SFCOP_FIX_SWITCH(fix_hle_named_objects, Runtime, 1, Project,
     "semaphore is its own object instead of one shared by all")
 
 SFCOP_FIX_SWITCH(fix_smooth_scaled_frame, Runtime, 1, Project,
-    "The game's frame, shown scaled into a window of another size, is filtered linearly (except "
-    "at a whole-number scale); off, every scale uses the nearest pixel")
+    "The game's frame, shown scaled into a window of another size, is filtered sharp-bilinear "
+    "(nearest to the whole-number part of the scale, linear for the rest); off, every scale "
+    "uses the nearest pixel")
+
+SFCOP_FIX_SWITCH(fix_integer_scaled_frame, Runtime, 0, Project,
+    "The frame is shown at the largest whole-number scale that fits the window, with bars beyond")
