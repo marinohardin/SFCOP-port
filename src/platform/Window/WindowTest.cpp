@@ -72,12 +72,16 @@ TEST_CASE("the window mock records creation and mode changes with their argument
     CHECK(window.SetMode(WindowMode::kFullscreen, 1024, 768).Ok());
     CHECK(window.SetFrameCap(FrameCap{60}).Ok());
     CHECK(window.GetDesktopMode().Value().refreshHz == 60);
+    CHECK(window.SetWholeScale(true).Ok());
+    CHECK(window.GetWholeScale().Value() == false); // what the test programmed
     CHECK(mock.lastDesc.resizable);
     CHECK(mock.log.Calls() == std::vector<std::string>{
                                   "Create(\"Test Window\", 0, 800, 600)",
                                   "SetMode(1, 1024, 768)",
                                   "SetFrameCap(60)",
                                   "GetDesktopMode()",
+                                  "SetWholeScale(true)",
+                                  "GetWholeScale()",
                               });
 }
 
@@ -133,6 +137,8 @@ TEST_CASE("every method of the window stub reports unsupported") {
     CHECK(window->SetCursorVisible(false).Code() == Error::kUnsupported);
     CHECK(window->SetFrameCap(FrameCap{}).Code() == Error::kUnsupported);
     CHECK(window->GetFrameCap().Code() == Error::kUnsupported);
+    CHECK(window->SetWholeScale(true).Code() == Error::kUnsupported);
+    CHECK(window->GetWholeScale().Code() == Error::kUnsupported);
     InputMock input;
     CHECK(window->AttachInput(input).Code() == Error::kUnsupported);
     CHECK(window->DetachInput().Code() == Error::kUnsupported);

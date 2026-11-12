@@ -47,9 +47,11 @@ window can be dragged, set by `--windowed WxH`, or be the display (`--fullscreen
 reaches the module: the surfaces, their sizes and their uploads per frame are the same at every
 window size, and a window of the frame's own size shows it pixel for pixel. Before its first
 present the module gives the Gpu the scaling filter the runtime switch `fix_smooth_scaled_frame`
-names (on, the default: linear, nearest at a whole-number scale; off: nearest at every scale),
-and again only if the switch's position changes. Mouse positions come back in the game's pixels
-from the Window, which maps them through the same letterbox.
+names (on, the default: sharp-bilinear, nearest at a whole-number scale; off: nearest at every
+scale), and again only if the switch's position changes. Each present also gives the Window the
+position of `fix_integer_scaled_frame` (off by default): on, the frame is shown at the largest
+whole-number scale that fits, black bars beyond. Mouse positions come back in the game's pixels
+from the Window, which maps them through the same placement.
 
 The game makes two DirectDraw objects. Only the one that set the display mode owns its Gpu's back
 buffer (`DirectDraw::OwnsDisplay`; the owner is kept per Gpu); another object never configures it, so it cannot replace the

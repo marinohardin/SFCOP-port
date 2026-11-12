@@ -5,9 +5,9 @@
 // size of its own: one given at Create() (windowWidth/windowHeight) or one the player dragged it
 // to. From then on SetMode() keeps the frame's size and changes only the logical size. Whenever
 // the frame and the logical size differ (fullscreen, a dragged or chosen frame), the content is
-// scaled into the frame keeping its aspect (presentRect(), Gpu::Present()'s letterbox), and mouse
-// positions are mapped back through the same letterbox, a position on a bar clamped to the
-// frame's edge. A user dragging the frame changes the drawable size, not the logical size, and
+// scaled into the frame keeping its aspect (framePlacement(), Gpu::Present()'s letterbox: any
+// scale, or the largest whole-number one while SetWholeScale() is on), and mouse positions are
+// mapped back through the same placement, a position on a bar clamped to the frame's edge. A user dragging the frame changes the drawable size, not the logical size, and
 // queues no kResized; only SetMode() changes the logical size.
 //
 // Fullscreen covers the display at its desktop mode. With SFCOP_FULLSCREEN=exclusive in the
@@ -266,6 +266,13 @@ public:
 
     Result<FrameCap> GetFrameCap() override { return FrameCap{frameCap_.load()}; }
 
+    Status SetWholeScale(bool on) override {
+        wholeScale_.store(on);
+        return {};
+    }
+
+    Result<bool> GetWholeScale() override { return wholeScale_.load(); }
+
     Status AttachInput(InputSink &sink) override {
         sink_ = &sink;
         return {};
@@ -415,28 +422,64 @@ private:
         pointHeight_ = pointH;
     }
 
-    // Window points to logical pixels through the letterbox Gpu::Present() draws.
-    void ToLogical(float x, float y, std::int32_t &outX, std::int32_t &outY) const {
+    // Where the frame sits, as Gpu::Present() places it (framePlacement()), and the unit of that
+    // rectangle: the proportional letterbox is the same in points and pixels up to rounding and
+    // is worked out in points; a whole-number scale exists only in pixels, so with it on the
+    // rectangle is in drawable pixels and `pixelsPerPoint` converts a point position to it.
+    // False while a size is unknown.
+    struct Placement {
         float logicalW = 0.0f;
         float logicalH = 0.0f;
-        float pointW = 0.0f;
-        float pointH = 0.0f;
+        Rect place;
+        float pixelsPerPointX = 1.0f;
+        float pixelsPerPointY = 1.0f;
+    };
+    bool CurrentPlacement(Placement &out) const {
+        std::uint32_t logicalW = 0;
+        std::uint32_t logicalH = 0;
+        std::uint32_t drawW = 0;
+        std::uint32_t drawH = 0;
+        int pointW = 0;
+        int pointH = 0;
         {
             std::lock_guard<std::mutex> lock(mutex_);
-            logicalW = static_cast<float>(state_.width);
-            logicalH = static_cast<float>(state_.height);
-            pointW = static_cast<float>(pointWidth_);
-            pointH = static_cast<float>(pointHeight_);
+            logicalW = state_.width;
+            logicalH = state_.height;
+            drawW = state_.drawableWidth;
+            drawH = state_.drawableHeight;
+            pointW = pointWidth_;
+            pointH = pointHeight_;
         }
-        if (logicalW <= 0.0f || logicalH <= 0.0f || pointW <= 0.0f || pointH <= 0.0f) {
-            outX = static_cast<std::int32_t>(std::floor(x));
-            outY = static_cast<std::int32_t>(std::floor(y));
+        if (logicalW == 0 || logicalH == 0 || pointW <= 0 || pointH <= 0) {
+            return false;
+        }
+        out.logicalW = static_cast<float>(logicalW);
+        out.logicalH = static_cast<float>(logicalH);
+        const bool whole = wholeScale_.load() && drawW != 0 && drawH != 0;
+        if (whole) {
+            out.place = framePlacement(logicalW, logicalH, drawW, drawH, true);
+            out.pixelsPerPointX = static_cast<float>(drawW) / static_cast<float>(pointW);
+            out.pixelsPerPointY = static_cast<float>(drawH) / static_cast<float>(pointH);
+        } else {
+            out.place = framePlacement(logicalW, logicalH, static_cast<std::uint32_t>(pointW),
+                                       static_cast<std::uint32_t>(pointH), false);
+        }
+        return true;
+    }
+
+    // Window points to logical pixels through the letterbox Gpu::Present() draws.
+    void ToLogical(float pointX, float pointY, std::int32_t &outX, std::int32_t &outY) const {
+        Placement at;
+        if (!CurrentPlacement(at)) {
+            outX = static_cast<std::int32_t>(std::floor(pointX));
+            outY = static_cast<std::int32_t>(std::floor(pointY));
             return;
         }
-        const Rect place = presentRect(static_cast<std::uint32_t>(logicalW),
-                                       static_cast<std::uint32_t>(logicalH),
-                                       static_cast<std::uint32_t>(pointW),
-                                       static_cast<std::uint32_t>(pointH));
+        const float logicalW = at.logicalW;
+        const float logicalH = at.logicalH;
+        const Rect &place = at.place;
+        const float x = pointX * at.pixelsPerPointX;
+        const float y = pointY * at.pixelsPerPointY;
         // A side rounded to 0 (a window of a point or two) maps as if it were one point.
         const float placeW = static_cast<float>((std::max)(place.width, std::uint32_t{1}));
         const float placeH = static_cast<float>((std::max)(place.height, std::uint32_t{1}));
@@ -455,6 +498,13 @@ private:
     }
 
     float LogicalScale() const {
+        if (wholeScale_.load()) {
+            // Points per logical pixel at the whole-number placement.
+            Placement at;
+            if (CurrentPlacement(at) && at.place.width != 0) {
+                return static_cast<float>(at.place.width) / at.logicalW / at.pixelsPerPointX;
+            }
+        }
         std::lock_guard<std::mutex> lock(mutex_);
         if (state_.width == 0 || state_.height == 0 || pointWidth_ <= 0 || pointHeight_ <= 0) {
             return 1.0f;
@@ -658,6 +708,7 @@ private:
     int setFrameH_ = 0;
     bool relativeFailureLogged_ = false;
     std::atomic<std::uint32_t> frameCap_{0};
+    std::atomic<bool> wholeScale_{false};
 
     // Main thread only: the mouse position as last delivered, and the motion fractions.
     std::int32_t mouseX_ = 0;
