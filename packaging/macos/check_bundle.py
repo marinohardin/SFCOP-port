@@ -27,6 +27,7 @@ EXPECTED = {
     "Contents/Frameworks/libSDL2-2.0.0.dylib",
     "Contents/Frameworks/libSDL3.dylib",
     "Contents/Resources/retail_hashes.sha256",
+    "Contents/Resources/install_manifest.tsv",
     "Contents/Resources/SFCOP.icns",
     "Contents/_CodeSignature/CodeResources",
 }

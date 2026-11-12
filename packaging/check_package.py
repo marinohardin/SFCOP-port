@@ -42,6 +42,7 @@ LAYOUTS = {
         "sfcop",
         "bin/sfcop",
         "bin/retail_hashes.sha256",
+        "bin/install_manifest.tsv",
         "lib/libSDL2-2.0.so.0",
         "lib/libSDL3.so.0",
         "share/applications/sfcop.desktop",
@@ -55,6 +56,7 @@ LAYOUTS = {
         ".DirIcon",
         "usr/bin/sfcop",
         "usr/bin/retail_hashes.sha256",
+        "usr/bin/install_manifest.tsv",
         "usr/lib/libSDL2-2.0.so.0",
         "usr/lib/libSDL3.so.0",
     },
@@ -63,6 +65,7 @@ LAYOUTS = {
         "SDL2.dll",
         "SDL3.dll",
         "retail_hashes.sha256",
+        "install_manifest.tsv",
         "README.txt",
     },
 }

@@ -20,8 +20,9 @@ fi
 out=$1 sfcop=$2 sdl2=$3 sdl3=$4 source=$5 bundle_id=$6 project_version=$7
 here=$(cd "$(dirname "$0")" && pwd -P)
 hash_list="$source/analysis/results/retail_hashes.sha256"
+manifest="$source/analysis/results/install_manifest.tsv"
 
-for file in "$sfcop" "$sdl2" "$sdl3" "$hash_list" "$here/SFCOP.icns"; do
+for file in "$sfcop" "$sdl2" "$sdl3" "$hash_list" "$manifest" "$here/SFCOP.icns"; do
     if [ ! -f "$file" ]; then
         echo "make_bundle: missing $file" >&2
         exit 1
@@ -51,6 +52,8 @@ cp -L "$sdl2" "$contents/Frameworks/libSDL2-2.0.0.dylib"
 cp -L "$sdl3" "$contents/Frameworks/libSDL3.dylib"
 chmod 755 "$contents/MacOS/sfcop" "$contents/Frameworks/"*.dylib
 cp "$hash_list" "$contents/Resources/retail_hashes.sha256"
+# The import's manifest, beside the hash list, where the client looks for it.
+cp "$manifest" "$contents/Resources/install_manifest.tsv"
 cp "$here/SFCOP.icns" "$contents/Resources/SFCOP.icns"
 sed -e "s|@BUNDLE_ID@|$bundle_id|" -e "s|@VERSION@|$version|" \
     -e "s|@BUILD_NUMBER@|$build_number|" -e "s|@MIN_MACOS@|$min_macos|" \
