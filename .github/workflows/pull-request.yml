@@ -53,7 +53,7 @@ jobs:
   build:
     name: build (${{ matrix.preset }})
     runs-on: [self-hosted, sfcop-mac]
-    timeout-minutes: 30
+    timeout-minutes: 75
     strategy:
       fail-fast: false
       max-parallel: 1
@@ -75,7 +75,7 @@ jobs:
           fetch-depth: 2
 
       # Which presets a pull request builds is oracle/presets/ci.py, "builds"; a preset it does
-      # not build skips its steps and the job passes.
+      # not build skips its steps and the job passes. ci.py prints the reason as a notice.
       - name: Is ${{ matrix.preset }} built for this pull request
         id: want
         shell: bash
@@ -84,7 +84,6 @@ jobs:
         run: |
           set -eu -o pipefail
           build=$(git diff --name-only HEAD^1 HEAD | python3 -I oracle/presets/ci.py builds "$PRESET")
-          [ "$build" = yes ] || echo "::notice::skip: $PRESET: this pull request changes nothing this preset needs built: only paths no build reads, or decompiled source and lift inputs that macos-arm64 alone builds, or the preset is paused (oracle/presets/ci.py, builds)"
           echo "build=$build" >> "$GITHUB_OUTPUT"
 
       # A missing macOS permission to read the external tools volume would otherwise stall the
@@ -123,7 +122,8 @@ jobs:
 
       - name: Build ${{ matrix.preset }}
         if: steps.want.outputs.build == 'yes'
-        timeout-minutes: 15
+        # 45 minutes: the runner is a shared machine, and a full lift plus a rebuild outran 15.
+        timeout-minutes: 45
         # nice 5, not 19: on Apple Silicon a niceness of 19 keeps the compiles on the efficiency
         # cores even when the machine is idle, and a full rebuild then outruns the timeout.
         # -j4 still caps the load when agents share the machine.
@@ -146,8 +146,10 @@ jobs:
             sh cmake/toolchains/run-tests.sh "$PRESET" "$SFCOP_BUILD_DIR" 2>&1 | tee "$SFCOP_BUILD_DIR/logs/tests.log"
           fi
 
+      # An outage of the artifact service must not fail a job whose build and tests passed.
       - name: Keep the tests and the logs for 7 days
         if: steps.want.outputs.build == 'yes'
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: sfcop-${{ matrix.preset }}-pr${{ github.event.pull_request.number }}
@@ -238,8 +240,10 @@ jobs:
         shell: bash
         run: python3 -I oracle/presets/ci.py compare OracleSkirmish skirmish --traces "$TRACES" --ran "${RAN_ORACLESKIRMISH:-}" --expected oracle/expected
 
+      # An outage of the artifact service must not fail a job whose oracle steps passed.
       - name: Keep the traces for 7 days
         if: steps.gate.outputs.run == 'yes' && always()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: oracle-traces-pr${{ github.event.pull_request.number }}
