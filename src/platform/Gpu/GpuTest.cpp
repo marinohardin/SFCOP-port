@@ -248,6 +248,30 @@ TEST_CASE("the frame is placed centred with its aspect kept in a smaller, equal 
     checkRect(presentRect(640, 480, 1280, 960), 0, 0, 1280, 960);
 }
 
+TEST_CASE("the whole-number placement takes the largest whole scale that fits, centred") {
+    // 640x480 into 1920x1080: 3 across, 2 down, so 2: 1280x960, bars of 320 and 60.
+    checkRect(presentRectWhole(640, 480, 1920, 1080), 320, 60, 1280, 960);
+    // 800x600 into 1920x1080: 2 across, 1 down, so 1: the frame's own size, centred.
+    checkRect(presentRectWhole(800, 600, 1920, 1080), 560, 240, 800, 600);
+    // 800x600 into 2560x1440: 3 across, 2 down, so 2: 1600x1200 at 480, 120.
+    checkRect(presentRectWhole(800, 600, 2560, 1440), 480, 120, 1600, 1200);
+    // Exactly twice: the whole target.
+    checkRect(presentRectWhole(640, 480, 1280, 960), 0, 0, 1280, 960);
+    // Larger than the target (scale 0): as presentRect, 800x600 into 640x480 at 0, 0.
+    checkRect(presentRectWhole(800, 600, 640, 480), 0, 0, 640, 480);
+    // 1024x768 into 800x500: 0 whole, so presentRect's 667x500 at 66.
+    checkRect(presentRectWhole(1024, 768, 800, 500), 66, 0, 667, 500);
+    checkRect(presentRectWhole(0, 480, 1920, 1080), 0, 0, 0, 0);
+    checkRect(presentRectWhole(640, 480, 1920, 0), 0, 0, 0, 0);
+}
+
+TEST_CASE("one chooser places the frame for the Gpu and the mouse alike") {
+    checkRect(framePlacement(640, 480, 1920, 1080, false), 240, 0, 1440, 1080);
+    checkRect(framePlacement(640, 480, 1920, 1080, true), 320, 60, 1280, 960);
+    checkRect(framePlacement(1024, 768, 1024, 768, true), 0, 0, 1024, 768);
+    checkRect(framePlacement(1024, 768, 1024, 768, false), 0, 0, 1024, 768);
+}
+
 TEST_CASE("a zero size anywhere places nothing") {
     checkRect(presentRect(0, 768, 800, 600), 0, 0, 0, 0);
     checkRect(presentRect(1024, 0, 800, 600), 0, 0, 0, 0);

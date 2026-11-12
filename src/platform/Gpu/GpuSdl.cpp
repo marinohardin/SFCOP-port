@@ -65,13 +65,30 @@ Error noDeviceError(bool driverTakesCarriedFormat, bool driverTakesOtherFormat) 
 
 // The sampler Present() scales a frame of frameW x frameH into placeW x placeH with
 // (Gpu::SetPresentFilter): kPoint is nearest always; kLinear is linear unless both axes scale by
-// the same whole number.
+// the same whole number. With kLinear the frame is first enlarged by presentPrescale() (nearest),
+// and this filter then applies from that enlarged frame.
 SDL_GPUFilter presentFilter(TextureFilter filter, std::uint32_t frameW, std::uint32_t frameH,
                             std::uint32_t placeW, std::uint32_t placeH) {
     const bool whole = frameW != 0 && frameH != 0 && placeW % frameW == 0 &&
                        placeH % frameH == 0 && placeW / frameW == placeH / frameH;
     return filter == TextureFilter::kLinear && !whole ? SDL_GPU_FILTER_LINEAR
                                                        : SDL_GPU_FILTER_NEAREST;
+}
+
+// Sharp-bilinear (kLinear): the whole-number part n of the scale is done by nearest, each pixel
+// an n by n block, and only the remainder, less than one more pixel's worth, by linear. Pixels
+// stay square and sharp, and the blend is at most one screen pixel wide at each pixel edge,
+// where plain linear blurs across the whole enlarged pixel. Returns n, the smaller of the two
+// axes' whole parts, or 1 (no enlarging step) for kPoint, for a whole-number scale (nearest
+// already) and for a scale under 2.
+std::uint32_t presentPrescale(TextureFilter filter, std::uint32_t frameW, std::uint32_t frameH,
+                              std::uint32_t placeW, std::uint32_t placeH) {
+    if (filter != TextureFilter::kLinear || frameW == 0 || frameH == 0 ||
+        presentFilter(filter, frameW, frameH, placeW, placeH) == SDL_GPU_FILTER_NEAREST) {
+        return 1;
+    }
+    const std::uint32_t n = std::min(placeW / frameW, placeH / frameH);
+    return n < 2 ? 1 : n;
 }
 
 // Whether Present() must wait for the frame cap itself. Vsync paces a claimed window at the
@@ -973,6 +990,28 @@ public:
         return {};
     }
 
+    // Present()'s scaling, into a render target instead of the window (gpusdl::scaleFrameInto).
+    Status ScaleFrameInto(TextureId frame, TextureId target, const Rect &place) {
+        if (device_ == nullptr || inScene_) {
+            return Error::kWrongState;
+        }
+        const TextureRec *from = FindTexture(frame);
+        const TextureRec *to = FindTexture(target);
+        if (from == nullptr || to == nullptr) {
+            return Error::kInvalidHandle;
+        }
+        SDL_GPUCommandBuffer *commands = SDL_AcquireGPUCommandBuffer(device_);
+        if (commands == nullptr) {
+            return Error::kOutOfResources;
+        }
+        // As Present(): the frame's full image (renderScale times its size); `place` is in the
+        // target's image pixels.
+        ScaleFrame(commands, from->gpu, from->desc.width * from->desc.renderScale,
+                   from->desc.height * from->desc.renderScale, to->gpu, place);
+        SDL_SubmitGPUCommandBuffer(commands);
+        return {};
+    }
+
 private:
     // --- attachment -------------------------------------------------------------------------
 
@@ -1087,6 +1126,7 @@ private:
             inScene_ = false;
         }
         SDL_WaitForGPUIdle(device_);
+        ReleasePrescaled();
         for (auto &entry : textures_) {
             SDL_ReleaseGPUTexture(device_, entry.second.gpu);
         }
@@ -2063,25 +2103,91 @@ private:
         acquired = swapchain != nullptr;
         const TextureRec *back = FindTexture(backBuffer_);
         if (swapchain != nullptr && back != nullptr && width != 0 && height != 0) {
+            // Placed by the logical size, sampled from the full image (renderScale times it).
+            // The window's whole-number scale is read like its frame cap; the mouse maps
+            // through the same chooser.
             const std::uint32_t imageW = back->desc.width * back->desc.renderScale;
             const std::uint32_t imageH = back->desc.height * back->desc.renderScale;
-            const Rect place = presentRect(back->desc.width, back->desc.height, width, height);
-            SDL_GPUBlitInfo blit{};
-            blit.source.texture = back->gpu;
-            blit.source.w = imageW;
-            blit.source.h = imageH;
-            blit.destination.texture = swapchain;
-            blit.destination.x = static_cast<Uint32>(place.x);
-            blit.destination.y = static_cast<Uint32>(place.y);
-            blit.destination.w = place.width;
-            blit.destination.h = place.height;
-            blit.load_op = SDL_GPU_LOADOP_CLEAR;
-            blit.clear_color = SDL_FColor{0.0f, 0.0f, 0.0f, 1.0f};
-            blit.filter = presentFilter(presentFilter_, imageW, imageH, place.width, place.height);
-            SDL_BlitGPUTexture(commands, &blit);
+            const auto whole = window_->GetWholeScale();
+            const Rect place = framePlacement(back->desc.width, back->desc.height, width, height,
+                                              whole.Ok() && whole.Value());
+            ScaleFrame(commands, back->gpu, imageW, imageH, swapchain, place);
         }
         SDL_SubmitGPUCommandBuffer(commands);
         return true;
+    }
+
+    // Draws a frame of frameW x frameH into `place` of `target`, the rest of `target` cleared to
+    // black, sampled as the present filter says. Sharp-bilinear enlarges the frame by the whole
+    // part of the scale (nearest) into prescaled_, kept between frames, and scales that by linear.
+    void ScaleFrame(SDL_GPUCommandBuffer *commands, SDL_GPUTexture *frame, std::uint32_t frameW,
+                    std::uint32_t frameH, SDL_GPUTexture *target, const Rect &place) {
+        SDL_GPUBlitInfo blit{};
+        blit.source.texture = frame;
+        blit.source.w = frameW;
+        blit.source.h = frameH;
+        blit.destination.texture = target;
+        blit.destination.x = static_cast<Uint32>(place.x);
+        blit.destination.y = static_cast<Uint32>(place.y);
+        blit.destination.w = place.width;
+        blit.destination.h = place.height;
+        blit.load_op = SDL_GPU_LOADOP_CLEAR;
+        blit.clear_color = SDL_FColor{0.0f, 0.0f, 0.0f, 1.0f};
+        blit.filter = presentFilter(presentFilter_, frameW, frameH, place.width, place.height);
+        const std::uint32_t n =
+            presentPrescale(presentFilter_, frameW, frameH, place.width, place.height);
+        if (n > 1 && Prescaled(frameW * n, frameH * n)) {
+            SDL_GPUBlitInfo enlarge{};
+            enlarge.source.texture = frame;
+            enlarge.source.w = frameW;
+            enlarge.source.h = frameH;
+            enlarge.destination.texture = prescaled_;
+            enlarge.destination.w = frameW * n;
+            enlarge.destination.h = frameH * n;
+            enlarge.load_op = SDL_GPU_LOADOP_DONT_CARE;
+            enlarge.filter = SDL_GPU_FILTER_NEAREST;
+            SDL_BlitGPUTexture(commands, &enlarge);
+            blit.source.texture = prescaled_;
+            blit.source.w = frameW * n;
+            blit.source.h = frameH * n;
+        }
+        SDL_BlitGPUTexture(commands, &blit);
+    }
+
+    // prescaled_ at width x height, made or remade as needed; false if it cannot be made, and
+    // the frame is then scaled by plain linear.
+    bool Prescaled(std::uint32_t width, std::uint32_t height) {
+        if (prescaled_ != nullptr && prescaledW_ == width && prescaledH_ == height) {
+            return true;
+        }
+        ReleasePrescaled();
+        if (width > kMaxTextureSize || height > kMaxTextureSize) {
+            return false;
+        }
+        SDL_GPUTextureCreateInfo info{};
+        info.type = SDL_GPU_TEXTURETYPE_2D;
+        info.format = kColorFormat;
+        info.usage = SDL_GPU_TEXTUREUSAGE_SAMPLER | SDL_GPU_TEXTUREUSAGE_COLOR_TARGET;
+        info.width = width;
+        info.height = height;
+        info.layer_count_or_depth = 1;
+        info.num_levels = 1;
+        prescaled_ = SDL_CreateGPUTexture(device_, &info);
+        if (prescaled_ == nullptr) {
+            return false;
+        }
+        prescaledW_ = width;
+        prescaledH_ = height;
+        return true;
+    }
+
+    void ReleasePrescaled() {
+        if (prescaled_ != nullptr) {
+            SDL_ReleaseGPUTexture(device_, prescaled_); // freed once the work using it is done
+        }
+        prescaled_ = nullptr;
+        prescaledW_ = 0;
+        prescaledH_ = 0;
     }
 
     // Waits until one frame period after the previous deadline: sleep, then spin. A deadline
@@ -2115,6 +2221,9 @@ private:
     bool claimed_ = false;
     SDL_GPUPresentMode presentMode_ = SDL_GPU_PRESENTMODE_VSYNC;
     TextureFilter presentFilter_ = TextureFilter::kLinear;
+    SDL_GPUTexture *prescaled_ = nullptr; // the frame enlarged by the whole part of the scale
+    std::uint32_t prescaledW_ = 0;
+    std::uint32_t prescaledH_ = 0;
     bool explicitCap_ = false;
     bool paced_ = false;
     std::chrono::steady_clock::time_point deadline_{};
@@ -2150,5 +2259,18 @@ private:
 } // namespace
 
 std::unique_ptr<Gpu> makeGpu() { return std::make_unique<GpuSdl>(); }
+
+namespace gpusdl {
+// Present()'s scaling of `frame` into `place` of `target` (two render targets of an SDL Gpu), the
+// rest of `target` cleared to black: the scaled frame can be read back where a hidden window has
+// no swapchain to show it. kInvalidArgument for a Gpu that is not an SDL one.
+Status scaleFrameInto(Gpu &gpu, TextureId frame, TextureId target, Rect place) {
+    auto *sdl = dynamic_cast<GpuSdl *>(&gpu);
+    if (sdl == nullptr) {
+        return Error::kInvalidArgument;
+    }
+    return sdl->ScaleFrameInto(frame, target, place);
+}
+} // namespace gpusdl
 
 } // namespace sfcop::platform

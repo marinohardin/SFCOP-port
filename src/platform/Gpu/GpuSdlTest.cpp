@@ -26,6 +26,9 @@ Error noDeviceError(bool driverTakesCarriedFormat, bool driverTakesOtherFormat);
 bool presentNeedsPacing(bool windowClaimed, bool explicitCap, bool swapchainAcquired);
 SDL_GPUFilter presentFilter(TextureFilter filter, std::uint32_t frameW, std::uint32_t frameH,
                             std::uint32_t placeW, std::uint32_t placeH);
+std::uint32_t presentPrescale(TextureFilter filter, std::uint32_t frameW, std::uint32_t frameH,
+                              std::uint32_t placeW, std::uint32_t placeH);
+Status scaleFrameInto(Gpu &gpu, TextureId frame, TextureId target, Rect place);
 } // namespace gpusdl
 
 namespace {
@@ -1317,6 +1320,111 @@ TEST_CASE("a back buffer at render scale 2 starts black and presents headless") 
     REQUIRE(gpu.ReadTexture(back.Value(), 0, Rect{639, 479, 1, 1}, corner, 2).Ok());
     CHECK(corner[0] == 0xF800);
     CHECK(gpu.Present().Ok());
+}
+
+TEST_CASE("sharp-bilinear enlarges by the whole part of the scale before the linear step") {
+    using gpusdl::presentPrescale;
+    CHECK(presentPrescale(TextureFilter::kLinear, 800, 600, 800, 600) == 1);   // 1x
+    CHECK(presentPrescale(TextureFilter::kLinear, 800, 600, 1200, 900) == 1);  // 1.5x
+    CHECK(presentPrescale(TextureFilter::kLinear, 800, 600, 1600, 1200) == 1); // 2x, nearest
+    CHECK(presentPrescale(TextureFilter::kLinear, 800, 600, 2000, 1500) == 2); // 2.5x
+    CHECK(presentPrescale(TextureFilter::kLinear, 800, 600, 1920, 1440) == 2); // 2.4x
+    CHECK(presentPrescale(TextureFilter::kLinear, 640, 480, 2400, 1800) == 3); // 3.75x
+    CHECK(presentPrescale(TextureFilter::kLinear, 800, 600, 1000, 750) == 1);  // 1.25x
+    CHECK(presentPrescale(TextureFilter::kLinear, 800, 600, 400, 300) == 1);   // smaller
+    CHECK(presentPrescale(TextureFilter::kPoint, 800, 600, 2000, 1500) == 1);
+    CHECK(presentPrescale(TextureFilter::kLinear, 0, 600, 2000, 1500) == 1);
+}
+
+namespace {
+
+// A 2x2 frame: a grey column (64) on the left, a white one (255) on the right.
+constexpr std::uint32_t kGrey = 0xFF404040u;
+constexpr std::uint32_t kWhite = 0xFFFFFFFFu;
+
+TextureId makeColumns(Gpu &gpu) {
+    const TextureId frame = makeTarget(gpu, 2, 2);
+    const std::uint32_t pixels[4] = {kGrey, kWhite, kGrey, kWhite};
+    REQUIRE(gpu.WriteTexture(frame, 0, Rect{}, pixels, 8).Ok());
+    return frame;
+}
+
+// The red channel of row 0 after the frame is scaled into `place` of a target of that width
+// plus a black bar column on each side, and `place.height` rows.
+std::vector<int> scaledRow(Gpu &gpu, TextureId frame, std::uint32_t width, std::uint32_t height) {
+    const TextureId target = makeTarget(gpu, width + 2, height);
+    REQUIRE(gpusdl::scaleFrameInto(gpu, frame, target, Rect{1, 0, width, height}).Ok());
+    const std::vector<std::uint32_t> pixels = readArgb(gpu, target, width + 2, height);
+    std::vector<int> row;
+    for (std::uint32_t x = 0; x < width + 2; ++x) {
+        row.push_back(static_cast<int>((pixels[x] >> 16) & 0xFF));
+    }
+    return row;
+}
+
+// Each value within `tolerance` of the hand-worked one (the GPU's linear weights are not exact).
+void checkRow(const std::vector<int> &got, const std::vector<int> &expected, int tolerance) {
+    REQUIRE(got.size() == expected.size());
+    for (std::size_t i = 0; i < got.size(); ++i) {
+        CAPTURE(i);
+        CHECK(got[i] >= expected[i] - tolerance);
+        CHECK(got[i] <= expected[i] + tolerance);
+    }
+}
+
+} // namespace
+
+// Hand-worked values. A destination pixel x samples the frame at u = (x + 0.5) * frameW / placeW
+// texels; linear weighs the two texel centres (at 0.5 and 1.5) around u, clamped at the edges.
+// The first and last values of each row are the black bars beside the place.
+TEST_CASE("the present filters sample a scaled frame as worked out by hand") {
+    Rig rig;
+    REQUIRE_GPU(rig);
+    Gpu &gpu = *rig.gpu;
+    const TextureId frame = makeColumns(gpu);
+
+    SUBCASE("1x: the frame's own pixels with either filter") {
+        REQUIRE(gpu.SetPresentFilter(TextureFilter::kPoint).Ok());
+        checkRow(scaledRow(gpu, frame, 2, 2), {0, 64, 255, 0}, 0);
+        REQUIRE(gpu.SetPresentFilter(TextureFilter::kLinear).Ok());
+        checkRow(scaledRow(gpu, frame, 2, 2), {0, 64, 255, 0}, 0);
+    }
+    SUBCASE("2x: a whole-number scale is nearest with either filter") {
+        REQUIRE(gpu.SetPresentFilter(TextureFilter::kPoint).Ok());
+        checkRow(scaledRow(gpu, frame, 4, 4), {0, 64, 64, 255, 255, 0}, 0);
+        REQUIRE(gpu.SetPresentFilter(TextureFilter::kLinear).Ok());
+        checkRow(scaledRow(gpu, frame, 4, 4), {0, 64, 64, 255, 255, 0}, 0);
+    }
+    SUBCASE("1.5x: under 2x sharp-bilinear is plain linear") {
+        // u = 0.33, 1.0, 1.67: the middle pixel is half of each column, (64 + 255) / 2.
+        REQUIRE(gpu.SetPresentFilter(TextureFilter::kLinear).Ok());
+        checkRow(scaledRow(gpu, frame, 3, 3), {0, 64, 160, 255, 0}, 2);
+        // Nearest: the outer pixels are their columns; the middle one sits on the boundary.
+        REQUIRE(gpu.SetPresentFilter(TextureFilter::kPoint).Ok());
+        const std::vector<int> point = scaledRow(gpu, frame, 3, 3);
+        CHECK(point[1] == 64);
+        CHECK((point[2] == 64 || point[2] == 255));
+        CHECK(point[3] == 255);
+    }
+    SUBCASE("2.5x: sharp-bilinear blends one pixel where linear blends three") {
+        // Sharp-bilinear: nearest to 4 pixels (64 64 255 255), then linear 4 to 5:
+        // u = 0.4, 1.2, 2.0, 2.8, 3.6 gives 64, 64, (64 + 255) / 2, 255, 255.
+        REQUIRE(gpu.SetPresentFilter(TextureFilter::kLinear).Ok());
+        checkRow(scaledRow(gpu, frame, 5, 5), {0, 64, 64, 160, 255, 255, 0}, 2);
+        // Nearest: u = 0.2, 0.6, 1.0 (the boundary), 1.4, 1.8.
+        REQUIRE(gpu.SetPresentFilter(TextureFilter::kPoint).Ok());
+        const std::vector<int> point = scaledRow(gpu, frame, 5, 5);
+        CHECK(point[1] == 64);
+        CHECK(point[2] == 64);
+        CHECK(point[4] == 255);
+        CHECK(point[5] == 255);
+    }
+}
+
+TEST_CASE("the present scaling into a texture refuses a Gpu that is not an SDL one") {
+    auto stub = makeGpuStub();
+    CHECK(gpusdl::scaleFrameInto(*stub, TextureId{1}, TextureId{2}, Rect{}).Code() ==
+          Error::kInvalidArgument);
 }
 
 } // namespace sfcop::platform

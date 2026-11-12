@@ -334,6 +334,38 @@ constexpr Rect presentRect(std::uint32_t frameWidth, std::uint32_t frameHeight,
     return out;
 }
 
+// As presentRect(), at the largest whole-number scale n that fits: the frame n times its size,
+// centred, black bars beyond. A frame larger than the target (n would be 0) falls back to
+// presentRect(). A zero size anywhere gives a rectangle of width and height 0 at 0, 0.
+constexpr Rect presentRectWhole(std::uint32_t frameWidth, std::uint32_t frameHeight,
+                                std::uint32_t targetWidth, std::uint32_t targetHeight) {
+    if (frameWidth == 0 || frameHeight == 0 || targetWidth == 0 || targetHeight == 0) {
+        return Rect{};
+    }
+    const std::uint32_t across = targetWidth / frameWidth;
+    const std::uint32_t down = targetHeight / frameHeight;
+    const std::uint32_t n = across < down ? across : down;
+    if (n == 0) {
+        return presentRect(frameWidth, frameHeight, targetWidth, targetHeight);
+    }
+    Rect out;
+    out.width = frameWidth * n;
+    out.height = frameHeight * n;
+    out.x = static_cast<std::int32_t>((targetWidth - out.width) / 2);
+    out.y = static_cast<std::int32_t>((targetHeight - out.height) / 2);
+    return out;
+}
+
+// Where Present() puts the frame, and so where the window maps the mouse from: the one chooser
+// both use, so the two cannot disagree. presentRectWhole() while the window's whole-number scale
+// is on (Window::SetWholeScale), else presentRect(). Both sizes in the same unit (pixels).
+constexpr Rect framePlacement(std::uint32_t frameWidth, std::uint32_t frameHeight,
+                              std::uint32_t targetWidth, std::uint32_t targetHeight,
+                              bool wholeScale) {
+    return wholeScale ? presentRectWhole(frameWidth, frameHeight, targetWidth, targetHeight)
+                      : presentRect(frameWidth, frameHeight, targetWidth, targetHeight);
+}
+
 struct GpuCaps {
     std::uint32_t maxTextureSize = 0; // in each dimension
     std::vector<PixelFormat> textureFormats;
@@ -487,7 +519,8 @@ public:
         return Error::kUnsupported;
     }
 
-    // Shows the back buffer in the window at presentRect() of the window's size in pixels, scaled
+    // Shows the back buffer in the window at framePlacement() of the window's size in pixels
+    // (presentRect(), or presentRectWhole() while the window's whole-number scale is on), scaled
     // with the filter SetPresentFilter() set, with its aspect kept, and waits as the
     // window's frame cap requires; a back buffer with a render scale is sampled from its full
     // image, placed by its logical size. Main thread only. The back buffer's content is kept.
@@ -496,9 +529,12 @@ public:
     // kIoError if the device was lost (the caller reconfigures and redraws).
     virtual Status Present() = 0;
 
-    // How Present() samples the back buffer when it scales it into the window (presentRect()).
-    // kPoint: nearest at every scale. kLinear: linear, except nearest at a whole-number scale; this
-    // is the default. A scale of 1 shows the back buffer's pixels as they are either way. Applies
+    // How Present() samples the back buffer when it scales it into the window (framePlacement()).
+    // kPoint: nearest at every scale. kLinear, the default: sharp-bilinear, nearest for the
+    // whole-number part n of the scale (each pixel an n by n block) and linear for the remainder,
+    // so pixels stay sharp and only their edges blend; under 2x that is plain linear, and a
+    // whole-number scale is nearest. A scale of 1 shows the back buffer's pixels as they are
+    // either way. Applies
     // from the next Present(). Main thread only. Errors: kUnsupported (also the answer of a Gpu
     // that does not implement it); kInvalidArgument for a value that is not a TextureFilter.
     virtual Status SetPresentFilter(TextureFilter filter) {

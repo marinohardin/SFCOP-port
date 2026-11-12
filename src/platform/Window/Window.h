@@ -138,6 +138,20 @@ public:
     // The current frame cap (the default is the display's refresh rate). Errors: kUnsupported.
     virtual Result<FrameCap> GetFrameCap() = 0;
 
+    // Shows the frame at the largest whole-number scale that fits the window, black bars beyond
+    // (presentRectWhole()), instead of the largest scale that fits (presentRect()); a frame
+    // larger than the window, where no whole scale fits, is placed as presentRect(). Like the
+    // frame cap, Gpu::Present() reads it from its next call, and the mouse maps through the same
+    // placement (framePlacement()) from the next event. Off by default. Errors: kUnsupported
+    // (also the answer of a Window that does not implement it).
+    virtual Status SetWholeScale(bool on) {
+        static_cast<void>(on);
+        return Error::kUnsupported;
+    }
+
+    // Whether the whole-number scale is on. Errors: kUnsupported.
+    virtual Result<bool> GetWholeScale() { return Error::kUnsupported; }
+
     // Makes `sink` the receiver of this window's key, mouse and focus events, replacing any
     // earlier one. The sink must outlive the attachment (DetachInput() or Destroy()). Errors:
     // kUnsupported.

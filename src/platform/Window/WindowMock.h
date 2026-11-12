@@ -31,6 +31,8 @@ public:
     Status setCursorVisibleResult;
     Status setFrameCapResult;
     Result<FrameCap> frameCapResult = FrameCap{};
+    Status setWholeScaleResult;
+    Result<bool> wholeScaleResult = false;
     Status pumpEventsResult;
 
     Status Create(const WindowDesc &desc) override {
@@ -73,6 +75,14 @@ public:
     Result<FrameCap> GetFrameCap() override {
         log.Record("GetFrameCap");
         return frameCapResult;
+    }
+    Status SetWholeScale(bool on) override {
+        log.Record("SetWholeScale", on);
+        return setWholeScaleResult;
+    }
+    Result<bool> GetWholeScale() override {
+        log.Record("GetWholeScale");
+        return wholeScaleResult;
     }
     Status PumpEvents() override {
         log.Record("PumpEvents");
