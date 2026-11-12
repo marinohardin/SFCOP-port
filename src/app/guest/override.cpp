@@ -19,6 +19,7 @@
 #include "Tiger/tpart.h"
 #include "Tiger/tsay.h"
 #include "Tiger/tsequence.h"
+#include "unsorted/sfcstreams.h"
 #include "unsorted/t3DListenerProfile.h"
 #include "unsorted/tAICaptain.cpp"
 #include "unsorted/tAIHelmOfficer.h"
@@ -3321,39 +3322,45 @@ extern "C" void sub_006701C0(void) {
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32u( int32u ) >( &tSequencePart::mGetNumber ) >::run();
 }
 
+// tSFCStream::mGetVersionNumber(), game/unsorted/fn_006D2000.cpp
+extern "C" void sub_006D2800(void) {
+    ::sfcop::guest::entered(544);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< int() >( &tSFCStream::mGetVersionNumber ) >::run();
+}
+
 // tAllocatedClass::operator==(const type_info&), game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC4D0(void) {
-    ::sfcop::guest::entered(544);
+    ::sfcop::guest::entered(545);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32( const type_info& ) >( &tAllocatedClass::operator== ) >::run();
 }
 
 // tDynamicAllocator::tAllocatorInfo::operator==(const char*) const, game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC5A0(void) {
-    ::sfcop::guest::entered(545);
+    ::sfcop::guest::entered(546);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32( const char* ) const >( &tDynamicAllocator::tAllocatorInfo::operator== ) >::run();
 }
 
 // tDynamicAllocator::LockDownAllocator(), game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC750(void) {
-    ::sfcop::guest::entered(546);
+    ::sfcop::guest::entered(547);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tDynamicAllocator::LockDownAllocator ) >::run();
 }
 
 // tFileDatabaseMgr::tDatabaseInfo::StreamOut(nDataStore::tOutput&) const, game/Common/Database/FileDatabaseMgr.cpp
 extern "C" void sub_00707EF0(void) {
-    ::sfcop::guest::entered(547);
+    ::sfcop::guest::entered(548);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( nDataStore::tOutput& ) const >( &tFileDatabaseMgr::tDatabaseInfo::StreamOut ) >::run();
 }
 
 // tFileDatabaseMgr::GetCurDBInfo(), game/Common/Database/FileDatabaseMgr.cpp
 extern "C" void sub_00708FC0(void) {
-    ::sfcop::guest::entered(548);
+    ::sfcop::guest::entered(549);
     ::sfcop::guest::Entry< ::sfcop::guest::member< tFileDatabaseMgr::tDatabaseInfo() >( &tFileDatabaseMgr::GetCurDBInfo ) >::run();
 }
 
 // tFileDatabaseMgr::GetDBInfo(int32) const, game/Common/Database/FileDatabaseMgr.cpp
 extern "C" void sub_00709060(void) {
-    ::sfcop::guest::entered(549);
+    ::sfcop::guest::entered(550);
     ::sfcop::guest::Entry< ::sfcop::guest::member< const tFileDatabaseMgr::tDatabaseInfo*( int32 ) const >( &tFileDatabaseMgr::GetDBInfo ) >::run();
 }
 
@@ -3921,6 +3928,7 @@ const sfcop_guest_override sfcop_guest_overrides[] = {
     {0x0066D880u, sub_0066D880, "tItemBag::mFindItemWithLabel(char *)", "Tiger/tBag.cpp"},
     {0x00670180u, sub_00670180, "tSequencePart::mGetNumber()", "Tiger/tsequence.cpp"},
     {0x006701C0u, sub_006701C0, "tSequencePart::mGetNumber(int32u)", "Tiger/tsequence.cpp"},
+    {0x006D2800u, sub_006D2800, "tSFCStream::mGetVersionNumber()", "unsorted/fn_006D2000.cpp"},
     {0x006FC4D0u, sub_006FC4D0, "tAllocatedClass::operator==(const type_info&)", "Common/DynamicAllocator.cpp"},
     {0x006FC5A0u, sub_006FC5A0, "tDynamicAllocator::tAllocatorInfo::operator==(const char*) const", "Common/DynamicAllocator.cpp"},
     {0x006FC750u, sub_006FC750, "tDynamicAllocator::LockDownAllocator()", "Common/DynamicAllocator.cpp"},
@@ -3928,7 +3936,7 @@ const sfcop_guest_override sfcop_guest_overrides[] = {
     {0x00708FC0u, sub_00708FC0, "tFileDatabaseMgr::GetCurDBInfo()", "Common/Database/FileDatabaseMgr.cpp"},
     {0x00709060u, sub_00709060, "tFileDatabaseMgr::GetDBInfo(int32) const", "Common/Database/FileDatabaseMgr.cpp"},
 };
-const unsigned sfcop_guest_override_count = 550u;
+const unsigned sfcop_guest_override_count = 551u;
 
 }  // extern "C"
 
