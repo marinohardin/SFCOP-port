@@ -3,7 +3,8 @@
 
     ci.py gate                       reads the changed paths on standard input; prints yes or no
     ci.py builds PRESET              reads the changed paths on standard input; prints yes or no:
-                                     whether the build job builds that preset for this change
+                                     whether the build job builds that preset for this change, and
+                                     for no, a ::notice:: with the reason on standard error
     ci.py run MISSION INPUT --build-root DIR --traces DIR [--env-file FILE]
     ci.py compare MISSION INPUT --traces DIR --ran "PRESET PRESET" [--expected DIR]
 
@@ -78,6 +79,19 @@ def builds(preset, files):
     if preset == DECOMP_PRESET:
         return True
     return not all(DECOMP_ONLY.match(f) or NO_BUILD.match(f) for f in files)
+
+
+def skip_reason(preset, files):
+    """Why the build job does not build this preset for a change to these paths; None when it does."""
+    if preset in PAUSED_PRESETS:
+        return 'paused on pull requests (PAUSED_PRESETS in oracle/presets/ci.py), whatever the change'
+    if builds(preset, files):
+        return None
+    files = [f.strip() for f in files if f.strip()]
+    if all(NO_BUILD.match(f) for f in files):
+        return 'this pull request changes only paths no build reads (NO_BUILD in oracle/presets/ci.py)'
+    return (f'this pull request changes only decompiled source and lift inputs, which {DECOMP_PRESET} '
+            'alone builds (DECOMP_ONLY in oracle/presets/ci.py)')
 
 
 def path_gate(files):
@@ -158,10 +172,11 @@ def main(argv):
         return 0
 
     if args.cmd == 'builds':
-        if args.preset in PAUSED_PRESETS:
-            print(f'::notice::skip: {args.preset}: paused on pull requests (PAUSED_PRESETS in '
-                  'oracle/presets/ci.py), whatever the change', file=sys.stderr)
-        print('yes' if builds(args.preset, sys.stdin.read().splitlines()) else 'no')
+        files = sys.stdin.read().splitlines()
+        reason = skip_reason(args.preset, files)
+        if reason:
+            print(f'::notice::skip: {args.preset}: {reason}', file=sys.stderr)
+        print('no' if reason else 'yes')
         return 0
 
     if args.cmd == 'run':

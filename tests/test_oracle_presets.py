@@ -460,6 +460,36 @@ def test_builds_reads_paths_on_standard_input(unpaused, monkeypatch, capsys):
     assert capsys.readouterr().out == 'no\n'
 
 
+def test_builds_names_the_reason_for_a_preset_it_does_not_build(unpaused, monkeypatch, capsys):
+    import io
+    monkeypatch.setattr('sys.stdin', io.StringIO('game/unsorted/tSphere.cpp\nsrc/app/guest/override.cpp\n'))
+    assert ci.main(['builds', 'linux-x64']) == 0
+    out = capsys.readouterr()
+    assert out.out == 'no\n'
+    assert out.err == ('::notice::skip: linux-x64: this pull request changes only decompiled source and '
+                       'lift inputs, which macos-arm64 alone builds (DECOMP_ONLY in oracle/presets/ci.py)\n')
+    monkeypatch.setattr('sys.stdin', io.StringIO('docs/DESIGN.md\ntests/test_units.py\n'))
+    assert ci.main(['builds', 'macos-arm64']) == 0
+    out = capsys.readouterr()
+    assert out.out == 'no\n'
+    assert out.err == ('::notice::skip: macos-arm64: this pull request changes only paths no build reads '
+                       '(NO_BUILD in oracle/presets/ci.py)\n')
+    monkeypatch.setattr('sys.stdin', io.StringIO('game/unsorted/tSphere.cpp\n'))
+    assert ci.main(['builds', 'macos-arm64']) == 0
+    out = capsys.readouterr()
+    assert out.out == 'yes\n' and out.err == ''
+
+
+def test_a_paused_preset_names_the_pause_even_for_a_decompilation_only_change(monkeypatch, capsys):
+    import io
+    monkeypatch.setattr('sys.stdin', io.StringIO('game/unsorted/tSphere.cpp\n'))
+    assert ci.main(['builds', 'linux-x64']) == 0
+    out = capsys.readouterr()
+    assert out.out == 'no\n'
+    assert out.err == ('::notice::skip: linux-x64: paused on pull requests (PAUSED_PRESETS in '
+                       'oracle/presets/ci.py), whatever the change\n')
+
+
 def test_path_gate_on_a_list_of_files():
     assert ci.path_gate(['README.md', 'src/app/main.cpp'])
     assert ci.path_gate(['game/Tiger/tsay.cpp'])
