@@ -25,10 +25,20 @@ SFCOP_RT_SYMBOLS(SFCOP_RT_DEFINE)
 
 static int g_bound;
 
+/* Binds once. Lifted code reads the pointers through a const view (module_rt_direct.h) and may
+ * keep them in registers across calls, so the pointers must not change after the first bind. A
+ * later bind that resolves every name to the same address is accepted and writes nothing: that is
+ * a reload of a library the system kept resident (dlclose need not unload it). One that resolves
+ * any name elsewhere, another runtime in the same process, is refused, and the module keeps its
+ * first binding. */
 const char *sfcop_bind(sfcop_guest_resolver resolve) {
 #define SFCOP_RT_BIND(n)                                                                          \
-    sfcop_rt_##n = (__typeof__(sfcop_rt_##n))resolve(#n);                                         \
-    if (!sfcop_rt_##n) return #n;
+    {                                                                                             \
+        void *const at = resolve(#n);                                                             \
+        if (!at) return #n;                                                                       \
+        if (!g_bound) sfcop_rt_##n = (__typeof__(sfcop_rt_##n))at;                                \
+        else if ((void *)sfcop_rt_##n != at) return "sfcop_bind (bound to another runtime)";      \
+    }
     SFCOP_RT_SYMBOLS(SFCOP_RT_BIND)
     g_bound = 1;
     return 0;

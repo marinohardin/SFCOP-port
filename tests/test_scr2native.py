@@ -10,6 +10,7 @@ import json
 import os
 import pathlib
 import platform
+import re
 import shutil
 import struct
 import subprocess
@@ -289,6 +290,137 @@ def test_a_translated_script_is_installed_with_its_manifest_and_its_lift_cleaned
                         'translator_version': scr2native.TRANSLATOR_VERSION}
     assert sorted(p.name for p in (tmp_path / 'work' / 'Fixture').iterdir()) == ['result.json', 'scr2native.log']
     assert 'Fixture: 0x60000000, 3 functions, 2 imports' in capsys.readouterr().out
+
+
+def test_the_result_records_the_lift_and_the_compile_time(tmp_path, fake_tools):
+    assert run_tool(tmp_path) == scr2native.EXIT_OK
+    result = json.loads((tmp_path / 'work' / 'Fixture' / 'result.json').read_text())
+    assert sorted(result) == ['compile_seconds', 'functions', 'lift_seconds', 'seconds']
+    assert result['functions'] == 3
+    assert 0 <= result['lift_seconds'] <= result['seconds'] and 0 <= result['compile_seconds'] <= result['seconds']
+
+
+def test_a_module_is_compiled_at_O2_with_the_runtime_header_first(tmp_path):
+    flags = scr2native.compile_flags('/p', str(tmp_path / 'gen'))
+    assert flags[:3] == ['-c', '-w', '-O2']
+    assert '-fno-lto' in flags  # module_rt_direct.h is unsound under link-time optimisation
+    assert flags[flags.index('-include') + 1].endswith(os.path.join('runtime', 'module_rt.h'))
+    assert flags[flags.index('-I') + 1] == str(tmp_path / 'gen')
+    # The baseline probes get the same flags, less the lift's own folder.
+    at = flags.index('-I')
+    assert scr2native.compile_flags('/p') == flags[:at] + flags[at + 2:]
+
+
+def test_only_lifted_files_get_the_direct_runtime_view_after_the_runtime_header(tmp_path):
+    flags = scr2native.compile_flags('/p', str(tmp_path / 'gen'), lifted=True)
+    forced = [flags[i + 1] for i, f in enumerate(flags) if f == '-include']
+    assert [os.path.basename(f) for f in forced] == ['module_rt.h', 'module_rt_direct.h']
+    plain = scr2native.compile_flags('/p', str(tmp_path / 'gen'))
+    assert [flags[i + 1] for i, f in enumerate(plain) if f == '-include'] == forced[:1]
+
+
+def runtime_names():
+    """The names in module_rt.h's SFCOP_RT_SYMBOLS list, read from its macro block only."""
+    text = pathlib.Path(scr2native.RUNTIME, 'module_rt.h').read_text()
+    block = re.search(r'^#define SFCOP_RT_SYMBOLS\(X\)((?:.*\\\n)*.*)$', text, re.M).group(1)
+    return re.findall(r'X\((\w+)\)', block)
+
+
+def test_compile_module_gives_the_direct_view_to_the_lifted_files_only(tmp_path, monkeypatch):
+    gen, work = tmp_path / 'gen', tmp_path / 'work'
+    gen.mkdir()
+    work.mkdir()
+    for f in ('recomp_0000.c', 'recomp_0001.c', 'recomp_funcs.h', 'other.c'):
+        (gen / f).write_text('')
+    calls = []
+    monkeypatch.setattr(scr2native, 'run', lambda cmd, log=None, cwd=None: calls.append(cmd))
+    monkeypatch.setattr(scr2native.shutil, 'which', lambda cc: '/usr/bin/cc')
+    scr2native.compile_module(str(work), 'Fixture', str(gen), [], '/p', 1, None)
+    forced = {}
+    for cmd in calls:
+        if '-c' in cmd:
+            src = os.path.basename(cmd[cmd.index('-o') - 1])
+            forced[src] = [os.path.basename(cmd[i + 1]) for i, f in enumerate(cmd) if f == '-include']
+    direct = ['module_rt.h', 'module_rt_direct.h']
+    assert forced == {'recomp_0000.c': direct, 'recomp_0001.c': direct,
+                      'module_glue.c': ['module_rt.h'], 'module_image.c': ['module_rt.h']}
+
+
+def test_the_direct_view_redefines_every_runtime_name_and_nothing_else():
+    runtime = pathlib.Path(scr2native.RUNTIME)
+    names = runtime_names()
+    direct = (runtime / 'module_rt_direct.h').read_text()
+    assert len(names) == 42
+    assert re.findall(r'^#undef (\w+)$', direct, re.M) == names
+    assert re.findall(r'^#define (\w+) \(\*sfcop_rtc_(\w+)\)$', direct, re.M) == [(n, n) for n in names]
+
+
+@pytest.mark.skipif(not shutil.which('cc'), reason='no C compiler')
+def test_the_direct_view_reaches_the_pointer_the_glue_defines_and_bind_fills(tmp_path):
+    # Stand-ins for pcrecomp's headers: every runtime name a 32-bit global, but for one function.
+    names = runtime_names()
+    (tmp_path / 'recomp_types.h').write_text('#pragma once\n#include <stdint.h>\n' + ''.join(
+        'extern uint32_t %s;\n' % n for n in names if n != 'recomp_eh_pop'))
+    (tmp_path / 'recomp_funcs.h').write_text('#pragma once\nvoid recomp_eh_pop(void);\n')
+    (tmp_path / 'lifted.c').write_text(
+        'uint32_t lifted(void) { g_eax += 1; recomp_eh_pop(); return g_eax; }\n')
+    (tmp_path / 'glue.c').write_text(
+        '#include "recomp_types.h"\n#include "recomp_funcs.h"\n#include <stdio.h>\n'
+        'uint32_t *sfcop_rt_g_eax; void (*sfcop_rt_recomp_eh_pop)(void);\n'
+        'static uint32_t eax = 41; static int pops;\n'
+        'static void pop(void) { pops++; }\n'
+        'uint32_t lifted(void);\n'
+        'int main(void) { sfcop_rt_g_eax = &eax; sfcop_rt_recomp_eh_pop = pop;\n'
+        '  uint32_t r = lifted(); printf("%u %u %d\\n", r, eax, pops); return 0; }\n')
+    runtime = scr2native.RUNTIME
+    common = ['cc', '-c', '-O2', '-fno-strict-aliasing', '-fcommon', '-I', str(tmp_path),
+              '-include', os.path.join(runtime, 'module_rt.h')]
+    subprocess.run(common + ['-include', os.path.join(runtime, 'module_rt_direct.h'),
+                             str(tmp_path / 'lifted.c'), '-o', str(tmp_path / 'lifted.o')], check=True)
+    subprocess.run(common + [str(tmp_path / 'glue.c'), '-o', str(tmp_path / 'glue.o')], check=True)
+    subprocess.run(['cc', '-o', str(tmp_path / 'probe'), str(tmp_path / 'lifted.o'), str(tmp_path / 'glue.o')],
+                   check=True)
+    out = subprocess.run([str(tmp_path / 'probe')], check=True, capture_output=True, text=True).stdout
+    assert out == '42 42 1\n'
+
+
+@pytest.mark.skipif(not shutil.which('cc'), reason='no C compiler')
+def test_the_glue_accepts_the_same_binding_again_and_refuses_another(tmp_path):
+    # The real module_glue.c against a stand-in recomp_types.h; the lifted code's const view of
+    # the pointers is only sound while they never change after the first bind.
+    names = runtime_names()
+    own = ('sfcop_eh_jump_to_continuation', 'sfcop_eh_enter_except')  # the glue declares these
+    (tmp_path / 'recomp_types.h').write_text(
+        '#pragma once\n#include <stdint.h>\n'
+        'typedef void (*recomp_func_t)(void);\n'
+        'typedef struct { uint32_t address; recomp_func_t func; } recomp_dispatch_entry_t;\n'
+        '#define MEM32(a) (*(uint32_t *)(uintptr_t)(a))\n#define ADDR(a) ((uintptr_t)(a))\n'
+        '#define RECOMP_RETADDR 0u\n' + ''.join(
+            'extern uint32_t %s;\n' % n for n in names if n not in own))
+    (tmp_path / 'main.c').write_text(
+        '#include <stdio.h>\n#include "recomp_types.h"\n#include "GuestModuleAbi.h"\n'
+        'const recomp_dispatch_entry_t recomp_dispatch_table[1];\n'
+        'const uint32_t recomp_dispatch_count = 0;\n'
+        'const sfcop_guest_image sfcop_module_guest;\n'
+        'const char *sfcop_bind(sfcop_guest_resolver resolve);\n'
+        'static uint32_t cells[64]; static int n, shift;\n'
+        'static void *resolve(const char *name) { (void)name; return &cells[(n++ + shift) % 64]; }\n'
+        'static const char *bind(int by) { n = 0; shift = by; const char *r = sfcop_bind(resolve);\n'
+        '  return r ? r : "ok"; }\n'
+        'int main(void) { const char *a = bind(0), *b = bind(0), *c = bind(1);\n'
+        '  printf("%s|%s|%s\\n", a, b, c); return 0; }\n')
+    common = ['cc', '-c', '-O2', '-fno-strict-aliasing', '-fcommon', '-I', str(tmp_path),
+              '-I', scr2native.ABI_HEADER_DIR]
+    defines = ['-DSFCOP_ABI_TAG="test"', '-DSFCOP_SCRIPT_VERSION=22.0f', '-DSFCOP_CONTRACT_VERSION=1']
+    subprocess.run(common + defines + ['-include', os.path.join(scr2native.RUNTIME, 'module_rt.h'),
+                                       os.path.join(scr2native.RUNTIME, 'module_glue.c'),
+                                       '-o', str(tmp_path / 'glue.o')], check=True)
+    subprocess.run(common + [str(tmp_path / 'main.c'), '-o', str(tmp_path / 'main.o')], check=True)
+    subprocess.run(['cc', '-o', str(tmp_path / 'probe'), str(tmp_path / 'glue.o'), str(tmp_path / 'main.o')],
+                   check=True)
+    out = subprocess.run([str(tmp_path / 'probe')], check=True, capture_output=True, text=True).stdout
+    # First bind; the same addresses again (a resident library reloaded); another runtime.
+    assert out == 'ok|ok|sfcop_bind (bound to another runtime)\n'
 
 
 def test_keep_work_keeps_the_lift_and_the_objects(tmp_path, fake_tools):
