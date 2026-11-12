@@ -9,7 +9,7 @@
 
 `run` runs run_preset.sh for each preset, in order, one at a time. Its exit code means: 0 the preset
 ran (kept for the comparison), 3 it skipped (a ::warning:: names the preset and the reason), anything
-else fails the step after the other presets have run. It appends `RAN_<MISSION>=<presets>` to
+else fails the step after the other presets have run. A paused preset (PAUSED_PRESETS) is not run. It appends `RAN_<MISSION>=<presets>` to
 --env-file. `compare` runs compare_presets.py on the presets that ran, with --expected where the
 folder holds a recorded trace for the mission, and warns when fewer than two presets ran so that no
 pairwise comparison happened. Exit status: that of compare_presets.py (0 identical, 4 a tick
@@ -40,9 +40,17 @@ DECOMP_ONLY = re.compile(r'^(game/(?!port/|UNITS\.tsv$)|analysis/results/(matche
                          r'src/app/guest/override\.cpp$)')
 DECOMP_PRESET = 'macos-arm64'
 
+# Presets not built or run on pull requests, whatever the change. Paused by the owner on 2026-11-11
+# while iterating: the runner does one job at a time and the cross builds dominated its queue.
+# Empty the tuple to resume them. The release workflow does not read it and still builds every
+# preset.
+PAUSED_PRESETS = ('windows-x64', 'linux-x64')
+
 
 def builds(preset, files):
     """True when the build job builds this preset for a change to these paths."""
+    if preset in PAUSED_PRESETS:
+        return False
     files = [f.strip() for f in files if f.strip()]
     if preset == DECOMP_PRESET or not files:
         return True
@@ -71,6 +79,11 @@ def run_all(mission, input_name, build_root, traces, presets=PRESETS):
     """Run each preset in turn. Returns (ran, failed, lines for the log)."""
     ran, failed, log = [], False, []
     for preset in presets:
+        if preset in PAUSED_PRESETS:
+            # Its build folder may still hold a client from before the pause; it is not run.
+            log.append(f'::notice::oracle {mission}/{input_name}: {preset} is paused on pull requests '
+                       '(PAUSED_PRESETS in oracle/presets/ci.py), so its client is not run')
+            continue
         # A scratch copy left by a killed run is removed first (run_preset.sh does the same).
         shutil.rmtree(pathlib.Path(build_root) / preset / 'oracle-scratch', ignore_errors=True)
         proc = subprocess.run(
@@ -122,6 +135,9 @@ def main(argv):
         return 0
 
     if args.cmd == 'builds':
+        if args.preset in PAUSED_PRESETS:
+            print(f'::notice::skip: {args.preset}: paused on pull requests (PAUSED_PRESETS in '
+                  'oracle/presets/ci.py), whatever the change', file=sys.stderr)
         print('yes' if builds(args.preset, sys.stdin.read().splitlines()) else 'no')
         return 0
 
@@ -130,7 +146,8 @@ def main(argv):
         if args.changed:
             with open(args.changed, encoding='utf-8') as f:
                 changed = f.read().splitlines()
-            presets = tuple(p for p in PRESETS if builds(p, changed))
+            # A paused preset is left in for run_all, which logs why it is not run.
+            presets = tuple(p for p in PRESETS if p in PAUSED_PRESETS or builds(p, changed))
             for p in PRESETS:
                 if p not in presets:
                     print(f'::notice::oracle {args.mission}/{args.input}: {p} was not built for this '
