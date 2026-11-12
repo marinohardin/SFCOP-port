@@ -3,10 +3,12 @@
 #include "app/scripts/loader/GuestModules.h"
 #include "app/DataDir.h"
 
+#include "app/scripts/loader/InterpretedModules.h"
 #include "app/scripts/loader/NativeModuleLoader.h"
 
 #include <algorithm>
 #include <cctype>
+#include <chrono>
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
@@ -77,8 +79,10 @@ void say(const char *format, const std::string &a) {
 // The data folder the guest host named (setMissionModulesDataDir), or empty.
 std::filesystem::path g_dataDir;
 
-// The provider the lifter's dispatch asks, and the hook it replaced.
+// The provider the lifter's dispatch asks, the interpreted scripts' answer, and the hook they
+// replaced.
 GuestModuleProvider *g_active = nullptr;
+sfcop_guest_fn (*g_interpretedLookup)(std::uint32_t) = nullptr;
 sfcop_guest_fn (*g_previousLookup)(std::uint32_t) = nullptr;
 
 sfcop_guest_fn chainedLookup(std::uint32_t address) {
@@ -87,7 +91,19 @@ sfcop_guest_fn chainedLookup(std::uint32_t address) {
             return found;
         }
     }
+    if (g_interpretedLookup != nullptr) {
+        if (sfcop_guest_fn found = g_interpretedLookup(address)) {
+            return found;
+        }
+    }
     return g_previousLookup != nullptr ? g_previousLookup(address) : nullptr;
+}
+
+void installChainedLookup(sfcop_guest_fn (**hook)(std::uint32_t)) {
+    if (*hook != chainedLookup) {
+        g_previousLookup = *hook;
+        *hook = chainedLookup;
+    }
 }
 
 // pcrecomp's shim row, as win32hle.h declares it.
@@ -327,6 +343,7 @@ std::uint32_t GuestModuleProvider::Load(std::string_view scriptName) {
     }
     byBase_[image->base] = module;
     InstallHook();
+    const auto start = std::chrono::steady_clock::now();
     if (image->entry != 0) {
         const std::uint32_t attach[3] = {image->base, 1u /* DLL_PROCESS_ATTACH */, 0u};
         if (image->call(image->entry, 3, attach) == 0) {
@@ -336,8 +353,10 @@ std::uint32_t GuestModuleProvider::Load(std::string_view scriptName) {
             return 0;
         }
     }
-    std::fprintf(stderr, "[scripts] loaded %s at 0x%08X (%u functions, %u imports)\n", name.c_str(),
-                 image->base, image->dispatch_count, image->import_count);
+    const double entryTime =
+        std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
+    std::fprintf(stderr, "[scripts] loaded %s at 0x%08X (%u functions, %u imports, entry point %.3f ms)\n",
+                 name.c_str(), image->base, image->dispatch_count, image->import_count, entryTime);
     return image->base;
 }
 
@@ -399,11 +418,13 @@ void GuestModuleProvider::InstallHook() {
         g_active = this;
         return;
     }
-    if (*runtime_->lookupHook != chainedLookup) {
-        g_previousLookup = *runtime_->lookupHook;
-        *runtime_->lookupHook = chainedLookup;
-    }
+    installChainedLookup(runtime_->lookupHook);
     g_active = this;
+}
+
+void answerInDispatch(sfcop_guest_fn (*lookup)(std::uint32_t), sfcop_guest_fn (**hook)(std::uint32_t)) {
+    g_interpretedLookup = lookup;
+    installChainedLookup(hook);
 }
 
 } // namespace sfcop::scripts
@@ -422,8 +443,12 @@ ModuleProvider &MissionModules() {
         return scripts::makeNativeModuleLoader(scripts::builtInAllowList(), scripts::builtInHostBaseline(),
                                                ahead);
     }();
-    static scripts::GuestModuleProvider provider(*loader, scripts::clientRuntime(), root,
+    static scripts::GuestModuleProvider native(*loader, scripts::clientRuntime(), root,
                                                  scripts::builtInAllowList());
+    // A script with no native module runs from its own file, interpreted.
+    static scripts::InterpretedModuleProvider interpreted(scripts::clientRuntime(), scripts::clientMachine(),
+                                                          scripts::readGuestScript, scripts::builtInAllowList());
+    static scripts::MissionModuleProvider provider(native, interpreted);
     return provider;
 }
 
