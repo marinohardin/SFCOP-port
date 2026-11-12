@@ -53,6 +53,27 @@ position of `fix_integer_scaled_frame` (off by default): on, the frame is shown 
 whole-number scale that fits, black bars beyond. Mouse positions come back in the game's pixels
 from the Window, which maps them through the same placement.
 
+**The render scale.** With the runtime switch `fix_render_scale` on (the default), the 3D scene is
+drawn at the window's pixel density, not stretched up from the game's size. At the start of each
+Direct3D scene the module works out the scale k the window asks for
+(`DirectDraw::WantedRenderScale`): the frame placed in the window's drawable pixels by
+`platform::framePlacement`, the chooser the present and the mouse use, and k that placement's
+scale rounded up, at most what the Gpu's largest texture allows and the client's
+`--render-scale N` (0, the default, follows the window; 1 keeps the game's size). If k changed,
+the display (the Gpu's back buffer) is made again at k (`Gpu::ConfigureScaledBackBuffer`), and the
+scene's target and its z-buffer are made again at k, the target's content read back first and
+uploaded into the new texture. A window resized since the last scene changes k at the next scene.
+Everything the game sees stays at its own size: surface sizes, locks, rectangles, viewports and
+uploads per frame. Before the first scene, and after a mode change until the next, the display is
+at 1, so frames the game draws only on the host (the menus) are shown as before; once the game
+has drawn a scene they keep the scale, each upload shown enlarged by k. A lock of a scaled target
+reads each k by k block back as its average, so the area it hands out is not uploaded whole: the
+surface keeps a copy of it, and the next flush sends only the pixels that differ from that copy,
+packed with a key in a texture of the game's size and blitted with the key
+(`ChangedPixels`); a read-only lock, or one that changes nothing, sends nothing. The game locks the
+back buffer each combat frame to draw its panels and text, and the rest of the scene keeps its
+detail.
+
 The game makes two DirectDraw objects. Only the one that set the display mode owns its Gpu's back
 buffer (`DirectDraw::OwnsDisplay`; the owner is kept per Gpu); another object never configures it, so it cannot replace the
 game's frame with a black one. Screenshots (`--shots`) read the presented frame of the owner.

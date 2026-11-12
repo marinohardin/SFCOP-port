@@ -23,6 +23,7 @@ constexpr std::uint32_t kMaxBackBuffers = 3;
 constexpr std::uint32_t kDdwaitvbBlockBeginEvent = 0x00000002;
 
 DirectDraw::PresentHook g_presentHook = nullptr;
+std::uint8_t g_renderScaleOption = 0; // SetRenderScaleOption(): 0 = from the window
 
 // The DirectDraw object that made each Gpu's back buffer last. A Gpu has one back buffer, so the
 // owner is per Gpu: objects on other Gpus never see each other.
@@ -92,6 +93,8 @@ HResult DirectDraw::SetDisplayMode(std::uint32_t width, std::uint32_t height,
         return back.Code() == Error::kInvalidArgument ? kDdErrInvalidMode : fromError(back.Code());
     }
     displayTexture_ = back.Value();
+    displayScale_ = 1; // the next scene chooses the scale for the new mode
+    scaleRefused_ = false;
     displayOwners()[&gpu_] = this;
     mode_ = DisplayModeState{width, height, bitsPerPixel, refreshRate != 0 ? refreshRate : 60};
     return kDdOk;
@@ -389,7 +392,9 @@ platform::Result<platform::TextureId> DirectDraw::DisplayTexture() {
         const PixelFormat format =
             mode_.bitsPerPixel == 8 ? PixelFormat::kXrgb8888 : PrimaryFormat();
         platform::Result<platform::TextureId> back =
-            gpu_.ConfigureBackBuffer(mode_.width, mode_.height, format);
+            displayScale_ > 1
+                ? gpu_.ConfigureScaledBackBuffer(mode_.width, mode_.height, format, displayScale_)
+                : gpu_.ConfigureBackBuffer(mode_.width, mode_.height, format);
         if (!back.Ok()) {
             return back.Code();
         }
@@ -397,6 +402,72 @@ platform::Result<platform::TextureId> DirectDraw::DisplayTexture() {
         displayOwners()[&gpu_] = this;
     }
     return displayTexture_;
+}
+
+std::uint8_t DirectDraw::WantedRenderScale() {
+    if (!fixes::isEnabled("fix_render_scale") || g_renderScaleOption == 1 || scaleRefused_ ||
+        mode_.bitsPerPixel == 8 || mode_.width == 0 || mode_.height == 0) {
+        return 1;
+    }
+    platform::Result<platform::WindowState> state = window_.GetState();
+    if (!state.Ok()) {
+        return 1;
+    }
+    // Where the present puts the frame, by the same chooser (platform::framePlacement()).
+    const platform::Rect place =
+        platform::framePlacement(mode_.width, mode_.height, state.Value().drawableWidth,
+                                 state.Value().drawableHeight,
+                                 fixes::isEnabled("fix_integer_scaled_frame"));
+    // The placement's scale rounded up; the smaller of the two, since the placement rounds each
+    // side to a whole pixel and one side may come out a pixel over a whole multiple.
+    const std::uint32_t across = (place.width + mode_.width - 1) / mode_.width;
+    const std::uint32_t down = (place.height + mode_.height - 1) / mode_.height;
+    std::uint32_t scale = std::min(across, down);
+    if (g_renderScaleOption > 1) {
+        scale = std::min<std::uint32_t>(scale, g_renderScaleOption);
+    }
+    if (scale <= 1) {
+        return 1;
+    }
+    if (maxTextureSize_ == 0) {
+        platform::Result<platform::GpuCaps> caps = gpu_.GetCaps();
+        if (!caps.Ok()) {
+            return 1;
+        }
+        maxTextureSize_ = caps.Value().maxTextureSize;
+    }
+    while (scale > 1 && (static_cast<std::uint64_t>(mode_.width) * scale > maxTextureSize_ ||
+                         static_cast<std::uint64_t>(mode_.height) * scale > maxTextureSize_)) {
+        --scale;
+    }
+    return static_cast<std::uint8_t>(std::min<std::uint32_t>(scale, 255));
+}
+
+std::uint8_t DirectDraw::BeginSceneScale() {
+    const std::uint8_t wanted = WantedRenderScale();
+    if (wanted == displayScale_) {
+        return displayScale_;
+    }
+    const DirectDraw *owner = displayOwner(gpu_);
+    if (owner != nullptr && owner != this) {
+        return displayScale_; // another object's back buffer: its scale is not this one's to set
+    }
+    const PixelFormat format = mode_.bitsPerPixel == 8 ? PixelFormat::kXrgb8888 : PrimaryFormat();
+    platform::Result<platform::TextureId> back =
+        wanted > 1 ? gpu_.ConfigureScaledBackBuffer(mode_.width, mode_.height, format, wanted)
+                   : gpu_.ConfigureBackBuffer(mode_.width, mode_.height, format);
+    if (back.Ok()) {
+        displayTexture_ = back.Value();
+        displayScale_ = wanted;
+        displayOwners()[&gpu_] = this;
+    } else {
+        // Refused (a Gpu without render scales): the display is made again at 1 on next use, and
+        // no scale is asked for again in this mode.
+        displayTexture_ = {};
+        displayScale_ = 1;
+        scaleRefused_ = wanted > 1;
+    }
+    return displayScale_;
 }
 
 bool DirectDraw::OwnsDisplay() const {
@@ -465,6 +536,10 @@ HResult DirectDraw::PresentPrimary(Surface &primary) {
 
 void DirectDraw::SetPresentHook(PresentHook hook) {
     g_presentHook = hook;
+}
+
+void DirectDraw::SetRenderScaleOption(std::uint8_t option) {
+    g_renderScaleOption = option;
 }
 
 void DirectDraw::SurfaceGone(Surface &surface) {

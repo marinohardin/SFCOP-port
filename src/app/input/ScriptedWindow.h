@@ -63,6 +63,8 @@ public:
     platform::Status SetCursorVisible(bool visible) override;
     platform::Status SetFrameCap(platform::FrameCap cap) override;
     platform::Result<platform::FrameCap> GetFrameCap() override;
+    platform::Status SetWholeScale(bool on) override { return inner_.SetWholeScale(on); }
+    platform::Result<bool> GetWholeScale() override { return inner_.GetWholeScale(); }
     platform::Status AttachInput(platform::InputSink &sink) override;
     platform::Status DetachInput() override;
     platform::Status PumpEvents() override;

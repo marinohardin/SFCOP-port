@@ -137,6 +137,9 @@ Surface::~Surface() {
     if (texture_.Valid()) {
         (void)owner_.Device().DestroyTexture(texture_);
     }
+    if (patchTexture_.Valid()) {
+        (void)owner_.Device().DestroyTexture(patchTexture_);
+    }
     owner_.Memory().Free(pixels_);
     if (textureHandle_ != 0 && g_handleGone != nullptr) {
         g_handleGone(textureHandle_);
@@ -166,6 +169,9 @@ HResult Surface::Lock(const RectL *rect, SurfaceDesc &out, std::uint32_t flags) 
     locked_ = true;
     lockReadOnly_ = (flags & kDdlockReadOnly) != 0;
     lockArea_ = area;
+    if (!lockReadOnly_) {
+        beginHostEdit(area);
+    }
     (void)GetSurfaceDesc(out);
     out.flags |= kDdsdLpSurface;
     out.surface = pixels_ + static_cast<std::size_t>(area.top) * desc_.pitch +
@@ -181,7 +187,7 @@ HResult Surface::Unlock() {
     if (lockReadOnly_) {
         return kDdOk;
     }
-    markHostWritten(lockArea_);
+    endHostEdit(lockArea_);
     return afterWrite();
 }
 
@@ -401,6 +407,7 @@ HResult Surface::GetDC(SurfaceDesc &out) {
     }
     SyncToHost();
     dcOut_ = true;
+    beginHostEdit(bounds());
     (void)GetSurfaceDesc(out);
     out.flags |= kDdsdLpSurface;
     out.surface = pixels_;
@@ -412,7 +419,7 @@ HResult Surface::ReleaseDC() {
         return kDdErrNoDc;
     }
     dcOut_ = false;
-    markHostWritten(bounds());
+    endHostEdit(bounds());
     return afterWrite();
 }
 
@@ -577,6 +584,7 @@ platform::Result<platform::TextureId> Surface::ensureTexture() {
         desc.renderTarget = format_ != PixelFormat::kIndexed8 &&
                             ((desc_.caps.caps & kDdscaps3dDevice) != 0 ||
                              role_ == SurfaceRole::kZBuffer || role_ == SurfaceRole::kBackBuffer);
+        desc.renderScale = desc.renderTarget ? renderScale_ : 1;
         platform::Result<platform::TextureId> made = owner_.Device().CreateTexture(desc);
         if (!made.Ok()) {
             return made.Code();
@@ -595,17 +603,43 @@ platform::Result<platform::TextureId> Surface::ensureTexture() {
     return texture_;
 }
 
+void Surface::UseRenderScale(std::uint8_t scale) {
+    if (scale == 0 || scale == renderScale_ || level_ != 0 || format_ == PixelFormat::kIndexed8) {
+        return;
+    }
+    if (texture_.Valid()) {
+        SyncToHost(); // a z-buffer has nothing to read: its host copy counts as current
+        (void)owner_.Device().DestroyTexture(texture_);
+        texture_ = {};
+        hostCurrent_ = true; // ensureTexture() uploads it all into the new texture
+        dropHostWrites();
+    }
+    renderScale_ = scale;
+}
+
 platform::Status Surface::flush() {
-    if (!dirty_) {
+    if (!hasHostWrites()) {
         return {};
     }
     if (format_ == PixelFormat::kDepth16) {
-        dirty_ = false; // the Gpu takes no depth pixels; a z-buffer is cleared, never uploaded
+        dropHostWrites(); // the Gpu takes no depth pixels; a z-buffer is cleared, never uploaded
         return {};
     }
     platform::Result<platform::TextureId> texture = ensureTexture();
     if (!texture.Ok()) {
         return texture.Code();
+    }
+    if (!changes_.Empty()) {
+        if (!(dirty_ && contains(dirtyArea_, changes_.Area())) &&
+            !flushChanges(texture.Value()).Ok()) {
+            // Without the keyed blit the changed area goes up whole, as on any other surface.
+            dirtyArea_ = dirty_ ? unite(dirtyArea_, changes_.Area()) : changes_.Area();
+            dirty_ = true;
+        }
+        changes_.Clear();
+        if (!dirty_) {
+            return {};
+        }
     }
     const std::uint8_t *first = pixels_ + static_cast<std::size_t>(dirtyArea_.top) * desc_.pitch +
                                 static_cast<std::size_t>(dirtyArea_.left) * pixelBytes(format_);
@@ -645,10 +679,10 @@ void Surface::MarkGpuWritten() {
     // per-write order, so one rule is used: a host write wins where it overlaps a draw. It is
     // right for the usual order (draw, then lock to overlay text) and loses nothing elsewhere;
     // dropping the dirt, as before, lost every write that was not flushed by a later Gpu use.
-    if (dirty_) {
+    if (hasHostWrites()) {
         (void)flush(); // on a refusal the Gpu has no copy of it to be stale against
     }
-    dirty_ = false;
+    dropHostWrites();
     hostCurrent_ = false;
     ++uniqueness_;
 }
@@ -678,6 +712,107 @@ void Surface::markHostWritten(const RectL &area) {
     ++uniqueness_;
 }
 
+bool Surface::tracksChanges() const {
+    return level_ == 0 && renderScale_ > 1 && isGpuTarget() && format_ != PixelFormat::kDepth16 &&
+           hostCurrent_;
+}
+
+void Surface::beginHostEdit(const RectL &area) {
+    // A host copy that could not be read back is uploaded whole at Unlock, as before.
+    editKept_ = tracksChanges();
+    if (!editKept_) {
+        return;
+    }
+    if (!changes_.SizedFor(desc_.width, desc_.height)) {
+        changes_.Reset(desc_.width, desc_.height); // first use: nothing is marked yet
+    }
+    const std::size_t rowBytes = static_cast<std::size_t>(area.right - area.left) * pixelBytes(format_);
+    editBefore_.resize(rowBytes * static_cast<std::size_t>(area.bottom - area.top));
+    for (std::int32_t y = area.top; y < area.bottom; ++y) {
+        std::memcpy(editBefore_.data() + static_cast<std::size_t>(y - area.top) * rowBytes,
+                    pixels_ + static_cast<std::size_t>(y) * desc_.pitch +
+                        static_cast<std::size_t>(area.left) * pixelBytes(format_),
+                    rowBytes);
+    }
+}
+
+void Surface::endHostEdit(const RectL &area) {
+    if (!editKept_ || !tracksChanges()) {
+        editKept_ = false;
+        markHostWritten(area);
+        return;
+    }
+    editKept_ = false;
+    const std::uint32_t bytes = pixelBytes(format_);
+    const auto rowBytes = static_cast<std::uint32_t>(area.right - area.left) * bytes;
+    changes_.Compare(area, editBefore_.data(), rowBytes,
+                     pixels_ + static_cast<std::size_t>(area.top) * desc_.pitch +
+                         static_cast<std::size_t>(area.left) * bytes,
+                     static_cast<std::uint32_t>(desc_.pitch), bytes);
+    ++uniqueness_;
+}
+
+RectL Surface::hostWriteArea() const {
+    if (changes_.Empty()) {
+        return dirtyArea_;
+    }
+    return dirty_ ? unite(dirtyArea_, changes_.Area()) : changes_.Area();
+}
+
+void Surface::dropHostWrites() {
+    dirty_ = false;
+    changes_.Clear();
+}
+
+platform::Status Surface::flushChanges(platform::TextureId texture) {
+    platform::Gpu &gpu = owner_.Device();
+    const RectL &area = changes_.Area();
+    const std::uint32_t bytes = pixelBytes(format_);
+    if (changes_.Whole()) {
+        const platform::Status written = gpu.WriteTexture(
+            texture, 0, toRect(area),
+            pixels_ + static_cast<std::size_t>(area.top) * desc_.pitch +
+                static_cast<std::size_t>(area.left) * bytes,
+            static_cast<std::uint32_t>(desc_.pitch));
+        if (written.Ok()) {
+            owner_.CountUpload();
+        }
+        return written;
+    }
+    if (!patchTexture_.Valid()) {
+        platform::TextureDesc desc;
+        desc.width = desc_.width;
+        desc.height = desc_.height;
+        desc.format = format_;
+        platform::Result<platform::TextureId> made = gpu.CreateTexture(desc);
+        if (!made.Ok()) {
+            return made.Code();
+        }
+        patchTexture_ = made.Value();
+    }
+    const std::uint32_t key = changes_.Patch(pixels_, static_cast<std::uint32_t>(desc_.pitch),
+                                             bytes, formatMask(format_), patch_);
+    const auto patchPitch = static_cast<std::uint32_t>(area.right - area.left) * bytes;
+    platform::Status status =
+        gpu.WriteTexture(patchTexture_, 0, toRect(area), patch_.data(), patchPitch);
+    if (status.Ok()) {
+        status = gpu.SetColorKey(patchTexture_, key);
+    }
+    if (status.Ok()) {
+        platform::BlitDesc blit;
+        blit.source = patchTexture_;
+        blit.sourceRect = toRect(area);
+        blit.destination = texture;
+        blit.destinationRect = toRect(area);
+        blit.sourceColorKey = true;
+        status = gpu.Blit(blit);
+    }
+    if (status.Ok()) {
+        owner_.CountUpload();
+    }
+    return status;
+}
+
 HResult Surface::afterWrite() {
     // Nothing is uploaded here: the changed area waits in dirtyArea_ for the next flush, which
     // comes when the Gpu next uses the texture (the header). A primary shows what is written to
@@ -704,8 +839,8 @@ HResult Surface::fill(const RectL &area, std::uint32_t value) {
         if (texture.Ok() && owner_.Device().Fill(texture.Value(), toRect(area), value).Ok()) {
             if (hostWasCurrent) {
                 fillOnHost(area, value); // keeps the host copy current for the next Lock
-                if (dirty_ && contains(area, dirtyArea_)) {
-                    dirty_ = false;
+                if (hasHostWrites() && contains(area, hostWriteArea())) {
+                    dropHostWrites();
                 }
                 ++uniqueness_;
             } else {
@@ -737,7 +872,7 @@ HResult Surface::copy(Surface &source, const RectL &sourceArea, const RectL &are
         // A blit without a key replaces every pixel of `area`: what the destination has not
         // uploaded there is not uploaded first (the game writes the front between Flips, and
         // the next Flip covers it all).
-        const bool replacesDirty = !key && dirty_ && contains(area, dirtyArea_);
+        const bool replacesDirty = !key && hasHostWrites() && contains(area, hostWriteArea());
         platform::Result<platform::TextureId> to = replacesDirty ? ensureTexture() : GpuTexture();
         if (from.Ok() && to.Ok()) {
             platform::Gpu &gpu = owner_.Device();
@@ -756,7 +891,7 @@ HResult Surface::copy(Surface &source, const RectL &sourceArea, const RectL &are
             }
             if (copied.Ok()) {
                 if (replacesDirty) {
-                    dirty_ = false; // the blit covered it: nothing to upload under the result
+                    dropHostWrites(); // the blit covered it: nothing to upload under the result
                 }
                 MarkGpuWritten();
                 return afterWrite();

@@ -41,4 +41,16 @@ std::vector<std::uint8_t> repackVertices(const VertexPlan &plan, const std::uint
                                          std::uint32_t count, const Matrix &matrix,
                                          const ViewportDesc &viewport);
 
+// Points and lines on a target with a render scale k, as triangles that cover what they cover at
+// k = 1: a point is a square one logical pixel wide around it (k by k pixels of the target), a
+// line a band one logical pixel wide along it (k pixels across). The Gpu draws a point or a line
+// one pixel of its target wide, so without this the stars and lines of the 3D scene would shrink
+// to a k-th of their width. `data` holds transformed vertices of `stride` bytes, x and y the
+// first two floats; vertex i of the draw is `indices[i]` if indexed, else i. Every corner copies
+// the vertex it stands for, so colours and texture coordinates stay as drawn. A line of zero
+// length draws nothing, as on the Gpu.
+std::vector<std::uint8_t> widenPrimitives(platform::PrimitiveType primitive,
+                                          const std::uint8_t *data, std::uint32_t stride,
+                                          const std::uint16_t *indices, std::uint32_t drawn);
+
 } // namespace sfcop::hle::d3d3

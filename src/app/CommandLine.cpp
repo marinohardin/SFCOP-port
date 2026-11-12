@@ -195,6 +195,23 @@ const Flag kFlags[] = {
          o.headless = true;
          return true;
      }},
+    {"--render-scale", "N",
+     "render the 3D scene at N times the game's size: 0, the default, follows the window's pixel "
+     "density; 1 is the game's own size; up to 16",
+     [](ClientOptions &o, const std::string &v, std::string &e) {
+         unsigned scale = 0;
+         bool ok = !v.empty() && v.size() <= 2;
+         for (char c : v) {
+             ok = ok && c >= '0' && c <= '9';
+             scale = scale * 10 + static_cast<unsigned>(c - '0');
+         }
+         if (!ok || scale > 16) {
+             e = "--render-scale takes a whole number from 0 to 16, not '" + v + "'";
+             return false;
+         }
+         o.renderScale = static_cast<std::uint8_t>(scale);
+         return true;
+     }},
     {"--watchdog", "S", "stop after S seconds, 0 to 86400 (0, the default: never)",
      [](ClientOptions &o, const std::string &v, std::string &e) {
          unsigned long seconds = 0;
