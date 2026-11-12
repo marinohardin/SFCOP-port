@@ -8,6 +8,7 @@
 #include <doctest/doctest.h>
 
 #include "app/FilesMock.h"
+#include "fixes/fixes.h"
 
 using namespace sfcop::app;
 using sfcop::app::testing::fixturesDir;
@@ -220,6 +221,118 @@ TEST_CASE("startup tries the caller's install folders before the platform's usua
     // Found, then refused: the stand-in "x" is not the listed executable.
     CHECK(result.exitCode == std::optional<int>(3));
     CHECK(err.str().rfind("sfcop: StarFleetOP.exe in the install at /build/op differs", 0) == 0);
+}
+
+// An install of one file, "x", and a data folder, in memory; `fixesFile` is settings/fixes.gf when
+// it is given.
+struct FixRun {
+    MemoryFileSystem files;
+    std::optional<Run> run;
+
+    explicit FixRun(std::vector<std::string> args,
+                    std::optional<std::string> fixesFile = std::nullopt) {
+        files.files["/games/op/StarFleetOP.exe"] = "x";
+        // The SHA-256 of "x".
+        files.files["/list.sha256"] =
+            "2d711642b726b04401627ca9fbac32f5c8530fb1903cc4db02258717921a4881  StarFleetOP.exe\n";
+        if (fixesFile) {
+            files.files["/sfcop-data/settings/fixes.gf"] = *fixesFile;
+        }
+        std::vector<std::string> all = {"--install", "/games/op", "--data", "/sfcop-data",
+                                        "--headless"};
+        all.insert(all.end(), args.begin(), args.end());
+        run.emplace(all, "/home/testcaptain", &files, nullptr, "/list.sha256");
+    }
+    ~FixRun() { sfcop::fixes::install(sfcop::fixes::Settings()); }
+};
+
+TEST_CASE("startup installs each --fix, so isEnabled answers the command line's position") {
+    const FixRun fix({"--fix", "fix_smooth_scaled_frame=off"});
+    CHECK(fix.run->err.str() == "");
+    CHECK_FALSE(fix.run->result.exitCode.has_value());
+    CHECK_FALSE(sfcop::fixes::isEnabled("fix_smooth_scaled_frame"));
+    CHECK(sfcop::fixes::current().sourceOf("fix_smooth_scaled_frame") ==
+          sfcop::fixes::Source::CommandLine);
+    CHECK(sfcop::fixes::isEnabled("fix_hle_named_objects"));
+}
+
+TEST_CASE("startup applies settings/fixes.gf in the data folder, and --fix wins over it") {
+    {
+        const FixRun fix({}, "// the player's fixes\nfix_smooth_scaled_frame = off\n");
+        CHECK(fix.run->err.str() == "");
+        CHECK_FALSE(sfcop::fixes::isEnabled("fix_smooth_scaled_frame"));
+        CHECK(sfcop::fixes::current().sourceOf("fix_smooth_scaled_frame") ==
+              sfcop::fixes::Source::File);
+    }
+    const FixRun fix({"--fix", "fix_smooth_scaled_frame=on"}, "fix_smooth_scaled_frame = off\n");
+    CHECK(fix.run->err.str() == "");
+    CHECK(sfcop::fixes::isEnabled("fix_smooth_scaled_frame"));
+    CHECK(sfcop::fixes::current().sourceOf("fix_smooth_scaled_frame") ==
+          sfcop::fixes::Source::CommandLine);
+}
+
+TEST_CASE("startup leaves the fixes at their defaults when no file and no --fix is given") {
+    const FixRun fix({});
+    CHECK(fix.run->err.str() == "");
+    for (const sfcop::fixes::Switch &declared : sfcop::fixes::registry()) {
+        CAPTURE(declared.name);
+        CHECK(sfcop::fixes::isEnabled(declared.name) == declared.defaultOn);
+        CHECK(sfcop::fixes::current().sourceOf(declared.name) == sfcop::fixes::Source::Default);
+    }
+}
+
+TEST_CASE("startup prints each unknown fix once, from the file and from --fix, and still starts") {
+    const FixRun fix({"--fix", "fix_nonesuch=on", "--fix", "fix_smooth_scaled_frame=off"},
+                     "fix_smooth_scaled_frame = on\nfix_unheard_of = off\n");
+    CHECK(fix.run->err.str() ==
+          "sfcop: /sfcop-data/settings/fixes.gf, line 2: unknown fix switch 'fix_unheard_of'; it "
+          "is ignored.\n"
+          "sfcop: --fix: unknown fix switch 'fix_nonesuch'; it is ignored.\n");
+    CHECK_FALSE(fix.run->result.exitCode.has_value());
+    CHECK_FALSE(sfcop::fixes::isEnabled("fix_smooth_scaled_frame"));
+}
+
+TEST_CASE("startup says so when settings/fixes.gf exists but cannot be read, and starts") {
+    MemoryFileSystem files;
+    files.files["/games/op/StarFleetOP.exe"] = "x";
+    files.files["/list.sha256"] =
+        "2d711642b726b04401627ca9fbac32f5c8530fb1903cc4db02258717921a4881  StarFleetOP.exe\n";
+    files.files["/sfcop-data/settings/fixes.gf"] = "fix_smooth_scaled_frame = off\n";
+    // fileSize sees the file; readText cannot read it.
+    struct Unreadable : FileSystem {
+        MemoryFileSystem &inner;
+        explicit Unreadable(MemoryFileSystem &files) : inner(files) {}
+        bool isDirectory(const std::string &path) const override {
+            return inner.isDirectory(path);
+        }
+        std::optional<std::uint64_t> fileSize(const std::string &path) const override {
+            return inner.fileSize(path);
+        }
+        std::unique_ptr<FileReader> openRead(const std::string &path) const override {
+            return inner.openRead(path);
+        }
+        bool createDirectories(const std::string &path) override {
+            return inner.createDirectories(path);
+        }
+        std::optional<std::string> readText(const std::string &path) const override {
+            if (path == "/sfcop-data/settings/fixes.gf") {
+                return std::nullopt;
+            }
+            return inner.readText(path);
+        }
+        bool writeTextAtomic(const std::string &path, const std::string &text) override {
+            return inner.writeTextAtomic(path, text);
+        }
+        std::string absolutePath(const std::string &path) const override {
+            return inner.absolutePath(path);
+        }
+    } unreadable(files);
+    const Run run({"--install", "/games/op", "--data", "/sfcop-data", "--headless"},
+                  "/home/testcaptain", &unreadable, nullptr, "/list.sha256");
+    CHECK(run.err.str() ==
+          "sfcop: /sfcop-data/settings/fixes.gf cannot be read; the fixes keep their defaults.\n");
+    CHECK_FALSE(run.result.exitCode.has_value());
+    CHECK(sfcop::fixes::isEnabled("fix_smooth_scaled_frame"));
 }
 
 TEST_CASE("the console asks once and reads one line, dropping quotes and spaces") {
