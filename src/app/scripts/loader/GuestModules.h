@@ -103,6 +103,10 @@ private:
     std::map<std::uint32_t, Module> byBase_; // the loaded modules, by base (their handle)
 };
 
+// Has the dispatch hook in `hook` ask `lookup` (the interpreted scripts, InterpretedModules.h) for
+// the addresses no native module owns, before the hook it replaced. Both providers share one hook.
+void answerInDispatch(sfcop_guest_fn (*lookup)(std::uint32_t), sfcop_guest_fn (**hook)(std::uint32_t));
+
 // The per-user data folder the modules root is found in (above). The guest host sets it before the
 // game runs; an empty path, the default, means the working directory, for programs that never set
 // it (the tests, the tools). Called before the game's first LoadLibraryA, on one thread: it is
