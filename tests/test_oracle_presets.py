@@ -336,7 +336,69 @@ sys.path.insert(0, str(PRESETS))
 import ci  # noqa: E402
 
 
-def test_a_decompilation_only_change_builds_macos_alone():
+@pytest.fixture
+def unpaused(monkeypatch):
+    """No preset paused: the logic that applies again once PAUSED_PRESETS is emptied."""
+    monkeypatch.setattr(ci, 'PAUSED_PRESETS', ())
+
+
+def test_the_cross_presets_are_paused():
+    assert ci.PAUSED_PRESETS == ('windows-x64', 'linux-x64')
+
+
+def test_a_paused_preset_is_not_built_for_a_src_change_and_macos_is():
+    for files in (['src/app/main.cpp'], ['game/unsorted/tSphere.cpp', 'src/app/main.cpp'], []):
+        assert ci.builds('macos-arm64', files), files
+        assert not ci.builds('windows-x64', files), files
+        assert not ci.builds('linux-x64', files), files
+
+
+def test_builds_names_the_pause_for_a_paused_preset(monkeypatch, capsys):
+    import io
+    monkeypatch.setattr('sys.stdin', io.StringIO('src/app/main.cpp\n'))
+    assert ci.main(['builds', 'windows-x64']) == 0
+    out = capsys.readouterr()
+    assert out.out == 'no\n'
+    assert out.err == ('::notice::skip: windows-x64: paused on pull requests (PAUSED_PRESETS in '
+                       'oracle/presets/ci.py), whatever the change\n')
+    monkeypatch.setattr('sys.stdin', io.StringIO('src/app/main.cpp\n'))
+    assert ci.main(['builds', 'macos-arm64']) == 0
+    out = capsys.readouterr()
+    assert out.out == 'yes\n' and out.err == ''
+
+
+def test_run_skips_a_paused_preset_even_when_its_build_folder_exists(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv('SFCOP_ORACLE_RUN_PRESET', str(fake_run_preset(tmp_path, {
+        p: (0, 'wrote') for p in ci.PRESETS})))
+    for preset in ci.PRESETS:
+        (tmp_path / preset / 'oracle-scratch').mkdir(parents=True)
+    changed = tmp_path / 'changed.txt'
+    changed.write_text('src/app/main.cpp\n')
+    env = tmp_path / 'env'
+    assert ci.main(['run', 'MenuPath', 'menu', '--build-root', str(tmp_path), '--traces', str(tmp_path),
+                    '--env-file', str(env), '--changed', str(changed)]) == 0
+    out = capsys.readouterr().out
+    assert env.read_text() == 'RAN_MENUPATH=macos-arm64\n'
+    assert 'oracle: macos-arm64: MenuPath/menu: exit 0 (ran)' in out
+    assert 'oracle: linux-x64' not in out and 'oracle: windows-x64' not in out
+    assert ('::notice::oracle MenuPath/menu: linux-x64 is paused on pull requests '
+            '(PAUSED_PRESETS in oracle/presets/ci.py), so its client is not run') in out
+    assert ('::notice::oracle MenuPath/menu: windows-x64 is paused on pull requests '
+            '(PAUSED_PRESETS in oracle/presets/ci.py), so its client is not run') in out
+    assert 'was not built for this pull request' not in out
+    # The paused presets' folders are left as they were.
+    assert (tmp_path / 'linux-x64' / 'oracle-scratch').is_dir()
+    assert (tmp_path / 'windows-x64' / 'oracle-scratch').is_dir()
+
+
+def test_run_all_without_changed_paths_skips_a_paused_preset(tmp_path, monkeypatch):
+    monkeypatch.setenv('SFCOP_ORACLE_RUN_PRESET', str(fake_run_preset(tmp_path, {
+        p: (0, 'wrote') for p in ci.PRESETS})))
+    ran, failed, log = ci.run_all('MenuPath', 'menu', tmp_path, tmp_path)
+    assert ran == ['macos-arm64'] and not failed
+
+
+def test_a_decompilation_only_change_builds_macos_alone(unpaused):
     grind = ['game/unsorted/tSphere.cpp', 'game/manifest.tsv', 'analysis/results/matched_set.json',
              'src/app/guest/override.cpp']
     assert ci.builds('macos-arm64', grind)
@@ -344,7 +406,7 @@ def test_a_decompilation_only_change_builds_macos_alone():
     assert not ci.builds('windows-x64', grind)
 
 
-def test_any_other_change_builds_every_preset():
+def test_any_other_change_builds_every_preset(unpaused):
     for files in (['src/app/main.cpp'], ['game/Tiger/tsay.cpp', 'cmake/SfcopLifter.cmake'],
                   ['src/app/guest/override.h'], ['docs/DESIGN.md'], [],
                   ['game/port/types.h'], ['game/unsorted/tSphere.cpp', 'game/port/guest.h'],
@@ -354,7 +416,7 @@ def test_any_other_change_builds_every_preset():
             assert ci.builds(preset, files), (preset, files)
 
 
-def test_builds_reads_paths_on_standard_input(monkeypatch, capsys):
+def test_builds_reads_paths_on_standard_input(unpaused, monkeypatch, capsys):
     import io
     monkeypatch.setattr('sys.stdin', io.StringIO('game/unsorted/tSphere.cpp\n'))
     assert ci.main(['builds', 'linux-x64']) == 0
@@ -387,7 +449,7 @@ def fake_run_preset(tmp, codes):
     return script
 
 
-def test_run_all_keeps_the_presets_that_ran_warns_for_skips_and_fails_on_the_rest(tmp_path, monkeypatch):
+def test_run_all_keeps_the_presets_that_ran_warns_for_skips_and_fails_on_the_rest(unpaused, tmp_path, monkeypatch):
     monkeypatch.setenv('SFCOP_ORACLE_RUN_PRESET', str(fake_run_preset(tmp_path, {
         'macos-arm64': (0, 'wrote'), 'linux-x64': (3, 'skip: linux-x64: no lifted client'),
         'windows-x64': (1, 'broke')})))
@@ -398,7 +460,7 @@ def test_run_all_keeps_the_presets_that_ran_warns_for_skips_and_fails_on_the_res
     assert '::error::oracle MenuPath/menu: windows-x64 failed (exit 1)' in text
 
 
-def test_run_leaves_out_the_presets_a_decompilation_only_change_did_not_build(tmp_path, monkeypatch, capsys):
+def test_run_leaves_out_the_presets_a_decompilation_only_change_did_not_build(unpaused, tmp_path, monkeypatch, capsys):
     monkeypatch.setenv('SFCOP_ORACLE_RUN_PRESET', str(fake_run_preset(tmp_path, {
         p: (0, 'wrote') for p in ci.PRESETS})))
     changed = tmp_path / 'changed.txt'
@@ -413,7 +475,7 @@ def test_run_leaves_out_the_presets_a_decompilation_only_change_did_not_build(tm
     assert '::notice::oracle MenuPath/menu: windows-x64 was not built for this pull request' in out
 
 
-def test_run_runs_every_preset_for_any_other_change(tmp_path, monkeypatch, capsys):
+def test_run_runs_every_preset_for_any_other_change(unpaused, tmp_path, monkeypatch, capsys):
     monkeypatch.setenv('SFCOP_ORACLE_RUN_PRESET', str(fake_run_preset(tmp_path, {
         p: (0, 'wrote') for p in ci.PRESETS})))
     changed = tmp_path / 'changed.txt'
@@ -425,7 +487,7 @@ def test_run_runs_every_preset_for_any_other_change(tmp_path, monkeypatch, capsy
     assert '::notice::' not in capsys.readouterr().out
 
 
-def test_run_all_with_only_skips_does_not_fail(tmp_path, monkeypatch):
+def test_run_all_with_only_skips_does_not_fail(unpaused, tmp_path, monkeypatch):
     monkeypatch.setenv('SFCOP_ORACLE_RUN_PRESET', str(fake_run_preset(tmp_path, {
         p: (3, f'skip: {p}: no data') for p in ci.PRESETS})))
     ran, failed, log = ci.run_all('MenuPath', 'menu', tmp_path, tmp_path)
@@ -433,7 +495,7 @@ def test_run_all_with_only_skips_does_not_fail(tmp_path, monkeypatch):
     assert sum('::warning::' in line for line in log) == 3
 
 
-def test_run_all_removes_a_scratch_copy_left_by_a_killed_run(tmp_path, monkeypatch):
+def test_run_all_removes_a_scratch_copy_left_by_a_killed_run(unpaused, tmp_path, monkeypatch):
     monkeypatch.setenv('SFCOP_ORACLE_RUN_PRESET', str(fake_run_preset(tmp_path, {
         p: (3, 'skip: x') for p in ci.PRESETS})))
     left = tmp_path / 'linux-x64' / 'oracle-scratch' / 'linux-x64'

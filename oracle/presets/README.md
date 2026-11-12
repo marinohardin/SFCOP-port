@@ -81,6 +81,10 @@ preset with no lifted client skips with its reason: `windows-x64` builds `src/` 
 until the lift's runtime builds there, and every preset skips while the runner's build is made
 without the lift.
 
+`windows-x64` and `linux-x64` are paused on pull requests (`PAUSED_PRESETS` in `ci.py`): their
+build jobs skip whatever the change, and the oracle does not run them even when an older build
+folder is still on the runner. Emptying the tuple resumes them; releases build every preset either way.
+
 The runner's variables: `SFCOP_ORACLE_DATA` (this), `SFCOP_ORACLE_MODULES` (the skirmish's modules
 root) and, for the lifted builds, `SFCOP_INSTALL_DIR` and `SFCOP_PCRECOMP_DIR`
 (`.github/workflows/pull-request.yml`, the `build` job). A preset that skips emits a `::warning::`
