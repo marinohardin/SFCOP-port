@@ -10,7 +10,7 @@ that is not about files.
 |---|---|
 | `Kernel32rt.h` | Win32 constants, `Answer` (a value and the last error it sets), `Object` |
 | `Sync.*` | `CreateThread`'s thread, events, mutexes, semaphores and waits on `Threads`; the three `Create*` rows and `OpenMutexA` read `fix_hle_named_objects` through it (an empty name is no name; off, one shared object per kind) |
-| `CriticalSections.*` | A `CRITICAL_SECTION` by its guest address, as a recursive `Threads` mutex |
+| `CriticalSections.*` | `InitializeCriticalSection`, Enter, `TryEnterCriticalSection`, Leave and Delete, kept in the guest's own structure; a host wait object only for a contended section |
 | `ThreadLocal.*` | `TlsAlloc`, `TlsFree`, `TlsGetValue`, `TlsSetValue` on `Threads`' slots; `TlsFree` is a mission module's import, not the game's, so it has no row in `surface.tsv` |
 | `Time.*` | Tick count, performance counter, `SYSTEMTIME` and `FILETIME` on `Clock` |
 | `Timers.*` | `timeSetEvent` and `timeKillEvent`: one thread per timer; on a fixed-step clock none, and they fire from `FireDue()` on the main thread once per frame |
@@ -36,6 +36,36 @@ that is not about files.
   event behind a handle, for DirectInput's `SetEventNotification`.
 - **Blocking.** A wait, `Sleep`, entering an owned critical section and stopping a timer give the
   machine lock up for their length, so the thread they wait for can run guest code.
+- **Critical sections.** The guest's 24-byte `CRITICAL_SECTION` holds the state, in the layout
+  Windows XP uses: `LockCount` (-1 free, one more for every Enter held, recursion included, or
+  waiting), `RecursionCount`, `OwningThread` (the `GetCurrentThreadId` id), and `DebugInfo`,
+  `LockSemaphore` and `SpinCount` left 0. An uncontended Enter, TryEnter or Leave reads and writes
+  those bytes and nothing else: no host lock, no lookup, no allocation. A thread that finds the
+  section owned by another queues itself on a host wait object for that address (made on the first
+  contention, released by `DeleteCriticalSection` or a second `InitializeCriticalSection`, which
+  hand the section to a thread still queued on it rather than leave it asleep), gives
+  the machine up and sleeps; the owner's last Leave hands the section to the first queued thread
+  (it is the owner when it wakes, so a free section never has a waiter) and wakes it. A section
+  entered without being initialised (all 24 bytes zero) is initialised on first use. A Leave by a
+  thread that does not own the section changes nothing.
+
+  **What holds this correct:** every row runs with the machine held, and only one thread holds the
+  machine at a time, so reading and writing the structure needs no atomics; the only state shared
+  outside the machine (the queue and the hand-over flag) is behind the module's own lock. **What
+  would break it:** guest code running on two host threads at once (a machine per thread, or
+  rows that run without the machine), a row that gives the machine up between reading and writing
+  the structure, or a thread id that is not unique per thread or is 0.
+
+  **A deliberate departure from Windows:** a thread that ends while it owns sections releases every one of them, whatever its recursion, hands each to its first waiter, and
+  logs one `[kernel32rt] thread … ended inside critical section 0x…: released` line per section.
+  Windows leaves such a section owned, so the next thread to enter it waits for ever. The
+  mutex-backed sections this module had before released it, as an abandoned mutex, and guest
+  threads here end through `ExitThread`'s unwind as well as by returning, so a game thread that
+  ended inside a section would otherwise hang the next one where it ran before. To know what a
+  thread owns, each owner keeps a list of its sections; the uncontended path keeps it with one push
+  and one pop under the machine. `DeleteCriticalSection` or a second `InitializeCriticalSection` on
+  a section with threads queued hands it to the first and keeps the rest queued, rather than
+  waking them to return without it (which would let two threads into the section).
 - **Heap.** One system allocator in guest memory (pcrecomp's `hle_heap_*`) answers the process
   heap, every `HeapCreate` heap and the `Global`/`Local` blocks; it replaces SmartHeap. A handle of a
   `Global` block is its address. `HeapDestroy` leaves the heap's blocks allocated.

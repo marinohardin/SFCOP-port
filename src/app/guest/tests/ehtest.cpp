@@ -247,6 +247,58 @@ static int case_thread(void) {
     return got == 105 && t_value == 1;
 }
 
+// GetCurrentThreadId: never 0, a different id on another thread, and the id CreateThread gave out.
+static DWORD g_child_id;
+
+static DWORD WINAPI id_proc(LPVOID) {
+    g_child_id = GetCurrentThreadId();
+    return 0;
+}
+
+static int case_thread_ids(void) {
+    DWORD created = 0;
+    HANDLE h = CreateThread(NULL, 0, id_proc, NULL, 0, &created);
+    if (!h) return 0;
+    WaitForSingleObject(h, INFINITE);
+    CloseHandle(h);
+    DWORD me = GetCurrentThreadId();
+    return me != 0 && g_child_id != 0 && g_child_id != me && g_child_id == created
+        && GetCurrentThreadId() == me;
+}
+
+// A thread that ends inside a critical section, by returning or through ExitThread, leaves it
+// free: read through the structure's own fields, then entered and left again here.
+static CRITICAL_SECTION g_ended_cs;
+
+static DWORD WINAPI enter_twice_and_return(LPVOID) {
+    EnterCriticalSection(&g_ended_cs);
+    EnterCriticalSection(&g_ended_cs);
+    return 0;
+}
+
+static DWORD WINAPI enter_and_exit_thread(LPVOID) {
+    EnterCriticalSection(&g_ended_cs);
+    ExitThread(3);
+    return 0;
+}
+
+static int case_section_after_thread_end(LPTHREAD_START_ROUTINE body) {
+    InitializeCriticalSection(&g_ended_cs);
+    HANDLE h = CreateThread(NULL, 0, body, NULL, 0, NULL);
+    if (!h) return 0;
+    WaitForSingleObject(h, INFINITE);
+    CloseHandle(h);
+    int freed = g_ended_cs.OwningThread == 0 && g_ended_cs.RecursionCount == 0
+        && g_ended_cs.LockCount == -1;
+    if (!freed) return 0; // entering it now would wait for ever
+    EnterCriticalSection(&g_ended_cs);
+    int mine = g_ended_cs.OwningThread == (HANDLE)GetCurrentThreadId()
+        && g_ended_cs.RecursionCount == 1 && g_ended_cs.LockCount == 0;
+    LeaveCriticalSection(&g_ended_cs);
+    DeleteCriticalSection(&g_ended_cs);
+    return mine;
+}
+
 // A throw out of a callback the system calls (EnumSystemLocalesA's), caught by the caller of the
 // system call: the native-to-guest call in between is jumped over. The test host exports the
 // machine lock's depth as sfcoptest.dll!LockDepth; it must read the same before and after.
@@ -320,6 +372,11 @@ int main(int argc, char **argv) {
     check("every exception object destroyed", Error::live == 0);
     check("__try/__except catches RaiseException", case_seh() == 77);
     check("static TLS per thread, and a throw caught on a second thread", case_thread());
+    check("thread ids: never 0, distinct per thread, CreateThread's", case_thread_ids());
+    check("a thread that returns inside a critical section leaves it free",
+          case_section_after_thread_end(enter_twice_and_return));
+    check("a thread that calls ExitThread inside a critical section leaves it free",
+          case_section_after_thread_end(enter_and_exit_thread));
     g_log[0] = 0;
     check("access violation caught by catch(...), destructor run", case_fault_catch_all() == 31
           && strcmp(g_log, "F") == 0);
