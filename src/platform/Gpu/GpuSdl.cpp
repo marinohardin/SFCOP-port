@@ -19,6 +19,11 @@
 //   or on SDL's dummy and offscreen video drivers there is no swapchain and Present() only
 //   paces, which is what headless runs and tests use. Metal needs a video driver that makes
 //   Metal views, so on macOS a device exists only with the Cocoa driver, hidden window or not.
+// - A texture with a render scale k (TextureDesc::renderScale) is a GPU texture k times its
+//   logical size. Everything recorded stays in logical pixels: vertex positions, the `target`
+//   uniform, scissors and quads. Only the encoded render pass sees the scale, as a viewport and
+//   scissors k times larger, so the rasteriser draws the same geometry with k times the pixels.
+//   Writes are drawn enlarged (each logical pixel a k by k block) and reads average each block.
 #include "platform/Gpu/Gpu.h"
 #include "platform/Window/Window.h"
 
@@ -167,18 +172,52 @@ struct Command {
     FragmentUniforms fragmentUniforms{};
 };
 
-// The work of one render pass: its targets, staging data and draws.
+// The work of one render pass: its targets, staging data and draws. `width` and `height` are the
+// targets' logical size, `scale` their render scale.
 struct Pass {
     SDL_GPUTexture *color = nullptr;
     SDL_GPUTexture *depth = nullptr;
     std::uint32_t width = 0;
     std::uint32_t height = 0;
+    std::uint32_t scale = 1;
     std::vector<std::uint8_t> staging;
     std::vector<Command> commands;
 };
 
 std::uint32_t levelSize(std::uint32_t size, std::uint8_t level) {
     return (std::max)(1u, size >> level);
+}
+
+// A logical rectangle in the pixels of a texture with render scale k.
+SDL_Rect scaled(const SDL_Rect &logical, std::uint32_t k) {
+    const auto f = static_cast<int>(k);
+    return SDL_Rect{logical.x * f, logical.y * f, logical.w * f, logical.h * f};
+}
+
+// Each k by k block of `physical` (B, G, R, A pixels, width * k by height * k, tightly packed)
+// averaged, rounding to nearest, into one pixel of `logical` (width by height).
+void averageBlocks(const std::uint8_t *physical, std::uint32_t width, std::uint32_t height,
+                   std::uint32_t k, std::uint8_t *logical) {
+    const std::size_t physicalRow = std::size_t{width} * k * 4;
+    const std::uint32_t count = k * k;
+    for (std::uint32_t y = 0; y < height; ++y) {
+        for (std::uint32_t x = 0; x < width; ++x) {
+            std::uint32_t sum[4] = {0, 0, 0, 0};
+            for (std::uint32_t dy = 0; dy < k; ++dy) {
+                const std::uint8_t *row =
+                    physical + (std::size_t{y} * k + dy) * physicalRow + std::size_t{x} * k * 4;
+                for (std::uint32_t dx = 0; dx < k; ++dx) {
+                    for (std::uint32_t c = 0; c < 4; ++c) {
+                        sum[c] += row[dx * 4 + c];
+                    }
+                }
+            }
+            std::uint8_t *out = logical + (std::size_t{y} * width + x) * 4;
+            for (std::uint32_t c = 0; c < 4; ++c) {
+                out[c] = static_cast<std::uint8_t>((sum[c] + count / 2) / count);
+            }
+        }
+    }
 }
 
 // Rect with "0 = to the edge" resolved against a surface; false if it is empty or outside.
@@ -434,11 +473,20 @@ public:
 
     Result<TextureId> ConfigureBackBuffer(std::uint32_t width, std::uint32_t height,
                                           PixelFormat format) override {
+        return ConfigureScaledBackBuffer(width, height, format, 1);
+    }
+
+    Result<TextureId> ConfigureScaledBackBuffer(std::uint32_t width, std::uint32_t height,
+                                                PixelFormat format,
+                                                std::uint8_t renderScale) override {
         if (device_ == nullptr || inScene_) {
             return Error::kWrongState;
         }
-        if (width == 0 || height == 0 || width > kMaxTextureSize || height > kMaxTextureSize ||
-            format == PixelFormat::kDepth16) {
+        if (width == 0 || height == 0 || renderScale == 0 ||
+            std::uint64_t{width} * renderScale > kMaxTextureSize ||
+            std::uint64_t{height} * renderScale > kMaxTextureSize ||
+            format == PixelFormat::kDepth16 ||
+            (format == PixelFormat::kIndexed8 && renderScale != 1)) {
             return Error::kInvalidArgument;
         }
         if (backBuffer_.Valid()) {
@@ -450,6 +498,7 @@ public:
         desc.height = height;
         desc.format = format;
         desc.renderTarget = format != PixelFormat::kIndexed8;
+        desc.renderScale = renderScale;
         auto made = MakeTexture(desc);
         if (!made.Ok()) {
             return made.Code();
@@ -698,7 +747,8 @@ public:
         }
         if (depth != nullptr &&
             (!depth->desc.renderTarget || depth->desc.format != PixelFormat::kDepth16 ||
-             depth->desc.width != color->desc.width || depth->desc.height != color->desc.height)) {
+             depth->desc.width != color->desc.width || depth->desc.height != color->desc.height ||
+             depth->desc.renderScale != color->desc.renderScale)) {
             return Error::kInvalidArgument;
         }
         sceneCommands_ = SDL_AcquireGPUCommandBuffer(device_);
@@ -712,6 +762,7 @@ public:
         scene_.depth = depth != nullptr ? depth->gpu : nullptr;
         scene_.width = color->desc.width;
         scene_.height = color->desc.height;
+        scene_.scale = color->desc.renderScale;
         sceneFormat_ = color->desc.format;
         viewport_ = SDL_Rect{0, 0, static_cast<int>(scene_.width), static_cast<int>(scene_.height)};
         viewportMinDepth_ = 0.0f;
@@ -880,9 +931,15 @@ public:
             }
             return Expand(*rec, 0, target);
         }
+        // A solid block needs no enlarging: it is written at the texture's own size.
+        const std::uint32_t k = rec->desc.renderScale;
         const std::uint32_t argb = rawToArgb(format, value, nullptr);
-        std::vector<std::uint32_t> block(std::size_t{target.width} * target.height, argb);
-        return Upload(*rec, 0, target, reinterpret_cast<const std::uint8_t *>(block.data()));
+        std::vector<std::uint32_t> block(std::size_t{target.width} * k * target.height * k, argb);
+        const SDL_Rect physical = scaled(SDL_Rect{target.x, target.y, static_cast<int>(target.width),
+                                              static_cast<int>(target.height)},
+                                     k);
+        return UploadRegion(rec->gpu, 0, physical,
+                            reinterpret_cast<const std::uint8_t *>(block.data()));
     }
 
     Status Present() override {
@@ -1095,16 +1152,19 @@ private:
             ++maxLevels;
         }
         const auto format = static_cast<std::uint32_t>(desc.format);
-        if (desc.width == 0 || desc.height == 0 || desc.width > kMaxTextureSize ||
-            desc.height > kMaxTextureSize || desc.mipLevels == 0 ||
+        const std::uint32_t k = desc.renderScale;
+        if (desc.width == 0 || desc.height == 0 || k == 0 ||
+            std::uint64_t{desc.width} * k > kMaxTextureSize ||
+            std::uint64_t{desc.height} * k > kMaxTextureSize || desc.mipLevels == 0 ||
             desc.mipLevels > maxLevels || format > static_cast<std::uint32_t>(PixelFormat::kDepth16) ||
-            (desc.format == PixelFormat::kDepth16 && !desc.renderTarget)) {
+            (desc.format == PixelFormat::kDepth16 && !desc.renderTarget) ||
+            (k != 1 && (desc.mipLevels != 1 || desc.format == PixelFormat::kIndexed8))) {
             return Error::kInvalidArgument;
         }
         SDL_GPUTextureCreateInfo info{};
         info.type = SDL_GPU_TEXTURETYPE_2D;
-        info.width = desc.width;
-        info.height = desc.height;
+        info.width = desc.width * k;
+        info.height = desc.height * k;
         info.layer_count_or_depth = 1;
         info.num_levels = desc.mipLevels;
         if (desc.format == PixelFormat::kDepth16) {
@@ -1250,9 +1310,54 @@ private:
         return true;
     }
 
-    // Uploads B, G, R, A pixels, tightly packed, into a region of one level.
+    // Uploads B, G, R, A pixels, tightly packed, into a logical region of one level; with a
+    // render scale they are drawn enlarged, each pixel a k by k block (nearest, the present
+    // filter's choice at a whole-number scale), through a temporary texture.
     Status Upload(TextureRec &rec, std::uint8_t level, const Rect &area, const std::uint8_t *bgra) {
-        const std::uint32_t bytes = area.width * area.height * 4;
+        const SDL_Rect region{area.x, area.y, static_cast<int>(area.width),
+                              static_cast<int>(area.height)};
+        if (rec.desc.renderScale == 1) {
+            return UploadRegion(rec.gpu, level, region, bgra);
+        }
+        SDL_GPUTextureCreateInfo info{};
+        info.type = SDL_GPU_TEXTURETYPE_2D;
+        info.format = kColorFormat;
+        info.usage = SDL_GPU_TEXTUREUSAGE_SAMPLER;
+        info.width = area.width;
+        info.height = area.height;
+        info.layer_count_or_depth = 1;
+        info.num_levels = 1;
+        SDL_GPUTexture *temporary = SDL_CreateGPUTexture(device_, &info);
+        if (temporary == nullptr) {
+            return Error::kOutOfResources;
+        }
+        const Status uploaded = UploadRegion(
+            temporary, 0, SDL_Rect{0, 0, region.w, region.h}, bgra);
+        SDL_GPUGraphicsPipeline *pipeline =
+            uploaded.Ok() ? InternalPipeline(quadPipeline(TextureArg::kTexture), true, true)
+                          : nullptr;
+        SDL_GPUCommandBuffer *commands = pipeline != nullptr ? BeginWork() : nullptr;
+        if (commands == nullptr) {
+            SDL_ReleaseGPUTexture(device_, temporary);
+            return uploaded.Ok() ? Status{Error::kOutOfResources} : uploaded;
+        }
+        Pass pass;
+        pass.color = rec.gpu;
+        pass.width = rec.desc.width;
+        pass.height = rec.desc.height;
+        pass.scale = rec.desc.renderScale;
+        RecordQuad(pass, pipeline, region, 0.0f, 0xFFFFFFFFu, temporary, 0.0f, 0.0f, 1.0f, 1.0f,
+                   std::nullopt);
+        Encode(commands, pass);
+        EndWork(commands);
+        SDL_ReleaseGPUTexture(device_, temporary); // freed once the work using it is done
+        return {};
+    }
+
+    // Uploads B, G, R, A pixels, tightly packed, into a region of a GPU texture's own pixels.
+    Status UploadRegion(SDL_GPUTexture *texture, std::uint8_t level, const SDL_Rect &area,
+                        const std::uint8_t *bgra) {
+        const std::uint32_t bytes = static_cast<std::uint32_t>(area.w) * area.h * 4;
         SDL_GPUTransferBufferCreateInfo info{};
         info.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
         info.size = bytes;
@@ -1271,15 +1376,15 @@ private:
         SDL_GPUCopyPass *copy = SDL_BeginGPUCopyPass(commands);
         SDL_GPUTextureTransferInfo from{};
         from.transfer_buffer = transfer;
-        from.pixels_per_row = area.width;
-        from.rows_per_layer = area.height;
+        from.pixels_per_row = static_cast<Uint32>(area.w);
+        from.rows_per_layer = static_cast<Uint32>(area.h);
         SDL_GPUTextureRegion to{};
-        to.texture = rec.gpu;
+        to.texture = texture;
         to.mip_level = level;
         to.x = static_cast<Uint32>(area.x);
         to.y = static_cast<Uint32>(area.y);
-        to.w = area.width;
-        to.h = area.height;
+        to.w = static_cast<Uint32>(area.w);
+        to.h = static_cast<Uint32>(area.h);
         to.d = 1;
         SDL_UploadToGPUTexture(copy, &from, &to, false);
         SDL_EndGPUCopyPass(copy);
@@ -1288,14 +1393,21 @@ private:
         return {};
     }
 
-    // Reads a region of one level back as B, G, R, A pixels, waiting for the work before it.
-    bool Download(TextureRec &rec, std::uint8_t level, const Rect &area,
+    // Reads a logical region of one level back as B, G, R, A pixels, waiting for the work before
+    // it; with a render scale each k by k block is averaged into one pixel.
+    bool Download(TextureRec &rec, std::uint8_t level, const Rect &logical,
                   std::vector<std::uint8_t> &bgra) {
         if (inScene_) {
             FlushScene();
             SDL_SubmitGPUCommandBuffer(sceneCommands_);
             sceneCommands_ = SDL_AcquireGPUCommandBuffer(device_);
         }
+        const std::uint32_t k = rec.desc.renderScale;
+        Rect area = logical;
+        area.x *= static_cast<std::int32_t>(k);
+        area.y *= static_cast<std::int32_t>(k);
+        area.width *= k;
+        area.height *= k;
         const std::uint32_t bytes = area.width * area.height * 4;
         SDL_GPUTransferBufferCreateInfo info{};
         info.usage = SDL_GPU_TRANSFERBUFFERUSAGE_DOWNLOAD;
@@ -1327,8 +1439,13 @@ private:
             const void *mapped = SDL_MapGPUTransferBuffer(device_, transfer, false);
             ok = mapped != nullptr;
             if (ok) {
-                bgra.assign(static_cast<const std::uint8_t *>(mapped),
-                            static_cast<const std::uint8_t *>(mapped) + bytes);
+                const auto *physical = static_cast<const std::uint8_t *>(mapped);
+                if (k == 1) {
+                    bgra.assign(physical, physical + bytes);
+                } else {
+                    bgra.resize(std::size_t{logical.width} * logical.height * 4);
+                    averageBlocks(physical, logical.width, logical.height, k, bgra.data());
+                }
                 SDL_UnmapGPUTransferBuffer(device_, transfer);
             }
         }
@@ -1695,10 +1812,14 @@ private:
                                    pass.color != nullptr ? 1 : 0,
                                    pass.depth != nullptr ? &depth : nullptr);
         // The SDL viewport is the whole target (vertices are target pixels); the Viewport's
-        // rectangle is the scissor below and its depth range is applied here, per draw.
+        // rectangle is the scissor below and its depth range is applied here, per draw. With a
+        // render scale k both are k times the logical size while the vertices and the `target`
+        // uniform stay logical, so a logical position p lands on physical p * k. The shader's
+        // half-pixel shift (Direct3D 3's pixel centres on integers) is in logical pixels: the
+        // centre of logical pixel i, at i + 0.5, lands on the centre of its k by k block.
         SDL_GPUViewport viewport{};
-        viewport.w = static_cast<float>(pass.width);
-        viewport.h = static_cast<float>(pass.height);
+        viewport.w = static_cast<float>(pass.width * pass.scale);
+        viewport.h = static_cast<float>(pass.height * pass.scale);
         viewport.min_depth = 0.0f;
         viewport.max_depth = 1.0f;
         SDL_SetGPUViewport(render, &viewport);
@@ -1713,7 +1834,8 @@ private:
                 SDL_BindGPUGraphicsPipeline(render, c.pipeline);
                 bound = c.pipeline;
             }
-            SDL_SetGPUScissor(render, &c.scissor);
+            const SDL_Rect scissor = scaled(c.scissor, pass.scale);
+            SDL_SetGPUScissor(render, &scissor);
             SDL_GPUBufferBinding vertexBindings[2]{};
             vertexBindings[0].buffer = stream_;
             vertexBindings[0].offset = c.vertexOffset;
@@ -1825,8 +1947,9 @@ private:
             info.type = SDL_GPU_TEXTURETYPE_2D;
             info.format = kColorFormat;
             info.usage = SDL_GPU_TEXTUREUSAGE_SAMPLER;
-            info.width = from.width;
-            info.height = from.height;
+            const std::uint32_t k = src.desc.renderScale;
+            info.width = from.width * k;
+            info.height = from.height * k;
             info.layer_count_or_depth = 1;
             info.num_levels = 1;
             temporary = SDL_CreateGPUTexture(device_, &info);
@@ -1837,11 +1960,11 @@ private:
             SDL_GPUCopyPass *copy = SDL_BeginGPUCopyPass(commands);
             SDL_GPUTextureLocation a{};
             a.texture = src.gpu;
-            a.x = static_cast<Uint32>(from.x);
-            a.y = static_cast<Uint32>(from.y);
+            a.x = static_cast<Uint32>(from.x) * k;
+            a.y = static_cast<Uint32>(from.y) * k;
             SDL_GPUTextureLocation b{};
             b.texture = temporary;
-            SDL_CopyGPUTextureToTexture(copy, &a, &b, from.width, from.height, 1, false);
+            SDL_CopyGPUTextureToTexture(copy, &a, &b, from.width * k, from.height * k, 1, false);
             SDL_EndGPUCopyPass(copy);
             source = temporary;
             u0 = 0.0f;
@@ -1853,6 +1976,7 @@ private:
         pass.color = dst.gpu;
         pass.width = dst.desc.width;
         pass.height = dst.desc.height;
+        pass.scale = dst.desc.renderScale;
         std::optional<std::uint32_t> keyColor;
         if (key.has_value()) {
             keyColor = KeyColor(src, *key);
@@ -1884,6 +2008,7 @@ private:
         pass.depth = rec.gpu;
         pass.width = rec.desc.width;
         pass.height = rec.desc.height;
+        pass.scale = rec.desc.renderScale;
         RecordQuad(pass, pipeline,
                    SDL_Rect{area.x, area.y, static_cast<int>(area.width),
                             static_cast<int>(area.height)},
@@ -1938,11 +2063,13 @@ private:
         acquired = swapchain != nullptr;
         const TextureRec *back = FindTexture(backBuffer_);
         if (swapchain != nullptr && back != nullptr && width != 0 && height != 0) {
+            const std::uint32_t imageW = back->desc.width * back->desc.renderScale;
+            const std::uint32_t imageH = back->desc.height * back->desc.renderScale;
             const Rect place = presentRect(back->desc.width, back->desc.height, width, height);
             SDL_GPUBlitInfo blit{};
             blit.source.texture = back->gpu;
-            blit.source.w = back->desc.width;
-            blit.source.h = back->desc.height;
+            blit.source.w = imageW;
+            blit.source.h = imageH;
             blit.destination.texture = swapchain;
             blit.destination.x = static_cast<Uint32>(place.x);
             blit.destination.y = static_cast<Uint32>(place.y);
@@ -1950,8 +2077,7 @@ private:
             blit.destination.h = place.height;
             blit.load_op = SDL_GPU_LOADOP_CLEAR;
             blit.clear_color = SDL_FColor{0.0f, 0.0f, 0.0f, 1.0f};
-            blit.filter = presentFilter(presentFilter_, back->desc.width, back->desc.height,
-                                        place.width, place.height);
+            blit.filter = presentFilter(presentFilter_, imageW, imageH, place.width, place.height);
             SDL_BlitGPUTexture(commands, &blit);
         }
         SDL_SubmitGPUCommandBuffer(commands);
