@@ -18,12 +18,13 @@ out=$1 sfcop=$2 sdl2=$3 sdl3=$4 source=$5 version=$6 arch=$7
 here=$(cd "$(dirname "$0")" && pwd -P)
 python=${SFCOP_PYTHON:-python3}
 hash_list="$source/analysis/results/retail_hashes.sha256"
+manifest="$source/analysis/results/install_manifest.tsv"
 case $arch in
     x64) glibc=2.31 ;;
     arm64) glibc=2.36 ;;
     *) echo "make_tree: ARCH is x64 or arm64, not $arch" >&2; exit 2 ;;
 esac
-for file in "$sfcop" "$sdl2" "$sdl3" "$hash_list"; do
+for file in "$sfcop" "$sdl2" "$sdl3" "$hash_list" "$manifest"; do
     [ -f "$file" ] || { echo "make_tree: missing $file" >&2; exit 1; }
 done
 
@@ -34,6 +35,8 @@ mkdir -p "$staging/bin" "$staging/lib" "$staging/share/applications" \
 cp "$here/sfcop.sh" "$staging/sfcop"
 cp "$sfcop" "$staging/bin/sfcop"
 cp "$hash_list" "$staging/bin/retail_hashes.sha256"
+# The import's manifest, beside the hash list, where the client looks for it.
+cp "$manifest" "$staging/bin/install_manifest.tsv"
 # The build writes the libraries with version links; the tree takes the files under their sonames.
 cp -L "$sdl2" "$staging/lib/libSDL2-2.0.so.0"
 cp -L "$sdl3" "$staging/lib/libSDL3.so.0"
@@ -42,7 +45,7 @@ cp "$here/sfcop.desktop" "$staging/share/applications/sfcop.desktop"
 sed -e "s|@VERSION@|$version|" -e "s|@ARCH@|$arch|" -e "s|@GLIBC@|$glibc|" \
     "$here/README.txt.in" >"$staging/README.txt"
 chmod 755 "$staging/sfcop" "$staging/bin/sfcop" "$staging/lib/"*.so.0
-chmod 644 "$staging/bin/retail_hashes.sha256" "$staging/README.txt" \
+chmod 644 "$staging/bin/retail_hashes.sha256" "$staging/bin/install_manifest.tsv" "$staging/README.txt" \
     "$staging/share/applications/sfcop.desktop" "$staging/share/icons/hicolor/512x512/apps/sfcop.png"
 
 llvm=${SFCOP_LLVM_DIR:-}

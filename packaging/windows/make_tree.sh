@@ -18,11 +18,12 @@ out=$1 exe=$2 sdl2=$3 sdl3=$4 source=$5 version=$6 arch=$7
 here=$(cd "$(dirname "$0")" && pwd -P)
 python=${SFCOP_PYTHON:-python3}
 hash_list="$source/analysis/results/retail_hashes.sha256"
+manifest="$source/analysis/results/install_manifest.tsv"
 case $arch in
     x64 | arm64) ;;
     *) echo "make_tree: ARCH is x64 or arm64, not $arch" >&2; exit 2 ;;
 esac
-for file in "$exe" "$sdl2" "$sdl3" "$hash_list"; do
+for file in "$exe" "$sdl2" "$sdl3" "$hash_list" "$manifest"; do
     [ -f "$file" ] || { echo "make_tree: missing $file" >&2; exit 1; }
 done
 
@@ -33,10 +34,12 @@ cp "$exe" "$staging/sfcop.exe"
 cp "$sdl2" "$staging/SDL2.dll"
 cp "$sdl3" "$staging/SDL3.dll"
 cp "$hash_list" "$staging/retail_hashes.sha256"
+# The import's manifest, beside the hash list, where the client looks for it.
+cp "$manifest" "$staging/install_manifest.tsv"
 sed -e "s|@VERSION@|$version|" -e "s|@ARCH@|$arch|" -e 's/$/\r/' "$here/README.txt.in" \
     >"$staging/README.txt"
 chmod 755 "$staging/sfcop.exe" "$staging/SDL2.dll" "$staging/SDL3.dll"
-chmod 644 "$staging/retail_hashes.sha256" "$staging/README.txt"
+chmod 644 "$staging/retail_hashes.sha256" "$staging/install_manifest.tsv" "$staging/README.txt"
 "$python" -I "$here/../check_package.py" --kind windows "$staging" "$hash_list"
 rm -rf "$out"
 mv "$staging" "$out"
