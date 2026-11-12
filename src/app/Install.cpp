@@ -1,6 +1,7 @@
 #include "app/Install.h"
 
 #include <map>
+#include <set>
 #include <memory>
 
 #include "app/ExitCodes.h"
@@ -23,6 +24,13 @@ bool isHex(char c) {
 }
 
 char lower(char c) { return (c >= 'A' && c <= 'Z') ? static_cast<char>(c - 'A' + 'a') : c; }
+
+std::string lowerAscii(std::string text) {
+    for (char &c : text) {
+        c = lower(c);
+    }
+    return text;
+}
 
 // A path that stays inside the root: relative, '/' separated, no empty, "." or ".." component.
 bool isInsideRoot(const std::string &path) {
@@ -167,6 +175,22 @@ HashList installEntries(const HashList &list) {
     return result;
 }
 
+std::vector<HashEntry> runtimeEntries(const std::vector<HashEntry> &entries) {
+    std::vector<HashEntry> kept;
+    for (const HashEntry &entry : entries) {
+        std::string name = baseName(entry.path);
+        for (char &c : name) {
+            c = lower(c);
+        }
+        const bool stub = entry.path == kBootStubExe;
+        const bool library = name.size() > 4 && name.compare(name.size() - 4, 4, ".lib") == 0;
+        if (!stub && !library) {
+            kept.push_back(entry);
+        }
+    }
+    return kept;
+}
+
 int VerifyResult::exitCode() const { return accepted() ? kExitSuccess : kExitInstallRefused; }
 
 std::string VerifyResult::message() const {
@@ -189,7 +213,13 @@ std::string VerifyResult::message() const {
 }
 
 VerifyResult verifyInstall(const std::string &root, const std::vector<HashEntry> &entries,
-                           const FileSystem &files, const ProgressFn &progress) {
+                           const FileSystem &files, const ProgressFn &progress,
+                           const std::vector<std::string> &mayDiffer) {
+    std::set<std::string> allowed;
+    for (const std::string &path : mayDiffer) {
+        allowed.insert(lowerAscii(path));
+    }
+    std::vector<std::string> differing;
     VerifyProgress state;
     state.fileCount = entries.size();
     for (const HashEntry &entry : entries) {
@@ -223,11 +253,15 @@ VerifyResult verifyInstall(const std::string &root, const std::vector<HashEntry>
             return refuse(VerifyStatus::kUnreadable, root, entry.path);
         }
         if (Sha256::toHex(hash.finish()) != entry.sha256) {
-            return refuse(VerifyStatus::kMismatch, root, entry.path);
+            if (!allowed.count(lowerAscii(entry.path))) {
+                return refuse(VerifyStatus::kMismatch, root, entry.path);
+            }
+            differing.push_back(entry.path);
         }
     }
     VerifyResult accepted;
     accepted.root = root;
+    accepted.differing = std::move(differing);
     return accepted;
 }
 

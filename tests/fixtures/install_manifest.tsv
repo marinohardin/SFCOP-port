@@ -1,0 +1,7 @@
+# The install manifest of the invented install in tests/fixtures/install/ (src/app/ImportTest.cpp,
+# StartupTest.cpp): path, size, SHA-256, tab-separated. Every file there is made up for the tests.
+StarFleetOP.exe	81	a8efff83a244d64032d614355c235f36cfc10808403a6e1b00f6c18265c36cdc
+Assets/Missions/Skirmish/Test Patrol.ini	61	528070dcb5c02abb00a2a9f29ddf6a7f62dadbe581eb711433f1cc9260ba7b5f
+Assets/Models/test_frigate.mod	43	44615255bd94b4c1d6690345567d74b31cc39b7e507446b1d1876e0119627744
+Sounds/empty.txt	0	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+Sounds/hail.wav	28	44e57cac2dcd27be4654c85108a8b342c4d9893eb6dc3f0c2f2c49511394485b
