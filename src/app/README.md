@@ -46,7 +46,14 @@ the copy with no `--install`. A launcher calls the same `importGame` (`Import.h`
    follows a link to a folder (a Wine prefix links the whole disk); DIR itself may be a link, and
    inside the install found every link is followed. Among up to 8 installs found, the
    first whose executable is 2.5.5.2 wins. A disc image, installer or archive chosen as a file,
-   or a folder of InstallShield cabinets, is refused with what to do instead.
+   or a folder of InstallShield cabinets, is refused with what to do instead. So is the
+   client's own copy: `game`, `game.partial` or `game.old`, or a folder in one, reached as it is
+   or through a link, `..` or another case of ASCII letters (a Windows short 8.3 name is not
+   recognised), since the import removes the last two before it copies; found below DIR, the
+   copy is passed over. An install holding a link into the copy, or to a folder holding it, is
+   refused too; a link back to a folder above in the install is passed over. Case is ignored in
+   this check on every platform, so on a case-sensitive Linux volume a folder differing from the
+   copy only in case is refused as well.
 2. **Check the executable** against the manifest: 2.5.0.0's size (8,122,368 bytes) asks for the
    official 2.5.5.2 patch; 2.5.5.2's size with another hash is "modified"; any other is not the
    game.
@@ -56,7 +63,10 @@ the copy with no `--install`. A launcher calls the same `importGame` (`Import.h`
    `Assets/Scripts/` it does not list, imported as a mod script. A missing or empty file, or one
    shorter than in 2.5.5.2, is refused by name, all of them in one message, before anything is
    written. A row with no size or hash is unchecked: the file must be there, not empty and, for a
-   BMP, as long as its own header says; its content is not compared.
+   BMP, as long as its own header says; its content is not compared. The install's listing
+   follows links at most 16 folders deep and 20,000 folders in all; when it was cut short and a
+   listed file was not found, the import says so rather than call the file missing (a link that
+   loops is cut harmlessly when every file was found above it).
 4. **Space.** The import set plus a tenth must be free on the target's volume, or nothing is
    written.
 5. **Copy** into `<game>.partial`: a clone where the file system can (APFS `clonefile`, a Linux
@@ -68,7 +78,8 @@ the copy with no `--install`. A launcher calls the same `importGame` (`Import.h`
    mod scripts, the files of unchecked rows) and is renamed to `game`; an earlier import is moved
    aside first and removed only once the new one is in place (a run stopped between the two
    renames leaves it as `game.old`, which the next import puts back before it starts, or stops,
-   leaving it, when it cannot). `install.txt` then holds `game`.
+   leaving it, when it cannot; the report then says where it is). `install.txt` then holds
+   `game`.
 
 A run that starts from the copy accepts it as the import did: the start-up check
 (`verifyInstall`) lets the files the record lists as changed or unchecked differ from the hash

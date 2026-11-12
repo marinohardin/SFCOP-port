@@ -159,7 +159,8 @@ Startup startClient(int argc, const char *const *argv, const StartupConfig &conf
     // The client's own imported copy is accepted as its import accepted it: the files its record
     // lists as changed or unchecked may differ from the hash list (Import.h, ImportRecord). A
     // record in any other folder is not ours and is ignored, and the executable is always checked,
-    // as the import checks it.
+    // as the import checks it. The record is a convenience, not an integrity check: whoever can
+    // write it can as well replace the game in the same folder.
     const std::string recordPath = joinPath(installDir, kImportRecordFile);
     const std::optional<std::string> recordText =
         installDir == files.absolutePath(gameDir) ? files.readText(recordPath) : std::nullopt;

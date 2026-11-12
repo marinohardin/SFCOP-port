@@ -1,5 +1,6 @@
 #include "app/Import.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <deque>
 #include <map>
@@ -50,6 +51,17 @@ bool endsWith(const std::string &text, const std::string &tail) {
 
 bool isHex(char c) {
     return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+}
+
+// Whether `path` is `folder` or inside it; both resolved (ImportFiles::resolved). Case is
+// ignored on every platform, so that a differently spelt path is no way round on the
+// case-insensitive volumes of Windows and macOS. On a case-sensitive volume (Linux) this
+// over-refuses: a folder that differs from the client's copy only in case is refused too.
+bool isWithin(const std::string &path, const std::string &folder) {
+    const std::string p = lower(path);
+    const std::string f = lower(folder);
+    return p == f || (p.size() > f.size() && p.compare(0, f.size(), f) == 0 &&
+                      (p[f.size()] == '/' || (!f.empty() && f.back() == '/')));
 }
 
 // A path that stays inside the root: relative, '/' separated, no empty, "." or ".." component.
@@ -198,9 +210,37 @@ private:
         return false;
     }
 
+    // Whether `dir`, links resolved, is the game folder, the unfinished or the set-aside copy, or
+    // inside one: the import removes the last two before it copies, so one of them as the source
+    // would be deleted under it.
+    bool isOwnCopy(const std::string &dir) const {
+        const std::string where = files_.resolved(dir);
+        for (const std::string &own : {request_.gameDir, partial(), old()}) {
+            if (isWithin(where, files_.resolved(own))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // Finds the install: the chosen folder, or the first folder below it, breadth first and in
     // name order, whose executable is 2.5.5.2; failing that the first that holds one at all.
+    // Whether `target`, resolved, is in the client's own copy or holds it.
+    bool touchesOwnCopy(const std::string &target) const {
+        for (const std::string &own : {request_.gameDir, partial(), old()}) {
+            const std::string where = files_.resolved(own);
+            if (isWithin(target, where) || isWithin(where, target)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     bool locate() {
+        if (isOwnCopy(request_.source)) {
+            finish(ImportStatus::kOwnCopy);
+            return false;
+        }
         // The chosen folder may itself be a link.
         const std::optional<EntryKind> kind = files_.kindFollowing(request_.source);
         if (!kind) {
@@ -231,7 +271,11 @@ private:
                                         kindOf(dir, entry) == EntryKind::kFile);
             }
             if (holdsExe) {
-                candidates.push_back(dir);
+                // The client's own copy below the chosen folder (the data folder chosen) is
+                // passed over, as if it were not there.
+                if (!isOwnCopy(dir)) {
+                    candidates.push_back(dir);
+                }
                 continue;
             }
             installer = installer || (depth == 0 && looksLikeInstaller(dir));
@@ -304,15 +348,31 @@ private:
 
     // Every file of the install, keyed by its path in lower case; the first in byte order wins
     // when two differ only in case.
-    // Links are followed, to a bounded depth so that a link to a folder above cannot loop.
+    // Links are followed, to a bounded depth. A link back to a folder above is passed over:
+    // what it leads to is listed already.
     void index(const std::string &dir, const std::string &relative, std::size_t &folders,
                int depth = 0) {
         if (++folders > kMaxFolders || depth > kMaxInstallDepth) {
+            indexCut_ = true;
             return;
         }
         for (const FolderEntry &entry : files_.list(dir)) {
             const std::string path = relative.empty() ? entry.name : relative + "/" + entry.name;
             const std::optional<EntryKind> kind = kindOf(dir, entry);
+            if (entry.kind == EntryKind::kOther && kind) {
+                const std::string target = files_.resolved(joinPath(dir, entry.name));
+                // A link into the client's own copy, or to a folder holding it, would be read
+                // after the import removed it.
+                if (touchesOwnCopy(target)) {
+                    if (report_.ownCopyLink.empty()) {
+                        report_.ownCopyLink = path;
+                    }
+                    continue;
+                }
+                if (kind == EntryKind::kFolder && isWithin(files_.resolved(dir), target)) {
+                    continue;
+                }
+            }
             if (kind == EntryKind::kFile) {
                 files_by_lower_.emplace(lower(path), path);
             } else if (kind == EntryKind::kFolder) {
@@ -326,6 +386,10 @@ private:
     bool survey() {
         std::size_t folders = 0;
         index(report_.installDir, std::string(), folders);
+        if (!report_.ownCopyLink.empty()) {
+            finish(ImportStatus::kOwnCopy);
+            return false;
+        }
         std::set<std::string> listed;
         for (const ManifestEntry &entry : request_.manifest.entries) {
             listed.insert(lower(entry.path));
@@ -355,6 +419,13 @@ private:
                 report_.modScripts.push_back(item.to);
                 items_.push_back(std::move(item));
             }
+        }
+        // A listing cut short at a limit (a link that loops is cut, harmlessly, when every file
+        // was found above it) makes the files past it read as missing: say what happened.
+        if (indexCut_ && std::any_of(report_.damaged.begin(), report_.damaged.end(),
+                                     [](const DamagedFile &f) { return f.problem == "missing"; })) {
+            finish(ImportStatus::kTooManyFolders);
+            return false;
         }
         if (!report_.damaged.empty()) {
             finish(ImportStatus::kDamaged);
@@ -430,6 +501,7 @@ private:
         if (!files_.kindOf(request_.gameDir) && files_.kindOf(old()) &&
             !files_.rename(old(), request_.gameDir)) {
             // The earlier import is still only there: leave it for the next attempt.
+            report_.earlierAt = old();
             finish(ImportStatus::kWriteFailed, request_.gameDir);
             return false;
         }
@@ -552,8 +624,8 @@ private:
             return false;
         }
         if (!files_.rename(partial(), request_.gameDir)) {
-            if (earlier) {
-                files_.rename(old(), request_.gameDir);
+            if (earlier && !files_.rename(old(), request_.gameDir)) {
+                report_.earlierAt = old();
             }
             finish(ImportStatus::kWriteFailed, request_.gameDir);
             return false;
@@ -571,6 +643,8 @@ private:
     ImportProgress progress_;
     std::map<std::string, std::string> files_by_lower_;
     std::vector<Item> items_;
+    // Whether index() stopped at a limit.
+    bool indexCut_ = false;
 };
 
 } // namespace
@@ -699,6 +773,8 @@ int ImportReport::exitCode() const {
     case ImportStatus::kExeModified:
     case ImportStatus::kNotTheGame:
     case ImportStatus::kDamaged:
+    case ImportStatus::kOwnCopy:
+    case ImportStatus::kTooManyFolders:
         return kExitInstallRefused;
     case ImportStatus::kNoSpace:
     case ImportStatus::kCancelled:
@@ -766,8 +842,28 @@ std::string ImportReport::message() const {
     case ImportStatus::kCancelled:
         return "The import was cancelled; nothing was kept.";
     case ImportStatus::kWriteFailed:
+        if (!earlierAt.empty()) {
+            return "The import could not write " + path + ". The earlier import is in " +
+                   earlierAt + "; the next import puts it back first. Check that the folder is "
+                               "writable, then import again.";
+        }
         return "The import could not write " + path + "; nothing was kept. Check that the "
                                                       "folder is writable, then import again.";
+    case ImportStatus::kOwnCopy:
+        if (!ownCopyLink.empty()) {
+            return ownCopyLink + " in the install at " + installDir +
+                   " links into the client's own copy of the game, or to a folder holding it, "
+                   "and the import replaces that copy, so nothing was imported. Remove the link, then import again.";
+        }
+        return source + " is the client's own copy of the game, or a folder of it, not an "
+                        "installed game. Choose the folder Starfleet Command: Orion Pirates is "
+                        "installed in.";
+    case ImportStatus::kTooManyFolders:
+        return "The install at " + installDir + " holds more than " +
+               std::to_string(kMaxFolders) + " folders, or folders more than " +
+               std::to_string(kMaxInstallDepth) +
+               " deep through its links, so it was not all looked at and nothing was imported. "
+               "Choose the folder Starfleet Command: Orion Pirates is installed in.";
     case ImportStatus::kBadManifest:
         return "The install manifest cannot be used (" + manifestError +
                "), so nothing can be imported. The client's files are incomplete.";
