@@ -681,6 +681,44 @@ TEST_CASE("an install holding a link into the client's own copy is refused befor
                                   "nothing was imported. Remove the link, then import again.");
 }
 
+TEST_CASE("an install that holds the data folder is imported without reading the copy in it") {
+    const Scratch s("sfcop-l2a-data-inside");
+    writeGoodInstall(s);
+    ImportRequest request = requestFor(s);
+    request.gameDir = s.path("install/data/game");
+    ControlledImportFiles files;
+    REQUIRE(importGame(request, files).imported());
+    // A link a modder left in the copy, to the data folder: read through, it would refuse the
+    // install as a link holding the copy. The copy is passed over, so it is never read.
+    if (!makeLink(s.path("install/data"), s.path("install/data/game/Assets/Up"), true)) {
+        return;
+    }
+    const ImportReport again = importGame(request, files);
+    CHECK(again.status == ImportStatus::kImported);
+    CHECK(again.ownCopyLink.empty());
+    CHECK(again.filesCopied == 5);
+    CHECK(s.read("install/data/game/Assets/Models/test.mod") == "invented model\n");
+}
+
+TEST_CASE("a cancel while the executable is checked stops before the survey") {
+    const Scratch s("sfcop-l2a-cancel-exe");
+    writeGoodInstall(s);
+    bool checking = false;
+    bool surveyed = false;
+    ImportCallbacks callbacks;
+    callbacks.progress = [&](const ImportProgress &p) {
+        checking = p.phase == ImportPhase::kCheckingGame;
+        surveyed = surveyed || p.phase == ImportPhase::kCopying;
+    };
+    callbacks.cancelled = [&] { return checking; };
+    ControlledImportFiles files;
+    const ImportReport report = importGame(requestFor(s), files, callbacks);
+    CHECK(report.status == ImportStatus::kCancelled);
+    CHECK(report.exitCode() == 1);
+    CHECK_FALSE(surveyed);
+    CHECK(files.changes == 0);
+}
+
 TEST_CASE("files past the listing's limits are not called missing, and a loop is passed over") {
     const Scratch s("sfcop-l2a-deep");
     writeGoodInstall(s);
@@ -713,10 +751,9 @@ TEST_CASE("files past the listing's limits are not called missing, and a loop is
     CHECK(report.status == ImportStatus::kTooManyFolders);
     CHECK(report.exitCode() == 3);
     CHECK(report.message() == "The install at " + s.path("install") +
-                                  " holds more than 20000 folders, or folders more than 16 deep "
-                                  "through its links, so it was not all looked at and nothing "
-                                  "was imported. Choose the folder Starfleet Command: Orion "
-                                  "Pirates is installed in.");
+                                  " holds more than 20000 folders, or folders more than 16 deep, "
+                                  "so it was not all looked at and nothing was imported. Choose "
+                                  "the folder Starfleet Command: Orion Pirates is installed in.");
 }
 
 TEST_CASE("an unusable manifest stops the import before the folder is looked at") {
@@ -894,6 +931,69 @@ TEST_CASE("verifying with no copy, or a copy whose executable changed, says what
     CHECK(modified.message() == s.path("data/game/StarFleetOP.exe") +
                                     " has been changed since it was imported. Import the game "
                                     "again from the installed game.");
+}
+
+TEST_CASE("a check follows links inside the copy and never refuses it as the client's own") {
+    const Scratch s("sfcop-verify-links");
+    writeGoodInstall(s);
+    ControlledImportFiles files;
+    REQUIRE(importGame(requestFor(s), files).imported());
+    // A link to another folder of the copy, and one back to the data folder that holds it.
+    if (!makeLink(s.path("data/game/Assets/Models"), s.path("data/game/Assets/Extra"), true) ||
+        !makeLink(s.path("data"), s.path("data/game/Assets/Up"), true)) {
+        return;
+    }
+    ControlledImportFiles checking;
+    const ImportReport report =
+        verifyImportedGame(s.path("data/game"), parseInstallManifest(kManifest), checking);
+    CHECK(report.status == ImportStatus::kVerified);
+    CHECK(report.exitCode() == 0);
+    CHECK(report.ownCopyLink.empty());
+    CHECK(report.filesHashed == 5);
+    CHECK(checking.changes == 0);
+}
+
+TEST_CASE("a check of a copy too deep to list says so in a check's words") {
+    const Scratch s("sfcop-verify-deep");
+    writeGoodInstall(s);
+    std::string deep;
+    for (int i = 1; i <= 18; ++i) {
+        deep += "d" + std::to_string(i) + "/";
+    }
+    deep += "x.txt";
+    s.write("install/" + deep, "deep\n");
+    ControlledImportFiles files;
+    REQUIRE(importGame(requestFor(s), files).imported());
+    s.write("data/game/" + deep, "deep\n");
+    const InstallManifest manifest = parseInstallManifest(std::string(kManifest) + deep + "\t\t\n");
+    REQUIRE(manifest.ok());
+    const ImportReport report = verifyImportedGame(s.path("data/game"), manifest, files);
+    CHECK(report.status == ImportStatus::kTooManyFolders);
+    CHECK(report.exitCode() == 3);
+    CHECK(report.message() == "The imported game in " + s.path("data/game") +
+                                  " holds more than 20000 folders, or folders more than 16 deep, "
+                                  "so it was not all looked at. Import the game again from the "
+                                  "installed game.");
+}
+
+TEST_CASE("a check cancelled while the executable is checked hashes nothing else") {
+    const Scratch s("sfcop-verify-cancel-exe");
+    writeGoodInstall(s);
+    ControlledImportFiles files;
+    REQUIRE(importGame(requestFor(s), files).imported());
+    bool checking = false;
+    bool hashing = false;
+    ImportCallbacks callbacks;
+    callbacks.progress = [&](const ImportProgress &p) {
+        checking = p.phase == ImportPhase::kCheckingGame;
+        hashing = hashing || p.phase == ImportPhase::kVerifying;
+    };
+    callbacks.cancelled = [&] { return checking; };
+    const ImportReport report =
+        verifyImportedGame(s.path("data/game"), parseInstallManifest(kManifest), files, callbacks);
+    CHECK(report.status == ImportStatus::kCancelled);
+    CHECK(report.message() == "The check was cancelled.");
+    CHECK_FALSE(hashing);
 }
 
 TEST_CASE("a cancelled check stops between pieces and leaves the copy as it was") {

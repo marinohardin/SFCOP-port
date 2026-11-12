@@ -386,6 +386,15 @@ TEST_CASE("--verify-import checks the imported copy and exits") {
     CHECK(run.err.str() == "");
     CHECK(run.out.str().find("sfcop: The imported game in " + game + " is complete: ") !=
           std::string::npos);
+
+    fs::remove(game + "/Assets/Models/test_frigate.mod");
+    const Run damaged({"--verify-import"}, home.str());
+    CHECK(damaged.result.exitCode == std::optional<int>(3));
+    CHECK(damaged.err.str() == "sfcop: The imported game in " + game +
+                                   " is damaged: these files are missing, empty, shorter than in "
+                                   "the 2.5.5.2 release or unreadable:\n"
+                                   "  missing: Assets/Models/test_frigate.mod\n"
+                                   "Import the game again from the installed game.\n");
 }
 
 TEST_CASE("a file the import accepted as changed is accepted by the next run, with a warning") {
