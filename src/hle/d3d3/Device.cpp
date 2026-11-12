@@ -425,6 +425,13 @@ HResult Device::BeginScene() {
     if (inScene_) {
         return kD3dErrSceneInScene;
     }
+    // The scene's targets at the render scale the window asks for now (fix_render_scale): a
+    // resize since the last scene makes them again here, at the next scene's start.
+    const std::uint8_t scale = target_->Owner().BeginSceneScale();
+    target_->UseRenderScale(scale);
+    if (ddraw4::Surface *z = target_->ZBuffer()) {
+        z->UseRenderScale(scale);
+    }
     platform::Result<platform::TextureId> color = target_->GpuTexture();
     if (!color.Ok()) {
         return ddraw4::fromError(color.Code());
@@ -890,8 +897,7 @@ HResult Device::draw(std::uint32_t type, std::uint32_t fvf, const void *vertices
     if (!plan) {
         return kD3dErrInvalidVertexType;
     }
-    const std::uint32_t drawn =
-        wholePrimitives(type, indices != nullptr ? indexCount : vertexCount);
+    std::uint32_t drawn = wholePrimitives(type, indices != nullptr ? indexCount : vertexCount);
     if (drawn == 0 || vertexCount == 0) {
         return kDdOk;
     }
@@ -911,8 +917,29 @@ HResult Device::draw(std::uint32_t type, std::uint32_t fvf, const void *vertices
         data = repacked.data();
     }
 
-    const auto primitive = static_cast<platform::PrimitiveType>(type - 1); // D3DPT order
-    const platform::PipelineDesc desc = CurrentPipeline(plan->layout, primitive);
+    auto primitive = static_cast<platform::PrimitiveType>(type - 1); // D3DPT order
+    const std::uint32_t stride = platform::vertexStride(plan->layout);
+    std::vector<std::uint8_t> widened;
+    const bool widen = target_->RenderScale() > 1 &&
+                       plan->layout.position == platform::PositionKind::kXyzRhw &&
+                       (primitive == platform::PrimitiveType::kPointList ||
+                        primitive == platform::PrimitiveType::kLineList ||
+                        primitive == platform::PrimitiveType::kLineStrip);
+    if (widen) {
+        widened = widenPrimitives(primitive, data, stride, indices, drawn);
+        if (widened.empty()) {
+            return kDdOk;
+        }
+        data = widened.data();
+        vertexCount = static_cast<std::uint32_t>(widened.size() / stride);
+        drawn = vertexCount;
+        indices = nullptr;
+        primitive = platform::PrimitiveType::kTriangleList;
+    }
+    platform::PipelineDesc desc = CurrentPipeline(plan->layout, primitive);
+    if (widen) {
+        desc.cull = platform::CullMode::kNone; // the triangles' winding is ours, not the game's
+    }
     platform::DrawState state = CurrentDrawState();
     for (std::size_t s = 0; s < platform::kTextureStages; ++s) {
         if (desc.stages[s].colorOp != TextureOp::kDisable && textures_[s] != nullptr &&
@@ -927,7 +954,6 @@ HResult Device::draw(std::uint32_t type, std::uint32_t fvf, const void *vertices
     if (!made.Ok()) {
         return ddraw4::fromError(made.Code());
     }
-    const std::uint32_t stride = platform::vertexStride(plan->layout);
     platform::Result<std::uint32_t> first =
         stream(platform::BufferKind::kVertex, data, vertexCount * stride, stride);
     if (!first.Ok()) {

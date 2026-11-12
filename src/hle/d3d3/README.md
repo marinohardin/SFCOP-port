@@ -35,7 +35,13 @@ positions and 1/w and promises no clipping on it, so untransformed vertices with
 clipped away. Normals are dropped, nothing is lit, and missing colours are white.
 
 `BeginScene` starts a Gpu scene on the device's target and its attached z-buffer, in the current
-viewport. A clear inside a scene clears on the Gpu: the `Gpu` clips a clear to its own current
+viewport. First it gives both the render scale DirectDraw chooses for the scene
+(`DirectDraw::BeginSceneScale`, `fix_render_scale`; ddraw4's README), so a 3D scene is drawn at
+the window's pixel density while the device, its viewports and its vertices stay in the game's
+pixels. At a scale over 1, points and lines are drawn as triangles that cover what they cover at
+the game's own size (`widenPrimitives`): a point one game pixel square, a line one game pixel
+wide; the Gpu would draw them one target pixel wide, a k-th of their width. The stars of the
+combat scene are points. A clear inside a scene clears on the Gpu: the `Gpu` clips a clear to its own current
 viewport, so the Gpu viewport is set from the clearing `IDirect3DViewport3` (rectangle and depth
 range) for the clear and put back to the device's current one afterwards; the area is in target
 pixels. A clear with no rectangles clears the whole viewport. Outside a scene a clear fills the

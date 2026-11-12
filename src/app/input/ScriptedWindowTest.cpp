@@ -240,3 +240,25 @@ TEST_CASE("every other call goes to the inner window unchanged") {
     CHECK(inner.log.Count("Create") == 1);
     CHECK(inner.log.Count("SetFrameCap") == 1);
 }
+
+TEST_CASE("the whole-number scale is set on the inner window, which the present reads") {
+    WindowMock inner;
+    inner.setWholeScaleResult = Error::kWrongState;
+    ClockMock clock;
+    ScriptPlayer player = playerFor("");
+    ScriptedWindow window(inner, player, clock, {});
+    CHECK(window.SetWholeScale(true).Code() == Error::kWrongState);
+    CHECK(inner.log.Calls() == std::vector<std::string>{"SetWholeScale(true)"});
+}
+
+TEST_CASE("the whole-number scale is read from the inner window") {
+    WindowMock inner;
+    inner.wholeScaleResult = true;
+    ClockMock clock;
+    ScriptPlayer player = playerFor("");
+    ScriptedWindow window(inner, player, clock, {});
+    const auto whole = window.GetWholeScale();
+    REQUIRE(whole.Ok());
+    CHECK(whole.Value());
+    CHECK(inner.log.Count("GetWholeScale") == 1);
+}

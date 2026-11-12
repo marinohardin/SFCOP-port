@@ -631,6 +631,7 @@ int Run(const Options &options, Components &components) {
         g_shotSchedule = &shotSchedule;
     }
     win32hle_trace = options.trace ? 1 : 0;
+    hle::ddraw4::DirectDraw::SetRenderScaleOption(options.renderScale);
     InstallExceptionHooks();
 
     // The modules answer first, then the game's own built-ins; pcrecomp's tables last.

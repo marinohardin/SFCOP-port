@@ -130,6 +130,26 @@ public:
     // Shows `primary` on the window: at 8 bits through its palette into the back buffer.
     HResult PresentPrimary(Surface &primary);
 
+    // The render scale k for Direct3D targets (platform::TextureDesc::renderScale) that the
+    // window asks for now: the mode's frame placed in the window's drawable pixels by
+    // platform::framePlacement() (the chooser the present and the mouse use, with the
+    // whole-number scale fix_integer_scaled_frame names), k = that placement's scale rounded up,
+    // at most what GpuCaps::maxTextureSize allows and the render scale option. 1 while
+    // fix_render_scale is off, the option is 1, the mode is 8-bit, the window cannot say, or the
+    // Gpu refused a scaled back buffer in this mode.
+    std::uint8_t WantedRenderScale();
+
+    // Called at the start of each Direct3D scene: makes the display the scale WantedRenderScale()
+    // gives (the back buffer made again if it changed, through ConfigureScaledBackBuffer) and
+    // returns the scale the scene's targets take. A Gpu that refuses the scale keeps 1, and is not
+    // asked again until the next mode change. Before
+    // the first scene, and after a mode change until the next, the display is at 1, so frames
+    // the game draws only on the host stay at the game's own size.
+    std::uint8_t BeginSceneScale();
+
+    // The scale of the display (the back buffer the primary shows): 1 until a scene asks more.
+    std::uint8_t DisplayScale() const { return displayScale_; }
+
     // Called by the objects it created.
     void SurfaceGone(Surface &surface);
     void PaletteChanged(Palette &palette);
@@ -148,6 +168,11 @@ public:
     // Called after every present, with this object (nullptr: none). The guest shims set it.
     using PresentHook = void (*)(const DirectDraw &draw);
     static void SetPresentHook(PresentHook hook);
+
+    // The render scale option for every object (the client's --render-scale N): 0, the default,
+    // chooses the scale from the window; 1 keeps every target at the game's own size; N > 1 is
+    // the most the scale may be.
+    static void SetRenderScaleOption(std::uint8_t option);
 
 private:
     friend class Surface; // counts its uploads (CountUpload)
@@ -168,6 +193,9 @@ private:
     // The present filter last given to the Gpu (fix_smooth_scaled_frame), none before the first
     // present.
     std::optional<platform::TextureFilter> presentFilter_;
+    std::uint8_t displayScale_ = 1; // the render scale displayTexture_ was made with
+    std::uint32_t maxTextureSize_ = 0; // GpuCaps::maxTextureSize, read once (0: not yet)
+    bool scaleRefused_ = false; // the Gpu refused a scaled back buffer in this mode: 1 from now
     Surface *primary_ = nullptr;
     Counts counts_;
 };

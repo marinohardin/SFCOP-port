@@ -11,6 +11,7 @@ using test::TlVertex;
 namespace {
 
 constexpr std::uint32_t kTriangleList = 4;
+constexpr std::uint32_t kDdflipWait = 0x1; // DDFLIP_WAIT
 
 const TlVertex kTriangle[4] = {
     {10.0f, 10.0f, 0.5f, 1.0f, 0xFFFF0000, 0xFF000000, 0.0f, 0.0f},
@@ -561,6 +562,237 @@ TEST_CASE("SetRenderTarget moves the device to another 3D surface") {
     plain->Release();
     device->Release();
     target->Release();
+}
+
+namespace {
+
+// The window at 2560x1440 drawable pixels (1280x720 points on a two-pixel display), where the
+// 800x600 frame is placed at 1920x1440: a render scale of 3.
+void giveLargeWindow(D3dRig &rig) {
+    rig.window.stateResult = platform::WindowState{platform::WindowMode::kWindowed, 1280, 720,
+                                                   2560, 1440, true, false};
+    platform::GpuCaps caps;
+    caps.maxTextureSize = 8192;
+    rig.gpu.capsResult = caps;
+}
+
+// One frame of combat as the game draws it: a scene with a triangle, the HUD written into a strip
+// of the back buffer through a lock, and the flip.
+void drawFrame(D3dRig &rig, Device &device) {
+    REQUIRE(device.BeginScene() == kDdOk);
+    REQUIRE(device.DrawPrimitive(kTriangleList, kFvfTlVertex, kTriangle, 3, 0) == kDdOk);
+    REQUIRE(device.EndScene() == kDdOk);
+    ddraw4::SurfaceDesc locked;
+    const ddraw4::RectL hud{0, 560, 800, 600};
+    REQUIRE(rig.back->Lock(&hud, locked, 0) == kDdOk);
+    locked.surface[0] = 0x1F;
+    REQUIRE(rig.back->Unlock() == kDdOk);
+    REQUIRE(rig.front->Flip(nullptr, kDdflipWait) == kDdOk);
+}
+
+} // namespace
+
+TEST_CASE("a scene in a window of more pixels than the frame draws into targets at its scale") {
+    D3dRig rig;
+    giveLargeWindow(rig);
+    Device *device = rig.MakeDevice();
+    Viewport *viewport = rig.MakeViewport(*device);
+    giveTextures(rig); // the back buffer is texture 5 and the z-buffer 6, both at 1
+    rig.gpu.backBufferResult = TextureId{9};
+    CHECK(device->BeginScene() == kDdOk);
+    // The display, the back buffer and its z-buffer are made again at 3; the back buffer's host
+    // copy is uploaded into its new texture. The viewport stays in the game's pixels.
+    CHECK(rig.gpu.log.Calls() ==
+          Calls{"GetCaps()", "ConfigureScaledBackBuffer(800, 600, 0, 3)", "DestroyTexture(5)",
+                "DestroyTexture(6)", "CreateTexture(800, 600, 0, \"scale\", 3)",
+                "SetColorKey(7, \"none\")", "WriteTexture(7, 0, 0, 0, 800, 600, 1600)",
+                "CreateTexture(800, 600, 5, \"scale\", 3)", "BeginScene(7, 7)",
+                "SetViewport(0, 0, 800, 600)"});
+    CHECK(rig.gpu.textureScales.at(9) == 3);
+    CHECK(rig.gpu.textureScales.at(7) == 3);
+    CHECK(rig.back->RenderScale() == 3);
+    CHECK(rig.z->RenderScale() == 3);
+
+    // A clear inside the scene: its rectangle in the game's pixels.
+    rig.gpu.log.Clear();
+    const std::vector<D3dRect> rects{{100, 100, 300, 200}};
+    CHECK(viewport->Clear2(rects, kClearTarget, 0xFF102030, 1.0f, 0) == kDdOk);
+    CHECK(rig.gpu.lastClear.area.x == 100);
+    CHECK(rig.gpu.lastClear.area.width == 200);
+    CHECK(rig.gpu.lastClear.area.height == 100);
+    REQUIRE(device->EndScene() == kDdOk);
+
+    // The flip copies the back buffer to the display, both at 3, in the game's pixels.
+    rig.gpu.log.Clear();
+    CHECK(rig.front->Flip(nullptr, kDdflipWait) == kDdOk);
+    CHECK(rig.gpu.log.Count("Blit") == 1);
+    CHECK(rig.gpu.lastBlit.source == TextureId{7});
+    CHECK(rig.gpu.lastBlit.destination == TextureId{9});
+    CHECK(rig.gpu.lastBlit.sourceRect.width == 800);
+    CHECK(rig.gpu.lastBlit.destinationRect.height == 600);
+
+    // The next scene in the same window makes nothing again.
+    rig.gpu.log.Clear();
+    REQUIRE(device->BeginScene() == kDdOk);
+    CHECK(rig.gpu.log.Calls() == Calls{"BeginScene(7, 7)", "SetViewport(0, 0, 800, 600)"});
+    REQUIRE(device->EndScene() == kDdOk);
+    viewport->Release();
+    device->Release();
+}
+
+TEST_CASE("a resize changes the targets' scale at the next scene's start, their content kept") {
+    D3dRig rig;
+    giveLargeWindow(rig);
+    Device *device = rig.MakeDevice();
+    giveTextures(rig);
+    drawFrame(rig, *device); // at 3, as above: the back buffer is texture 7
+    REQUIRE(device->BeginScene() == kDdOk);
+    REQUIRE(device->DrawPrimitive(kTriangleList, kFvfTlVertex, kTriangle, 3, 0) == kDdOk);
+    REQUIRE(device->EndScene() == kDdOk);
+
+    // The window shrinks to 1600x1200 pixels, twice the frame. Nothing changes before a scene.
+    rig.window.stateResult = platform::WindowState{platform::WindowMode::kWindowed, 800, 600,
+                                                   1600, 1200, true, false};
+    rig.gpu.log.Clear();
+    REQUIRE(rig.front->Flip(nullptr, kDdflipWait) == kDdOk);
+    CHECK(rig.gpu.log.Count("ConfigureScaledBackBuffer") == 0);
+    CHECK(rig.back->RenderScale() == 3);
+
+    // At the next scene: the drawn back buffer is read back, then made again at 2.
+    rig.gpu.backBufferResult = TextureId{11};
+    rig.gpu.createTextureResult = TextureId{12};
+    rig.gpu.log.Clear();
+    REQUIRE(device->BeginScene() == kDdOk);
+    CHECK(rig.gpu.log.Calls() ==
+          Calls{"ConfigureScaledBackBuffer(800, 600, 0, 2)",
+                "ReadTexture(7, 0, 0, 0, 800, 600, 1600)", "DestroyTexture(7)",
+                "DestroyTexture(7)", "CreateTexture(800, 600, 0, \"scale\", 2)",
+                "SetColorKey(12, \"none\")", "WriteTexture(12, 0, 0, 0, 800, 600, 1600)",
+                "CreateTexture(800, 600, 5, \"scale\", 2)", "BeginScene(12, 12)"});
+    CHECK(rig.back->RenderScale() == 2);
+    CHECK(rig.z->RenderScale() == 2);
+    REQUIRE(device->EndScene() == kDdOk);
+    device->Release();
+}
+
+TEST_CASE("frames drawn only on the host stay at the game's own size in a large window") {
+    D3dRig rig;
+    giveLargeWindow(rig);
+    for (int frame = 0; frame < 3; ++frame) {
+        ddraw4::test::writePixels16(*rig.back, std::vector<std::uint16_t>(800 * 600, 0x7E0));
+        REQUIRE(rig.front->Flip(nullptr, kDdflipWait) == kDdOk);
+    }
+    CHECK(rig.gpu.log.Count("ConfigureScaledBackBuffer") == 0);
+    CHECK(rig.gpu.log.Count("GetCaps") == 0);
+    for (const auto &[texture, scale] : rig.gpu.textureScales) {
+        CHECK(scale == 1);
+    }
+    CHECK(rig.dd->DisplayScale() == 1);
+    CHECK(rig.back->RenderScale() == 1);
+}
+
+TEST_CASE("uploads per frame are the same at render scale 3 as at the game's own size") {
+    D3dRig native;
+    Device *nativeDevice = native.MakeDevice();
+    giveTextures(native);
+    D3dRig scaled;
+    giveLargeWindow(scaled);
+    Device *scaledDevice = scaled.MakeDevice();
+    giveTextures(scaled);
+    // The first frame makes the textures; from the second on, each frame uploads the HUD strip
+    // once (at the flip), at either scale.
+    drawFrame(native, *nativeDevice);
+    drawFrame(scaled, *scaledDevice);
+    CHECK(scaled.back->RenderScale() == 3);
+    CHECK(native.back->RenderScale() == 1);
+    for (int frame = 0; frame < 3; ++frame) {
+        const std::uint64_t nativeBefore = native.dd->Counted().uploads;
+        const std::uint64_t scaledBefore = scaled.dd->Counted().uploads;
+        drawFrame(native, *nativeDevice);
+        drawFrame(scaled, *scaledDevice);
+        CHECK(native.dd->Counted().uploads - nativeBefore == 1);
+        CHECK(scaled.dd->Counted().uploads - scaledBefore == 1);
+    }
+    nativeDevice->Release();
+    scaledDevice->Release();
+}
+
+TEST_CASE("with the render scale option at 1 a scene in a large window stays at 1") {
+    D3dRig rig;
+    giveLargeWindow(rig);
+    Device *device = rig.MakeDevice();
+    Viewport *viewport = rig.MakeViewport(*device);
+    giveTextures(rig);
+    ddraw4::DirectDraw::SetRenderScaleOption(1);
+    CHECK(device->BeginScene() == kDdOk);
+    CHECK(rig.gpu.log.Calls() == Calls{"BeginScene(5, 6)", "SetViewport(0, 0, 800, 600)"});
+    REQUIRE(device->EndScene() == kDdOk);
+    ddraw4::DirectDraw::SetRenderScaleOption(0);
+    viewport->Release();
+    device->Release();
+}
+
+namespace {
+
+constexpr std::uint32_t kPointList = 1;
+constexpr std::uint32_t kLineList = 2;
+constexpr std::uint32_t kLineStrip = 3;
+
+// A scene at the window's scale, the device's state as the game leaves it (culling on), with the
+// log cleared: `scale` 3 in the large window, 1 at the game's own size.
+Device *sceneAt(D3dRig &rig, std::uint8_t scale) {
+    if (scale == 3) {
+        giveLargeWindow(rig);
+    }
+    Device *device = rig.MakeDevice();
+    giveTextures(rig);
+    REQUIRE(device->BeginScene() == kDdOk);
+    REQUIRE(rig.back->RenderScale() == scale);
+    rig.gpu.log.Clear();
+    return device;
+}
+
+} // namespace
+
+TEST_CASE("points and lines are drawn as triangles one logical pixel wide at render scale 3") {
+    D3dRig rig;
+    Device *device = sceneAt(rig, 3);
+    CHECK(device->DrawPrimitive(kPointList, kFvfTlVertex, kTriangle, 3, 0) == kDdOk);
+    // Three points, two triangles each, in a pipeline that culls nothing.
+    CHECK(rig.gpu.lastPipelineDesc.primitive == platform::PrimitiveType::kTriangleList);
+    CHECK(rig.gpu.lastPipelineDesc.cull == platform::CullMode::kNone);
+    CHECK(rig.gpu.lastDraw.vertexCount == 18);
+    CHECK(rig.gpu.log.Count("WriteBuffer") == 1);
+
+    CHECK(device->DrawPrimitive(kLineList, kFvfTlVertex, kTriangle, 2, 0) == kDdOk);
+    CHECK(rig.gpu.lastDraw.vertexCount == 6);
+    CHECK(device->DrawPrimitive(kLineStrip, kFvfTlVertex, kTriangle, 4, 0) == kDdOk);
+    CHECK(rig.gpu.lastDraw.vertexCount == 18);
+    const std::uint16_t indices[2] = {0, 3};
+    CHECK(device->DrawIndexedPrimitive(kLineList, kFvfTlVertex, kTriangle, 4, indices, 2, 0) ==
+          kDdOk);
+    CHECK(rig.gpu.lastDraw.vertexCount == 6);
+    CHECK_FALSE(rig.gpu.lastDraw.indices.Valid()); // widened vertices are drawn in order
+
+    // Triangles are drawn as the game sends them.
+    CHECK(device->DrawPrimitive(kTriangleList, kFvfTlVertex, kTriangle, 3, 0) == kDdOk);
+    CHECK(rig.gpu.lastPipelineDesc.primitive == platform::PrimitiveType::kTriangleList);
+    CHECK(rig.gpu.lastDraw.vertexCount == 3);
+    REQUIRE(device->EndScene() == kDdOk);
+    device->Release();
+}
+
+TEST_CASE("points and lines are drawn as they are at render scale 1") {
+    D3dRig rig;
+    Device *device = sceneAt(rig, 1);
+    CHECK(device->DrawPrimitive(kPointList, kFvfTlVertex, kTriangle, 3, 0) == kDdOk);
+    CHECK(rig.gpu.lastPipelineDesc.primitive == platform::PrimitiveType::kPointList);
+    CHECK(rig.gpu.lastDraw.vertexCount == 3);
+    CHECK(device->DrawPrimitive(kLineList, kFvfTlVertex, kTriangle, 2, 0) == kDdOk);
+    CHECK(rig.gpu.lastPipelineDesc.primitive == platform::PrimitiveType::kLineList);
+    CHECK(rig.gpu.lastDraw.vertexCount == 2);
+    REQUIRE(device->EndScene() == kDdOk);
+    device->Release();
 }
 
 } // namespace sfcop::hle::d3d3

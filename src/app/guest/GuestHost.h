@@ -58,6 +58,10 @@ struct Options {
     unsigned watchdogSeconds = 0; // 0: none; else the run ends then, 0 if the goal mark was reached
     std::string shotsDir;         // non-empty: a BMP of the display every shotEverySeconds (not headless)
     double shotEverySeconds = 5.0;
+    // --render-scale: the Direct3D targets' render scale option (hle/ddraw4 DirectDraw::
+    // SetRenderScaleOption): 0 from the window, 1 the game's own size, N > 1 at most N. main.cpp
+    // sets 1 for --oracle and --record-trace, whose frames must be the game's own.
+    std::uint8_t renderScale = 0;
     // Whether the window's events are also read inside the game's calls, so a long load keeps the
     // window responsive (src/app/guest/README.md, "The pump inside the game's calls"). main.cpp
     // clears it for --input, --oracle, --record-trace and --headless: those runs count frames,

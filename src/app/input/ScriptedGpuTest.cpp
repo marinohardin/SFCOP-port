@@ -47,3 +47,18 @@ TEST_CASE("the scripted Gpu hands the present filter to the Gpu it wraps, with i
           sfcop::platform::Error::kUnsupported);
     CHECK(gpuInner.log.Count("SetPresentFilter") == 2);
 }
+
+TEST_CASE("the scripted Gpu hands a render-scaled back buffer to the Gpu it wraps") {
+    sfcop::platform::WindowMock inner;
+    sfcop::platform::ClockMock clock;
+    sfcop::platform::GpuMock gpuInner;
+    ScriptPlayer player(parseInputScript("").script, {});
+    ScriptedWindow window(inner, player, clock, {});
+    ScriptedGpu gpu(gpuInner, window);
+
+    const auto back =
+        gpu.ConfigureScaledBackBuffer(800, 600, sfcop::platform::PixelFormat::kRgb565, 3);
+    REQUIRE(back.Ok());
+    CHECK(gpuInner.log.Count("ConfigureScaledBackBuffer") == 1);
+    CHECK(gpuInner.textureScales.at(back.Value().value) == 3);
+}

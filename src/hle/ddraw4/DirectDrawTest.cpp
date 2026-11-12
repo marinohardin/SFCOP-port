@@ -2,6 +2,8 @@
 #include "hle/ddraw4/Ddraw4TestRig.h"
 #include "hle/ddraw4/Palette.h"
 
+#include "fixes/fixes.h"
+
 namespace sfcop::hle::ddraw4 {
 
 using platform::Error;
@@ -405,6 +407,151 @@ TEST_CASE("a second DirectDraw object never takes the display lazily") {
     CHECK(rig.dd->OwnsDisplay());
     CHECK(rig.gpu.log.Count("ConfigureBackBuffer") == 2);
     early->Release();
+}
+
+namespace {
+
+// A window of `width` by `height` drawable pixels on a display of two pixels per point, and a
+// Gpu whose textures may be `maxTexture` pixels on a side.
+void giveWindow(Rig &rig, std::uint32_t width, std::uint32_t height, std::uint32_t maxTexture) {
+    rig.window.stateResult = platform::WindowState{platform::WindowMode::kWindowed, width / 2,
+                                                   height / 2, width, height, true, false};
+    platform::GpuCaps caps;
+    caps.maxTextureSize = maxTexture;
+    rig.gpu.capsResult = caps;
+}
+
+} // namespace
+
+TEST_CASE("the render scale is the frame placement's scale rounded up, from the same chooser") {
+    Rig rig;
+    REQUIRE(rig.dd->SetDisplayMode(800, 600, 16, 0, 0) == kDdOk);
+    // 800x600 in 2560x1440 pixels: placed 1920x1440, a scale of 2.4, so 3.
+    giveWindow(rig, 2560, 1440, 8192);
+    CHECK(rig.dd->WantedRenderScale() == 3);
+    // A window of exactly twice the frame: 2.
+    giveWindow(rig, 1600, 1200, 8192);
+    CHECK(rig.dd->WantedRenderScale() == 2);
+    // 1366x768 points on a two-pixel display: 2732x1536, placed 2048x1536 (2.56), so 3.
+    giveWindow(rig, 2732, 1536, 8192);
+    CHECK(rig.dd->WantedRenderScale() == 3);
+    // A window of the frame's own size, or a smaller one: 1.
+    giveWindow(rig, 800, 600, 8192);
+    CHECK(rig.dd->WantedRenderScale() == 1);
+    giveWindow(rig, 640, 480, 8192);
+    CHECK(rig.dd->WantedRenderScale() == 1);
+
+    // With the whole-number scale on, the present places the frame at a whole scale, and the
+    // render scale follows the same placement: 2560x1440 shows the frame at 2 (1600x1200), and
+    // so does 2732x1536, where the fitted placement asked 3.
+    fixes::Settings whole;
+    REQUIRE(whole.applyCommandLine({"fix_integer_scaled_frame=on"}).empty());
+    fixes::install(whole);
+    giveWindow(rig, 2560, 1440, 8192);
+    CHECK(rig.dd->WantedRenderScale() == 2);
+    giveWindow(rig, 2732, 1536, 8192);
+    CHECK(rig.dd->WantedRenderScale() == 2);
+    giveWindow(rig, 2400, 1800, 8192);
+    CHECK(rig.dd->WantedRenderScale() == 3);
+    fixes::install(fixes::Settings());
+}
+
+TEST_CASE("the render scale stays within the Gpu's largest texture and the option") {
+    Rig rig;
+    REQUIRE(rig.dd->SetDisplayMode(800, 600, 16, 0, 0) == kDdOk);
+    // 3 would be 2400 pixels wide: a Gpu of 2048 gives 2.
+    giveWindow(rig, 2560, 1440, 2048);
+    CHECK(rig.dd->WantedRenderScale() == 2);
+
+    Rig small; // the largest texture is read once per object
+    REQUIRE(small.dd->SetDisplayMode(800, 600, 16, 0, 0) == kDdOk);
+    giveWindow(small, 2560, 1440, 1024);
+    CHECK(small.dd->WantedRenderScale() == 1);
+
+    Rig option;
+    REQUIRE(option.dd->SetDisplayMode(800, 600, 16, 0, 0) == kDdOk);
+    giveWindow(option, 2560, 1440, 8192);
+    DirectDraw::SetRenderScaleOption(2);
+    CHECK(option.dd->WantedRenderScale() == 2);
+    DirectDraw::SetRenderScaleOption(1);
+    CHECK(option.dd->WantedRenderScale() == 1);
+    DirectDraw::SetRenderScaleOption(5);
+    CHECK(option.dd->WantedRenderScale() == 3); // a cap, not a demand
+    DirectDraw::SetRenderScaleOption(0);
+    CHECK(option.dd->WantedRenderScale() == 3);
+}
+
+TEST_CASE("the render scale is 1 with fix_render_scale off, at 8 bits, or with no window state") {
+    Rig rig;
+    REQUIRE(rig.dd->SetDisplayMode(800, 600, 16, 0, 0) == kDdOk);
+    giveWindow(rig, 2560, 1440, 8192);
+    fixes::Settings off;
+    REQUIRE(off.applyCommandLine({"fix_render_scale=off"}).empty());
+    fixes::install(off);
+    CHECK(rig.dd->WantedRenderScale() == 1);
+    fixes::install(fixes::Settings());
+    CHECK(rig.dd->WantedRenderScale() == 3);
+
+    rig.window.stateResult = Error::kWrongState;
+    CHECK(rig.dd->WantedRenderScale() == 1);
+
+    Rig indexed;
+    REQUIRE(indexed.dd->SetDisplayMode(800, 600, 8, 0, 0) == kDdOk);
+    giveWindow(indexed, 2560, 1440, 8192);
+    CHECK(indexed.dd->WantedRenderScale() == 1);
+}
+
+TEST_CASE("a scene's start makes the display again at the scale the window asks for") {
+    Rig rig;
+    REQUIRE(rig.dd->SetDisplayMode(800, 600, 16, 0, 0) == kDdOk);
+    giveWindow(rig, 2560, 1440, 8192);
+    CHECK(rig.dd->DisplayScale() == 1);
+    rig.gpu.log.Clear();
+    rig.gpu.backBufferResult = platform::TextureId{9};
+    CHECK(rig.dd->BeginSceneScale() == 3);
+    CHECK(rig.gpu.log.Calls() == Calls{"GetCaps()", "ConfigureScaledBackBuffer(800, 600, 0, 3)"});
+    CHECK(rig.dd->DisplayScale() == 3);
+    REQUIRE(rig.dd->DisplayTexture().Ok());
+    CHECK(rig.dd->DisplayTexture().Value() == platform::TextureId{9});
+
+    // The same window again: nothing is made.
+    rig.gpu.log.Clear();
+    CHECK(rig.dd->BeginSceneScale() == 3);
+    CHECK(rig.gpu.log.Calls().empty());
+
+    // A resize: the next scene's start makes it again; back to the frame's size, at 1.
+    giveWindow(rig, 800, 600, 8192);
+    rig.gpu.backBufferResult = platform::TextureId{10};
+    CHECK(rig.dd->BeginSceneScale() == 1);
+    CHECK(rig.gpu.log.Calls() == Calls{"ConfigureBackBuffer(800, 600, 0)"});
+    CHECK(rig.dd->DisplayScale() == 1);
+
+    // A mode change puts the display back to 1 until the next scene.
+    giveWindow(rig, 2560, 1440, 8192);
+    REQUIRE(rig.dd->BeginSceneScale() == 3);
+    rig.gpu.log.Clear();
+    REQUIRE(rig.dd->SetDisplayMode(800, 600, 16, 0, 0) == kDdOk);
+    CHECK(rig.gpu.log.Calls() == Calls{"ConfigureBackBuffer(800, 600, 0)"});
+    CHECK(rig.dd->DisplayScale() == 1);
+}
+
+TEST_CASE("a Gpu that refuses a scaled back buffer keeps the scene at 1, asked once per mode") {
+    Rig rig;
+    REQUIRE(rig.dd->SetDisplayMode(800, 600, 16, 0, 0) == kDdOk);
+    giveWindow(rig, 2560, 1440, 8192);
+    rig.gpu.backBufferResult = Error::kUnsupported;
+    rig.gpu.log.Clear();
+    CHECK(rig.dd->BeginSceneScale() == 1);
+    CHECK(rig.gpu.log.Count("ConfigureScaledBackBuffer") == 1);
+    CHECK(rig.dd->WantedRenderScale() == 1);
+    rig.gpu.backBufferResult = platform::TextureId{4};
+    CHECK(rig.dd->BeginSceneScale() == 1);
+    CHECK(rig.gpu.log.Count("ConfigureScaledBackBuffer") == 1);
+    REQUIRE(rig.dd->DisplayTexture().Ok()); // made again at 1
+    CHECK(rig.gpu.log.Calls().back() == "ConfigureBackBuffer(800, 600, 0)");
+
+    REQUIRE(rig.dd->SetDisplayMode(800, 600, 16, 0, 0) == kDdOk);
+    CHECK(rig.dd->WantedRenderScale() == 3); // a new mode asks again
 }
 
 } // namespace sfcop::hle::ddraw4
