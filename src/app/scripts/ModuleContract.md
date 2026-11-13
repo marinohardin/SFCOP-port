@@ -95,6 +95,10 @@ module itself:
   allow-list names, or the module itself.
 - `GetProcAddress` succeeds only for `DLL!Name` on the allow-list (an ordinal is `DLL!#n`, and
   none is on it), or for an export of the module itself.
+- The game's own libraries count as the modules the allow-list names: `OSSPECIFIC95.DLL` and
+  `OSSPECIFIC98.DLL` load, and `GetProcAddress` answers their one entry on the list with the
+  client's implementation. A name the allow-list leaves out is answered 0, never a stub: the
+  module's own fallback runs, as it would on a system without the function.
 
 A lookup of anything else returns null, as the Windows call does when it fails, and is refused
 with the message of a direct import, naming the symbol (`DLL!Name`; the module name alone when a

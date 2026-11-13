@@ -174,7 +174,10 @@ template <bool Pop> void fcomi(Cpu &c, const Insn &i) {
 }
 
 template <unsigned K> void fld(Cpu &c, const Insn &i) { push(c, loadOperand<K>(c, effectiveAddress(c, i))); }
-void fld80(Cpu &c, const Insn &i) { push(c, load80(c.at(effectiveAddress(c, i)))); }
+void fld80(Cpu &c, const Insn &i) {
+    const std::uint8_t *p = c.at(effectiveAddress(c, i), 10);
+    push(c, p != nullptr ? load80(p) : 0.0);
+}
 void fild64(Cpu &c, const Insn &i) {
     const auto v = c.load<std::int64_t>(effectiveAddress(c, i));
     push(c, static_cast<double>(v));
@@ -197,7 +200,13 @@ template <unsigned K, bool Pop> void fst(Cpu &c, const Insn &i) {
         c.store<double>(va, v);
     }
 }
-void fstp80(Cpu &c, const Insn &i) { store80(c.at(effectiveAddress(c, i)), pop(c)); }
+void fstp80(Cpu &c, const Insn &i) {
+    std::uint8_t *p = c.at(effectiveAddress(c, i), 10);
+    const double v = pop(c);
+    if (p != nullptr) {
+        store80(p, v);
+    }
+}
 // fst / fstp st(i): st(i) takes st(0), then (fstp) the stack pops.
 template <bool Pop> void fstSt(Cpu &c, const Insn &i) {
     st(c, i.rm) = st(c, 0);

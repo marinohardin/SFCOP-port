@@ -22,6 +22,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -77,6 +78,10 @@ public:
     void call(std::uint32_t address);
 
     const InterpreterStats &stats() const { return stats_; }
+    // The entries running now, on every guest thread: those inside script code or waiting in a
+    // call out. Blocks removed while any is running are kept until none is.
+    std::size_t activeEntries() const { return active_.size(); }
+    std::size_t retiredBlocks() const { return retired_.size(); }
     const Machine &machine() const { return machine_; }
 
     // For the handlers. A target nothing answers is said (the first kUnresolvedCallsSaid of
@@ -84,6 +89,8 @@ public:
     void callOut(Cpu &c, std::uint32_t target);  // a call: the return address is pushed
     void jumpOut(Cpu &c, std::uint32_t target);  // a tail jump: the caller's is on the stack
     void backEdge(Cpu &c);
+    // `count` back edges at once (fewer than kYieldEvery), as a long rep counts its iterations.
+    void backEdges(Cpu &c, std::uint32_t count);
     void divideFault(Cpu &c, std::uint32_t code);
     // One line to the client's report, or to stderr when it has none.
     void say(const char *line) const;
@@ -130,6 +137,8 @@ private:
     void stopStray(Cpu &c, std::uint32_t address, const char *what, const char *after);
     // The stopping half of stopScript: `line` said, every range of `script` stopped, the entry gives up.
     void stopNamed(Cpu &c, const std::string &script, const char *line);
+    // An access in the block at `block` ran past the guest's last byte (Cpu::strayed): stopScript.
+    void strayAccess(Cpu &c, std::uint32_t block);
     Block *block(std::uint32_t address);
     Block *decodeBlock(std::uint32_t address);
     void run(Cpu &c, std::uint32_t address);
@@ -139,7 +148,17 @@ private:
     std::unordered_map<std::uint32_t, std::unique_ptr<Block>> blocks_;
     std::array<std::pair<std::uint32_t, Block *>, 4096> recent_{};
     std::vector<std::unique_ptr<Block>> retired_; // removed while code may still be running them
-    int depth_ = 0;
+    // One per running entry, in the order they were entered. Entries on one guest thread nest;
+    // those of different threads interleave as the machine is handed between them. A resume
+    // abandons the entries its own thread entered after the one resumed, and only those.
+    struct ActiveEntry {
+        std::thread::id thread;
+        std::uint64_t serial;
+    };
+    std::vector<ActiveEntry> active_;
+    std::uint64_t nextSerial_ = 0;
+    void leaveEntry(std::uint64_t serial);
+    void resumeEntry(std::thread::id thread, std::uint64_t serial);
     InterpreterStats stats_;
 };
 

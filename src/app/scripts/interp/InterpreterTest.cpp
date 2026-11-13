@@ -8,9 +8,12 @@
 #include <csetjmp>
 #include <cstdint>
 #include <cstring>
+#include <condition_variable>
 #include <initializer_list>
+#include <mutex>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <vector>
 
 using namespace sfcop::scripts::interp;
@@ -741,14 +744,14 @@ namespace {
 
 constexpr std::uint32_t kHostDispatch = 0x00500010; // a host function that calls the script back
 
-// Landing pads as the client keeps them: newest last, each resumed by a longjmp.
+// Landing pads as the client keeps them: per guest thread, newest last, each resumed by a longjmp.
 struct TestPad {
     std::jmp_buf jb;
     std::uint32_t entryEsp = 0;
     std::uint32_t function = 0;
     std::uint32_t resume = 0;
 };
-std::vector<TestPad *> g_pads;
+thread_local std::vector<TestPad *> g_pads;
 Interpreter *g_interpreter = nullptr;
 bool g_hostReturned = false;
 
@@ -854,4 +857,257 @@ TEST_CASE("control that leaves upward with no landing pads stops the script with
     CHECK(g_report == "[scripts] stopped: a script: control left its frames upward, to a frame no interpreted "
                       "entry owns, going to 0x00001020; the call into it fails, as does every later one");
     CHECK(t.regs[kEax] == 0u);
+}
+
+namespace {
+
+// Two guest threads handing the machine to each other, as the lifted game's yield does: one runs
+// while the other waits, each with its own registers (kept here while it waits).
+constexpr std::uint32_t kHandOver = 0x00500020; // thread A's host call: lets B run, then dispatches
+constexpr std::uint32_t kWaitForA = 0x00500030; // thread B's host call: lets A run until A is done
+constexpr std::uint32_t kStackB = 0x60000;
+
+std::mutex g_turnLock;
+std::condition_variable g_turnChanged;
+char g_turn = 'A';
+std::thread g_threadB;
+std::uint32_t g_bEax = 0;
+
+void giveTurn(char to) {
+    TestMachine &t = *g_current;
+    std::uint32_t mine[8];
+    std::memcpy(mine, t.regs, sizeof mine);
+    const char me = to == 'A' ? 'B' : 'A';
+    std::unique_lock<std::mutex> lock(g_turnLock);
+    g_turn = to;
+    g_turnChanged.notify_all();
+    g_turnChanged.wait(lock, [me] { return g_turn == me; });
+    std::memcpy(t.regs, mine, sizeof mine);
+}
+
+void threadB() {
+    {
+        std::unique_lock<std::mutex> lock(g_turnLock);
+        g_turnChanged.wait(lock, [] { return g_turn == 'B'; });
+    }
+    TestMachine &t = *g_current;
+    t.regs[kEsp] = kStackB - 4;
+    t.store32(kStackB - 4, kLiftedReturnAddress);
+    g_interpreter->call(kCode + 0x100);
+    g_bEax = t.regs[kEax];
+    std::lock_guard<std::mutex> lock(g_turnLock);
+    g_turn = 'A';
+    g_turnChanged.notify_all();
+}
+
+// A's host call: B starts and runs until it waits in its own host call; then A's handler runs.
+void handOver() {
+    g_threadB = std::thread(threadB);
+    giveTurn('B');
+    hostDispatch();
+}
+
+void waitForA() {
+    TestMachine &t = *g_current;
+    t.regs[kEsp] += 4; // the host's ret
+    giveTurn('A');
+    t.regs[kEax] = 5;
+}
+
+} // namespace
+
+TEST_CASE("a resume on one guest thread keeps the entries another thread is still running") {
+    TestMachine t;
+    t.machine.lookup = [](std::uint32_t address) -> HostFunction {
+        if (address == kHandOver) {
+            return &handOver;
+        }
+        if (address == kWaitForA) {
+            return &waitForA;
+        }
+        return address == kHostDispatch ? &hostDispatch : nullptr;
+    };
+    t.machine.runInPad = &testRunInPad;
+    t.machine.padOwning = &testPadOwning;
+    t.machine.resumePad = &testResumePad;
+    putCatch(t);
+    t.put(kCode + 9, {0xE8, 0x12, 0xF0, 0x4F, 0x00}); // call 0x00500020 in place of the dispatch
+    t.put(kCode + 0x100, {0xE8, 0x2B, 0xEF, 0x4F, 0x00, // call 0x00500030
+                          0x83, 0xC0, 0x01,             // add eax, 1
+                          0xC3});
+    Interpreter interpreter(t.machine);
+    interpreter.addCode(kCode, kCode + 0x100);          // A's script
+    interpreter.addCode(kCode + 0x100, kCode + 0x200);  // B's
+    g_interpreter = &interpreter;
+    g_turn = 'A';
+    t.run(interpreter); // A: entered, B entered and waiting, A's nested entry resumed A's first
+    CHECK(t.regs[kEax] == 7u);
+    CHECK(interpreter.stats().resumes == 1u);
+    // B is still inside its script: its entry is running, so A's blocks removed now are kept
+    // until it leaves (a link of B's could still reach them).
+    CHECK(interpreter.activeEntries() == 1u);
+    interpreter.removeCode(kCode, kCode + 0x100);
+    CHECK(interpreter.retiredBlocks() != 0u);
+    {
+        std::unique_lock<std::mutex> lock(g_turnLock);
+        g_turn = 'B';
+        g_turnChanged.notify_all();
+        g_turnChanged.wait(lock, [] { return g_turn == 'A'; });
+    }
+    g_threadB.join();
+    CHECK(g_bEax == 6u);
+    CHECK(interpreter.activeEntries() == 0u);
+    CHECK(interpreter.retiredBlocks() == 0u);
+}
+
+TEST_CASE("rcl and rcr rotate through CF, one bit or several") {
+    TestMachine t;
+    t.run({0xF9,             // stc
+           0xB0, 0x81,       // mov al, 0x81
+           0xD0, 0xD0,       // rcl al, 1: 0x03, CF 1
+           0x0F, 0x92, 0xC3, // setb bl
+           0xF8,             // clc
+           0xB2, 0x01,       // mov dl, 0x01
+           0xD0, 0xDA,       // rcr dl, 1: 0x00, CF 1
+           0x0F, 0x92, 0xC7, // setb bh
+           0xF8,             // clc
+           0xB1, 0x80,       // mov cl, 0x80
+           0xC0, 0xD1, 0x02, // rcl cl, 2: 0x00 CF 1, then 0x01 CF 0
+           0x0F, 0x92, 0xC5, // setb ch
+           0xC3});
+    CHECK(low(t.regs[kEax]) == 0x03);
+    CHECK(low(t.regs[kEbx]) == 1);
+    CHECK(low(t.regs[kEdx]) == 0x00);
+    CHECK(high(t.regs[kEbx]) == 1);
+    CHECK(low(t.regs[kEcx]) == 0x01);
+    CHECK(high(t.regs[kEcx]) == 0);
+}
+
+TEST_CASE("shld and shrd shift in the other register's bits and leave the last bit out in CF") {
+    TestMachine t;
+    t.run({0xB8, 0x78, 0x56, 0x34, 0x12,             // mov eax, 0x12345678
+           0xBA, 0xF0, 0xDE, 0xBC, 0x9A,             // mov edx, 0x9ABCDEF0
+           0x0F, 0xA4, 0xD0, 0x08,                   // shld eax, edx, 8
+           0x0F, 0x92, 0x05, 0x00, 0x30, 0x00, 0x00, // setb [0x3000]
+           0xBB, 0x18, 0x00, 0x00, 0x00,             // mov ebx, 0x18
+           0xBE, 0xFF, 0x00, 0x00, 0x00,             // mov esi, 0xFF
+           0xB1, 0x04,                               // mov cl, 4
+           0x0F, 0xAD, 0xF3,                         // shrd ebx, esi, cl
+           0x0F, 0x92, 0x05, 0x01, 0x30, 0x00, 0x00, // setb [0x3001]
+           0xC3});
+    CHECK(t.regs[kEax] == 0x3456789Au);
+    CHECK(t.memory[0x3000] == 0); // bit 24 of 0x12345678
+    CHECK(t.regs[kEdx] == 0x9ABCDEF0u);
+    CHECK(t.regs[kEbx] == 0xF0000001u);
+    CHECK(t.memory[0x3001] == 1); // bit 3 of 0x18
+    CHECK(t.regs[kEsi] == 0xFFu);
+}
+
+TEST_CASE("bt, bts, btr and btc: a register offset reaches the dwords around a memory operand") {
+    TestMachine t;
+    t.run({0xBB, 0x10, 0x30, 0x00, 0x00,             // mov ebx, 0x3010
+           0xB8, 0x25, 0x00, 0x00, 0x00,             // mov eax, 37: the dword at +4, bit 5
+           0x0F, 0xAB, 0x03,                         // bts [ebx], eax
+           0xB8, 0xFF, 0xFF, 0xFF, 0xFF,             // mov eax, -1: the dword at -4, bit 31
+           0x0F, 0xAB, 0x03,                         // bts [ebx], eax
+           0xB8, 0x25, 0x00, 0x00, 0x00,             // mov eax, 37
+           0x0F, 0xA3, 0x03,                         // bt [ebx], eax
+           0x0F, 0x92, 0x05, 0x20, 0x30, 0x00, 0x00, // setb [0x3020]
+           0x0F, 0xB3, 0x03,                         // btr [ebx], eax
+           0x0F, 0x92, 0x05, 0x21, 0x30, 0x00, 0x00, // setb [0x3021]
+           0x0F, 0xBB, 0x03,                         // btc [ebx], eax
+           0x0F, 0x92, 0x05, 0x22, 0x30, 0x00, 0x00, // setb [0x3022]
+           0x0F, 0xBA, 0x23, 0x25,                   // bt dword [ebx], 37: an immediate is masked to bit 5
+           0x0F, 0x92, 0x05, 0x23, 0x30, 0x00, 0x00, // setb [0x3023]
+           0x0F, 0xBA, 0x2B, 0x25,                   // bts dword [ebx], 37
+           0xB9, 0x12, 0x00, 0x00, 0x00,             // mov ecx, 0x12
+           0x0F, 0xBA, 0xF9, 0x21,                   // btc ecx, 33: bit 1
+           0x0F, 0x92, 0x05, 0x24, 0x30, 0x00, 0x00, // setb [0x3024]
+           0xC3});
+    CHECK(t.load32(0x3014) == 0x20u);       // set, cleared, complemented back
+    CHECK(t.load32(0x300C) == 0x80000000u); // below the operand
+    CHECK(t.memory[0x3020] == 1);
+    CHECK(t.memory[0x3021] == 1);
+    CHECK(t.memory[0x3022] == 0);
+    CHECK(t.memory[0x3023] == 0);
+    CHECK(t.load32(0x3010) == 0x20u);
+    CHECK(t.regs[kEcx] == 0x10u);
+    CHECK(t.memory[0x3024] == 1);
+}
+
+namespace {
+
+// Runs `code` at kCode as TestScript and returns the line it said. The test's guest memory is
+// 1 MB: an access that reached the host past it would not come back.
+std::string strayLine(std::initializer_list<std::uint8_t> code) {
+    TestMachine t;
+    t.machine.report = &keepReport;
+    g_report.clear();
+    t.put(kCode, code);
+    Interpreter interpreter(t.machine);
+    interpreter.addCode(kCode, kCode + 0x1000, "TestScript");
+    t.regs[kEax] = 0x5555u;
+    t.run(interpreter);
+    CHECK(t.regs[kEax] == 0u); // the call failed
+    CHECK(interpreter.stopped(kCode));
+    return g_report;
+}
+
+} // namespace
+
+TEST_CASE("an access past the guest's last byte stops the script and touches nothing outside the guest") {
+    CHECK(strayLine({0xA1, 0xFE, 0xFF, 0xFF, 0xFF, // mov eax, [0xFFFFFFFE]
+                     0xB8, 0x09, 0x00, 0x00, 0x00, // mov eax, 9
+                     0xC3}) ==
+          "[scripts] stopped: TestScript: it reached an access of 4 bytes at 0xFFFFFFFE, past the end of guest "
+          "memory, in the block at 0x00001000 (bytes A1 FE FF FF); the call into it fails, as does every later one");
+    CHECK(strayLine({0xBF, 0xF0, 0xFF, 0xFF, 0xFF, // mov edi, 0xFFFFFFF0
+                     0xB9, 0x20, 0x00, 0x00, 0x00, // mov ecx, 0x20
+                     0xB0, 0x55,                   // mov al, 0x55
+                     0xF3, 0xAA,                   // rep stosb
+                     0xC3})
+              .find("an access of 32 bytes at 0xFFFFFFF0") != std::string::npos);
+    CHECK(strayLine({0xBE, 0x00, 0x20, 0x00, 0x00, // mov esi, 0x2000
+                     0xBF, 0xF8, 0xFF, 0xFF, 0xFF, // mov edi, 0xFFFFFFF8
+                     0xB9, 0x04, 0x00, 0x00, 0x00, // mov ecx, 4
+                     0xF3, 0xA5,                   // rep movsd
+                     0xC3})
+              .find("an access of 16 bytes at 0xFFFFFFF8") != std::string::npos);
+    CHECK(strayLine({0xD9, 0xE8,                         // fld1
+                     0xDB, 0x3D, 0xF8, 0xFF, 0xFF, 0xFF, // fstp tbyte [0xFFFFFFF8]
+                     0xC3})
+              .find("an access of 10 bytes at 0xFFFFFFF8") != std::string::npos);
+    CHECK(strayLine({0xBB, 0xF0, 0xFF, 0xFF, 0xFF, // mov ebx, 0xFFFFFFF0
+                     0x8B, 0x43, 0x0E,             // mov eax, [ebx+14]
+                     0xC3})
+              .find("an access of 4 bytes at 0xFFFFFFFE") != std::string::npos);
+}
+
+TEST_CASE("a call back to the script's own code counts as a back edge: deep recursion yields") {
+    TestMachine t;
+    t.yield = [] { ++g_current->yields; };
+    t.run({0xB9, 0x01, 0x00, 0x01, 0x00, // mov ecx, 0x10001
+           0xE8, 0x01, 0x00, 0x00, 0x00, // call 0x100B (forward)
+           0xC3,                         // ret
+           0x49,                         // 0x100B: dec ecx
+           0x74, 0x05,                   // jz 0x1013
+           0xE8, 0xF8, 0xFF, 0xFF, 0xFF, // call 0x100B (back): 0x10000 times
+           0xC3});                       // 0x1013: ret
+    CHECK(t.regs[kEcx] == 0u);
+    CHECK(t.backEdges == 0x10000u);
+    CHECK(t.yields == 1);
+}
+
+TEST_CASE("a long rep scan counts its iterations as back edges and yields as a loop does") {
+    TestMachine t;
+    t.yield = [] { ++g_current->yields; };
+    t.run({0xBF, 0x00, 0x00, 0x09, 0x00, // mov edi, 0x90000
+           0xB9, 0x00, 0x00, 0x02, 0x00, // mov ecx, 0x20000
+           0xB0, 0x55,                   // mov al, 0x55: not in the zeroed memory
+           0xF2, 0xAE,                   // repne scasb
+           0xC3});
+    CHECK(t.regs[kEcx] == 0u);
+    CHECK(t.regs[kEdi] == 0xB0000u);
+    CHECK(t.backEdges == 0x20000u);
+    CHECK(t.yields == 2);
 }

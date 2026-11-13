@@ -587,6 +587,32 @@ void rdtsc(Cpu &c, const Insn &) {
 
 // --- Strings: movs stos lods cmps scas, with rep / repe / repne. ---
 
+// A rep's iterations count as back edges, in batches, so a long one hands the machine over as a
+// loop does (Interpreter::backEdges). An access past the guest's end ends it (Cpu::strayed).
+class RepTurns {
+public:
+    explicit RepTurns(Cpu &c) : c_(c) {}
+    // After each iteration: whether the rep goes on.
+    bool turn() {
+        if (++n_ == kRepBatch) {
+            c_.interpreter->backEdges(c_, n_);
+            n_ = 0;
+        }
+        return c_.straySize == 0;
+    }
+    void done() {
+        if (n_ != 0) {
+            c_.interpreter->backEdges(c_, n_);
+            n_ = 0;
+        }
+    }
+
+private:
+    static constexpr std::uint32_t kRepBatch = 0x1000;
+    Cpu &c_;
+    std::uint32_t n_ = 0;
+};
+
 template <unsigned S> void movs(Cpu &c, const Insn &i) {
     const std::int32_t step = c.direction * static_cast<std::int32_t>(S);
     if (i.rep == 0) {
@@ -598,14 +624,17 @@ template <unsigned S> void movs(Cpu &c, const Insn &i) {
     std::uint32_t n = c.r[kEcx];
     if (step > 0 && i.seg == 0) {
         // Forward copies byte by byte from the source as written: overlapping runs repeat a
-        // pattern, as on the machine (memmove would not).
-        std::uint8_t *dst = c.at(c.r[kEdi]);
-        const std::uint8_t *src = c.at(c.r[kEsi]);
-        const std::size_t bytes = std::size_t{n} * S;
+        // pattern, as on the machine (memmove would not). A run past the guest's end copies nothing.
+        const std::uint64_t bytes = std::uint64_t{n} * S;
+        std::uint8_t *dst = c.at(c.r[kEdi], bytes);
+        const std::uint8_t *src = c.at(c.r[kEsi], bytes);
+        if (dst == nullptr || src == nullptr) {
+            return;
+        }
         if (dst + bytes <= src || src + bytes <= dst) {
-            std::memcpy(dst, src, bytes);
+            std::memcpy(dst, src, static_cast<std::size_t>(bytes));
         } else {
-            for (std::size_t k = 0; k < bytes; ++k) {
+            for (std::uint64_t k = 0; k < bytes; ++k) {
                 dst[k] = src[k];
             }
         }
@@ -614,11 +643,16 @@ template <unsigned S> void movs(Cpu &c, const Insn &i) {
         c.r[kEcx] = 0;
         return;
     }
+    RepTurns turns(c);
     for (; n != 0; --n) {
         storeN<S>(c, c.r[kEdi], loadN<S>(c, c.segment[i.seg] + c.r[kEsi]));
         c.r[kEsi] += step;
         c.r[kEdi] += step;
+        if (!turns.turn()) {
+            break;
+        }
     }
+    turns.done();
     c.r[kEcx] = 0;
 }
 
@@ -632,27 +666,43 @@ template <unsigned S> void stos(Cpu &c, const Insn &i) {
     }
     std::uint32_t n = c.r[kEcx];
     if (step > 0 && S == 1) {
-        std::memset(c.at(c.r[kEdi]), static_cast<int>(v), n);
+        std::uint8_t *dst = c.at(c.r[kEdi], n);
+        if (dst == nullptr) {
+            return;
+        }
+        std::memset(dst, static_cast<int>(v), n);
         c.r[kEdi] += n;
     } else {
+        RepTurns turns(c);
         for (; n != 0; --n) {
             storeN<S>(c, c.r[kEdi], v);
             c.r[kEdi] += step;
+            if (!turns.turn()) {
+                break;
+            }
         }
+        turns.done();
     }
     c.r[kEcx] = 0;
 }
 
 template <unsigned S> void lods(Cpu &c, const Insn &i) {
     const std::int32_t step = c.direction * static_cast<std::int32_t>(S);
-    std::uint32_t n = i.rep == 0 ? 1 : c.r[kEcx];
-    for (; n != 0; --n) {
+    if (i.rep == 0) {
         setReg<S>(c, kEax, loadN<S>(c, c.segment[i.seg] + c.r[kEsi]));
         c.r[kEsi] += step;
+        return;
     }
-    if (i.rep != 0) {
-        c.r[kEcx] = 0;
+    RepTurns turns(c);
+    for (std::uint32_t n = c.r[kEcx]; n != 0; --n) {
+        setReg<S>(c, kEax, loadN<S>(c, c.segment[i.seg] + c.r[kEsi]));
+        c.r[kEsi] += step;
+        if (!turns.turn()) {
+            break;
+        }
     }
+    turns.done();
+    c.r[kEcx] = 0;
 }
 
 // cmps compares [esi] with [edi]; scas compares the accumulator with [edi].
@@ -672,13 +722,15 @@ template <unsigned S, bool Scan> void compareString(Cpu &c, const Insn &i) {
         once();
         return;
     }
+    RepTurns turns(c);
     while (c.r[kEcx] != 0) {
         const bool equal = once();
         --c.r[kEcx];
-        if (equal != (i.rep == 1)) { // repe stops on a difference, repne on a match
+        if (equal != (i.rep == 1) || !turns.turn()) { // repe stops on a difference, repne on a match
             break;
         }
     }
+    turns.done();
 }
 
 // --- Control. ---
@@ -734,9 +786,14 @@ template <bool M> void jmpRm(Cpu &c, const Insn &i) {
     }
 }
 
+// A call to code at or before its own counts as a back edge, as a jump there does: recursion
+// hands the machine over as a loop does.
 void callIn(Cpu &c, const Insn &i) {
     c.push(i.next);
     c.next = i.target;
+    if (i.target <= i.addr) {
+        c.interpreter->backEdge(c);
+    }
 }
 void callOutDirect(Cpu &c, const Insn &i) {
     c.push(i.next);
@@ -747,6 +804,9 @@ template <bool M> void callRm(Cpu &c, const Insn &i) {
     c.push(i.next);
     if (c.interpreter->interprets(target)) {
         c.next = target;
+        if (target <= i.addr) {
+            c.interpreter->backEdge(c);
+        }
     } else {
         c.interpreter->callOut(c, target);
     }
