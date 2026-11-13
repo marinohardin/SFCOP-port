@@ -16,6 +16,7 @@ extern const uint32_t recomp_dispatch_count;
 
 #include <csetjmp>
 #include <csignal>
+#include <setjmp.h> // _setjmp and _longjmp (POSIX), which RECOMP_EH_LONGJMP names
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -52,6 +53,30 @@ struct Pad {
 thread_local std::vector<Pad> t_pads;
 thread_local bool t_inFault = false; // dispatching a hardware fault on this thread
 
+#if defined(__APPLE__)
+// A fault handler on this thread that is still running, the newest first. The landing pads jump
+// with _longjmp (RECOMP_EH_LONGJMP), which on macOS leaves the thread marked as running on its
+// alternate signal stack when it jumps out of a handler; the next fault would then be handled on
+// whatever stack the thread is using. So a jump to a pad pushed before the fault goes back into
+// the handler first (back), and the handler returns into jumpToPad: the return ends the signal
+// and clears the mark, as longjmp did. A pad pushed after the fault, by guest code the handler
+// runs, is jumped to directly. Linux decides from the stack pointer, so it needs none of this.
+//
+// A record lives in its handler's frame and is taken off t_faultReturn on each of the handler's
+// two exits: its return after a guest handler continued (the run then ends) and its own back
+// jump. No other jump leaves the handler: one to a pad older than the fault goes through back,
+// and one to a newer pad lands inside the handler, below its frame, so the record stays live and
+// stays on t_faultReturn, as it must for the next jump to an older pad. A fault taken there is
+// handled below that frame too, and its record names this one as outer.
+struct FaultReturn {
+    jmp_buf back;
+    std::size_t pads; // pads [0, pads) are older than the fault
+    recomp_ehframe_t *target;
+    FaultReturn *outer;
+};
+thread_local FaultReturn *t_faultReturn = nullptr;
+#endif
+
 constexpr std::uint32_t kAccessViolation = 0xC0000005u;
 
 std::size_t padIndex(const recomp_ehframe_t *frame) {
@@ -84,6 +109,18 @@ int continuationOwnedBy(std::uint32_t target, std::uint32_t owner) {
         }
     }
     return 0;
+}
+
+// Jumps to the landing pad at `index` of t_pads, through the fault handler it lies beyond, if any.
+[[noreturn]] void jumpToPad(recomp_ehframe_t *frame, std::size_t index) {
+#if defined(__APPLE__)
+    if (FaultReturn *fault = t_faultReturn; fault != nullptr && index < fault->pads) {
+        fault->target = frame;
+        _longjmp(fault->back, 1);
+    }
+#endif
+    static_cast<void>(index);
+    RECOMP_EH_LONGJMP(frame->jb);
 }
 
 // Continues at `target` in the function whose frame ebp addresses, the guest registers already as
@@ -161,6 +198,52 @@ std::uintptr_t faultPc(void *context) {
 #endif
 }
 
+// Where this fault handler runs, for its report line: on the thread's alternate signal stack, off
+// it (each fault after a catch would be, on macOS, if a pad were reached by _longjmp straight out
+// of the handler), or nothing for a thread with no alternate stack.
+const char *alternateStackNote() {
+    stack_t stack{};
+    if (sigaltstack(nullptr, &stack) != 0 || (stack.ss_flags & SS_DISABLE) != 0) {
+        return "";
+    }
+    const auto here = reinterpret_cast<std::uintptr_t>(__builtin_frame_address(0));
+    const auto low = reinterpret_cast<std::uintptr_t>(stack.ss_sp);
+    return here >= low && here - low < stack.ss_size ? ", on the alternate stack"
+                                                     : ", OFF the alternate stack";
+}
+
+#if defined(__APPLE__)
+// Where a fault handler's return lands when a pad older than the fault was chosen: the newest pad,
+// which recomp_eh_resume has already made the last. The report line says which stack it ran on.
+[[noreturn]] void resumeAfterFault() {
+    std::fprintf(stderr, "[eh] resuming after a fault%s\n", alternateStackNote());
+    jumpToPad(t_pads.back().frame, t_pads.size() - 1);
+}
+
+// Makes the interrupted thread, once the handler returns, call resumeAfterFault below this
+// function's own frame: on the stack the handler ran on (the alternate stack, where the thread
+// has one), whose frames are all finished by then. Not below the faulting stack pointer: a fault
+// taken with the thread's stack nearly used up would leave no room there, and the jump would fault
+// again in host code, which ends the run.
+void returnIntoPad(void *context) {
+    auto *ucontext = static_cast<ucontext_t *>(context);
+    const auto entry = reinterpret_cast<std::uintptr_t>(&resumeAfterFault);
+    const auto below = (reinterpret_cast<std::uint64_t>(__builtin_frame_address(0)) - 256) &
+                       ~std::uint64_t{15};
+#if defined(__aarch64__)
+    auto &state = ucontext->uc_mcontext->__ss;
+    __darwin_arm_thread_state64_set_sp(state, below);
+    __darwin_arm_thread_state64_set_pc_fptr(state, reinterpret_cast<void *>(entry));
+#elif defined(__x86_64__)
+    auto &state = ucontext->uc_mcontext->__ss;
+    state.__rsp = below - 8; // as after a call
+    state.__rip = entry;
+#else
+#error "returnIntoPad: unknown macOS architecture"
+#endif
+}
+#endif
+
 // A fault is the guest's own when the instruction that faulted is lifted code, or a leaf memory
 // routine that lifted code calls for a block move (no host frame lies between it and its lifted
 // caller). A pc the platform cannot read counts as lifted.
@@ -193,10 +276,24 @@ void onFault(int signal, siginfo_t *info, void *context) {
             t_inFault = true;
             const std::uint32_t parameters[2] = {AccessViolationFlag(faultAccess(context)),
                                                  static_cast<std::uint32_t>(address - base)};
-            std::fprintf(stderr, "[eh] access violation: %s of guest 0x%08X in sub_%08X at %.3f s\n",
+            std::fprintf(stderr, "[eh] access violation: %s of guest 0x%08X in sub_%08X at %.3f s%s\n",
                          parameters[0] != 0 ? "write" : "read", parameters[1], g_cur_func,
-                         Elapsed());
+                         Elapsed(), alternateStackNote());
+#if defined(__APPLE__)
+            FaultReturn back{};
+            back.pads = t_pads.size();
+            back.outer = t_faultReturn;
+            t_faultReturn = &back;
+            if (_setjmp(back.back) != 0) {
+                t_faultReturn = t_faultReturn->outer;
+                returnIntoPad(context);
+                return; // into resumeAfterFault
+            }
             RaiseFromHost(kAccessViolation, 2, parameters);
+            t_faultReturn = back.outer;
+#else
+            RaiseFromHost(kAccessViolation, 2, parameters);
+#endif
             std::fprintf(stderr, "[eh] a handler continued after an access violation at 0x%08X in "
                                  "sub_%08X; lifted code cannot retry the access\n",
                          parameters[1], g_cur_func);
@@ -223,8 +320,8 @@ void installFaultHandlers() {
     sigaltstack(&stack, nullptr);
     struct sigaction action {};
     action.sa_sigaction = onFault;
-    // SA_NODEFER: a catch leaves the handler by a longjmp, which does not unblock the signal
-    // everywhere; the next fault must still be delivered.
+    // SA_NODEFER: a catch on Linux leaves the handler by a _longjmp, which does not unblock the
+    // signal; the next fault must still be delivered.
     action.sa_flags = SA_SIGINFO | SA_ONSTACK | SA_NODEFER;
     for (int signal : {SIGSEGV, SIGBUS, SIGFPE, SIGILL}) {
         sigaction(signal, &action, nullptr);
@@ -437,7 +534,7 @@ extern "C" void recomp_eh_resume(recomp_ehframe_t *frame, uint32_t resume) {
     t_pads.resize(i + 1);
     frame->resume = resume;
     g_cur_func = frame->func;
-    std::longjmp(frame->jb, 1);
+    sfcop::guest::jumpToPad(frame, i);
 }
 
 // _JumpToContinuation(target, registrationNode), stdcall: unlink the top record (the dispatcher's,

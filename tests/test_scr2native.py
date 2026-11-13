@@ -621,6 +621,14 @@ def test_the_committed_baseline_is_what_the_generator_makes_on_this_host():
     assert proc.returncode == 0, proc.stdout + proc.stderr
 
 
+
+def test_the_arm64_macos_baseline_lets_a_landing_pad_save_its_registers():
+    # The lift gives every function that catches a pad, and on a POSIX host the pad saves its
+    # registers with _setjmp (pcrecomp-eh-setjmp.patch); the loader refuses a module importing a
+    # name the list lacks. Mach-O's prefix removed, the import is "_setjmp".
+    names = scr2native.read_list(str(ROOT / 'src' / 'app' / 'scripts' / 'baseline-arm64-macos-itanium.txt'))
+    assert '_setjmp' in names
+
 # --- the oracle mission ------------------------------------------------------------------------
 
 @retail

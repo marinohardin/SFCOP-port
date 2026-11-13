@@ -81,6 +81,21 @@ void sfcop_probe_macros(uint32_t va) {
     (void)_fpu_cmp; (void)_df; (void)_itail_tgt;
     RECOMP_REGS_OUT();
 }
+/* A function with a landing pad, as the lift emits one for every function that catches: what the
+ * pad's setjmp is called on this host comes from the compiler, not from the header's text. */
+void sfcop_probe_landing_pad(uint32_t va) {
+    int _fpu_cmp = 0; uint32_t _cf = 0; int _df = 1; uint32_t _flag_k = FK_NONE;
+    uint32_t _flag_a = 0, _flag_b = 0; uint32_t _itail_tgt = 0;
+    RECOMP_REGS_LOCALS
+    RECOMP_ENTER(va);
+    RECOMP_EH_ENTER();
+    RECOMP_EH_LEAVE();
+    return;
+_ljump:
+    (void)_fpu_cmp; (void)_df; (void)_cf; (void)_flag_a; (void)_flag_b; (void)_flag_k;
+    RECOMP_ICALL(_itail_tgt);
+    RECOMP_REGS_OUT();
+}
 '''
 
 
