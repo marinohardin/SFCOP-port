@@ -16,23 +16,30 @@
 #include "Source/entity/entity_physical.h"
 #include "Tiger/Twdebug.cpp"
 #include "Tiger/tBag.h"
+#include "Tiger/tFontmgr.cpp"
 #include "Tiger/tFormatStr.cpp"
 #include "Tiger/tFormatStr.h"
 #include "Tiger/tSndMemMgr.h"
 #include "Tiger/tStrManagerPart.h"
+#include "Tiger/tUniFont.cpp"
 #include "Tiger/tatomic.h"
 #include "Tiger/taudiochannel.cpp"
 #include "Tiger/tcglue.h"
 #include "Tiger/tcrandsequence.h"
 #include "Tiger/tgSound.cpp"
 #include "Tiger/tgSound.h"
+#include "Tiger/tgStrMgr.h"
 #include "Tiger/tgfsys.cpp"
 #include "Tiger/tgfsys.h"
 #include "Tiger/tinifile.cpp"
 #include "Tiger/tpart.h"
 #include "Tiger/tsay.h"
 #include "Tiger/tsequence.h"
+#include "Tiger/tsound_fileio.cpp"
 #include "Tiger/tstringtag.h"
+#include "dmp3d/common/stream_basicfile.h"
+#include "dmp3d/common/texBmp.h"
+#include "dmp3d/dx6/d3dframe.cpp"
 #include "unsorted/sfcstreams.h"
 #include "unsorted/t3DListenerProfile.h"
 #include "unsorted/tAICaptain.cpp"
@@ -40,6 +47,7 @@
 #include "unsorted/tAIWeaponOfficer.cpp"
 #include "unsorted/tApp3dBase.h"
 #include "unsorted/tApplication.h"
+#include "unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp"
 #include "unsorted/tBattles.cpp"
 #include "unsorted/tCampaignState.cpp"
 #include "unsorted/tCloakSystem.cpp"
@@ -4055,333 +4063,975 @@ extern "C" void sub_006501D0(void) {
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( long ) >( &tSoundMemoryBlockManager::mNumberOfBlocksNeeded ) >::run();
 }
 
+// tSoundMemoryBlockManager::scalar_deleting_destructor(unsigned char), game/Tiger/tgSound.cpp
+extern "C" void sub_006501F0(void) {
+    ::sfcop::guest::entered(664);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tSoundMemoryBlockManager *( unsigned char ) >( &tSoundMemoryBlockManager::scalar_deleting_destructor ) >::run();
+}
+
 // SoundPartCurrentTime(), game/Tiger/tgSound.cpp
 extern "C" void sub_00650230(void) {
-    ::sfcop::guest::entered(664);
+    ::sfcop::guest::entered(665);
     ::sfcop::guest::Entry< static_cast< double (*)() >( &SoundPartCurrentTime ) >::run();
 }
 
 // tgSoundPart::mClearOutSoundChannel(long), game/Tiger/tgSound.cpp
 extern "C" void sub_006502B0(void) {
-    ::sfcop::guest::entered(665);
+    ::sfcop::guest::entered(666);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( long ) >( &tgSoundPart::mClearOutSoundChannel ) >::run();
 }
 
 // tgSoundPart::mRemoveSoundChannel(long), game/Tiger/tgSound.cpp
 extern "C" void sub_006502F0(void) {
-    ::sfcop::guest::entered(666);
+    ::sfcop::guest::entered(667);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( long ) >( &tgSoundPart::mRemoveSoundChannel ) >::run();
 }
 
 // tgSoundPart::mRemoveAllSoundChannels(), game/Tiger/tgSound.cpp
 extern "C" void sub_006503A0(void) {
-    ::sfcop::guest::entered(667);
+    ::sfcop::guest::entered(668);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char() >( &tgSoundPart::mRemoveAllSoundChannels ) >::run();
 }
 
 // tgSoundPart::mGetSoundChannelCommandPtrFromHandle(long), game/Tiger/tgSound.cpp
 extern "C" void sub_00650440(void) {
-    ::sfcop::guest::entered(668);
+    ::sfcop::guest::entered(669);
     ::sfcop::guest::Entry< ::sfcop::guest::member< tSoundChannelCommand*( long ) >( &tgSoundPart::mGetSoundChannelCommandPtrFromHandle ) >::run();
 }
 
 // tgSoundPart::mFindAvailableSoundChannelCommandPtrAndReturnAHandle(), game/Tiger/tgSound.cpp
 extern "C" void sub_00650470(void) {
-    ::sfcop::guest::entered(669);
+    ::sfcop::guest::entered(670);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long() >( &tgSoundPart::mFindAvailableSoundChannelCommandPtrAndReturnAHandle ) >::run();
 }
 
 // tgSoundPart::mFindAvailableSoundChannelHandle(), game/Tiger/tgSound.cpp
 extern "C" void sub_00650800(void) {
-    ::sfcop::guest::entered(670);
+    ::sfcop::guest::entered(671);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long() >( &tgSoundPart::mFindAvailableSoundChannelHandle ) >::run();
 }
 
 // tgSoundPart::mAddChannelAtHandle(tSoundChannel*,long), game/Tiger/tgSound.cpp
 extern "C" void sub_00650A40(void) {
-    ::sfcop::guest::entered(671);
+    ::sfcop::guest::entered(672);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( tSoundChannel*, long ) >( &tgSoundPart::mAddChannelAtHandle ) >::run();
 }
 
 // tgSoundPart::mSetNumberOfSoundChannelCommands(long), game/Tiger/tgSound.cpp
 extern "C" void sub_00650B70(void) {
-    ::sfcop::guest::entered(672);
+    ::sfcop::guest::entered(673);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( long ) >( &tgSoundPart::mSetNumberOfSoundChannelCommands ) >::run();
 }
 
 // tgSoundPart::mSetNumberOfSoundChannels(long), game/Tiger/tgSound.cpp
 extern "C" void sub_00651020(void) {
-    ::sfcop::guest::entered(673);
+    ::sfcop::guest::entered(674);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( long ) >( &tgSoundPart::mSetNumberOfSoundChannels ) >::run();
 }
 
 // tgSoundPart::mGetSoundChannelPtrFromHandle(long), game/Tiger/tgSound.cpp
 extern "C" void sub_006512E0(void) {
-    ::sfcop::guest::entered(674);
+    ::sfcop::guest::entered(675);
     ::sfcop::guest::Entry< ::sfcop::guest::member< tSoundChannel*( long ) >( &tgSoundPart::mGetSoundChannelPtrFromHandle ) >::run();
 }
 
 // tChannelGroup::mDump(unsigned long,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_006587F0(void) {
-    ::sfcop::guest::entered(675);
+    ::sfcop::guest::entered(676);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( unsigned long, long ) >( &tChannelGroup::mDump ) >::run();
 }
 
 // tChannelGroup::mDump(), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00658890(void) {
-    ::sfcop::guest::entered(676);
+    ::sfcop::guest::entered(677);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tChannelGroup::mDump ) >::run();
 }
 
 // tChannelGroup::mClose(), game/Tiger/taudiochannel.cpp
 extern "C" void sub_006589F0(void) {
-    ::sfcop::guest::entered(677);
+    ::sfcop::guest::entered(678);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tChannelGroup::mClose ) >::run();
 }
 
 // tChannelGroup::mLoad(long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00658E30(void) {
-    ::sfcop::guest::entered(678);
+    ::sfcop::guest::entered(679);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( long ) >( &tChannelGroup::mLoad ) >::run();
 }
 
 // tChannelGroup::mGetChannelNumberFromIndex(long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659470(void) {
-    ::sfcop::guest::entered(679);
+    ::sfcop::guest::entered(680);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( long ) >( &tChannelGroup::mGetChannelNumberFromIndex ) >::run();
 }
 
 // tChannelGroup::mGetIndex(unsigned long,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_006594A0(void) {
-    ::sfcop::guest::entered(680);
+    ::sfcop::guest::entered(681);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( unsigned long, long ) >( &tChannelGroup::mGetIndex ) >::run();
 }
 
 // tChannelGroup::mAddDuplicate(unsigned long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659530(void) {
-    ::sfcop::guest::entered(681);
+    ::sfcop::guest::entered(682);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( unsigned long ) >( &tChannelGroup::mAddDuplicate ) >::run();
 }
 
 // tChannelGroup::mAttachFileToChannel(unsigned long,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659540(void) {
-    ::sfcop::guest::entered(682);
+    ::sfcop::guest::entered(683);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( unsigned long, long ) >( &tChannelGroup::mAttachFileToChannel ) >::run();
 }
 
 // tChannelGroup::mAttachFileToBaseGroup(long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_006597F0(void) {
-    ::sfcop::guest::entered(683);
+    ::sfcop::guest::entered(684);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( long ) >( &tChannelGroup::mAttachFileToBaseGroup ) >::run();
 }
 
 // tChannelGroup::mKillRetainedMode(), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659A20(void) {
-    ::sfcop::guest::entered(684);
+    ::sfcop::guest::entered(685);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char() >( &tChannelGroup::mKillRetainedMode ) >::run();
 }
 
 // tChannelGroup::mClearAttachments(), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659B80(void) {
-    ::sfcop::guest::entered(685);
+    ::sfcop::guest::entered(686);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char() >( &tChannelGroup::mClearAttachments ) >::run();
 }
 
 // tChannelGroup::mGetAvailableChannel(unsigned long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659CA0(void) {
-    ::sfcop::guest::entered(686);
+    ::sfcop::guest::entered(687);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( unsigned long ) >( &tChannelGroup::mGetAvailableChannel ) >::run();
 }
 
 // tChannelGroup::mAttachSoundToChannel(unsigned long,tSoundSelection *,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_0065A0F0(void) {
-    ::sfcop::guest::entered(687);
+    ::sfcop::guest::entered(688);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( unsigned long, tSoundSelection *, long ) >( &tChannelGroup::mAttachSoundToChannel ) >::run();
 }
 
 // tChannelGroup::mPlayChannel(unsigned long,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_0065A370(void) {
-    ::sfcop::guest::entered(688);
+    ::sfcop::guest::entered(689);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( unsigned long, long ) >( &tChannelGroup::mPlayChannel ) >::run();
 }
 
 // tChannelGroup::mPauseChannel(unsigned long,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_0065A7C0(void) {
-    ::sfcop::guest::entered(689);
+    ::sfcop::guest::entered(690);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( unsigned long, long ) >( &tChannelGroup::mPauseChannel ) >::run();
+}
+
+// tgStrManager::mDeactivate(), game/Tiger/tgStrMgr.cpp
+extern "C" void sub_0066BE30(void) {
+    ::sfcop::guest::entered(691);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tgStrManager::mDeactivate ) >::run();
+}
+
+// tgStrManager::mDone(), game/Tiger/tgStrMgr.cpp
+extern "C" void sub_0066BE50(void) {
+    ::sfcop::guest::entered(692);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tgStrManager::mDone ) >::run();
+}
+
+// tgStrManager::mLoadStringFile(const char *,bool), game/Tiger/tgStrMgr.cpp
+extern "C" void sub_0066BE60(void) {
+    ::sfcop::guest::entered(693);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( const char *, bool ) >( &tgStrManager::mLoadStringFile ) >::run();
+}
+
+// tgStrManager::mLoadStringFile(tBasicFile &,bool), game/Tiger/tgStrMgr.cpp
+extern "C" void sub_0066BE80(void) {
+    ::sfcop::guest::entered(694);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( tBasicFile &, bool ) >( &tgStrManager::mLoadStringFile ) >::run();
+}
+
+// tgStrManager::mGetStringIndex(const char *), game/Tiger/tgStrMgr.cpp
+extern "C" void sub_0066BEA0(void) {
+    ::sfcop::guest::entered(695);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< int( const char * ) >( &tgStrManager::mGetStringIndex ) >::run();
+}
+
+// tgStrManager::mGetStringIndex(const tString &), game/Tiger/tgStrMgr.cpp
+extern "C" void sub_0066BEC0(void) {
+    ::sfcop::guest::entered(696);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< int( const tString & ) >( &tgStrManager::mGetStringIndex ) >::run();
+}
+
+// tgStrManager::mGetString(int), game/Tiger/tgStrMgr.cpp
+extern "C" void sub_0066BEE0(void) {
+    ::sfcop::guest::entered(697);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< const tString &( int ) >( &tgStrManager::mGetString ) >::run();
+}
+
+// tgStrManager::mGetString(const char *), game/Tiger/tgStrMgr.cpp
+extern "C" void sub_0066BF00(void) {
+    ::sfcop::guest::entered(698);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< const tString &( const char * ) >( &tgStrManager::mGetString ) >::run();
+}
+
+// tgStrManager::mGetString(const tString &), game/Tiger/tgStrMgr.cpp
+extern "C" void sub_0066BF20(void) {
+    ::sfcop::guest::entered(699);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< const tString &( const tString & ) >( &tgStrManager::mGetString ) >::run();
+}
+
+// tgStrManager::mGetNumElements(long), game/Tiger/tgStrMgr.cpp
+extern "C" void sub_0066BF40(void) {
+    ::sfcop::guest::entered(700);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< long( long ) >( &tgStrManager::mGetNumElements ) >::run();
+}
+
+// tgStrManager::mGetNumElements(const char *), game/Tiger/tgStrMgr.cpp
+extern "C" void sub_0066BF60(void) {
+    ::sfcop::guest::entered(701);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< long( const char * ) >( &tgStrManager::mGetNumElements ) >::run();
+}
+
+// tgStrManager::mGetRandStr(long), game/Tiger/tgStrMgr.cpp
+extern "C" void sub_0066BF80(void) {
+    ::sfcop::guest::entered(702);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< const tString &( long ) >( &tgStrManager::mGetRandStr ) >::run();
+}
+
+// tgStrManager::mGetRandStr(const char *), game/Tiger/tgStrMgr.cpp
+extern "C" void sub_0066BFA0(void) {
+    ::sfcop::guest::entered(703);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< const tString &( const char * ) >( &tgStrManager::mGetRandStr ) >::run();
+}
+
+// tgStrManager::mGetGrpStr(long,long), game/Tiger/tgStrMgr.cpp
+extern "C" void sub_0066BFC0(void) {
+    ::sfcop::guest::entered(704);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< const tString &( long, long ) >( &tgStrManager::mGetGrpStr ) >::run();
+}
+
+// tgStrManager::mGetGrpStr(const char *,int), game/Tiger/tgStrMgr.cpp
+extern "C" void sub_0066BFE0(void) {
+    ::sfcop::guest::entered(705);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< const tString &( const char *, int ) >( &tgStrManager::mGetGrpStr ) >::run();
+}
+
+// tgStrManager::mIsAnElement(long,long), game/Tiger/tgStrMgr.cpp
+extern "C" void sub_0066C000(void) {
+    ::sfcop::guest::entered(706);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( long, long ) >( &tgStrManager::mIsAnElement ) >::run();
+}
+
+// tgStrManager::mIsAnElement(const char *,long), game/Tiger/tgStrMgr.cpp
+extern "C" void sub_0066C020(void) {
+    ::sfcop::guest::entered(707);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( const char *, long ) >( &tgStrManager::mIsAnElement ) >::run();
+}
+
+// tgStrManager::mIsAnElement(long,const tString &), game/Tiger/tgStrMgr.cpp
+extern "C" void sub_0066C040(void) {
+    ::sfcop::guest::entered(708);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( long, const tString & ) >( &tgStrManager::mIsAnElement ) >::run();
+}
+
+// tgStrManager::mIsAnElement(const char *,const tString &), game/Tiger/tgStrMgr.cpp
+extern "C" void sub_0066C060(void) {
+    ::sfcop::guest::entered(709);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( const char *, const tString & ) >( &tgStrManager::mIsAnElement ) >::run();
 }
 
 // tCRandomSequence::mSetSeed(int32u), game/Tiger/tcrandsequence.cpp
 extern "C" void sub_0066C1C0(void) {
-    ::sfcop::guest::entered(690);
+    ::sfcop::guest::entered(710);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( int32u ) >( &tCRandomSequence::mSetSeed ) >::run();
 }
 
 // tCRandomSequence::mGenerateNumber(), game/Tiger/tcrandsequence.cpp
 extern "C" void sub_0066C1E0(void) {
-    ::sfcop::guest::entered(691);
+    ::sfcop::guest::entered(711);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32u() >( &tCRandomSequence::mGenerateNumber ) >::run();
+}
+
+// tUniFont::mSetFontID(ulong), game/Tiger/tUniFont.cpp
+extern "C" void sub_0066C270(void) {
+    ::sfcop::guest::entered(712);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( ulong ) >( &tUniFont::mSetFontID ) >::run();
+}
+
+// tUniFont::scalar_deleting_destructor(unsigned char), game/Tiger/tUniFont.cpp
+extern "C" void sub_0066C370(void) {
+    ::sfcop::guest::entered(713);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void*( unsigned char ) >( &tUniFont::scalar_deleting_destructor ) >::run();
+}
+
+// tUniFont::mGetCharInfo(unsigned short) const, game/Tiger/tUniFont.cpp
+extern "C" void sub_0066C3A0(void) {
+    ::sfcop::guest::entered(714);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< const tCharInfo*( unsigned short ) const >( &tUniFont::mGetCharInfo ) >::run();
+}
+
+// tUniFont::mChangePtSize(ePointSize), game/Tiger/tUniFont.cpp
+extern "C" void sub_0066C3C0(void) {
+    ::sfcop::guest::entered(715);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( ePointSize ) >( &tUniFont::mChangePtSize ) >::run();
+}
+
+// tUniFont::mSetFont(eTypeface,eFontStyle,ePointSize), game/Tiger/tUniFont.cpp
+extern "C" void sub_0066C450(void) {
+    ::sfcop::guest::entered(716);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( eTypeface, eFontStyle, ePointSize ) >( &tUniFont::mSetFont ) >::run();
+}
+
+// tUniFont::mGetCharWidth(unsigned short) const, game/Tiger/tUniFont.cpp
+extern "C" void sub_0066C4F0(void) {
+    ::sfcop::guest::entered(717);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< const ulong( unsigned short ) const >( &tUniFont::mGetCharWidth ) >::run();
+}
+
+// tUniFont::mGetTextWidth(const unsigned short*) const, game/Tiger/tUniFont.cpp
+extern "C" void sub_0066C510(void) {
+    ::sfcop::guest::entered(718);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< const ulong( const unsigned short* ) const >( &tUniFont::mGetTextWidth ) >::run();
+}
+
+// tUniFont::mGetFontHeight(unsigned short) const, game/Tiger/tUniFont.cpp
+extern "C" void sub_0066C550(void) {
+    ::sfcop::guest::entered(719);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< const ulong( unsigned short ) const >( &tUniFont::mGetFontHeight ) >::run();
 }
 
 // tSay::mHandleOutput(const int,const char *), game/Tiger/tsay.cpp
 extern "C" void sub_0066C6A0(void) {
-    ::sfcop::guest::entered(692);
+    ::sfcop::guest::entered(720);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( const int, const char * ) >( &tSay::mHandleOutput ) >::run();
 }
 
 // tSay::mSay(const char *,...), game/Tiger/tsay.cpp
 extern "C" void sub_0066C890(void) {
-    ::sfcop::guest::entered(693);
+    ::sfcop::guest::entered(721);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( const char *, ... ) >( &tSay::mSay ) >::run();
 }
 
 // tSay::mJustSayIt(const char *,...), game/Tiger/tsay.cpp
 extern "C" void sub_0066C8C0(void) {
-    ::sfcop::guest::entered(694);
+    ::sfcop::guest::entered(722);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( const char *, ... ) >( &tSay::mJustSayIt ) >::run();
+}
+
+// tBasicFileCRT::mClose(), game/unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp
+extern "C" void sub_0066D1C0(void) {
+    ::sfcop::guest::entered(723);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char() >( &tBasicFileCRT::mClose ) >::run();
+}
+
+// tBasicFileCRT::mIsOpen(), game/unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp
+extern "C" void sub_0066D1E0(void) {
+    ::sfcop::guest::entered(724);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char() >( &tBasicFileCRT::mIsOpen ) >::run();
+}
+
+// tBasicFileCRT::mEOF(), game/unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp
+extern "C" void sub_0066D1F0(void) {
+    ::sfcop::guest::entered(725);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char() >( &tBasicFileCRT::mEOF ) >::run();
+}
+
+// tBasicFileCRT::mRead(void*,unsigned long), game/unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp
+extern "C" void sub_0066D210(void) {
+    ::sfcop::guest::entered(726);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned long( void*, unsigned long ) >( &tBasicFileCRT::mRead ) >::run();
+}
+
+// tBasicFileCRT::vfunction8(const void*,unsigned long), game/unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp
+extern "C" void sub_0066D240(void) {
+    ::sfcop::guest::entered(727);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned long( const void*, unsigned long ) >( &tBasicFileCRT::vfunction8 ) >::run();
+}
+
+// tBasicFileCRT::mFilePos(), game/unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp
+extern "C" void sub_0066D270(void) {
+    ::sfcop::guest::entered(728);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned long() >( &tBasicFileCRT::mFilePos ) >::run();
+}
+
+// tBasicFileCRT::mFileSize(), game/unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp
+extern "C" void sub_0066D290(void) {
+    ::sfcop::guest::entered(729);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned long() >( &tBasicFileCRT::mFileSize ) >::run();
+}
+
+// tBasicFileCRT::mSeekSet(long), game/unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp
+extern "C" void sub_0066D2E0(void) {
+    ::sfcop::guest::entered(730);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( long ) >( &tBasicFileCRT::mSeekSet ) >::run();
+}
+
+// tBasicFileCRT::mSeekCur(long), game/unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp
+extern "C" void sub_0066D310(void) {
+    ::sfcop::guest::entered(731);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( long ) >( &tBasicFileCRT::mSeekCur ) >::run();
+}
+
+// tBasicFileCRT::mSeekEnd(long), game/unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp
+extern "C" void sub_0066D340(void) {
+    ::sfcop::guest::entered(732);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( long ) >( &tBasicFileCRT::mSeekEnd ) >::run();
+}
+
+// _InitNewBasicFileCRT(unsigned char), game/unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp
+extern "C" void sub_0066D370(void) {
+    ::sfcop::guest::entered(733);
+    ::sfcop::guest::Entry< static_cast< unsigned char (*)( unsigned char ) >( &_InitNewBasicFileCRT ) >::run();
+}
+
+// _DoneNewBasicFileCRT(), game/unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp
+extern "C" void sub_0066D460(void) {
+    ::sfcop::guest::entered(734);
+    ::sfcop::guest::Entry< static_cast< void (*)() >( &_DoneNewBasicFileCRT ) >::run();
+}
+
+// _NewBasicFileCRT(), game/unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp
+extern "C" void sub_0066D480(void) {
+    ::sfcop::guest::entered(735);
+    ::sfcop::guest::Entry< static_cast< tBasicFile* (*)() >( &_NewBasicFileCRT ) >::run();
+}
+
+// tItemBag::scalar_deleting_destructor(unsigned char), game/Tiger/tBag.cpp
+extern "C" void sub_0066D6F0(void) {
+    ::sfcop::guest::entered(736);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void *( unsigned char ) >( &tItemBag::scalar_deleting_destructor ) >::run();
 }
 
 // tItemBag::mAddToList(tBaseItemBag *,char *), game/Tiger/tBag.cpp
 extern "C" void sub_0066D7E0(void) {
-    ::sfcop::guest::entered(695);
+    ::sfcop::guest::entered(737);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( tBaseItemBag *, char * ) >( &tItemBag::mAddToList ) >::run();
 }
 
 // tItemBag::mFindItemWithLabel(char *), game/Tiger/tBag.cpp
 extern "C" void sub_0066D880(void) {
-    ::sfcop::guest::entered(696);
+    ::sfcop::guest::entered(738);
     ::sfcop::guest::Entry< ::sfcop::guest::member< tBaseItemBag *( char * ) >( &tItemBag::mFindItemWithLabel ) >::run();
+}
+
+// tSoundMemoryBlockList::mGetListMemberWithHandleFromHandle(long), game/Tiger/tSndMemMgr.cpp
+extern "C" void sub_0066D8E0(void) {
+    ::sfcop::guest::entered(739);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tListMemberWithHandle *( long ) >( &tSoundMemoryBlockList::mGetListMemberWithHandleFromHandle ) >::run();
+}
+
+// tSoundMemoryBlockList::mInsertIntoList(long), game/Tiger/tSndMemMgr.cpp
+extern "C" void sub_0066D900(void) {
+    ::sfcop::guest::entered(740);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( long ) >( &tSoundMemoryBlockList::mInsertIntoList ) >::run();
+}
+
+// tSoundMemoryBlock::mMergeBlocks(), game/Tiger/tSndMemMgr.cpp
+extern "C" void sub_0066D9A0(void) {
+    ::sfcop::guest::entered(741);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< long() >( &tSoundMemoryBlock::mMergeBlocks ) >::run();
+}
+
+// tSoundMemoryBlock::mUseThisMuch(long), game/Tiger/tSndMemMgr.cpp
+extern "C" void sub_0066DAE0(void) {
+    ::sfcop::guest::entered(742);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< long( long ) >( &tSoundMemoryBlock::mUseThisMuch ) >::run();
+}
+
+// tSoundMemoryBlock::mDump(), game/Tiger/tSndMemMgr.cpp
+extern "C" void sub_0066DB80(void) {
+    ::sfcop::guest::entered(743);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tSoundMemoryBlock::mDump ) >::run();
+}
+
+// tSoundMemoryBlockManager::mInit(unsigned short,long), game/Tiger/tSndMemMgr.cpp
+extern "C" void sub_0066DC50(void) {
+    ::sfcop::guest::entered(744);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( unsigned short, long ) >( &tSoundMemoryBlockManager::mInit ) >::run();
+}
+
+// tSoundMemoryBlockManager::mNewLockedBlock(unsigned long,void (*callback)(long),long), game/Tiger/tSndMemMgr.cpp
+extern "C" void sub_0066E000(void) {
+    ::sfcop::guest::entered(745);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char *( unsigned long, void (*callback)(long), long ) >( &tSoundMemoryBlockManager::mNewLockedBlock ) >::run();
+}
+
+// tSoundMemoryBlockManager::mFreeLockedBlock(unsigned char *), game/Tiger/tSndMemMgr.cpp
+extern "C" void sub_0066E030(void) {
+    ::sfcop::guest::entered(746);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( unsigned char * ) >( &tSoundMemoryBlockManager::mFreeLockedBlock ) >::run();
+}
+
+// tSoundMemoryBlockManager::mNewBlock(unsigned long,void (*callback)(long),long), game/Tiger/tSndMemMgr.cpp
+extern "C" void sub_0066E0F0(void) {
+    ::sfcop::guest::entered(747);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned long( unsigned long, void (*callback)(long), long ) >( &tSoundMemoryBlockManager::mNewBlock ) >::run();
+}
+
+// tSoundMemoryBlockManager::mFreeBlock(unsigned long), game/Tiger/tSndMemMgr.cpp
+extern "C" void sub_0066E420(void) {
+    ::sfcop::guest::entered(748);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( unsigned long ) >( &tSoundMemoryBlockManager::mFreeBlock ) >::run();
+}
+
+// tSoundMemoryBlockManager::mLockBlock(unsigned long), game/Tiger/tSndMemMgr.cpp
+extern "C" void sub_0066E4E0(void) {
+    ::sfcop::guest::entered(749);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char *( unsigned long ) >( &tSoundMemoryBlockManager::mLockBlock ) >::run();
+}
+
+// tSoundMemoryBlockManager::mUnlockBlock(long), game/Tiger/tSndMemMgr.cpp
+extern "C" void sub_0066E5E0(void) {
+    ::sfcop::guest::entered(750);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( long ) >( &tSoundMemoryBlockManager::mUnlockBlock ) >::run();
+}
+
+// tSoundMemoryBlockManager::mGetBlock(long), game/Tiger/tSndMemMgr.cpp
+extern "C" void sub_0066E620(void) {
+    ::sfcop::guest::entered(751);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tSoundMemoryBlock *( long ) >( &tSoundMemoryBlockManager::mGetBlock ) >::run();
+}
+
+// tSoundMemoryBlockManager::mDumpBlock(unsigned long), game/Tiger/tSndMemMgr.cpp
+extern "C" void sub_0066E650(void) {
+    ::sfcop::guest::entered(752);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( unsigned long ) >( &tSoundMemoryBlockManager::mDumpBlock ) >::run();
+}
+
+// tSoundMemoryBlockManager::mDump(), game/Tiger/tSndMemMgr.cpp
+extern "C" void sub_0066E910(void) {
+    ::sfcop::guest::entered(753);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tSoundMemoryBlockManager::mDump ) >::run();
+}
+
+// tSoundMemoryBlockManager::mIsThisHandleValid(unsigned long), game/Tiger/tSndMemMgr.cpp
+extern "C" void sub_0066E9C0(void) {
+    ::sfcop::guest::entered(754);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( unsigned long ) >( &tSoundMemoryBlockManager::mIsThisHandleValid ) >::run();
+}
+
+// tSoundMemoryBlockManager::mFreeLowestPriorityBlockWithNoLocks(), game/Tiger/tSndMemMgr.cpp
+extern "C" void sub_0066EA20(void) {
+    ::sfcop::guest::entered(755);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char() >( &tSoundMemoryBlockManager::mFreeLowestPriorityBlockWithNoLocks ) >::run();
+}
+
+// tAsynchSoundQueue::mReadNext(), game/Tiger/tsound_fileio.cpp
+extern "C" void sub_0066EC50(void) {
+    ::sfcop::guest::entered(756);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth() >( &tAsynchSoundQueue::mReadNext ) >::run();
+}
+
+// tAsynchSoundQueue::mReadNextInterrupt(), game/Tiger/tsound_fileio.cpp
+extern "C" void sub_0066EE80(void) {
+    ::sfcop::guest::entered(757);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tAsynchSoundQueue::mReadNextInterrupt ) >::run();
+}
+
+// tSoundFileIO::mOpenForRead(const char *), game/Tiger/tsound_fileio.cpp
+extern "C" void sub_0066F2D0(void) {
+    ::sfcop::guest::entered(758);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( const char * ) >( &tSoundFileIO::mOpenForRead ) >::run();
+}
+
+// tSoundFileIO::mOpenForWrite(const char *), game/Tiger/tsound_fileio.cpp
+extern "C" void sub_0066F440(void) {
+    ::sfcop::guest::entered(759);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( const char * ) >( &tSoundFileIO::mOpenForWrite ) >::run();
+}
+
+// tSoundFileIO::mClose(), game/Tiger/tsound_fileio.cpp
+extern "C" void sub_0066F4E0(void) {
+    ::sfcop::guest::entered(760);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth() >( &tSoundFileIO::mClose ) >::run();
+}
+
+// tSoundFileIO::mRead(void *,int32u), game/Tiger/tsound_fileio.cpp
+extern "C" void sub_0066F5D0(void) {
+    ::sfcop::guest::entered(761);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< int32u( void *, int32u ) >( &tSoundFileIO::mRead ) >::run();
+}
+
+// tSoundFileIO::mWrite(const void *,int32u), game/Tiger/tsound_fileio.cpp
+extern "C" void sub_0066F710(void) {
+    ::sfcop::guest::entered(762);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< int32u( const void *, int32u ) >( &tSoundFileIO::mWrite ) >::run();
+}
+
+// tSoundFileIO::mEOF(), game/Tiger/tsound_fileio.cpp
+extern "C" void sub_0066F830(void) {
+    ::sfcop::guest::entered(763);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth() >( &tSoundFileIO::mEOF ) >::run();
+}
+
+// tSoundFileIO::mFilePos(), game/Tiger/tsound_fileio.cpp
+extern "C" void sub_0066F850(void) {
+    ::sfcop::guest::entered(764);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< DWORD() >( &tSoundFileIO::mFilePos ) >::run();
+}
+
+// tSoundFileIO::mFileSize(), game/Tiger/tsound_fileio.cpp
+extern "C" void sub_0066F8B0(void) {
+    ::sfcop::guest::entered(765);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< DWORD() >( &tSoundFileIO::mFileSize ) >::run();
+}
+
+// tSoundFileIO::mSeekSet(LONG), game/Tiger/tsound_fileio.cpp
+extern "C" void sub_0066F910(void) {
+    ::sfcop::guest::entered(766);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( LONG ) >( &tSoundFileIO::mSeekSet ) >::run();
+}
+
+// tSoundFileIO::mSeekCur(LONG), game/Tiger/tsound_fileio.cpp
+extern "C" void sub_0066F960(void) {
+    ::sfcop::guest::entered(767);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( LONG ) >( &tSoundFileIO::mSeekCur ) >::run();
+}
+
+// tSoundFileIO::mSeekEnd(LONG), game/Tiger/tsound_fileio.cpp
+extern "C" void sub_0066F9B0(void) {
+    ::sfcop::guest::entered(768);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( LONG ) >( &tSoundFileIO::mSeekEnd ) >::run();
+}
+
+// tSoundFileIO::mRead(void *,int32u,int32u), game/Tiger/tsound_fileio.cpp
+extern "C" void sub_0066FA40(void) {
+    ::sfcop::guest::entered(769);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< int32u( void *, int32u, int32u ) >( &tSoundFileIO::mRead ) >::run();
+}
+
+// tSoundFileIO::mReadAsync(void *,int32u,void (*callback)( void *, int32u ),void *), game/Tiger/tsound_fileio.cpp
+extern "C" void sub_0066FC50(void) {
+    ::sfcop::guest::entered(770);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( void *, int32u, void (*callback)( void *, int32u ), void * ) >( &tSoundFileIO::mReadAsync ) >::run();
+}
+
+// tSoundFileIO::mReadAsync(void *,int32u,int32u,void (*callback)( void *, int32u ),void *), game/Tiger/tsound_fileio.cpp
+extern "C" void sub_0066FC80(void) {
+    ::sfcop::guest::entered(771);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( void *, int32u, int32u, void (*callback)( void *, int32u ), void * ) >( &tSoundFileIO::mReadAsync ) >::run();
+}
+
+// _InitSoundFileIO(), game/Tiger/tsound_fileio.cpp
+extern "C" void sub_0066FDA0(void) {
+    ::sfcop::guest::entered(772);
+    ::sfcop::guest::Entry< static_cast< int8u (*)() >( &_InitSoundFileIO ) >::run();
+}
+
+// _DoneSoundFileIO(), game/Tiger/tsound_fileio.cpp
+extern "C" void sub_0066FEE0(void) {
+    ::sfcop::guest::entered(773);
+    ::sfcop::guest::Entry< static_cast< void (*)() >( &_DoneSoundFileIO ) >::run();
+}
+
+// _NewSoundFileIO(), game/Tiger/tsound_fileio.cpp
+extern "C" void sub_00670000(void) {
+    ::sfcop::guest::entered(774);
+    ::sfcop::guest::Entry< static_cast< tSoundFileIOBase * (*)() >( &_NewSoundFileIO ) >::run();
 }
 
 // tSequencePart::mGetNumber(), game/Tiger/tsequence.cpp
 extern "C" void sub_00670180(void) {
-    ::sfcop::guest::entered(697);
+    ::sfcop::guest::entered(775);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32u() >( &tSequencePart::mGetNumber ) >::run();
 }
 
 // tSequencePart::mGetNumber(int32u), game/Tiger/tsequence.cpp
 extern "C" void sub_006701C0(void) {
-    ::sfcop::guest::entered(698);
+    ::sfcop::guest::entered(776);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32u( int32u ) >( &tSequencePart::mGetNumber ) >::run();
+}
+
+// tFontTable::mResetDataMembers(), game/Tiger/tFontmgr.cpp
+extern "C" void sub_006702C0(void) {
+    ::sfcop::guest::entered(777);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tFontTable::mResetDataMembers ) >::run();
+}
+
+// tFontTable::mInit(const char*,tFontFileIO&), game/Tiger/tFontmgr.cpp
+extern "C" void sub_006702F0(void) {
+    ::sfcop::guest::entered(778);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( const char*, tFontFileIO& ) >( &tFontTable::mInit ) >::run();
+}
+
+// tFontTable::mStoreCustomTypeface(unsigned short*), game/Tiger/tFontmgr.cpp
+extern "C" void sub_00670520(void) {
+    ::sfcop::guest::entered(779);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( unsigned short* ) >( &tFontTable::mStoreCustomTypeface ) >::run();
+}
+
+// tFontTable::mMakeGlyph(unsigned short,tFontFileIO*), game/Tiger/tFontmgr.cpp
+extern "C" void sub_00670710(void) {
+    ::sfcop::guest::entered(780);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tCharInfo*( unsigned short, tFontFileIO* ) >( &tFontTable::mMakeGlyph ) >::run();
+}
+
+// tTextFontFileIO::mGetC(), game/Tiger/tFontmgr.cpp
+extern "C" void sub_006708C0(void) {
+    ::sfcop::guest::entered(781);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< int() >( &tTextFontFileIO::mGetC ) >::run();
+}
+
+// tFontMgr::mDone(), game/Tiger/tFontmgr.cpp
+extern "C" void sub_00670D50(void) {
+    ::sfcop::guest::entered(782);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tFontMgr::mDone ) >::run();
+}
+
+// tFontMgr::mGetCharInfo(unsigned short,unsigned long), game/Tiger/tFontmgr.cpp
+extern "C" void sub_00670DD0(void) {
+    ::sfcop::guest::entered(783);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< const tCharInfo*( unsigned short, unsigned long ) >( &tFontMgr::mGetCharInfo ) >::run();
+}
+
+// tFontMgr::mGetTypefacebyName(const tString&), game/Tiger/tFontmgr.cpp
+extern "C" void sub_00670EE0(void) {
+    ::sfcop::guest::entered(784);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< eTypeface( const tString& ) >( &tFontMgr::mGetTypefacebyName ) >::run();
+}
+
+// _GetCharInfo(unsigned short,unsigned long), game/Tiger/tFontmgr.cpp
+extern "C" void sub_00671110(void) {
+    ::sfcop::guest::entered(785);
+    ::sfcop::guest::Entry< static_cast< const tCharInfo* (*)( unsigned short, unsigned long ) >( &_GetCharInfo ) >::run();
+}
+
+// _GetCharHeight(unsigned long,unsigned short), game/Tiger/tFontmgr.cpp
+extern "C" void sub_00671130(void) {
+    ::sfcop::guest::entered(786);
+    ::sfcop::guest::Entry< static_cast< unsigned long (*)( unsigned long, unsigned short ) >( &_GetCharHeight ) >::run();
+}
+
+// tStream_BasicFile::mGet(void *,unsigned long), game/dmp3d/common/stream_basicfile.cpp
+extern "C" void sub_006A2DC0(void) {
+    ::sfcop::guest::entered(787);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< bool( void *, unsigned long ) >( &tStream_BasicFile::mGet ) >::run();
+}
+
+// tStream_BasicFile::mPut(const void *,unsigned long), game/dmp3d/common/stream_basicfile.cpp
+extern "C" void sub_006A2E40(void) {
+    ::sfcop::guest::entered(788);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< bool( const void *, unsigned long ) >( &tStream_BasicFile::mPut ) >::run();
+}
+
+// tTexBmp::vfunction2(tBasicFile *), game/dmp3d/common/texBmp.cpp
+extern "C" void sub_006A48D0(void) {
+    ::sfcop::guest::entered(789);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( tBasicFile * ) >( &tTexBmp::vfunction2 ) >::run();
+}
+
+// tTexBmp::vfunction8(), game/dmp3d/common/texBmp.cpp
+extern "C" void sub_006A5B90(void) {
+    ::sfcop::guest::entered(790);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< bool() >( &tTexBmp::vfunction8 ) >::run();
+}
+
+// tTexBmp::fn_006a5c20(), game/dmp3d/common/texBmp.cpp
+extern "C" void sub_006A5C20(void) {
+    ::sfcop::guest::entered(791);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tTexBmp::fn_006a5c20 ) >::run();
+}
+
+// tTexBmp::vfunction4(tBasicFile *), game/dmp3d/common/texBmp.cpp
+extern "C" void sub_006A5C80(void) {
+    ::sfcop::guest::entered(792);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( tBasicFile * ) >( &tTexBmp::vfunction4 ) >::run();
+}
+
+// CD3DFramework::DestroyObjects(), game/dmp3d/dx6/d3dframe.cpp
+extern "C" void sub_006A7C60(void) {
+    ::sfcop::guest::entered(793);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< HRESULT() >( &CD3DFramework::DestroyObjects ) >::run();
+}
+
+// CD3DFramework::Initialize(HWND,GUID*,GUID*,DDSURFACEDESC2*,DWORD), game/dmp3d/dx6/d3dframe.cpp
+extern "C" void sub_006A7D20(void) {
+    ::sfcop::guest::entered(794);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< HRESULT( HWND, GUID*, GUID*, DDSURFACEDESC2*, DWORD ) >( &CD3DFramework::Initialize ) >::run();
+}
+
+// CD3DFramework::CreateEnvironment(GUID*,GUID*,DDSURFACEDESC2*,DWORD), game/dmp3d/dx6/d3dframe.cpp
+extern "C" void sub_006A7D90(void) {
+    ::sfcop::guest::entered(795);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< HRESULT( GUID*, GUID*, DDSURFACEDESC2*, DWORD ) >( &CD3DFramework::CreateEnvironment ) >::run();
+}
+
+// CD3DFramework::CreateDirectDraw(GUID*,DWORD), game/dmp3d/dx6/d3dframe.cpp
+extern "C" void sub_006A7EE0(void) {
+    ::sfcop::guest::entered(796);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< HRESULT( GUID*, DWORD ) >( &CD3DFramework::CreateDirectDraw ) >::run();
+}
+
+// CD3DFramework::CreateDirect3D(GUID*,DWORD), game/dmp3d/dx6/d3dframe.cpp
+extern "C" void sub_006A7F80(void) {
+    ::sfcop::guest::entered(797);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< HRESULT( GUID*, DWORD ) >( &CD3DFramework::CreateDirect3D ) >::run();
+}
+
+// CD3DFramework::CreateBuffers(DDSURFACEDESC2*,DWORD), game/dmp3d/dx6/d3dframe.cpp
+extern "C" void sub_006A8110(void) {
+    ::sfcop::guest::entered(798);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< HRESULT( DDSURFACEDESC2*, DWORD ) >( &CD3DFramework::CreateBuffers ) >::run();
+}
+
+// CD3DFramework::CreateZBuffer(), game/dmp3d/dx6/d3dframe.cpp
+extern "C" void sub_006A83F0(void) {
+    ::sfcop::guest::entered(799);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< HRESULT() >( &CD3DFramework::CreateZBuffer ) >::run();
+}
+
+// CD3DFramework::ShowFrame(), game/dmp3d/dx6/d3dframe.cpp
+extern "C" void sub_006A84B0(void) {
+    ::sfcop::guest::entered(800);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< HRESULT() >( &CD3DFramework::ShowFrame ) >::run();
+}
+
+// CD3DFramework::FlipToGDISurface(BOOL), game/dmp3d/dx6/d3dframe.cpp
+extern "C" void sub_006A8500(void) {
+    ::sfcop::guest::entered(801);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< HRESULT( BOOL ) >( &CD3DFramework::FlipToGDISurface ) >::run();
+}
+
+// CD3DFramework::RestoreSurfaces(), game/dmp3d/dx6/d3dframe.cpp
+extern "C" void sub_006A8540(void) {
+    ::sfcop::guest::entered(802);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< HRESULT() >( &CD3DFramework::RestoreSurfaces ) >::run();
+}
+
+// CD3DFramework::Move(INT,INT), game/dmp3d/dx6/d3dframe.cpp
+extern "C" void sub_006A85A0(void) {
+    ::sfcop::guest::entered(803);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< VOID( INT, INT ) >( &CD3DFramework::Move ) >::run();
+}
+
+// D3DUtil_InitSurfaceDesc(DDSURFACEDESC2&,DWORD,DWORD), game/dmp3d/dx6/d3dutil.cpp
+extern "C" void sub_006A94A0(void) {
+    ::sfcop::guest::entered(804);
+    ::sfcop::guest::Entry< static_cast< VOID (*)( DDSURFACEDESC2&, DWORD, DWORD ) >( &D3DUtil_InitSurfaceDesc ) >::run();
+}
+
+// D3DUtil_InitViewport(D3DVIEWPORT2&,DWORD,DWORD), game/dmp3d/dx6/d3dutil.cpp
+extern "C" void sub_006A94D0(void) {
+    ::sfcop::guest::entered(805);
+    ::sfcop::guest::Entry< static_cast< VOID (*)( D3DVIEWPORT2&, DWORD, DWORD ) >( &D3DUtil_InitViewport ) >::run();
 }
 
 // tSFCStream::mGetVersionNumber(), game/unsorted/fn_006D2000.cpp
 extern "C" void sub_006D2800(void) {
-    ::sfcop::guest::entered(699);
+    ::sfcop::guest::entered(806);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int() >( &tSFCStream::mGetVersionNumber ) >::run();
 }
 
 // tThreadPool::Instance(), game/Common/Thread/ThreadPool.cpp
 extern "C" void sub_006F39B0(void) {
-    ::sfcop::guest::entered(700);
+    ::sfcop::guest::entered(807);
     ::sfcop::guest::Entry< static_cast< tThreadPool* (*)() >( &tThreadPool::Instance ) >::run();
 }
 
 // tThreadPool::Startup(), game/Common/Thread/ThreadPool.cpp
 extern "C" void sub_006F3D40(void) {
-    ::sfcop::guest::entered(701);
+    ::sfcop::guest::entered(808);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tThreadPool::Startup ) >::run();
 }
 
 // tThreadPool::SetMaxThreads(int32u), game/Common/Thread/ThreadPool.cpp
 extern "C" void sub_006F3F30(void) {
-    ::sfcop::guest::entered(702);
+    ::sfcop::guest::entered(809);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( int32u ) >( &tThreadPool::SetMaxThreads ) >::run();
 }
 
 // tThreadPool::GetMaxThreads() const, game/Common/Thread/ThreadPool.cpp
 extern "C" void sub_006F40A0(void) {
-    ::sfcop::guest::entered(703);
+    ::sfcop::guest::entered(810);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32u() const >( &tThreadPool::GetMaxThreads ) >::run();
 }
 
 // tThreadPool::SetMemoryChecking(bool), game/Common/Thread/ThreadPool.cpp
 extern "C" void sub_006F4550(void) {
-    ::sfcop::guest::entered(704);
+    ::sfcop::guest::entered(811);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( bool ) >( &tThreadPool::SetMemoryChecking ) >::run();
 }
 
 // tThreadPool::SetDelayMultiple(float), game/Common/Thread/ThreadPool.cpp
 extern "C" void sub_006F4560(void) {
-    ::sfcop::guest::entered(705);
+    ::sfcop::guest::entered(812);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( float ) >( &tThreadPool::SetDelayMultiple ) >::run();
 }
 
 // tThreadPool::SetTimeBlockSize(int32u), game/Common/Thread/ThreadPool.cpp
 extern "C" void sub_006F46B0(void) {
-    ::sfcop::guest::entered(706);
+    ::sfcop::guest::entered(813);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( int32u ) >( &tThreadPool::SetTimeBlockSize ) >::run();
 }
 
 // tThreadPool::SetPacketQueLimit(int32u), game/Common/Thread/ThreadPool.cpp
 extern "C" void sub_006F4800(void) {
-    ::sfcop::guest::entered(707);
+    ::sfcop::guest::entered(814);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( int32u ) >( &tThreadPool::SetPacketQueLimit ) >::run();
 }
 
 // tThreadPool::GetDelayMultiple() const, game/Common/Thread/ThreadPool.cpp
 extern "C" void sub_006F4950(void) {
-    ::sfcop::guest::entered(708);
+    ::sfcop::guest::entered(815);
     ::sfcop::guest::Entry< ::sfcop::guest::member< float() const >( &tThreadPool::GetDelayMultiple ) >::run();
 }
 
 // tThreadPool::GetTimeBlockSize() const, game/Common/Thread/ThreadPool.cpp
 extern "C" void sub_006F4AA0(void) {
-    ::sfcop::guest::entered(709);
+    ::sfcop::guest::entered(816);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32u() const >( &tThreadPool::GetTimeBlockSize ) >::run();
 }
 
 // tOSVersion::Init(), game/Common/OSVersion.cpp
 extern "C" void sub_006F5570(void) {
-    ::sfcop::guest::entered(710);
+    ::sfcop::guest::entered(817);
     ::sfcop::guest::Entry< ::sfcop::guest::member< bool() >( &tOSVersion::Init ) >::run();
 }
 
 // tOSVersion::IsWindows95(), game/Common/OSVersion.cpp
 extern "C" void sub_006F5580(void) {
-    ::sfcop::guest::entered(711);
+    ::sfcop::guest::entered(818);
     ::sfcop::guest::Entry< ::sfcop::guest::member< bool() >( &tOSVersion::IsWindows95 ) >::run();
 }
 
 // tOSVersion::IsWindows98(), game/Common/OSVersion.cpp
 extern "C" void sub_006F55A0(void) {
-    ::sfcop::guest::entered(712);
+    ::sfcop::guest::entered(819);
     ::sfcop::guest::Entry< ::sfcop::guest::member< bool() >( &tOSVersion::IsWindows98 ) >::run();
 }
 
 // tAllocatedClass::operator==(const type_info&), game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC4D0(void) {
-    ::sfcop::guest::entered(713);
+    ::sfcop::guest::entered(820);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32( const type_info& ) >( &tAllocatedClass::operator== ) >::run();
 }
 
 // tDynamicAllocator::tAllocatorInfo::operator==(const char*) const, game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC5A0(void) {
-    ::sfcop::guest::entered(714);
+    ::sfcop::guest::entered(821);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32( const char* ) const >( &tDynamicAllocator::tAllocatorInfo::operator== ) >::run();
 }
 
 // tDynamicAllocator::LockDownAllocator(), game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC750(void) {
-    ::sfcop::guest::entered(715);
+    ::sfcop::guest::entered(822);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tDynamicAllocator::LockDownAllocator ) >::run();
 }
 
 // tFileDatabaseMgr::tDatabaseInfo::StreamOut(nDataStore::tOutput&) const, game/Common/Database/FileDatabaseMgr.cpp
 extern "C" void sub_00707EF0(void) {
-    ::sfcop::guest::entered(716);
+    ::sfcop::guest::entered(823);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( nDataStore::tOutput& ) const >( &tFileDatabaseMgr::tDatabaseInfo::StreamOut ) >::run();
 }
 
 // tFileDatabaseMgr::GetCurDBInfo(), game/Common/Database/FileDatabaseMgr.cpp
 extern "C" void sub_00708FC0(void) {
-    ::sfcop::guest::entered(717);
+    ::sfcop::guest::entered(824);
     ::sfcop::guest::Entry< ::sfcop::guest::member< tFileDatabaseMgr::tDatabaseInfo() >( &tFileDatabaseMgr::GetCurDBInfo ) >::run();
 }
 
 // tFileDatabaseMgr::GetDBInfo(int32) const, game/Common/Database/FileDatabaseMgr.cpp
 extern "C" void sub_00709060(void) {
-    ::sfcop::guest::entered(718);
+    ::sfcop::guest::entered(825);
     ::sfcop::guest::Entry< ::sfcop::guest::member< const tFileDatabaseMgr::tDatabaseInfo*( int32 ) const >( &tFileDatabaseMgr::GetDBInfo ) >::run();
 }
 
@@ -5069,6 +5719,7 @@ const sfcop_guest_override sfcop_guest_overrides[] = {
     {0x0064FF30u, sub_0064FF30, "tgSoundPart::mInit(tInitSoundPartInfo*)", "Tiger/tgSound.cpp"},
     {0x006501C0u, sub_006501C0, "tSoundMemoryBlockManager::mGetTrueHandle(unsigned long)", "Tiger/tgSound.cpp"},
     {0x006501D0u, sub_006501D0, "tSoundMemoryBlockManager::mNumberOfBlocksNeeded(long)", "Tiger/tgSound.cpp"},
+    {0x006501F0u, sub_006501F0, "tSoundMemoryBlockManager::scalar_deleting_destructor(unsigned char)", "Tiger/tgSound.cpp"},
     {0x00650230u, sub_00650230, "SoundPartCurrentTime()", "Tiger/tgSound.cpp"},
     {0x006502B0u, sub_006502B0, "tgSoundPart::mClearOutSoundChannel(long)", "Tiger/tgSound.cpp"},
     {0x006502F0u, sub_006502F0, "tgSoundPart::mRemoveSoundChannel(long)", "Tiger/tgSound.cpp"},
@@ -5095,15 +5746,121 @@ const sfcop_guest_override sfcop_guest_overrides[] = {
     {0x0065A0F0u, sub_0065A0F0, "tChannelGroup::mAttachSoundToChannel(unsigned long,tSoundSelection *,long)", "Tiger/taudiochannel.cpp"},
     {0x0065A370u, sub_0065A370, "tChannelGroup::mPlayChannel(unsigned long,long)", "Tiger/taudiochannel.cpp"},
     {0x0065A7C0u, sub_0065A7C0, "tChannelGroup::mPauseChannel(unsigned long,long)", "Tiger/taudiochannel.cpp"},
+    {0x0066BE30u, sub_0066BE30, "tgStrManager::mDeactivate()", "Tiger/tgStrMgr.cpp"},
+    {0x0066BE50u, sub_0066BE50, "tgStrManager::mDone()", "Tiger/tgStrMgr.cpp"},
+    {0x0066BE60u, sub_0066BE60, "tgStrManager::mLoadStringFile(const char *,bool)", "Tiger/tgStrMgr.cpp"},
+    {0x0066BE80u, sub_0066BE80, "tgStrManager::mLoadStringFile(tBasicFile &,bool)", "Tiger/tgStrMgr.cpp"},
+    {0x0066BEA0u, sub_0066BEA0, "tgStrManager::mGetStringIndex(const char *)", "Tiger/tgStrMgr.cpp"},
+    {0x0066BEC0u, sub_0066BEC0, "tgStrManager::mGetStringIndex(const tString &)", "Tiger/tgStrMgr.cpp"},
+    {0x0066BEE0u, sub_0066BEE0, "tgStrManager::mGetString(int)", "Tiger/tgStrMgr.cpp"},
+    {0x0066BF00u, sub_0066BF00, "tgStrManager::mGetString(const char *)", "Tiger/tgStrMgr.cpp"},
+    {0x0066BF20u, sub_0066BF20, "tgStrManager::mGetString(const tString &)", "Tiger/tgStrMgr.cpp"},
+    {0x0066BF40u, sub_0066BF40, "tgStrManager::mGetNumElements(long)", "Tiger/tgStrMgr.cpp"},
+    {0x0066BF60u, sub_0066BF60, "tgStrManager::mGetNumElements(const char *)", "Tiger/tgStrMgr.cpp"},
+    {0x0066BF80u, sub_0066BF80, "tgStrManager::mGetRandStr(long)", "Tiger/tgStrMgr.cpp"},
+    {0x0066BFA0u, sub_0066BFA0, "tgStrManager::mGetRandStr(const char *)", "Tiger/tgStrMgr.cpp"},
+    {0x0066BFC0u, sub_0066BFC0, "tgStrManager::mGetGrpStr(long,long)", "Tiger/tgStrMgr.cpp"},
+    {0x0066BFE0u, sub_0066BFE0, "tgStrManager::mGetGrpStr(const char *,int)", "Tiger/tgStrMgr.cpp"},
+    {0x0066C000u, sub_0066C000, "tgStrManager::mIsAnElement(long,long)", "Tiger/tgStrMgr.cpp"},
+    {0x0066C020u, sub_0066C020, "tgStrManager::mIsAnElement(const char *,long)", "Tiger/tgStrMgr.cpp"},
+    {0x0066C040u, sub_0066C040, "tgStrManager::mIsAnElement(long,const tString &)", "Tiger/tgStrMgr.cpp"},
+    {0x0066C060u, sub_0066C060, "tgStrManager::mIsAnElement(const char *,const tString &)", "Tiger/tgStrMgr.cpp"},
     {0x0066C1C0u, sub_0066C1C0, "tCRandomSequence::mSetSeed(int32u)", "Tiger/tcrandsequence.cpp"},
     {0x0066C1E0u, sub_0066C1E0, "tCRandomSequence::mGenerateNumber()", "Tiger/tcrandsequence.cpp"},
+    {0x0066C270u, sub_0066C270, "tUniFont::mSetFontID(ulong)", "Tiger/tUniFont.cpp"},
+    {0x0066C370u, sub_0066C370, "tUniFont::scalar_deleting_destructor(unsigned char)", "Tiger/tUniFont.cpp"},
+    {0x0066C3A0u, sub_0066C3A0, "tUniFont::mGetCharInfo(unsigned short) const", "Tiger/tUniFont.cpp"},
+    {0x0066C3C0u, sub_0066C3C0, "tUniFont::mChangePtSize(ePointSize)", "Tiger/tUniFont.cpp"},
+    {0x0066C450u, sub_0066C450, "tUniFont::mSetFont(eTypeface,eFontStyle,ePointSize)", "Tiger/tUniFont.cpp"},
+    {0x0066C4F0u, sub_0066C4F0, "tUniFont::mGetCharWidth(unsigned short) const", "Tiger/tUniFont.cpp"},
+    {0x0066C510u, sub_0066C510, "tUniFont::mGetTextWidth(const unsigned short*) const", "Tiger/tUniFont.cpp"},
+    {0x0066C550u, sub_0066C550, "tUniFont::mGetFontHeight(unsigned short) const", "Tiger/tUniFont.cpp"},
     {0x0066C6A0u, sub_0066C6A0, "tSay::mHandleOutput(const int,const char *)", "Tiger/tsay.cpp"},
     {0x0066C890u, sub_0066C890, "tSay::mSay(const char *,...)", "Tiger/tsay.cpp"},
     {0x0066C8C0u, sub_0066C8C0, "tSay::mJustSayIt(const char *,...)", "Tiger/tsay.cpp"},
+    {0x0066D1C0u, sub_0066D1C0, "tBasicFileCRT::mClose()", "unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp"},
+    {0x0066D1E0u, sub_0066D1E0, "tBasicFileCRT::mIsOpen()", "unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp"},
+    {0x0066D1F0u, sub_0066D1F0, "tBasicFileCRT::mEOF()", "unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp"},
+    {0x0066D210u, sub_0066D210, "tBasicFileCRT::mRead(void*,unsigned long)", "unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp"},
+    {0x0066D240u, sub_0066D240, "tBasicFileCRT::vfunction8(const void*,unsigned long)", "unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp"},
+    {0x0066D270u, sub_0066D270, "tBasicFileCRT::mFilePos()", "unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp"},
+    {0x0066D290u, sub_0066D290, "tBasicFileCRT::mFileSize()", "unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp"},
+    {0x0066D2E0u, sub_0066D2E0, "tBasicFileCRT::mSeekSet(long)", "unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp"},
+    {0x0066D310u, sub_0066D310, "tBasicFileCRT::mSeekCur(long)", "unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp"},
+    {0x0066D340u, sub_0066D340, "tBasicFileCRT::mSeekEnd(long)", "unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp"},
+    {0x0066D370u, sub_0066D370, "_InitNewBasicFileCRT(unsigned char)", "unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp"},
+    {0x0066D460u, sub_0066D460, "_DoneNewBasicFileCRT()", "unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp"},
+    {0x0066D480u, sub_0066D480, "_NewBasicFileCRT()", "unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp"},
+    {0x0066D6F0u, sub_0066D6F0, "tItemBag::scalar_deleting_destructor(unsigned char)", "Tiger/tBag.cpp"},
     {0x0066D7E0u, sub_0066D7E0, "tItemBag::mAddToList(tBaseItemBag *,char *)", "Tiger/tBag.cpp"},
     {0x0066D880u, sub_0066D880, "tItemBag::mFindItemWithLabel(char *)", "Tiger/tBag.cpp"},
+    {0x0066D8E0u, sub_0066D8E0, "tSoundMemoryBlockList::mGetListMemberWithHandleFromHandle(long)", "Tiger/tSndMemMgr.cpp"},
+    {0x0066D900u, sub_0066D900, "tSoundMemoryBlockList::mInsertIntoList(long)", "Tiger/tSndMemMgr.cpp"},
+    {0x0066D9A0u, sub_0066D9A0, "tSoundMemoryBlock::mMergeBlocks()", "Tiger/tSndMemMgr.cpp"},
+    {0x0066DAE0u, sub_0066DAE0, "tSoundMemoryBlock::mUseThisMuch(long)", "Tiger/tSndMemMgr.cpp"},
+    {0x0066DB80u, sub_0066DB80, "tSoundMemoryBlock::mDump()", "Tiger/tSndMemMgr.cpp"},
+    {0x0066DC50u, sub_0066DC50, "tSoundMemoryBlockManager::mInit(unsigned short,long)", "Tiger/tSndMemMgr.cpp"},
+    {0x0066E000u, sub_0066E000, "tSoundMemoryBlockManager::mNewLockedBlock(unsigned long,void (*callback)(long),long)", "Tiger/tSndMemMgr.cpp"},
+    {0x0066E030u, sub_0066E030, "tSoundMemoryBlockManager::mFreeLockedBlock(unsigned char *)", "Tiger/tSndMemMgr.cpp"},
+    {0x0066E0F0u, sub_0066E0F0, "tSoundMemoryBlockManager::mNewBlock(unsigned long,void (*callback)(long),long)", "Tiger/tSndMemMgr.cpp"},
+    {0x0066E420u, sub_0066E420, "tSoundMemoryBlockManager::mFreeBlock(unsigned long)", "Tiger/tSndMemMgr.cpp"},
+    {0x0066E4E0u, sub_0066E4E0, "tSoundMemoryBlockManager::mLockBlock(unsigned long)", "Tiger/tSndMemMgr.cpp"},
+    {0x0066E5E0u, sub_0066E5E0, "tSoundMemoryBlockManager::mUnlockBlock(long)", "Tiger/tSndMemMgr.cpp"},
+    {0x0066E620u, sub_0066E620, "tSoundMemoryBlockManager::mGetBlock(long)", "Tiger/tSndMemMgr.cpp"},
+    {0x0066E650u, sub_0066E650, "tSoundMemoryBlockManager::mDumpBlock(unsigned long)", "Tiger/tSndMemMgr.cpp"},
+    {0x0066E910u, sub_0066E910, "tSoundMemoryBlockManager::mDump()", "Tiger/tSndMemMgr.cpp"},
+    {0x0066E9C0u, sub_0066E9C0, "tSoundMemoryBlockManager::mIsThisHandleValid(unsigned long)", "Tiger/tSndMemMgr.cpp"},
+    {0x0066EA20u, sub_0066EA20, "tSoundMemoryBlockManager::mFreeLowestPriorityBlockWithNoLocks()", "Tiger/tSndMemMgr.cpp"},
+    {0x0066EC50u, sub_0066EC50, "tAsynchSoundQueue::mReadNext()", "Tiger/tsound_fileio.cpp"},
+    {0x0066EE80u, sub_0066EE80, "tAsynchSoundQueue::mReadNextInterrupt()", "Tiger/tsound_fileio.cpp"},
+    {0x0066F2D0u, sub_0066F2D0, "tSoundFileIO::mOpenForRead(const char *)", "Tiger/tsound_fileio.cpp"},
+    {0x0066F440u, sub_0066F440, "tSoundFileIO::mOpenForWrite(const char *)", "Tiger/tsound_fileio.cpp"},
+    {0x0066F4E0u, sub_0066F4E0, "tSoundFileIO::mClose()", "Tiger/tsound_fileio.cpp"},
+    {0x0066F5D0u, sub_0066F5D0, "tSoundFileIO::mRead(void *,int32u)", "Tiger/tsound_fileio.cpp"},
+    {0x0066F710u, sub_0066F710, "tSoundFileIO::mWrite(const void *,int32u)", "Tiger/tsound_fileio.cpp"},
+    {0x0066F830u, sub_0066F830, "tSoundFileIO::mEOF()", "Tiger/tsound_fileio.cpp"},
+    {0x0066F850u, sub_0066F850, "tSoundFileIO::mFilePos()", "Tiger/tsound_fileio.cpp"},
+    {0x0066F8B0u, sub_0066F8B0, "tSoundFileIO::mFileSize()", "Tiger/tsound_fileio.cpp"},
+    {0x0066F910u, sub_0066F910, "tSoundFileIO::mSeekSet(LONG)", "Tiger/tsound_fileio.cpp"},
+    {0x0066F960u, sub_0066F960, "tSoundFileIO::mSeekCur(LONG)", "Tiger/tsound_fileio.cpp"},
+    {0x0066F9B0u, sub_0066F9B0, "tSoundFileIO::mSeekEnd(LONG)", "Tiger/tsound_fileio.cpp"},
+    {0x0066FA40u, sub_0066FA40, "tSoundFileIO::mRead(void *,int32u,int32u)", "Tiger/tsound_fileio.cpp"},
+    {0x0066FC50u, sub_0066FC50, "tSoundFileIO::mReadAsync(void *,int32u,void (*callback)( void *, int32u ),void *)", "Tiger/tsound_fileio.cpp"},
+    {0x0066FC80u, sub_0066FC80, "tSoundFileIO::mReadAsync(void *,int32u,int32u,void (*callback)( void *, int32u ),void *)", "Tiger/tsound_fileio.cpp"},
+    {0x0066FDA0u, sub_0066FDA0, "_InitSoundFileIO()", "Tiger/tsound_fileio.cpp"},
+    {0x0066FEE0u, sub_0066FEE0, "_DoneSoundFileIO()", "Tiger/tsound_fileio.cpp"},
+    {0x00670000u, sub_00670000, "_NewSoundFileIO()", "Tiger/tsound_fileio.cpp"},
     {0x00670180u, sub_00670180, "tSequencePart::mGetNumber()", "Tiger/tsequence.cpp"},
     {0x006701C0u, sub_006701C0, "tSequencePart::mGetNumber(int32u)", "Tiger/tsequence.cpp"},
+    {0x006702C0u, sub_006702C0, "tFontTable::mResetDataMembers()", "Tiger/tFontmgr.cpp"},
+    {0x006702F0u, sub_006702F0, "tFontTable::mInit(const char*,tFontFileIO&)", "Tiger/tFontmgr.cpp"},
+    {0x00670520u, sub_00670520, "tFontTable::mStoreCustomTypeface(unsigned short*)", "Tiger/tFontmgr.cpp"},
+    {0x00670710u, sub_00670710, "tFontTable::mMakeGlyph(unsigned short,tFontFileIO*)", "Tiger/tFontmgr.cpp"},
+    {0x006708C0u, sub_006708C0, "tTextFontFileIO::mGetC()", "Tiger/tFontmgr.cpp"},
+    {0x00670D50u, sub_00670D50, "tFontMgr::mDone()", "Tiger/tFontmgr.cpp"},
+    {0x00670DD0u, sub_00670DD0, "tFontMgr::mGetCharInfo(unsigned short,unsigned long)", "Tiger/tFontmgr.cpp"},
+    {0x00670EE0u, sub_00670EE0, "tFontMgr::mGetTypefacebyName(const tString&)", "Tiger/tFontmgr.cpp"},
+    {0x00671110u, sub_00671110, "_GetCharInfo(unsigned short,unsigned long)", "Tiger/tFontmgr.cpp"},
+    {0x00671130u, sub_00671130, "_GetCharHeight(unsigned long,unsigned short)", "Tiger/tFontmgr.cpp"},
+    {0x006A2DC0u, sub_006A2DC0, "tStream_BasicFile::mGet(void *,unsigned long)", "dmp3d/common/stream_basicfile.cpp"},
+    {0x006A2E40u, sub_006A2E40, "tStream_BasicFile::mPut(const void *,unsigned long)", "dmp3d/common/stream_basicfile.cpp"},
+    {0x006A48D0u, sub_006A48D0, "tTexBmp::vfunction2(tBasicFile *)", "dmp3d/common/texBmp.cpp"},
+    {0x006A5B90u, sub_006A5B90, "tTexBmp::vfunction8()", "dmp3d/common/texBmp.cpp"},
+    {0x006A5C20u, sub_006A5C20, "tTexBmp::fn_006a5c20()", "dmp3d/common/texBmp.cpp"},
+    {0x006A5C80u, sub_006A5C80, "tTexBmp::vfunction4(tBasicFile *)", "dmp3d/common/texBmp.cpp"},
+    {0x006A7C60u, sub_006A7C60, "CD3DFramework::DestroyObjects()", "dmp3d/dx6/d3dframe.cpp"},
+    {0x006A7D20u, sub_006A7D20, "CD3DFramework::Initialize(HWND,GUID*,GUID*,DDSURFACEDESC2*,DWORD)", "dmp3d/dx6/d3dframe.cpp"},
+    {0x006A7D90u, sub_006A7D90, "CD3DFramework::CreateEnvironment(GUID*,GUID*,DDSURFACEDESC2*,DWORD)", "dmp3d/dx6/d3dframe.cpp"},
+    {0x006A7EE0u, sub_006A7EE0, "CD3DFramework::CreateDirectDraw(GUID*,DWORD)", "dmp3d/dx6/d3dframe.cpp"},
+    {0x006A7F80u, sub_006A7F80, "CD3DFramework::CreateDirect3D(GUID*,DWORD)", "dmp3d/dx6/d3dframe.cpp"},
+    {0x006A8110u, sub_006A8110, "CD3DFramework::CreateBuffers(DDSURFACEDESC2*,DWORD)", "dmp3d/dx6/d3dframe.cpp"},
+    {0x006A83F0u, sub_006A83F0, "CD3DFramework::CreateZBuffer()", "dmp3d/dx6/d3dframe.cpp"},
+    {0x006A84B0u, sub_006A84B0, "CD3DFramework::ShowFrame()", "dmp3d/dx6/d3dframe.cpp"},
+    {0x006A8500u, sub_006A8500, "CD3DFramework::FlipToGDISurface(BOOL)", "dmp3d/dx6/d3dframe.cpp"},
+    {0x006A8540u, sub_006A8540, "CD3DFramework::RestoreSurfaces()", "dmp3d/dx6/d3dframe.cpp"},
+    {0x006A85A0u, sub_006A85A0, "CD3DFramework::Move(INT,INT)", "dmp3d/dx6/d3dframe.cpp"},
+    {0x006A94A0u, sub_006A94A0, "D3DUtil_InitSurfaceDesc(DDSURFACEDESC2&,DWORD,DWORD)", "dmp3d/dx6/d3dutil.cpp"},
+    {0x006A94D0u, sub_006A94D0, "D3DUtil_InitViewport(D3DVIEWPORT2&,DWORD,DWORD)", "dmp3d/dx6/d3dutil.cpp"},
     {0x006D2800u, sub_006D2800, "tSFCStream::mGetVersionNumber()", "unsorted/fn_006D2000.cpp"},
     {0x006F39B0u, sub_006F39B0, "tThreadPool::Instance()", "Common/Thread/ThreadPool.cpp"},
     {0x006F3D40u, sub_006F3D40, "tThreadPool::Startup()", "Common/Thread/ThreadPool.cpp"},
@@ -5125,7 +5882,7 @@ const sfcop_guest_override sfcop_guest_overrides[] = {
     {0x00708FC0u, sub_00708FC0, "tFileDatabaseMgr::GetCurDBInfo()", "Common/Database/FileDatabaseMgr.cpp"},
     {0x00709060u, sub_00709060, "tFileDatabaseMgr::GetDBInfo(int32) const", "Common/Database/FileDatabaseMgr.cpp"},
 };
-const unsigned sfcop_guest_override_count = 719u;
+const unsigned sfcop_guest_override_count = 826u;
 
 }  // extern "C"
 
