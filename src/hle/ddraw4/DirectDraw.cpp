@@ -37,10 +37,15 @@ const DirectDraw *displayOwner(const platform::Gpu &gpu) {
     return found == displayOwners().end() ? nullptr : found->second;
 }
 
-// The resolutions the original's display drivers offered on every card, which the game's options
-// expect to find.
+// Every size the game can ask for, and 1280x960, the other common 4:3 mode of its day. The game
+// reads its size once at start-up from sfc.ini [3D] lowres (STARFLEETOP 0x0040ad35): 0 is 800x600,
+// 2 960x720, 3 1024x768, 4 1152x864, 5 1280x1024, 6 1600x1200 and any other value 640x480. Full
+// screen, it then looks for that exact width, height and 16 bits among the enumerated modes
+// (STARFLEETOP 0x006aae20) and gives up without it, so each of those sizes is listed here. The
+// game finds its mode by value, never by position in the list.
 constexpr std::pair<std::uint32_t, std::uint32_t> kClassicModes[] = {
-    {640, 480}, {800, 600}, {1024, 768}, {1152, 864}, {1280, 960}, {1280, 1024}, {1600, 1200},
+    {640, 480},  {800, 600},   {960, 720},   {1024, 768},
+    {1152, 864}, {1280, 960},  {1280, 1024}, {1600, 1200},
 };
 
 // Sets the bit for a raster operation in DDCAPS.dwRops: the operation's index is its byte 2.
