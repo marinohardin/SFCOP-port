@@ -195,6 +195,34 @@ The runner needs no installer step; CI never downloads a toolchain. Its environm
 A job whose toolchain is missing fails at configure with the line naming what is missing and
 `setup.sh`.
 
+### A second runner on the same Mac
+
+Every self-hosted job waits for a free runner, and one runner does one job at a time. A second
+runner process on the same Mac lets two pull requests' jobs run at once. The workflows need no
+change: both runners carry the labels `self-hosted` and `sfcop-mac`, and each job's build trees
+are keyed by the runner's name (`$SFCOP_CI_BUILD_ROOT/<runner name>/<preset>`), so the two never
+share a build folder, a lift output or an oracle scratch copy (the oracle copies the prepared data
+folder into the build tree before each run).
+
+1. In the repository's Settings > Actions > Runners > New self-hosted runner, choose macOS ARM64
+   and copy the registration command. The token in it is the owner's to create and use.
+2. Unpack the runner into a new folder of its own beside the first runner's, not inside it (the
+   runner folder stays small: the build trees go under `SFCOP_CI_BUILD_ROOT`), and run its `config.sh` with a different name (for example
+   `marino-macbook-sfcop-2`) and the extra label `sfcop-mac`.
+3. Give it the same environment file as the first runner (`.env` in the runner's folder):
+   `SFCOP_TOOLS_DIR`, `SFCOP_INSTALL_DIR`, `SFCOP_PCRECOMP_DIR`, `SFCOP_CI_BUILD_ROOT`,
+   `SFCOP_ORACLE_DATA`.
+4. Grant its `node` the Removable Volumes permission below. The permission is keyed to the path
+   of the runner's `node`, so the second runner needs its own grant.
+5. Start it as a service (`./svc.sh install` and `./svc.sh start`).
+6. Check free space first: each runner keeps its own build trees, about 6 GB for `macos-arm64` with
+   the lift, under `SFCOP_CI_BUILD_ROOT`.
+
+What the two runners still share: the pcrecomp clone (read during a build), the Docker daemon
+(each lift container is capped at 4 CPUs and 6 GB) and the machine's cores. Two builds at `-j4`
+use eight of the M1 Pro's ten cores, so heavy local work is slower while both run. Stop the
+second runner (`./svc.sh stop`) when the machine is needed for anything else.
+
 ### One-time macOS permission: Removable Volumes
 
 The tools folder is on the external drive. The first time a process the runner started reads an

@@ -14,6 +14,50 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Decides which presets this pull request builds and whether the oracle runs, on a hosted
+  # runner, so that a preset or an oracle that would only skip never waits in the self-hosted
+  # runner's queue (it does one job at a time). The logic is oracle/presets/ci.py, as before.
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      any: ${{ steps.plan.outputs.any }}
+      oracle: ${{ steps.plan.outputs.oracle }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Which presets build and whether the oracle runs
+        id: plan
+        shell: bash
+        run: |
+          set -eu -o pipefail
+          git diff --name-only HEAD^1 HEAD > "$RUNNER_TEMP/changed.txt"
+          [ -s "$RUNNER_TEMP/changed.txt" ] || { echo "::error::no changed paths between HEAD^1 and HEAD"; exit 1; }
+          # The lift per preset. windows-x64, not yet: pcrecomp's win32hle runtime includes POSIX
+          # headers (unistd.h, pthread.h, strings.h) and src/app/guest/GuestExceptions.cpp leaves
+          # g_raiseShim and g_liftedCode undeclared on Windows; both reported. The job builds and
+          # tests src/ until they build.
+          lift() {
+            case "$1" in
+              windows-x64) echo "not yet: the lift's runtime and the guest host do not build for Windows (reported)" ;;
+              *) echo on ;;
+            esac
+          }
+          include=
+          for preset in macos-arm64 windows-x64 linux-x64; do
+            build=$(python3 -I oracle/presets/ci.py builds "$preset" < "$RUNNER_TEMP/changed.txt")
+            [ "$build" = yes ] || continue
+            include="$include${include:+,}{\"preset\":\"$preset\",\"lift\":\"$(lift "$preset")\"}"
+          done
+          echo "matrix={\"include\":[$include]}" >> "$GITHUB_OUTPUT"
+          echo "any=$([ -n "$include" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
+          oracle=$(python3 -I oracle/presets/ci.py gate < "$RUNNER_TEMP/changed.txt")
+          [ "$oracle" = no ] && echo "::notice::skip: the oracle on the presets: nothing under game/, src/ or the oracle's runner changed"
+          echo "oracle=$oracle" >> "$GITHUB_OUTPUT"
+
   # One job, because every job is billed in whole minutes and pays for its own install.
   check:
     runs-on: [self-hosted, sfcop-mac]
@@ -52,39 +96,26 @@ jobs:
   # toolchain: a missing one fails the configure step with the command that installs it.
   build:
     name: build (${{ matrix.preset }})
+    # Only the presets the plan job chose are in the matrix; one it did not choose takes no
+    # runner slot. ci.py printed its reason as a notice in the plan job.
+    needs: plan
+    if: needs.plan.outputs.any == 'yes'
     runs-on: [self-hosted, sfcop-mac]
     timeout-minutes: 150
     strategy:
       fail-fast: false
       max-parallel: 1
-      matrix:
-        preset: [macos-arm64, windows-x64, linux-x64]
-        include:
-          - preset: macos-arm64
-            lift: "on"
-          - preset: linux-x64
-            lift: "on"
-          # Not yet: pcrecomp's win32hle runtime includes POSIX headers (unistd.h, pthread.h,
-          # strings.h) and src/app/guest/GuestExceptions.cpp leaves g_raiseShim and g_liftedCode
-          # undeclared on Windows; both reported. The job builds and tests src/ until they build.
-          - preset: windows-x64
-            lift: "not yet: the lift's runtime and the guest host do not build for Windows (reported)"
+      # {"include": [{"preset": ..., "lift": ...}, ...]}, written by the plan job.
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
 
-      # Which presets a pull request builds is oracle/presets/ci.py, "builds"; a preset it does
-      # not build skips its steps and the job passes. ci.py prints the reason as a notice.
+      # Every preset in the matrix is built; the step stays so the steps below read as before.
       - name: Is ${{ matrix.preset }} built for this pull request
         id: want
-        shell: bash
-        env:
-          PRESET: ${{ matrix.preset }}
-        run: |
-          set -eu -o pipefail
-          build=$(git diff --name-only HEAD^1 HEAD | python3 -I oracle/presets/ci.py builds "$PRESET")
-          echo "build=$build" >> "$GITHUB_OUTPUT"
+        run: echo "build=yes" >> "$GITHUB_OUTPUT"
 
       # A missing macOS permission to read the external tools volume would otherwise stall the
       # first compiler run for the whole timeout (cmake/toolchains/README.md, "The runner").
@@ -141,6 +172,9 @@ jobs:
         shell: bash
         env:
           PRESET: ${{ matrix.preset }}
+          # Two runners share one Mac, so a build beside this one starves the wall-clock frame-cap
+          # test (62 and 85 frames of 297 seen); it is run by hand, not on a loaded runner.
+          SFCOP_SKIP_TIMING_TESTS: '1'
         run: |
           if [ "$PRESET" = macos-arm64 ]; then
             ctest --test-dir "$SFCOP_BUILD_DIR" --output-on-failure --timeout 540 2>&1 | tee "$SFCOP_BUILD_DIR/logs/tests.log"
@@ -181,7 +215,12 @@ jobs:
   # retail files) are kept for 7 days.
   oracle:
     name: oracle (all presets)
-    needs: build
+    # The plan job decided whether the oracle judges this change; when it does not, this job
+    # never takes a runner slot. A build that was not needed (skipped) does not block it.
+    needs: [plan, build]
+    if: >-
+      !cancelled() && needs.plan.outputs.oracle == 'yes' &&
+      (needs.build.result == 'success' || needs.build.result == 'skipped')
     runs-on: [self-hosted, sfcop-mac]
     timeout-minutes: 90
     steps:
