@@ -1,0 +1,77 @@
+diff --git a/runtime/win32hle/d3d.c b/runtime/win32hle/d3d.c
+index 1e89de6..9212c63 100644
+--- a/runtime/win32hle/d3d.c
++++ b/runtime/win32hle/d3d.c
+@@ -363,6 +363,41 @@ static void vp_GetViewport(void) { vp_GetViewport2(); }
+ static void vp_SetBackground(void) { VP(A32(0))->background = A32(1); RET(D3D_OK, 2); }
+ static void vp_GetBackground(void) { if (A32(1)) MEM32(A32(1)) = VP(A32(0))->background; if (A32(2)) MEM32(A32(2)) = 1; RET(D3D_OK, 3); }
+ static void vp_GetBackgroundDepth(void) { if (A32(1)) MEM32(A32(1)) = 0; if (A32(2)) MEM32(A32(2)) = 0; RET(D3D_OK, 3); }
++/* One row of a clear: n pixels from p. A value whose bytes are all equal (black, white, the far
++ * plane) is a memset; any other is a plain loop the compiler vectorises. */
++static void fill16(uint16_t *p, uint16_t v, int n) {
++    if ((v & 0xFF) == (v >> 8)) { memset(p, v & 0xFF, (size_t)n * 2); return; }
++    for (int i = 0; i < n; i++) p[i] = v;
++}
++static void fill32(uint32_t *p, uint32_t v, int n) {
++    if (v == (v & 0xFF) * 0x01010101u) { memset(p, (int)(v & 0xFF), (size_t)n * 4); return; }
++    for (int i = 0; i < n; i++) p[i] = v;
++}
++/* One rect of a clear, clipped to the target: the colour c (already in the target's format) when
++ * flags has D3DCLEAR_TARGET (1), on a 16- or 32-bit target only, and the depth z, clamped to 0..1,
++ * when flags has D3DCLEAR_ZBUFFER (2) and the target has a z buffer, clipped to that buffer too.
++ * Each row is filled at once: the row pointer and the format are worked out once per row, not
++ * once per pixel, which was the largest single cost of a headless boot. */
++static void clear_rect(surf_t *t, int l, int tp, int r, int b, uint32_t flags, uint32_t c, float z) {
++    if (l < 0) l = 0;
++    if (tp < 0) tp = 0;
++    if (r > t->w) r = t->w;
++    if (b > t->h) b = t->h;
++    if ((flags & 1) && l < r && (t->bpp == 16 || t->bpp == 32))
++        for (int y = tp; y < b; y++) {
++            uint8_t *row = t->px + (size_t)y * (size_t)t->pitch;
++            if (t->bpp == 16) fill16((uint16_t *)row + l, (uint16_t)c, r - l);
++            else fill32((uint32_t *)row + l, c, r - l);
++        }
++    if ((flags & 2) && t->zbuf) {
++        surf_t *zb = t->zbuf;
++        uint16_t zv = (uint16_t)((z < 0 ? 0 : z > 1 ? 1 : z) * 65535.f);
++        int zr = r < zb->w ? r : zb->w, zb_bottom = b < zb->h ? b : zb->h;
++        if (l < zr)
++            for (int y = tp; y < zb_bottom; y++)
++                fill16((uint16_t *)(zb->px + (size_t)y * (size_t)zb->pitch) + l, zv, zr - l);
++    }
++}
+ static void clear(vp_t *v, uint32_t nrects, uint32_t rects, uint32_t flags, uint32_t argb, float z) {
+     d3d_raster_flush();
+     d3ddev_t *d = v->device ? DEV(v->device) : NULL;
+@@ -372,25 +407,11 @@ static void clear(vp_t *v, uint32_t nrects, uint32_t rects, uint32_t flags, uint
+         int l = v->x, tp = v->y, r = v->x + v->w, b = v->y + v->h;
+         if (nrects && rects) l = (int)MEM32(rects + 16 * i), tp = (int)MEM32(rects + 16 * i + 4),
+                              r = (int)MEM32(rects + 16 * i + 8), b = (int)MEM32(rects + 16 * i + 12);
+-        if (l < 0) l = 0;
+-        if (tp < 0) tp = 0;
+-        if (r > t->w) r = t->w;
+-        if (b > t->h) b = t->h;
+-        if (flags & 1) {                                 /* D3DCLEAR_TARGET */
+-            uint32_t c = d3d_pack(t, (float)((argb >> 16) & 0xFF) / 255.f, (float)((argb >> 8) & 0xFF) / 255.f,
+-                                  (float)(argb & 0xFF) / 255.f, (float)(argb >> 24) / 255.f);
+-            for (int y = tp; y < b; y++)
+-                for (int x = l; x < r; x++) {
+-                    uint8_t *p = t->px + (size_t)y * (size_t)t->pitch;
+-                    if (t->bpp == 16) ((uint16_t *)p)[x] = (uint16_t)c; else if (t->bpp == 32) ((uint32_t *)p)[x] = c;
+-                }
+-        }
+-        if ((flags & 2) && t->zbuf) {                    /* D3DCLEAR_ZBUFFER */
+-            surf_t *zb = t->zbuf;
+-            uint16_t zv = (uint16_t)((z < 0 ? 0 : z > 1 ? 1 : z) * 65535.f);
+-            for (int y = tp; y < b && y < zb->h; y++)
+-                for (int x = l; x < r && x < zb->w; x++) ((uint16_t *)(zb->px + (size_t)y * (size_t)zb->pitch))[x] = zv;
+-        }
++        uint32_t c = 0;
++        if (flags & 1)                                   /* D3DCLEAR_TARGET */
++            c = d3d_pack(t, (float)((argb >> 16) & 0xFF) / 255.f, (float)((argb >> 8) & 0xFF) / 255.f,
++                         (float)(argb & 0xFF) / 255.f, (float)(argb >> 24) / 255.f);
++        clear_rect(t, l, tp, r, b, flags, c, z);         /* and D3DCLEAR_ZBUFFER */
+     }
+     hle_dd_mark(t);
+ }
