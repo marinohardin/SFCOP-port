@@ -8,7 +8,8 @@
 # paths, the two kernel32 rows that read POSIX-only state, and no host CPUID on a Windows Arm host;
 # and the dispatch lookup's cache, with a host's overrides written into the table, which indirect
 # calls then ask before the manual hook; a host that writes nothing keeps the hook first; and
-# landing pads that save no signal mask on a POSIX host, _setjmp and _longjmp).
+# landing pads that save no signal mask on a POSIX host, _setjmp and _longjmp; and the software
+# Direct3D clear, which fills a row at a time).
 #
 #   cmake/lifter/setup.sh SOURCE
 #       Make SOURCE a pcrecomp clone that holds the pinned revision: clone it (the only step that
