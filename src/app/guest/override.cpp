@@ -15,11 +15,14 @@
 #include "Tiger/tBag.h"
 #include "Tiger/tFormatStr.cpp"
 #include "Tiger/tFormatStr.h"
+#include "Tiger/tSndMemMgr.h"
 #include "Tiger/tStrManagerPart.h"
-#include "Tiger/tatomic.cpp"
+#include "Tiger/tatomic.h"
 #include "Tiger/taudiochannel.cpp"
 #include "Tiger/tcglue.h"
 #include "Tiger/tcrandsequence.h"
+#include "Tiger/tgSound.cpp"
+#include "Tiger/tgSound.h"
 #include "Tiger/tgfsys.cpp"
 #include "Tiger/tgfsys.h"
 #include "Tiger/tinifile.cpp"
@@ -1152,136 +1155,136 @@ extern "C" void sub_00431808(void) {
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( int ) >( &tNetControl::fn_00431808 ) >::run();
 }
 
-// tDynamicMemoryFreeListViaHandles::vfunction3(), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+// tDynamicMemoryFreeListViaHandles::vfunction2(), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
 extern "C" void sub_00435391(void) {
     ::sfcop::guest::entered(181);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tDynamicMemoryFreeListViaHandles::vfunction3 ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tDynamicMemoryFreeListViaHandles::vfunction2 ) >::run();
+}
+
+// tDynamicMemoryFreeListViaHandles::vfunction5(), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+extern "C" void sub_0043539E(void) {
+    ::sfcop::guest::entered(182);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tListMemberWithHandle *() >( &tDynamicMemoryFreeListViaHandles::vfunction5 ) >::run();
 }
 
 // tDynamicMemoryFreeListViaHandles::vfunction6(), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
-extern "C" void sub_0043539E(void) {
-    ::sfcop::guest::entered(182);
+extern "C" void sub_004353A7(void) {
+    ::sfcop::guest::entered(183);
     ::sfcop::guest::Entry< ::sfcop::guest::member< tListMemberWithHandle *() >( &tDynamicMemoryFreeListViaHandles::vfunction6 ) >::run();
 }
 
-// tDynamicMemoryFreeListViaHandles::vfunction7(), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
-extern "C" void sub_004353A7(void) {
-    ::sfcop::guest::entered(183);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< tListMemberWithHandle *() >( &tDynamicMemoryFreeListViaHandles::vfunction7 ) >::run();
-}
-
-// tDynamicMemoryFreeListViaHandles::vfunction8(int), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+// tDynamicMemoryFreeListViaHandles::vfunction7(long), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
 extern "C" void sub_004353B0(void) {
     ::sfcop::guest::entered(184);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< int( int ) >( &tDynamicMemoryFreeListViaHandles::vfunction8 ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< long( long ) >( &tDynamicMemoryFreeListViaHandles::vfunction7 ) >::run();
 }
 
-// tDynamicMemoryFreeListViaHandles::vfunction10(int), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+// tDynamicMemoryFreeListViaHandles::vfunction9(long), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
 extern "C" void sub_004353C8(void) {
     ::sfcop::guest::entered(185);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< int( int ) >( &tDynamicMemoryFreeListViaHandles::vfunction10 ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< long( long ) >( &tDynamicMemoryFreeListViaHandles::vfunction9 ) >::run();
 }
 
-// tDynamicMemoryFreeListViaHandles::vfunction13(tListMemberWithHandle *), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+// tDynamicMemoryFreeListViaHandles::vfunction12(tListMemberWithHandle *), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
 extern "C" void sub_004353E0(void) {
     ::sfcop::guest::entered(186);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< tListMemberWithHandle *( tListMemberWithHandle * ) >( &tDynamicMemoryFreeListViaHandles::vfunction13 ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tListMemberWithHandle *( tListMemberWithHandle * ) >( &tDynamicMemoryFreeListViaHandles::vfunction12 ) >::run();
 }
 
-// tDynamicMemoryFreeListViaHandles::vfunction13(int), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+// tDynamicMemoryFreeListViaHandles::vfunction11(long), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
 extern "C" void sub_004353F8(void) {
     ::sfcop::guest::entered(187);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< tListMemberWithHandle *( int ) >( &tDynamicMemoryFreeListViaHandles::vfunction13 ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tListMemberWithHandle *( long ) >( &tDynamicMemoryFreeListViaHandles::vfunction11 ) >::run();
 }
 
-// tDynamicMemoryFreeListViaHandles::vfunction15(tListMemberWithHandle *), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+// tDynamicMemoryFreeListViaHandles::vfunction14(tListMemberWithHandle *), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
 extern "C" void sub_00435416(void) {
     ::sfcop::guest::entered(188);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< tListMemberWithHandle *( tListMemberWithHandle * ) >( &tDynamicMemoryFreeListViaHandles::vfunction15 ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tListMemberWithHandle *( tListMemberWithHandle * ) >( &tDynamicMemoryFreeListViaHandles::vfunction14 ) >::run();
 }
 
-// tDynamicMemoryFreeListViaHandles::vfunction15(int), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+// tDynamicMemoryFreeListViaHandles::vfunction13(long), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
 extern "C" void sub_0043542E(void) {
     ::sfcop::guest::entered(189);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< tListMemberWithHandle *( int ) >( &tDynamicMemoryFreeListViaHandles::vfunction15 ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tListMemberWithHandle *( long ) >( &tDynamicMemoryFreeListViaHandles::vfunction13 ) >::run();
 }
 
-// tDynamicMemoryFreeListViaHandles::vfunction16(int), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+// tDynamicMemoryFreeListViaHandles::vfunction15(long), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
 extern "C" void sub_0043544C(void) {
     ::sfcop::guest::entered(190);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int ) >( &tDynamicMemoryFreeListViaHandles::vfunction16 ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< long( long ) >( &tDynamicMemoryFreeListViaHandles::vfunction15 ) >::run();
 }
 
-// tDynamicMemoryFreeListViaHandles::vfunction19(int), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+// tDynamicMemoryFreeListViaHandles::vfunction18(long), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
 extern "C" void sub_00435464(void) {
     ::sfcop::guest::entered(191);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< tListMemberWithHandle *( int ) >( &tDynamicMemoryFreeListViaHandles::vfunction19 ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tListMemberWithHandle *( long ) >( &tDynamicMemoryFreeListViaHandles::vfunction18 ) >::run();
 }
 
-// tDynamicMemoryFreeListViaHandles::vfunction18(tListMemberWithHandle *), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+// tDynamicMemoryFreeListViaHandles::vfunction17(tListMemberWithHandle *), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
 extern "C" void sub_0043547C(void) {
     ::sfcop::guest::entered(192);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< tListMemberWithHandle *( tListMemberWithHandle * ) >( &tDynamicMemoryFreeListViaHandles::vfunction18 ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tListMemberWithHandle *( tListMemberWithHandle * ) >( &tDynamicMemoryFreeListViaHandles::vfunction17 ) >::run();
 }
 
-// tDynamicMemoryFreeListViaHandles::vfunction20(int), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+// tDynamicMemoryFreeListViaHandles::vfunction19(long), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
 extern "C" void sub_00435494(void) {
     ::sfcop::guest::entered(193);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int ) >( &tDynamicMemoryFreeListViaHandles::vfunction20 ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< long( long ) >( &tDynamicMemoryFreeListViaHandles::vfunction19 ) >::run();
 }
 
-// tDynamicMemoryFreeListViaHandles::vfunction23(int), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+// tDynamicMemoryFreeListViaHandles::vfunction22(long), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
 extern "C" void sub_004354AC(void) {
     ::sfcop::guest::entered(194);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< tListMemberWithHandle *( int ) >( &tDynamicMemoryFreeListViaHandles::vfunction23 ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tListMemberWithHandle *( long ) >( &tDynamicMemoryFreeListViaHandles::vfunction22 ) >::run();
 }
 
-// tDynamicMemoryFreeListViaHandles::vfunction22(tListMemberWithHandle *), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+// tDynamicMemoryFreeListViaHandles::vfunction21(tListMemberWithHandle *), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
 extern "C" void sub_004354C4(void) {
     ::sfcop::guest::entered(195);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< tListMemberWithHandle *( tListMemberWithHandle * ) >( &tDynamicMemoryFreeListViaHandles::vfunction22 ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tListMemberWithHandle *( tListMemberWithHandle * ) >( &tDynamicMemoryFreeListViaHandles::vfunction21 ) >::run();
 }
 
-// tDynamicMemoryFreeListViaHandles::vfunction25(int), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+// tDynamicMemoryFreeListViaHandles::vfunction24(long), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
 extern "C" void sub_004354DC(void) {
     ::sfcop::guest::entered(196);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int ) >( &tDynamicMemoryFreeListViaHandles::vfunction25 ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( long ) >( &tDynamicMemoryFreeListViaHandles::vfunction24 ) >::run();
 }
 
-// tDynamicMemoryFreeListViaHandles::vfunction27(int), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+// tDynamicMemoryFreeListViaHandles::vfunction26(long), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
 extern "C" void sub_004354F4(void) {
     ::sfcop::guest::entered(197);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int ) >( &tDynamicMemoryFreeListViaHandles::vfunction27 ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( long ) >( &tDynamicMemoryFreeListViaHandles::vfunction26 ) >::run();
 }
 
-// tDynamicMemoryFreeListViaHandles::vfunction29(int,int), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+// tDynamicMemoryFreeListViaHandles::vfunction28(long,long), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
 extern "C" void sub_0043550C(void) {
     ::sfcop::guest::entered(198);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int, int ) >( &tDynamicMemoryFreeListViaHandles::vfunction29 ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( long, long ) >( &tDynamicMemoryFreeListViaHandles::vfunction28 ) >::run();
 }
 
-// tDynamicMemoryFreeListViaHandles::vfunction31(int,int), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+// tDynamicMemoryFreeListViaHandles::vfunction30(long,long), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
 extern "C" void sub_00435530(void) {
     ::sfcop::guest::entered(199);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int, int ) >( &tDynamicMemoryFreeListViaHandles::vfunction31 ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( long, long ) >( &tDynamicMemoryFreeListViaHandles::vfunction30 ) >::run();
 }
 
-// tDynamicMemoryFreeListViaHandles::vfunction33(int), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+// tDynamicMemoryFreeListViaHandles::vfunction32(long), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
 extern "C" void sub_00435554(void) {
     ::sfcop::guest::entered(200);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int ) >( &tDynamicMemoryFreeListViaHandles::vfunction33 ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( long ) >( &tDynamicMemoryFreeListViaHandles::vfunction32 ) >::run();
 }
 
-// tDynamicMemoryFreeListViaHandles::vfunction35(int), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+// tDynamicMemoryFreeListViaHandles::vfunction34(long), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
 extern "C" void sub_0043556F(void) {
     ::sfcop::guest::entered(201);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int ) >( &tDynamicMemoryFreeListViaHandles::vfunction35 ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( long ) >( &tDynamicMemoryFreeListViaHandles::vfunction34 ) >::run();
 }
 
-// tDynamicMemoryFreeListViaHandles::vfunction37(int), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
+// tDynamicMemoryFreeListViaHandles::vfunction36(long), game/unsorted/tDynamicMemoryFreeListViaHandles.cpp
 extern "C" void sub_0043558A(void) {
     ::sfcop::guest::entered(202);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int ) >( &tDynamicMemoryFreeListViaHandles::vfunction37 ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( long ) >( &tDynamicMemoryFreeListViaHandles::vfunction36 ) >::run();
 }
 
 // t3DListenerProfile::fn_004355ce(const t3DListenerProfile_field_08 *), game/unsorted/t3DListenerProfile.cpp
@@ -3588,189 +3591,717 @@ extern "C" void sub_0062E0B0(void) {
     ::sfcop::guest::Entry< ::sfcop::guest::member< const tString&( long ) >( &tStringGroupTag::mGetString ) >::run();
 }
 
+// AddSoundErrorDuringInterrupt(const char*,...), game/Tiger/tgSound.cpp
+extern "C" void sub_00646CE0(void) {
+    ::sfcop::guest::entered(587);
+    ::sfcop::guest::Entry< static_cast< void (*)( const char*, ... ) >( &AddSoundErrorDuringInterrupt ) >::run();
+}
+
+// PrintOutBufferedErrors(), game/Tiger/tgSound.cpp
+extern "C" void sub_00646D10(void) {
+    ::sfcop::guest::entered(588);
+    ::sfcop::guest::Entry< static_cast< void (*)() >( &PrintOutBufferedErrors ) >::run();
+}
+
+// GetSilenceData(long), game/Tiger/tgSound.cpp
+extern "C" void sub_00646D60(void) {
+    ::sfcop::guest::entered(589);
+    ::sfcop::guest::Entry< static_cast< iTruth (*)( long ) >( &GetSilenceData ) >::run();
+}
+
+// t3DListenerProfile::mInit(), game/Tiger/tgSound.cpp
+extern "C" void sub_00646E70(void) {
+    ::sfcop::guest::entered(590);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &t3DListenerProfile::mInit ) >::run();
+}
+
+// t3DListenerProfile::operator=(t3DListenerProfile&), game/Tiger/tgSound.cpp
+extern "C" void sub_00646EB0(void) {
+    ::sfcop::guest::entered(591);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< t3DListenerProfile&( t3DListenerProfile& ) >( &t3DListenerProfile::operator= ) >::run();
+}
+
+// t3DListenerProfile::mDump(), game/Tiger/tgSound.cpp
+extern "C" void sub_00646F10(void) {
+    ::sfcop::guest::entered(592);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &t3DListenerProfile::mDump ) >::run();
+}
+
+// t3DSoundProfile::mInit(), game/Tiger/tgSound.cpp
+extern "C" void sub_00647460(void) {
+    ::sfcop::guest::entered(593);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &t3DSoundProfile::mInit ) >::run();
+}
+
+// t3DSoundProfile::operator=(t3DSoundProfile&), game/Tiger/tgSound.cpp
+extern "C" void sub_006474A0(void) {
+    ::sfcop::guest::entered(594);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< t3DSoundProfile&( t3DSoundProfile& ) >( &t3DSoundProfile::operator= ) >::run();
+}
+
+// t3DSoundProfile::mDump(), game/Tiger/tgSound.cpp
+extern "C" void sub_00647500(void) {
+    ::sfcop::guest::entered(595);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &t3DSoundProfile::mDump ) >::run();
+}
+
+// tChannelAttributes::mInit(), game/Tiger/tgSound.cpp
+extern "C" void sub_00647AD0(void) {
+    ::sfcop::guest::entered(596);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tChannelAttributes::mInit ) >::run();
+}
+
+// tChannelAttributes::mDump(), game/Tiger/tgSound.cpp
+extern "C" void sub_00647AF0(void) {
+    ::sfcop::guest::entered(597);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tChannelAttributes::mDump ) >::run();
+}
+
+// tSoundChannelFormat::operator=(tSoundChannelFormat&), game/Tiger/tgSound.cpp
+extern "C" void sub_00647C40(void) {
+    ::sfcop::guest::entered(598);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tSoundChannelFormat&( tSoundChannelFormat& ) >( &tSoundChannelFormat::operator= ) >::run();
+}
+
+// tSoundChannelFormat::mInit(), game/Tiger/tgSound.cpp
+extern "C" void sub_00647C70(void) {
+    ::sfcop::guest::entered(599);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tSoundChannelFormat::mInit ) >::run();
+}
+
+// tSoundChannelFormat::mDump(), game/Tiger/tgSound.cpp
+extern "C" void sub_00647CA0(void) {
+    ::sfcop::guest::entered(600);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tSoundChannelFormat::mDump ) >::run();
+}
+
+// tSoundCommandList::mGetListMemberWithHandleFromHandle(long), game/Tiger/tgSound.cpp
+extern "C" void sub_00648D50(void) {
+    ::sfcop::guest::entered(601);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tListMemberWithHandle*( long ) >( &tSoundCommandList::mGetListMemberWithHandleFromHandle ) >::run();
+}
+
+// tSoundChannelList::mGetListMemberWithHandleFromHandle(long), game/Tiger/tgSound.cpp
+extern "C" void sub_00648E60(void) {
+    ::sfcop::guest::entered(602);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tListMemberWithHandle*( long ) >( &tSoundChannelList::mGetListMemberWithHandleFromHandle ) >::run();
+}
+
+// tSoundChannel::mAddDelayedCommand(long), game/Tiger/tgSound.cpp
+extern "C" void sub_00648F70(void) {
+    ::sfcop::guest::entered(603);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( long ) >( &tSoundChannel::mAddDelayedCommand ) >::run();
+}
+
+// tSoundChannel::mFadeToVolume(long,double), game/Tiger/tgSound.cpp
+extern "C" void sub_00649290(void) {
+    ::sfcop::guest::entered(604);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( long, double ) >( &tSoundChannel::mFadeToVolume ) >::run();
+}
+
+// tSoundChannel::mGetFirstAttachment(), game/Tiger/tgSound.cpp
+extern "C" void sub_00649570(void) {
+    ::sfcop::guest::entered(605);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tSoundChannelCommand*() >( &tSoundChannel::mGetFirstAttachment ) >::run();
+}
+
+// tSoundChannel::mFadeToStopAndResetNow(double), game/Tiger/tgSound.cpp
+extern "C" void sub_006496C0(void) {
+    ::sfcop::guest::entered(606);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( double ) >( &tSoundChannel::mFadeToStopAndResetNow ) >::run();
+}
+
+// tSoundChannel::mFadeToStopAndClearNow(double), game/Tiger/tgSound.cpp
+extern "C" void sub_00649920(void) {
+    ::sfcop::guest::entered(607);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( double ) >( &tSoundChannel::mFadeToStopAndClearNow ) >::run();
+}
+
+// tSoundChannel::mAddAttachment(long), game/Tiger/tgSound.cpp
+extern "C" void sub_00649B70(void) {
+    ::sfcop::guest::entered(608);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( long ) >( &tSoundChannel::mAddAttachment ) >::run();
+}
+
+// tSoundChannel::mAddImmediateCommand(long), game/Tiger/tgSound.cpp
+extern "C" void sub_00649F50(void) {
+    ::sfcop::guest::entered(609);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( long ) >( &tSoundChannel::mAddImmediateCommand ) >::run();
+}
+
+// tSoundChannel::mAddImmediateNonInterruptCommandCommand(long), game/Tiger/tgSound.cpp
+extern "C" void sub_0064A080(void) {
+    ::sfcop::guest::entered(610);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( long ) >( &tSoundChannel::mAddImmediateNonInterruptCommandCommand ) >::run();
+}
+
+// tSoundChannel::mInit(), game/Tiger/tgSound.cpp
+extern "C" void sub_0064A1D0(void) {
+    ::sfcop::guest::entered(611);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tSoundChannel::mInit ) >::run();
+}
+
+// tSoundChannel::mDone(), game/Tiger/tgSound.cpp
+extern "C" void sub_0064A460(void) {
+    ::sfcop::guest::entered(612);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tSoundChannel::mDone ) >::run();
+}
+
+// tSoundChannel::mClearCommands(), game/Tiger/tgSound.cpp
+extern "C" void sub_0064A590(void) {
+    ::sfcop::guest::entered(613);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tSoundChannel::mClearCommands ) >::run();
+}
+
+// tSoundChannel::mAddGetNextAttachmentFunction(void (*function)(unsigned long, long),long,double), game/Tiger/tgSound.cpp
+extern "C" void sub_0064A890(void) {
+    ::sfcop::guest::entered(614);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( void (*function)(unsigned long, long), long, double ) >( &tSoundChannel::mAddGetNextAttachmentFunction ) >::run();
+}
+
+// tSoundChannel::mGetTotalBytesLeftToPlay(), game/Tiger/tgSound.cpp
+extern "C" void sub_0064ABB0(void) {
+    ::sfcop::guest::entered(615);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< long() >( &tSoundChannel::mGetTotalBytesLeftToPlay ) >::run();
+}
+
+// tSoundChannel::mGetTotalNumberOfSecondsLeftToPlay(), game/Tiger/tgSound.cpp
+extern "C" void sub_0064B030(void) {
+    ::sfcop::guest::entered(616);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< double() >( &tSoundChannel::mGetTotalNumberOfSecondsLeftToPlay ) >::run();
+}
+
+// tSoundChannel::mClearAllCommands(), game/Tiger/tgSound.cpp
+extern "C" void sub_0064B050(void) {
+    ::sfcop::guest::entered(617);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tSoundChannel::mClearAllCommands ) >::run();
+}
+
+// tSoundChannel::mClearAttachments(), game/Tiger/tgSound.cpp
+extern "C" void sub_0064B2D0(void) {
+    ::sfcop::guest::entered(618);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tSoundChannel::mClearAttachments ) >::run();
+}
+
+// tSoundChannel::mClearAllAttachments(), game/Tiger/tgSound.cpp
+extern "C" void sub_0064B610(void) {
+    ::sfcop::guest::entered(619);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tSoundChannel::mClearAllAttachments ) >::run();
+}
+
+// tSoundChannel::mSetUpdateMode(eSoundChannelUpdateMode), game/Tiger/tgSound.cpp
+extern "C" void sub_0064B8F0(void) {
+    ::sfcop::guest::entered(620);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( eSoundChannelUpdateMode ) >( &tSoundChannel::mSetUpdateMode ) >::run();
+}
+
+// tSoundChannel::mGetSelectionToAttach(), game/Tiger/tgSound.cpp
+extern "C" void sub_0064B910(void) {
+    ::sfcop::guest::entered(621);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tSoundSelection*() >( &tSoundChannel::mGetSelectionToAttach ) >::run();
+}
+
+// tSoundChannel::mLockInData(), game/Tiger/tgSound.cpp
+extern "C" void sub_0064BB20(void) {
+    ::sfcop::guest::entered(622);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tSoundChannel::mLockInData ) >::run();
+}
+
+// tSoundChannel::mGetLastSelectionToAttach(), game/Tiger/tgSound.cpp
+extern "C" void sub_0064C1C0(void) {
+    ::sfcop::guest::entered(623);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tSoundSelection*() >( &tSoundChannel::mGetLastSelectionToAttach ) >::run();
+}
+
+// tSoundChannel::mCleanupSelections(), game/Tiger/tgSound.cpp
+extern "C" void sub_0064C410(void) {
+    ::sfcop::guest::entered(624);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth() >( &tSoundChannel::mCleanupSelections ) >::run();
+}
+
+// tSoundChannel::mClear(), game/Tiger/tgSound.cpp
+extern "C" void sub_0064C970(void) {
+    ::sfcop::guest::entered(625);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tSoundChannel::mClear ) >::run();
+}
+
+// tSoundChannel::mClearAll(), game/Tiger/tgSound.cpp
+extern "C" void sub_0064CB00(void) {
+    ::sfcop::guest::entered(626);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tSoundChannel::mClearAll ) >::run();
+}
+
+// tSoundChannel::mReset(iTruth), game/Tiger/tgSound.cpp
+extern "C" void sub_0064CC90(void) {
+    ::sfcop::guest::entered(627);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( iTruth ) >( &tSoundChannel::mReset ) >::run();
+}
+
+// tSoundChannel::mTestInList(), game/Tiger/tgSound.cpp
+extern "C" void sub_0064D200(void) {
+    ::sfcop::guest::entered(628);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth() >( &tSoundChannel::mTestInList ) >::run();
+}
+
+// tSoundChannel::mSetChannelPriority(long), game/Tiger/tgSound.cpp
+extern "C" void sub_0064D350(void) {
+    ::sfcop::guest::entered(629);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( long ) >( &tSoundChannel::mSetChannelPriority ) >::run();
+}
+
+// tSoundChannel::mDump(), game/Tiger/tgSound.cpp
+extern "C" void sub_0064D360(void) {
+    ::sfcop::guest::entered(630);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tSoundChannel::mDump ) >::run();
+}
+
+// tSoundChannelCommand::mIsInvalid(), game/Tiger/tgSound.cpp
+extern "C" void sub_0064D820(void) {
+    ::sfcop::guest::entered(631);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth() >( &tSoundChannelCommand::mIsInvalid ) >::run();
+}
+
+// tSoundChannelCommand::mMakeInvalid(), game/Tiger/tgSound.cpp
+extern "C" void sub_0064D830(void) {
+    ::sfcop::guest::entered(632);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tSoundChannelCommand::mMakeInvalid ) >::run();
+}
+
+// tSoundChannelCommand::mMakeAvailable(), game/Tiger/tgSound.cpp
+extern "C" void sub_0064D840(void) {
+    ::sfcop::guest::entered(633);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tSoundChannelCommand::mMakeAvailable ) >::run();
+}
+
+// tSoundChannelCommand::mMakeUnavailable(), game/Tiger/tgSound.cpp
+extern "C" void sub_0064D850(void) {
+    ::sfcop::guest::entered(634);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth() >( &tSoundChannelCommand::mMakeUnavailable ) >::run();
+}
+
+// tChannelAttributes::vfunction7(long), game/Tiger/tgSound.cpp
+extern "C" void sub_0064D860(void) {
+    ::sfcop::guest::entered(635);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( long ) >( &tChannelAttributes::vfunction7 ) >::run();
+}
+
+// tSoundChannelFormat::vfunction12(), game/Tiger/tgSound.cpp
+extern "C" void sub_0064D870(void) {
+    ::sfcop::guest::entered(636);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< long() >( &tSoundChannelFormat::vfunction12 ) >::run();
+}
+
+// tSoundChannelCommand::mGetUserData(), game/Tiger/tgSound.cpp
+extern "C" void sub_0064D880(void) {
+    ::sfcop::guest::entered(637);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< long() >( &tSoundChannelCommand::mGetUserData ) >::run();
+}
+
+// tSoundChannel::mUpdateRegular(double), game/Tiger/tgSound.cpp
+extern "C" void sub_0064D890(void) {
+    ::sfcop::guest::entered(638);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( double ) >( &tSoundChannel::mUpdateRegular ) >::run();
+}
+
+// tSoundChannelCommand::mSetPan(long), game/Tiger/tgSound.cpp
+extern "C" void sub_0064DC40(void) {
+    ::sfcop::guest::entered(639);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( long ) >( &tSoundChannelCommand::mSetPan ) >::run();
+}
+
+// tSoundChannelCommand::mSetChannelAttributes(tChannelAttributes*), game/Tiger/tgSound.cpp
+extern "C" void sub_0064DC50(void) {
+    ::sfcop::guest::entered(640);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( tChannelAttributes* ) >( &tSoundChannelCommand::mSetChannelAttributes ) >::run();
+}
+
+// tSoundChannelCommand::mGetPan(), game/Tiger/tgSound.cpp
+extern "C" void sub_0064DC70(void) {
+    ::sfcop::guest::entered(641);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< long() >( &tSoundChannelCommand::mGetPan ) >::run();
+}
+
+// tSoundChannelCommand::mGet3DSoundPosition(), game/Tiger/tgSound.cpp
+extern "C" void sub_0064DC80(void) {
+    ::sfcop::guest::entered(642);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tPoint3*() >( &tSoundChannelCommand::mGet3DSoundPosition ) >::run();
+}
+
+// tSoundChannelCommand::mSet3DSoundProfile(t3DSoundProfile*), game/Tiger/tgSound.cpp
+extern "C" void sub_0064DC90(void) {
+    ::sfcop::guest::entered(643);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( t3DSoundProfile* ) >( &tSoundChannelCommand::mSet3DSoundProfile ) >::run();
+}
+
+// tSoundChannelCommand::mSet3DSoundPosition(tPoint3*), game/Tiger/tgSound.cpp
+extern "C" void sub_0064DCB0(void) {
+    ::sfcop::guest::entered(644);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( tPoint3* ) >( &tSoundChannelCommand::mSet3DSoundPosition ) >::run();
+}
+
+// tSoundChannelCommand::mGet3DSoundConeAngleForNoAttenuation(), game/Tiger/tgSound.cpp
+extern "C" void sub_0064DCD0(void) {
+    ::sfcop::guest::entered(645);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< float() >( &tSoundChannelCommand::mGet3DSoundConeAngleForNoAttenuation ) >::run();
+}
+
+// tSoundChannelCommand::mSetUserData(long), game/Tiger/tgSound.cpp
+extern "C" void sub_0064DCE0(void) {
+    ::sfcop::guest::entered(646);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( long ) >( &tSoundChannelCommand::mSetUserData ) >::run();
+}
+
+// tSoundChannelCommand::mGetTimeToTake(), game/Tiger/tgSound.cpp
+extern "C" void sub_0064DCF0(void) {
+    ::sfcop::guest::entered(647);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< double() >( &tSoundChannelCommand::mGetTimeToTake ) >::run();
+}
+
+// tSoundChannelCommand::mSetTimeToTake(double), game/Tiger/tgSound.cpp
+extern "C" void sub_0064DD00(void) {
+    ::sfcop::guest::entered(648);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( double ) >( &tSoundChannelCommand::mSetTimeToTake ) >::run();
+}
+
+// tSoundChannel::mUpdateAtInterrupt(double), game/Tiger/tgSound.cpp
+extern "C" void sub_0064DD20(void) {
+    ::sfcop::guest::entered(649);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( double ) >( &tSoundChannel::mUpdateAtInterrupt ) >::run();
+}
+
+// tSoundChannel::mAreWeStillActive(), game/Tiger/tgSound.cpp
+extern "C" void sub_0064E0E0(void) {
+    ::sfcop::guest::entered(650);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth() >( &tSoundChannel::mAreWeStillActive ) >::run();
+}
+
+// tSoundChannel::mDoCommand(tSoundChannelCommand*), game/Tiger/tgSound.cpp
+extern "C" void sub_0064E150(void) {
+    ::sfcop::guest::entered(651);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( tSoundChannelCommand* ) >( &tSoundChannel::mDoCommand ) >::run();
+}
+
+// tSoundChannel::mRemoveSoundChannel(), game/Tiger/tgSound.cpp
+extern "C" void sub_0064EB70(void) {
+    ::sfcop::guest::entered(652);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth() >( &tSoundChannel::mRemoveSoundChannel ) >::run();
+}
+
+// tSoundChannel::mAddFinishCommand(iTruth), game/Tiger/tgSound.cpp
+extern "C" void sub_0064EB80(void) {
+    ::sfcop::guest::entered(653);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( iTruth ) >( &tSoundChannel::mAddFinishCommand ) >::run();
+}
+
+// tSoundChannel::mPlaySpecialLoop(long,long,long,long), game/Tiger/tgSound.cpp
+extern "C" void sub_0064ED00(void) {
+    ::sfcop::guest::entered(654);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( long, long, long, long ) >( &tSoundChannel::mPlaySpecialLoop ) >::run();
+}
+
+// tSoundChannel::mEndSpecialLoop(), game/Tiger/tgSound.cpp
+extern "C" void sub_0064F040(void) {
+    ::sfcop::guest::entered(655);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth() >( &tSoundChannel::mEndSpecialLoop ) >::run();
+}
+
+// tgSoundPart::mUpdateAtInterrupt(), game/Tiger/tgSound.cpp
+extern "C" void sub_0064F670(void) {
+    ::sfcop::guest::entered(656);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tgSoundPart::mUpdateAtInterrupt ) >::run();
+}
+
+// tChannelGroupManagerPart::mIsReady(), game/Tiger/tgSound.cpp
+extern "C" void sub_0064FBE0(void) {
+    ::sfcop::guest::entered(657);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth() >( &tChannelGroupManagerPart::mIsReady ) >::run();
+}
+
+// tgSoundPart::mActivate(), game/Tiger/tgSound.cpp
+extern "C" void sub_0064FCC0(void) {
+    ::sfcop::guest::entered(658);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tgSoundPart::mActivate ) >::run();
+}
+
+// tgSoundPart::mDeactivate(), game/Tiger/tgSound.cpp
+extern "C" void sub_0064FD00(void) {
+    ::sfcop::guest::entered(659);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tgSoundPart::mDeactivate ) >::run();
+}
+
+// tgSoundPart::mDone(), game/Tiger/tgSound.cpp
+extern "C" void sub_0064FD10(void) {
+    ::sfcop::guest::entered(660);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tgSoundPart::mDone ) >::run();
+}
+
+// tgSoundPart::mInit(tInitSoundPartInfo*), game/Tiger/tgSound.cpp
+extern "C" void sub_0064FF30(void) {
+    ::sfcop::guest::entered(661);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( tInitSoundPartInfo* ) >( &tgSoundPart::mInit ) >::run();
+}
+
+// tSoundMemoryBlockManager::mGetTrueHandle(unsigned long), game/Tiger/tgSound.cpp
+extern "C" void sub_006501C0(void) {
+    ::sfcop::guest::entered(662);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< long( unsigned long ) >( &tSoundMemoryBlockManager::mGetTrueHandle ) >::run();
+}
+
+// tSoundMemoryBlockManager::mNumberOfBlocksNeeded(long), game/Tiger/tgSound.cpp
+extern "C" void sub_006501D0(void) {
+    ::sfcop::guest::entered(663);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< long( long ) >( &tSoundMemoryBlockManager::mNumberOfBlocksNeeded ) >::run();
+}
+
+// SoundPartCurrentTime(), game/Tiger/tgSound.cpp
+extern "C" void sub_00650230(void) {
+    ::sfcop::guest::entered(664);
+    ::sfcop::guest::Entry< static_cast< double (*)() >( &SoundPartCurrentTime ) >::run();
+}
+
+// tgSoundPart::mClearOutSoundChannel(long), game/Tiger/tgSound.cpp
+extern "C" void sub_006502B0(void) {
+    ::sfcop::guest::entered(665);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( long ) >( &tgSoundPart::mClearOutSoundChannel ) >::run();
+}
+
+// tgSoundPart::mRemoveSoundChannel(long), game/Tiger/tgSound.cpp
+extern "C" void sub_006502F0(void) {
+    ::sfcop::guest::entered(666);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( long ) >( &tgSoundPart::mRemoveSoundChannel ) >::run();
+}
+
+// tgSoundPart::mRemoveAllSoundChannels(), game/Tiger/tgSound.cpp
+extern "C" void sub_006503A0(void) {
+    ::sfcop::guest::entered(667);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char() >( &tgSoundPart::mRemoveAllSoundChannels ) >::run();
+}
+
+// tgSoundPart::mGetSoundChannelCommandPtrFromHandle(long), game/Tiger/tgSound.cpp
+extern "C" void sub_00650440(void) {
+    ::sfcop::guest::entered(668);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tSoundChannelCommand*( long ) >( &tgSoundPart::mGetSoundChannelCommandPtrFromHandle ) >::run();
+}
+
+// tgSoundPart::mFindAvailableSoundChannelCommandPtrAndReturnAHandle(), game/Tiger/tgSound.cpp
+extern "C" void sub_00650470(void) {
+    ::sfcop::guest::entered(669);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< long() >( &tgSoundPart::mFindAvailableSoundChannelCommandPtrAndReturnAHandle ) >::run();
+}
+
+// tgSoundPart::mFindAvailableSoundChannelHandle(), game/Tiger/tgSound.cpp
+extern "C" void sub_00650800(void) {
+    ::sfcop::guest::entered(670);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< long() >( &tgSoundPart::mFindAvailableSoundChannelHandle ) >::run();
+}
+
+// tgSoundPart::mAddChannelAtHandle(tSoundChannel*,long), game/Tiger/tgSound.cpp
+extern "C" void sub_00650A40(void) {
+    ::sfcop::guest::entered(671);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( tSoundChannel*, long ) >( &tgSoundPart::mAddChannelAtHandle ) >::run();
+}
+
+// tgSoundPart::mSetNumberOfSoundChannelCommands(long), game/Tiger/tgSound.cpp
+extern "C" void sub_00650B70(void) {
+    ::sfcop::guest::entered(672);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< long( long ) >( &tgSoundPart::mSetNumberOfSoundChannelCommands ) >::run();
+}
+
+// tgSoundPart::mSetNumberOfSoundChannels(long), game/Tiger/tgSound.cpp
+extern "C" void sub_00651020(void) {
+    ::sfcop::guest::entered(673);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< long( long ) >( &tgSoundPart::mSetNumberOfSoundChannels ) >::run();
+}
+
+// tgSoundPart::mGetSoundChannelPtrFromHandle(long), game/Tiger/tgSound.cpp
+extern "C" void sub_006512E0(void) {
+    ::sfcop::guest::entered(674);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tSoundChannel*( long ) >( &tgSoundPart::mGetSoundChannelPtrFromHandle ) >::run();
+}
+
 // tChannelGroup::mDump(unsigned long,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_006587F0(void) {
-    ::sfcop::guest::entered(587);
+    ::sfcop::guest::entered(675);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( unsigned long, long ) >( &tChannelGroup::mDump ) >::run();
 }
 
 // tChannelGroup::mDump(), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00658890(void) {
-    ::sfcop::guest::entered(588);
+    ::sfcop::guest::entered(676);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tChannelGroup::mDump ) >::run();
 }
 
 // tChannelGroup::mClose(), game/Tiger/taudiochannel.cpp
 extern "C" void sub_006589F0(void) {
-    ::sfcop::guest::entered(589);
+    ::sfcop::guest::entered(677);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tChannelGroup::mClose ) >::run();
 }
 
 // tChannelGroup::mLoad(long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00658E30(void) {
-    ::sfcop::guest::entered(590);
+    ::sfcop::guest::entered(678);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( long ) >( &tChannelGroup::mLoad ) >::run();
 }
 
 // tChannelGroup::mGetChannelNumberFromIndex(long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659470(void) {
-    ::sfcop::guest::entered(591);
+    ::sfcop::guest::entered(679);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( long ) >( &tChannelGroup::mGetChannelNumberFromIndex ) >::run();
 }
 
 // tChannelGroup::mGetIndex(unsigned long,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_006594A0(void) {
-    ::sfcop::guest::entered(592);
+    ::sfcop::guest::entered(680);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( unsigned long, long ) >( &tChannelGroup::mGetIndex ) >::run();
 }
 
 // tChannelGroup::mAddDuplicate(unsigned long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659530(void) {
-    ::sfcop::guest::entered(593);
+    ::sfcop::guest::entered(681);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( unsigned long ) >( &tChannelGroup::mAddDuplicate ) >::run();
 }
 
 // tChannelGroup::mAttachFileToChannel(unsigned long,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659540(void) {
-    ::sfcop::guest::entered(594);
+    ::sfcop::guest::entered(682);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( unsigned long, long ) >( &tChannelGroup::mAttachFileToChannel ) >::run();
 }
 
 // tChannelGroup::mAttachFileToBaseGroup(long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_006597F0(void) {
-    ::sfcop::guest::entered(595);
+    ::sfcop::guest::entered(683);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( long ) >( &tChannelGroup::mAttachFileToBaseGroup ) >::run();
 }
 
 // tChannelGroup::mKillRetainedMode(), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659A20(void) {
-    ::sfcop::guest::entered(596);
+    ::sfcop::guest::entered(684);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char() >( &tChannelGroup::mKillRetainedMode ) >::run();
 }
 
 // tChannelGroup::mClearAttachments(), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659B80(void) {
-    ::sfcop::guest::entered(597);
+    ::sfcop::guest::entered(685);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char() >( &tChannelGroup::mClearAttachments ) >::run();
 }
 
 // tChannelGroup::mGetAvailableChannel(unsigned long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659CA0(void) {
-    ::sfcop::guest::entered(598);
+    ::sfcop::guest::entered(686);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( unsigned long ) >( &tChannelGroup::mGetAvailableChannel ) >::run();
 }
 
 // tChannelGroup::mAttachSoundToChannel(unsigned long,tSoundSelection *,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_0065A0F0(void) {
-    ::sfcop::guest::entered(599);
+    ::sfcop::guest::entered(687);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( unsigned long, tSoundSelection *, long ) >( &tChannelGroup::mAttachSoundToChannel ) >::run();
 }
 
 // tChannelGroup::mPlayChannel(unsigned long,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_0065A370(void) {
-    ::sfcop::guest::entered(600);
+    ::sfcop::guest::entered(688);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( unsigned long, long ) >( &tChannelGroup::mPlayChannel ) >::run();
 }
 
 // tChannelGroup::mPauseChannel(unsigned long,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_0065A7C0(void) {
-    ::sfcop::guest::entered(601);
+    ::sfcop::guest::entered(689);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( unsigned long, long ) >( &tChannelGroup::mPauseChannel ) >::run();
 }
 
 // tCRandomSequence::mSetSeed(int32u), game/Tiger/tcrandsequence.cpp
 extern "C" void sub_0066C1C0(void) {
-    ::sfcop::guest::entered(602);
+    ::sfcop::guest::entered(690);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( int32u ) >( &tCRandomSequence::mSetSeed ) >::run();
 }
 
 // tCRandomSequence::mGenerateNumber(), game/Tiger/tcrandsequence.cpp
 extern "C" void sub_0066C1E0(void) {
-    ::sfcop::guest::entered(603);
+    ::sfcop::guest::entered(691);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32u() >( &tCRandomSequence::mGenerateNumber ) >::run();
 }
 
 // tSay::mHandleOutput(const int,const char *), game/Tiger/tsay.cpp
 extern "C" void sub_0066C6A0(void) {
-    ::sfcop::guest::entered(604);
+    ::sfcop::guest::entered(692);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( const int, const char * ) >( &tSay::mHandleOutput ) >::run();
 }
 
 // tSay::mSay(const char *,...), game/Tiger/tsay.cpp
 extern "C" void sub_0066C890(void) {
-    ::sfcop::guest::entered(605);
+    ::sfcop::guest::entered(693);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( const char *, ... ) >( &tSay::mSay ) >::run();
 }
 
 // tSay::mJustSayIt(const char *,...), game/Tiger/tsay.cpp
 extern "C" void sub_0066C8C0(void) {
-    ::sfcop::guest::entered(606);
+    ::sfcop::guest::entered(694);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( const char *, ... ) >( &tSay::mJustSayIt ) >::run();
 }
 
 // tItemBag::mAddToList(tBaseItemBag *,char *), game/Tiger/tBag.cpp
 extern "C" void sub_0066D7E0(void) {
-    ::sfcop::guest::entered(607);
+    ::sfcop::guest::entered(695);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( tBaseItemBag *, char * ) >( &tItemBag::mAddToList ) >::run();
 }
 
 // tItemBag::mFindItemWithLabel(char *), game/Tiger/tBag.cpp
 extern "C" void sub_0066D880(void) {
-    ::sfcop::guest::entered(608);
+    ::sfcop::guest::entered(696);
     ::sfcop::guest::Entry< ::sfcop::guest::member< tBaseItemBag *( char * ) >( &tItemBag::mFindItemWithLabel ) >::run();
 }
 
 // tSequencePart::mGetNumber(), game/Tiger/tsequence.cpp
 extern "C" void sub_00670180(void) {
-    ::sfcop::guest::entered(609);
+    ::sfcop::guest::entered(697);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32u() >( &tSequencePart::mGetNumber ) >::run();
 }
 
 // tSequencePart::mGetNumber(int32u), game/Tiger/tsequence.cpp
 extern "C" void sub_006701C0(void) {
-    ::sfcop::guest::entered(610);
+    ::sfcop::guest::entered(698);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32u( int32u ) >( &tSequencePart::mGetNumber ) >::run();
 }
 
 // tSFCStream::mGetVersionNumber(), game/unsorted/fn_006D2000.cpp
 extern "C" void sub_006D2800(void) {
-    ::sfcop::guest::entered(611);
+    ::sfcop::guest::entered(699);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int() >( &tSFCStream::mGetVersionNumber ) >::run();
 }
 
 // tAllocatedClass::operator==(const type_info&), game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC4D0(void) {
-    ::sfcop::guest::entered(612);
+    ::sfcop::guest::entered(700);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32( const type_info& ) >( &tAllocatedClass::operator== ) >::run();
 }
 
 // tDynamicAllocator::tAllocatorInfo::operator==(const char*) const, game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC5A0(void) {
-    ::sfcop::guest::entered(613);
+    ::sfcop::guest::entered(701);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32( const char* ) const >( &tDynamicAllocator::tAllocatorInfo::operator== ) >::run();
 }
 
 // tDynamicAllocator::LockDownAllocator(), game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC750(void) {
-    ::sfcop::guest::entered(614);
+    ::sfcop::guest::entered(702);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tDynamicAllocator::LockDownAllocator ) >::run();
 }
 
 // tFileDatabaseMgr::tDatabaseInfo::StreamOut(nDataStore::tOutput&) const, game/Common/Database/FileDatabaseMgr.cpp
 extern "C" void sub_00707EF0(void) {
-    ::sfcop::guest::entered(615);
+    ::sfcop::guest::entered(703);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( nDataStore::tOutput& ) const >( &tFileDatabaseMgr::tDatabaseInfo::StreamOut ) >::run();
 }
 
 // tFileDatabaseMgr::GetCurDBInfo(), game/Common/Database/FileDatabaseMgr.cpp
 extern "C" void sub_00708FC0(void) {
-    ::sfcop::guest::entered(616);
+    ::sfcop::guest::entered(704);
     ::sfcop::guest::Entry< ::sfcop::guest::member< tFileDatabaseMgr::tDatabaseInfo() >( &tFileDatabaseMgr::GetCurDBInfo ) >::run();
 }
 
 // tFileDatabaseMgr::GetDBInfo(int32) const, game/Common/Database/FileDatabaseMgr.cpp
 extern "C" void sub_00709060(void) {
-    ::sfcop::guest::entered(617);
+    ::sfcop::guest::entered(705);
     ::sfcop::guest::Entry< ::sfcop::guest::member< const tFileDatabaseMgr::tDatabaseInfo*( int32 ) const >( &tFileDatabaseMgr::GetDBInfo ) >::run();
 }
 
@@ -3975,28 +4506,28 @@ const sfcop_guest_override sfcop_guest_overrides[] = {
     {0x004317CEu, sub_004317CE, "tNetControl::fn_004317ce(int,int)", "unsorted/tNetControl.cpp"},
     {0x004317EBu, sub_004317EB, "tNetControl::fn_004317eb(int,int)", "unsorted/tNetControl.cpp"},
     {0x00431808u, sub_00431808, "tNetControl::fn_00431808(int)", "unsorted/tNetControl.cpp"},
-    {0x00435391u, sub_00435391, "tDynamicMemoryFreeListViaHandles::vfunction3()", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
-    {0x0043539Eu, sub_0043539E, "tDynamicMemoryFreeListViaHandles::vfunction6()", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
-    {0x004353A7u, sub_004353A7, "tDynamicMemoryFreeListViaHandles::vfunction7()", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
-    {0x004353B0u, sub_004353B0, "tDynamicMemoryFreeListViaHandles::vfunction8(int)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
-    {0x004353C8u, sub_004353C8, "tDynamicMemoryFreeListViaHandles::vfunction10(int)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
-    {0x004353E0u, sub_004353E0, "tDynamicMemoryFreeListViaHandles::vfunction13(tListMemberWithHandle *)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
-    {0x004353F8u, sub_004353F8, "tDynamicMemoryFreeListViaHandles::vfunction13(int)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
-    {0x00435416u, sub_00435416, "tDynamicMemoryFreeListViaHandles::vfunction15(tListMemberWithHandle *)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
-    {0x0043542Eu, sub_0043542E, "tDynamicMemoryFreeListViaHandles::vfunction15(int)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
-    {0x0043544Cu, sub_0043544C, "tDynamicMemoryFreeListViaHandles::vfunction16(int)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
-    {0x00435464u, sub_00435464, "tDynamicMemoryFreeListViaHandles::vfunction19(int)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
-    {0x0043547Cu, sub_0043547C, "tDynamicMemoryFreeListViaHandles::vfunction18(tListMemberWithHandle *)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
-    {0x00435494u, sub_00435494, "tDynamicMemoryFreeListViaHandles::vfunction20(int)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
-    {0x004354ACu, sub_004354AC, "tDynamicMemoryFreeListViaHandles::vfunction23(int)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
-    {0x004354C4u, sub_004354C4, "tDynamicMemoryFreeListViaHandles::vfunction22(tListMemberWithHandle *)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
-    {0x004354DCu, sub_004354DC, "tDynamicMemoryFreeListViaHandles::vfunction25(int)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
-    {0x004354F4u, sub_004354F4, "tDynamicMemoryFreeListViaHandles::vfunction27(int)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
-    {0x0043550Cu, sub_0043550C, "tDynamicMemoryFreeListViaHandles::vfunction29(int,int)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
-    {0x00435530u, sub_00435530, "tDynamicMemoryFreeListViaHandles::vfunction31(int,int)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
-    {0x00435554u, sub_00435554, "tDynamicMemoryFreeListViaHandles::vfunction33(int)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
-    {0x0043556Fu, sub_0043556F, "tDynamicMemoryFreeListViaHandles::vfunction35(int)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
-    {0x0043558Au, sub_0043558A, "tDynamicMemoryFreeListViaHandles::vfunction37(int)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x00435391u, sub_00435391, "tDynamicMemoryFreeListViaHandles::vfunction2()", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x0043539Eu, sub_0043539E, "tDynamicMemoryFreeListViaHandles::vfunction5()", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x004353A7u, sub_004353A7, "tDynamicMemoryFreeListViaHandles::vfunction6()", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x004353B0u, sub_004353B0, "tDynamicMemoryFreeListViaHandles::vfunction7(long)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x004353C8u, sub_004353C8, "tDynamicMemoryFreeListViaHandles::vfunction9(long)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x004353E0u, sub_004353E0, "tDynamicMemoryFreeListViaHandles::vfunction12(tListMemberWithHandle *)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x004353F8u, sub_004353F8, "tDynamicMemoryFreeListViaHandles::vfunction11(long)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x00435416u, sub_00435416, "tDynamicMemoryFreeListViaHandles::vfunction14(tListMemberWithHandle *)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x0043542Eu, sub_0043542E, "tDynamicMemoryFreeListViaHandles::vfunction13(long)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x0043544Cu, sub_0043544C, "tDynamicMemoryFreeListViaHandles::vfunction15(long)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x00435464u, sub_00435464, "tDynamicMemoryFreeListViaHandles::vfunction18(long)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x0043547Cu, sub_0043547C, "tDynamicMemoryFreeListViaHandles::vfunction17(tListMemberWithHandle *)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x00435494u, sub_00435494, "tDynamicMemoryFreeListViaHandles::vfunction19(long)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x004354ACu, sub_004354AC, "tDynamicMemoryFreeListViaHandles::vfunction22(long)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x004354C4u, sub_004354C4, "tDynamicMemoryFreeListViaHandles::vfunction21(tListMemberWithHandle *)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x004354DCu, sub_004354DC, "tDynamicMemoryFreeListViaHandles::vfunction24(long)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x004354F4u, sub_004354F4, "tDynamicMemoryFreeListViaHandles::vfunction26(long)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x0043550Cu, sub_0043550C, "tDynamicMemoryFreeListViaHandles::vfunction28(long,long)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x00435530u, sub_00435530, "tDynamicMemoryFreeListViaHandles::vfunction30(long,long)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x00435554u, sub_00435554, "tDynamicMemoryFreeListViaHandles::vfunction32(long)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x0043556Fu, sub_0043556F, "tDynamicMemoryFreeListViaHandles::vfunction34(long)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
+    {0x0043558Au, sub_0043558A, "tDynamicMemoryFreeListViaHandles::vfunction36(long)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
     {0x004355CEu, sub_004355CE, "t3DListenerProfile::fn_004355ce(const t3DListenerProfile_field_08 *)", "unsorted/t3DListenerProfile.cpp"},
     {0x004355E6u, sub_004355E6, "t3DListenerProfile::fn_004355e6(int,int,int)", "unsorted/t3DListenerProfile.cpp"},
     {0x004355FEu, sub_004355FE, "t3DListenerProfile::fn_004355fe()", "unsorted/t3DListenerProfile.cpp"},
@@ -4381,6 +4912,94 @@ const sfcop_guest_override sfcop_guest_overrides[] = {
     {0x0062DE60u, sub_0062DE60, "tStringTag::mGetString()", "Tiger/tstringtag.cpp"},
     {0x0062DFA0u, sub_0062DFA0, "tStringGroupTag::mGetNumElements()", "Tiger/tstringtag.cpp"},
     {0x0062E0B0u, sub_0062E0B0, "tStringGroupTag::mGetString(long)", "Tiger/tstringtag.cpp"},
+    {0x00646CE0u, sub_00646CE0, "AddSoundErrorDuringInterrupt(const char*,...)", "Tiger/tgSound.cpp"},
+    {0x00646D10u, sub_00646D10, "PrintOutBufferedErrors()", "Tiger/tgSound.cpp"},
+    {0x00646D60u, sub_00646D60, "GetSilenceData(long)", "Tiger/tgSound.cpp"},
+    {0x00646E70u, sub_00646E70, "t3DListenerProfile::mInit()", "Tiger/tgSound.cpp"},
+    {0x00646EB0u, sub_00646EB0, "t3DListenerProfile::operator=(t3DListenerProfile&)", "Tiger/tgSound.cpp"},
+    {0x00646F10u, sub_00646F10, "t3DListenerProfile::mDump()", "Tiger/tgSound.cpp"},
+    {0x00647460u, sub_00647460, "t3DSoundProfile::mInit()", "Tiger/tgSound.cpp"},
+    {0x006474A0u, sub_006474A0, "t3DSoundProfile::operator=(t3DSoundProfile&)", "Tiger/tgSound.cpp"},
+    {0x00647500u, sub_00647500, "t3DSoundProfile::mDump()", "Tiger/tgSound.cpp"},
+    {0x00647AD0u, sub_00647AD0, "tChannelAttributes::mInit()", "Tiger/tgSound.cpp"},
+    {0x00647AF0u, sub_00647AF0, "tChannelAttributes::mDump()", "Tiger/tgSound.cpp"},
+    {0x00647C40u, sub_00647C40, "tSoundChannelFormat::operator=(tSoundChannelFormat&)", "Tiger/tgSound.cpp"},
+    {0x00647C70u, sub_00647C70, "tSoundChannelFormat::mInit()", "Tiger/tgSound.cpp"},
+    {0x00647CA0u, sub_00647CA0, "tSoundChannelFormat::mDump()", "Tiger/tgSound.cpp"},
+    {0x00648D50u, sub_00648D50, "tSoundCommandList::mGetListMemberWithHandleFromHandle(long)", "Tiger/tgSound.cpp"},
+    {0x00648E60u, sub_00648E60, "tSoundChannelList::mGetListMemberWithHandleFromHandle(long)", "Tiger/tgSound.cpp"},
+    {0x00648F70u, sub_00648F70, "tSoundChannel::mAddDelayedCommand(long)", "Tiger/tgSound.cpp"},
+    {0x00649290u, sub_00649290, "tSoundChannel::mFadeToVolume(long,double)", "Tiger/tgSound.cpp"},
+    {0x00649570u, sub_00649570, "tSoundChannel::mGetFirstAttachment()", "Tiger/tgSound.cpp"},
+    {0x006496C0u, sub_006496C0, "tSoundChannel::mFadeToStopAndResetNow(double)", "Tiger/tgSound.cpp"},
+    {0x00649920u, sub_00649920, "tSoundChannel::mFadeToStopAndClearNow(double)", "Tiger/tgSound.cpp"},
+    {0x00649B70u, sub_00649B70, "tSoundChannel::mAddAttachment(long)", "Tiger/tgSound.cpp"},
+    {0x00649F50u, sub_00649F50, "tSoundChannel::mAddImmediateCommand(long)", "Tiger/tgSound.cpp"},
+    {0x0064A080u, sub_0064A080, "tSoundChannel::mAddImmediateNonInterruptCommandCommand(long)", "Tiger/tgSound.cpp"},
+    {0x0064A1D0u, sub_0064A1D0, "tSoundChannel::mInit()", "Tiger/tgSound.cpp"},
+    {0x0064A460u, sub_0064A460, "tSoundChannel::mDone()", "Tiger/tgSound.cpp"},
+    {0x0064A590u, sub_0064A590, "tSoundChannel::mClearCommands()", "Tiger/tgSound.cpp"},
+    {0x0064A890u, sub_0064A890, "tSoundChannel::mAddGetNextAttachmentFunction(void (*function)(unsigned long, long),long,double)", "Tiger/tgSound.cpp"},
+    {0x0064ABB0u, sub_0064ABB0, "tSoundChannel::mGetTotalBytesLeftToPlay()", "Tiger/tgSound.cpp"},
+    {0x0064B030u, sub_0064B030, "tSoundChannel::mGetTotalNumberOfSecondsLeftToPlay()", "Tiger/tgSound.cpp"},
+    {0x0064B050u, sub_0064B050, "tSoundChannel::mClearAllCommands()", "Tiger/tgSound.cpp"},
+    {0x0064B2D0u, sub_0064B2D0, "tSoundChannel::mClearAttachments()", "Tiger/tgSound.cpp"},
+    {0x0064B610u, sub_0064B610, "tSoundChannel::mClearAllAttachments()", "Tiger/tgSound.cpp"},
+    {0x0064B8F0u, sub_0064B8F0, "tSoundChannel::mSetUpdateMode(eSoundChannelUpdateMode)", "Tiger/tgSound.cpp"},
+    {0x0064B910u, sub_0064B910, "tSoundChannel::mGetSelectionToAttach()", "Tiger/tgSound.cpp"},
+    {0x0064BB20u, sub_0064BB20, "tSoundChannel::mLockInData()", "Tiger/tgSound.cpp"},
+    {0x0064C1C0u, sub_0064C1C0, "tSoundChannel::mGetLastSelectionToAttach()", "Tiger/tgSound.cpp"},
+    {0x0064C410u, sub_0064C410, "tSoundChannel::mCleanupSelections()", "Tiger/tgSound.cpp"},
+    {0x0064C970u, sub_0064C970, "tSoundChannel::mClear()", "Tiger/tgSound.cpp"},
+    {0x0064CB00u, sub_0064CB00, "tSoundChannel::mClearAll()", "Tiger/tgSound.cpp"},
+    {0x0064CC90u, sub_0064CC90, "tSoundChannel::mReset(iTruth)", "Tiger/tgSound.cpp"},
+    {0x0064D200u, sub_0064D200, "tSoundChannel::mTestInList()", "Tiger/tgSound.cpp"},
+    {0x0064D350u, sub_0064D350, "tSoundChannel::mSetChannelPriority(long)", "Tiger/tgSound.cpp"},
+    {0x0064D360u, sub_0064D360, "tSoundChannel::mDump()", "Tiger/tgSound.cpp"},
+    {0x0064D820u, sub_0064D820, "tSoundChannelCommand::mIsInvalid()", "Tiger/tgSound.cpp"},
+    {0x0064D830u, sub_0064D830, "tSoundChannelCommand::mMakeInvalid()", "Tiger/tgSound.cpp"},
+    {0x0064D840u, sub_0064D840, "tSoundChannelCommand::mMakeAvailable()", "Tiger/tgSound.cpp"},
+    {0x0064D850u, sub_0064D850, "tSoundChannelCommand::mMakeUnavailable()", "Tiger/tgSound.cpp"},
+    {0x0064D860u, sub_0064D860, "tChannelAttributes::vfunction7(long)", "Tiger/tgSound.cpp"},
+    {0x0064D870u, sub_0064D870, "tSoundChannelFormat::vfunction12()", "Tiger/tgSound.cpp"},
+    {0x0064D880u, sub_0064D880, "tSoundChannelCommand::mGetUserData()", "Tiger/tgSound.cpp"},
+    {0x0064D890u, sub_0064D890, "tSoundChannel::mUpdateRegular(double)", "Tiger/tgSound.cpp"},
+    {0x0064DC40u, sub_0064DC40, "tSoundChannelCommand::mSetPan(long)", "Tiger/tgSound.cpp"},
+    {0x0064DC50u, sub_0064DC50, "tSoundChannelCommand::mSetChannelAttributes(tChannelAttributes*)", "Tiger/tgSound.cpp"},
+    {0x0064DC70u, sub_0064DC70, "tSoundChannelCommand::mGetPan()", "Tiger/tgSound.cpp"},
+    {0x0064DC80u, sub_0064DC80, "tSoundChannelCommand::mGet3DSoundPosition()", "Tiger/tgSound.cpp"},
+    {0x0064DC90u, sub_0064DC90, "tSoundChannelCommand::mSet3DSoundProfile(t3DSoundProfile*)", "Tiger/tgSound.cpp"},
+    {0x0064DCB0u, sub_0064DCB0, "tSoundChannelCommand::mSet3DSoundPosition(tPoint3*)", "Tiger/tgSound.cpp"},
+    {0x0064DCD0u, sub_0064DCD0, "tSoundChannelCommand::mGet3DSoundConeAngleForNoAttenuation()", "Tiger/tgSound.cpp"},
+    {0x0064DCE0u, sub_0064DCE0, "tSoundChannelCommand::mSetUserData(long)", "Tiger/tgSound.cpp"},
+    {0x0064DCF0u, sub_0064DCF0, "tSoundChannelCommand::mGetTimeToTake()", "Tiger/tgSound.cpp"},
+    {0x0064DD00u, sub_0064DD00, "tSoundChannelCommand::mSetTimeToTake(double)", "Tiger/tgSound.cpp"},
+    {0x0064DD20u, sub_0064DD20, "tSoundChannel::mUpdateAtInterrupt(double)", "Tiger/tgSound.cpp"},
+    {0x0064E0E0u, sub_0064E0E0, "tSoundChannel::mAreWeStillActive()", "Tiger/tgSound.cpp"},
+    {0x0064E150u, sub_0064E150, "tSoundChannel::mDoCommand(tSoundChannelCommand*)", "Tiger/tgSound.cpp"},
+    {0x0064EB70u, sub_0064EB70, "tSoundChannel::mRemoveSoundChannel()", "Tiger/tgSound.cpp"},
+    {0x0064EB80u, sub_0064EB80, "tSoundChannel::mAddFinishCommand(iTruth)", "Tiger/tgSound.cpp"},
+    {0x0064ED00u, sub_0064ED00, "tSoundChannel::mPlaySpecialLoop(long,long,long,long)", "Tiger/tgSound.cpp"},
+    {0x0064F040u, sub_0064F040, "tSoundChannel::mEndSpecialLoop()", "Tiger/tgSound.cpp"},
+    {0x0064F670u, sub_0064F670, "tgSoundPart::mUpdateAtInterrupt()", "Tiger/tgSound.cpp"},
+    {0x0064FBE0u, sub_0064FBE0, "tChannelGroupManagerPart::mIsReady()", "Tiger/tgSound.cpp"},
+    {0x0064FCC0u, sub_0064FCC0, "tgSoundPart::mActivate()", "Tiger/tgSound.cpp"},
+    {0x0064FD00u, sub_0064FD00, "tgSoundPart::mDeactivate()", "Tiger/tgSound.cpp"},
+    {0x0064FD10u, sub_0064FD10, "tgSoundPart::mDone()", "Tiger/tgSound.cpp"},
+    {0x0064FF30u, sub_0064FF30, "tgSoundPart::mInit(tInitSoundPartInfo*)", "Tiger/tgSound.cpp"},
+    {0x006501C0u, sub_006501C0, "tSoundMemoryBlockManager::mGetTrueHandle(unsigned long)", "Tiger/tgSound.cpp"},
+    {0x006501D0u, sub_006501D0, "tSoundMemoryBlockManager::mNumberOfBlocksNeeded(long)", "Tiger/tgSound.cpp"},
+    {0x00650230u, sub_00650230, "SoundPartCurrentTime()", "Tiger/tgSound.cpp"},
+    {0x006502B0u, sub_006502B0, "tgSoundPart::mClearOutSoundChannel(long)", "Tiger/tgSound.cpp"},
+    {0x006502F0u, sub_006502F0, "tgSoundPart::mRemoveSoundChannel(long)", "Tiger/tgSound.cpp"},
+    {0x006503A0u, sub_006503A0, "tgSoundPart::mRemoveAllSoundChannels()", "Tiger/tgSound.cpp"},
+    {0x00650440u, sub_00650440, "tgSoundPart::mGetSoundChannelCommandPtrFromHandle(long)", "Tiger/tgSound.cpp"},
+    {0x00650470u, sub_00650470, "tgSoundPart::mFindAvailableSoundChannelCommandPtrAndReturnAHandle()", "Tiger/tgSound.cpp"},
+    {0x00650800u, sub_00650800, "tgSoundPart::mFindAvailableSoundChannelHandle()", "Tiger/tgSound.cpp"},
+    {0x00650A40u, sub_00650A40, "tgSoundPart::mAddChannelAtHandle(tSoundChannel*,long)", "Tiger/tgSound.cpp"},
+    {0x00650B70u, sub_00650B70, "tgSoundPart::mSetNumberOfSoundChannelCommands(long)", "Tiger/tgSound.cpp"},
+    {0x00651020u, sub_00651020, "tgSoundPart::mSetNumberOfSoundChannels(long)", "Tiger/tgSound.cpp"},
+    {0x006512E0u, sub_006512E0, "tgSoundPart::mGetSoundChannelPtrFromHandle(long)", "Tiger/tgSound.cpp"},
     {0x006587F0u, sub_006587F0, "tChannelGroup::mDump(unsigned long,long)", "Tiger/taudiochannel.cpp"},
     {0x00658890u, sub_00658890, "tChannelGroup::mDump()", "Tiger/taudiochannel.cpp"},
     {0x006589F0u, sub_006589F0, "tChannelGroup::mClose()", "Tiger/taudiochannel.cpp"},
@@ -4413,7 +5032,7 @@ const sfcop_guest_override sfcop_guest_overrides[] = {
     {0x00708FC0u, sub_00708FC0, "tFileDatabaseMgr::GetCurDBInfo()", "Common/Database/FileDatabaseMgr.cpp"},
     {0x00709060u, sub_00709060, "tFileDatabaseMgr::GetDBInfo(int32) const", "Common/Database/FileDatabaseMgr.cpp"},
 };
-const unsigned sfcop_guest_override_count = 618u;
+const unsigned sfcop_guest_override_count = 706u;
 
 }  // extern "C"
 
