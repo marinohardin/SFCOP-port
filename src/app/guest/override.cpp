@@ -9,6 +9,9 @@
 #include "Common/DataStore/DataStoreOutput.h"
 #include "Common/Database/FileDatabaseMgr.cpp"
 #include "Common/DynamicAllocator.h"
+#include "Common/OSVersion.h"
+#include "Common/Thread/Optex.h"
+#include "Common/Thread/ThreadPool.h"
 #include "Source/entity/entity_physical.cpp"
 #include "Source/entity/entity_physical.h"
 #include "Tiger/Twdebug.cpp"
@@ -39,7 +42,6 @@
 #include "unsorted/tApplication.h"
 #include "unsorted/tBattles.cpp"
 #include "unsorted/tCampaignState.cpp"
-#include "unsorted/tClientCharacter.cpp"
 #include "unsorted/tCloakSystem.cpp"
 #include "unsorted/tDynamicMemoryFreeListViaHandles.h"
 #include "unsorted/tEntity.h"
@@ -4269,39 +4271,117 @@ extern "C" void sub_006D2800(void) {
     ::sfcop::guest::Entry< ::sfcop::guest::member< int() >( &tSFCStream::mGetVersionNumber ) >::run();
 }
 
+// tThreadPool::Instance(), game/Common/Thread/ThreadPool.cpp
+extern "C" void sub_006F39B0(void) {
+    ::sfcop::guest::entered(700);
+    ::sfcop::guest::Entry< static_cast< tThreadPool* (*)() >( &tThreadPool::Instance ) >::run();
+}
+
+// tThreadPool::Startup(), game/Common/Thread/ThreadPool.cpp
+extern "C" void sub_006F3D40(void) {
+    ::sfcop::guest::entered(701);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tThreadPool::Startup ) >::run();
+}
+
+// tThreadPool::SetMaxThreads(int32u), game/Common/Thread/ThreadPool.cpp
+extern "C" void sub_006F3F30(void) {
+    ::sfcop::guest::entered(702);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int32u ) >( &tThreadPool::SetMaxThreads ) >::run();
+}
+
+// tThreadPool::GetMaxThreads() const, game/Common/Thread/ThreadPool.cpp
+extern "C" void sub_006F40A0(void) {
+    ::sfcop::guest::entered(703);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< int32u() const >( &tThreadPool::GetMaxThreads ) >::run();
+}
+
+// tThreadPool::SetMemoryChecking(bool), game/Common/Thread/ThreadPool.cpp
+extern "C" void sub_006F4550(void) {
+    ::sfcop::guest::entered(704);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( bool ) >( &tThreadPool::SetMemoryChecking ) >::run();
+}
+
+// tThreadPool::SetDelayMultiple(float), game/Common/Thread/ThreadPool.cpp
+extern "C" void sub_006F4560(void) {
+    ::sfcop::guest::entered(705);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( float ) >( &tThreadPool::SetDelayMultiple ) >::run();
+}
+
+// tThreadPool::SetTimeBlockSize(int32u), game/Common/Thread/ThreadPool.cpp
+extern "C" void sub_006F46B0(void) {
+    ::sfcop::guest::entered(706);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int32u ) >( &tThreadPool::SetTimeBlockSize ) >::run();
+}
+
+// tThreadPool::SetPacketQueLimit(int32u), game/Common/Thread/ThreadPool.cpp
+extern "C" void sub_006F4800(void) {
+    ::sfcop::guest::entered(707);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int32u ) >( &tThreadPool::SetPacketQueLimit ) >::run();
+}
+
+// tThreadPool::GetDelayMultiple() const, game/Common/Thread/ThreadPool.cpp
+extern "C" void sub_006F4950(void) {
+    ::sfcop::guest::entered(708);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< float() const >( &tThreadPool::GetDelayMultiple ) >::run();
+}
+
+// tThreadPool::GetTimeBlockSize() const, game/Common/Thread/ThreadPool.cpp
+extern "C" void sub_006F4AA0(void) {
+    ::sfcop::guest::entered(709);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< int32u() const >( &tThreadPool::GetTimeBlockSize ) >::run();
+}
+
+// tOSVersion::Init(), game/Common/OSVersion.cpp
+extern "C" void sub_006F5570(void) {
+    ::sfcop::guest::entered(710);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< bool() >( &tOSVersion::Init ) >::run();
+}
+
+// tOSVersion::IsWindows95(), game/Common/OSVersion.cpp
+extern "C" void sub_006F5580(void) {
+    ::sfcop::guest::entered(711);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< bool() >( &tOSVersion::IsWindows95 ) >::run();
+}
+
+// tOSVersion::IsWindows98(), game/Common/OSVersion.cpp
+extern "C" void sub_006F55A0(void) {
+    ::sfcop::guest::entered(712);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< bool() >( &tOSVersion::IsWindows98 ) >::run();
+}
+
 // tAllocatedClass::operator==(const type_info&), game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC4D0(void) {
-    ::sfcop::guest::entered(700);
+    ::sfcop::guest::entered(713);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32( const type_info& ) >( &tAllocatedClass::operator== ) >::run();
 }
 
 // tDynamicAllocator::tAllocatorInfo::operator==(const char*) const, game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC5A0(void) {
-    ::sfcop::guest::entered(701);
+    ::sfcop::guest::entered(714);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32( const char* ) const >( &tDynamicAllocator::tAllocatorInfo::operator== ) >::run();
 }
 
 // tDynamicAllocator::LockDownAllocator(), game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC750(void) {
-    ::sfcop::guest::entered(702);
+    ::sfcop::guest::entered(715);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tDynamicAllocator::LockDownAllocator ) >::run();
 }
 
 // tFileDatabaseMgr::tDatabaseInfo::StreamOut(nDataStore::tOutput&) const, game/Common/Database/FileDatabaseMgr.cpp
 extern "C" void sub_00707EF0(void) {
-    ::sfcop::guest::entered(703);
+    ::sfcop::guest::entered(716);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( nDataStore::tOutput& ) const >( &tFileDatabaseMgr::tDatabaseInfo::StreamOut ) >::run();
 }
 
 // tFileDatabaseMgr::GetCurDBInfo(), game/Common/Database/FileDatabaseMgr.cpp
 extern "C" void sub_00708FC0(void) {
-    ::sfcop::guest::entered(704);
+    ::sfcop::guest::entered(717);
     ::sfcop::guest::Entry< ::sfcop::guest::member< tFileDatabaseMgr::tDatabaseInfo() >( &tFileDatabaseMgr::GetCurDBInfo ) >::run();
 }
 
 // tFileDatabaseMgr::GetDBInfo(int32) const, game/Common/Database/FileDatabaseMgr.cpp
 extern "C" void sub_00709060(void) {
-    ::sfcop::guest::entered(705);
+    ::sfcop::guest::entered(718);
     ::sfcop::guest::Entry< ::sfcop::guest::member< const tFileDatabaseMgr::tDatabaseInfo*( int32 ) const >( &tFileDatabaseMgr::GetDBInfo ) >::run();
 }
 
@@ -5025,6 +5105,19 @@ const sfcop_guest_override sfcop_guest_overrides[] = {
     {0x00670180u, sub_00670180, "tSequencePart::mGetNumber()", "Tiger/tsequence.cpp"},
     {0x006701C0u, sub_006701C0, "tSequencePart::mGetNumber(int32u)", "Tiger/tsequence.cpp"},
     {0x006D2800u, sub_006D2800, "tSFCStream::mGetVersionNumber()", "unsorted/fn_006D2000.cpp"},
+    {0x006F39B0u, sub_006F39B0, "tThreadPool::Instance()", "Common/Thread/ThreadPool.cpp"},
+    {0x006F3D40u, sub_006F3D40, "tThreadPool::Startup()", "Common/Thread/ThreadPool.cpp"},
+    {0x006F3F30u, sub_006F3F30, "tThreadPool::SetMaxThreads(int32u)", "Common/Thread/ThreadPool.cpp"},
+    {0x006F40A0u, sub_006F40A0, "tThreadPool::GetMaxThreads() const", "Common/Thread/ThreadPool.cpp"},
+    {0x006F4550u, sub_006F4550, "tThreadPool::SetMemoryChecking(bool)", "Common/Thread/ThreadPool.cpp"},
+    {0x006F4560u, sub_006F4560, "tThreadPool::SetDelayMultiple(float)", "Common/Thread/ThreadPool.cpp"},
+    {0x006F46B0u, sub_006F46B0, "tThreadPool::SetTimeBlockSize(int32u)", "Common/Thread/ThreadPool.cpp"},
+    {0x006F4800u, sub_006F4800, "tThreadPool::SetPacketQueLimit(int32u)", "Common/Thread/ThreadPool.cpp"},
+    {0x006F4950u, sub_006F4950, "tThreadPool::GetDelayMultiple() const", "Common/Thread/ThreadPool.cpp"},
+    {0x006F4AA0u, sub_006F4AA0, "tThreadPool::GetTimeBlockSize() const", "Common/Thread/ThreadPool.cpp"},
+    {0x006F5570u, sub_006F5570, "tOSVersion::Init()", "Common/OSVersion.cpp"},
+    {0x006F5580u, sub_006F5580, "tOSVersion::IsWindows95()", "Common/OSVersion.cpp"},
+    {0x006F55A0u, sub_006F55A0, "tOSVersion::IsWindows98()", "Common/OSVersion.cpp"},
     {0x006FC4D0u, sub_006FC4D0, "tAllocatedClass::operator==(const type_info&)", "Common/DynamicAllocator.cpp"},
     {0x006FC5A0u, sub_006FC5A0, "tDynamicAllocator::tAllocatorInfo::operator==(const char*) const", "Common/DynamicAllocator.cpp"},
     {0x006FC750u, sub_006FC750, "tDynamicAllocator::LockDownAllocator()", "Common/DynamicAllocator.cpp"},
@@ -5032,7 +5125,7 @@ const sfcop_guest_override sfcop_guest_overrides[] = {
     {0x00708FC0u, sub_00708FC0, "tFileDatabaseMgr::GetCurDBInfo()", "Common/Database/FileDatabaseMgr.cpp"},
     {0x00709060u, sub_00709060, "tFileDatabaseMgr::GetDBInfo(int32) const", "Common/Database/FileDatabaseMgr.cpp"},
 };
-const unsigned sfcop_guest_override_count = 706u;
+const unsigned sfcop_guest_override_count = 719u;
 
 }  // extern "C"
 
