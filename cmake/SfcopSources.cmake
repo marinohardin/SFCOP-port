@@ -62,13 +62,14 @@ if(_sfcop_src)
     sfcop_strict_warnings(sfcop_src)
 endif()
 # The backends' libraries (third_party/CMakeLists.txt): SDL3 for Window, Gpu and Input, miniaudio
-# for Audio. PUBLIC so that the client and the tests see the same include paths.
+# for Audio, Dear ImGui for the launcher's window. PUBLIC so that the client and the tests see the same include paths.
 if(_sfcop_src)
-    target_link_libraries(sfcop_src PUBLIC SDL3::SDL3-static sfcop_miniaudio)
+    target_link_libraries(sfcop_src PUBLIC SDL3::SDL3-static sfcop_miniaudio sfcop_imgui)
 endif()
 
 add_executable(sfcop_tests "${CMAKE_SOURCE_DIR}/cmake/TestMain.cpp" ${_sfcop_tests} ${_sfcop_third_party_tests})
 target_include_directories(sfcop_tests PRIVATE "${CMAKE_SOURCE_DIR}/src")
 sfcop_strict_warnings(sfcop_tests)
-target_link_libraries(sfcop_tests PRIVATE sfcop_src sfcop_doctest SDL3::SDL3-static sfcop_miniaudio)
+target_link_libraries(sfcop_tests PRIVATE sfcop_src sfcop_doctest SDL3::SDL3-static sfcop_miniaudio
+    sfcop_imgui)
 add_test(NAME sfcop_tests COMMAND sfcop_tests --no-version)

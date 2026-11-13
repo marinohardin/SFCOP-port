@@ -2,6 +2,7 @@
 
 #include <SDL3/SDL.h>
 #include <doctest/doctest.h>
+#include <imgui.h>
 #include <miniaudio.h>
 
 #include <string>
@@ -16,4 +17,9 @@ TEST_CASE("the linked miniaudio is the pinned release 0.11.25") {
 
 TEST_CASE("the doctest headers are the pinned release 2.5.3") {
     CHECK(std::string(DOCTEST_VERSION_STR) == "2.5.3");
+}
+
+TEST_CASE("the linked Dear ImGui is the pinned release 1.93.0") {
+    CHECK(std::string(ImGui::GetVersion()) == "1.93.0");
+    CHECK(IMGUI_VERSION_NUM == 19300);
 }

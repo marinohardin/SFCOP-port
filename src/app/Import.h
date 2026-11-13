@@ -191,6 +191,11 @@ ImportReport verifyImportedGame(const std::string &gameDir, const InstallManifes
 struct ImportRecord {
     std::vector<std::string> changed;
     std::vector<std::string> unchecked;
+    // The install the copy was made from, and how many files and bytes were copied: what the
+    // launcher shows beside the game (empty and 0 when the record does not say).
+    std::string source;
+    std::size_t files = 0;
+    std::uint64_t bytes = 0;
 };
 
 ImportRecord parseImportRecord(const std::string &text);

@@ -776,6 +776,18 @@ ImportRecord parseImportRecord(const std::string &text) {
             record.changed.push_back(line.substr(tab + 1));
         } else if (key == "unchecked") {
             record.unchecked.push_back(line.substr(tab + 1));
+        } else if (key == "source") {
+            record.source = line.substr(tab + 1);
+        } else if (key == "files" || key == "bytes") {
+            const std::string value = line.substr(tab + 1);
+            if (value.find_first_not_of("0123456789") == std::string::npos && value.size() <= 19) {
+                const std::uint64_t number = std::stoull(value);
+                if (key == "files") {
+                    record.files = static_cast<std::size_t>(number);
+                } else {
+                    record.bytes = number;
+                }
+            }
         }
     }
     return record;
