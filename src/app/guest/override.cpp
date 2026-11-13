@@ -1008,10 +1008,10 @@ extern "C" void sub_00424A8F(void) {
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( tSFCStream &, unsigned long ) >( &tEntityMgr::mArchive ) >::run();
 }
 
-// tOptex::fn_00429717(), game/unsorted/tClientCharacter.cpp
+// tOptex::Enter(), game/unsorted/tClientCharacter.cpp
 extern "C" void sub_00429717(void) {
     ::sfcop::guest::entered(158);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tOptex::fn_00429717 ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tOptex::Enter ) >::run();
 }
 
 // tOptex::TryEnter(), game/unsorted/tClientCharacter.cpp
@@ -1020,10 +1020,10 @@ extern "C" void sub_00429785(void) {
     ::sfcop::guest::Entry< ::sfcop::guest::member< bool() >( &tOptex::TryEnter ) >::run();
 }
 
-// tOptex::fn_004297fa(), game/unsorted/tClientCharacter.cpp
+// tOptex::Leave(), game/unsorted/tClientCharacter.cpp
 extern "C" void sub_004297FA(void) {
     ::sfcop::guest::entered(160);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tOptex::fn_004297fa ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tOptex::Leave ) >::run();
 }
 
 // tBuffer::Write(const byte*,int32u), game/unsorted/tClientCharacter.cpp
@@ -3670,9 +3670,9 @@ const sfcop_guest_override sfcop_guest_overrides[] = {
     {0x00424A24u, sub_00424A24, "tEntityMgr::fn_00424a24(tEntity *)", "unsorted/tEntityMgr.cpp"},
     {0x00424A37u, sub_00424A37, "tEntityMgr::fn_00424a37(tID)", "unsorted/tEntityMgr.cpp"},
     {0x00424A8Fu, sub_00424A8F, "tEntityMgr::mArchive(tSFCStream &,unsigned long)", "unsorted/tEntityMgr.cpp"},
-    {0x00429717u, sub_00429717, "tOptex::fn_00429717()", "unsorted/tClientCharacter.cpp"},
+    {0x00429717u, sub_00429717, "tOptex::Enter()", "unsorted/tClientCharacter.cpp"},
     {0x00429785u, sub_00429785, "tOptex::TryEnter()", "unsorted/tClientCharacter.cpp"},
-    {0x004297FAu, sub_004297FA, "tOptex::fn_004297fa()", "unsorted/tClientCharacter.cpp"},
+    {0x004297FAu, sub_004297FA, "tOptex::Leave()", "unsorted/tClientCharacter.cpp"},
     {0x0042A0FCu, sub_0042A0FC, "tBuffer::Write(const byte*,int32u)", "unsorted/tClientCharacter.cpp"},
     {0x0042A116u, sub_0042A116, "tOutput::operator<<(const std::string&)", "unsorted/tClientCharacter.cpp"},
     {0x00431159u, sub_00431159, "tNetControl::fn_00431159(unsigned char)", "unsorted/tNetControl.cpp"},
