@@ -137,6 +137,17 @@ pointer it did not check) is a host defect: it is reported with the pc and the g
 ends the run. The read or write flag comes from the fault context on Apple silicon, macOS x86-64
 and Linux x86-64 (`REG_ERR`); elsewhere it is unknown and recorded as a read. The span's end is
 the last function's start plus 32 KB, and a host function inside the span would count as lifted.
+The pads save and restore no signal mask: a POSIX host takes `_setjmp` and `_longjmp`
+(`cmake/lifter/patches/pcrecomp-eh-setjmp.patch`), as `setjmp` saves the mask with a system call on
+every entry to a function with a pad; a Windows host keeps `setjmp` and `longjmp`. The fault
+handler adds nothing to the mask (`SA_NODEFER`). On macOS a `_longjmp` out of a signal handler
+would leave the thread marked as on its alternate stack, so a jump to a pad older than the fault
+first returns into the handler, which then returns from the signal into a short function that
+makes the jump. That function runs on the stack the handler ran on (the alternate stack), below the
+handler's finished frames, never below the faulting stack pointer, where a thread whose stack is
+nearly used up has no room. A pad pushed while the handler runs (by a function a catch block calls)
+is reached directly, and the handler's record stays in place for the next jump to an older pad;
+Linux needs no such step.
 A fault in lifted code with the chain damaged ends the thread as unhandled; a zero divisor becomes `EXCEPTION_INT_DIVIDE_BY_ZERO`
 (`cmake/lifter/patches/pcrecomp-div-fault.patch`). A handler that asks to continue after a fault
 cannot retry the access: the run stops there. An exception no frame takes is reported on stderr
@@ -146,14 +157,28 @@ with the chain, then the program's top-level filter runs, as on Windows.
 
 The guest tests run `tests/ehtest.cpp`, built by VC6 SP4 with `/GX` and the static C runtime and
 lifted by the same driver as the game, on this host (`tests/GuestTestMain.cpp`: the real `Threads`
-and `Clock`, stubs for the rest). Twenty cases each print `PASS` or `FAIL`: C++ throws by value,
+and `Clock`, stubs for the rest). Twenty-two cases each print `PASS` or `FAIL`: C++ throws by value,
 by reference, nested, rethrown, thrown from a catch, unwinding two frames, 100 in a loop, every
 exception object destroyed; `__try`/`__except` around `RaiseException`; static TLS and a throw
 caught on a second thread; thread ids that are never 0 and differ per thread; a critical section
 left free by a thread that ended inside it, by returning or through `ExitThread`; access violations caught by `catch(...)` and by `__except`, with a read
-and a write told apart; a throw out of a system callback with the lock depth unchanged; a divide by
+and a write told apart; 20 access violations in a row on one thread, each rethrown from its
+`catch(...)` to an outer catch; faults inside a fault's catch block, caught in a function the block
+calls and by the outer `try`, then one more fault after them; a throw out of a system callback with the lock depth unchanged; a divide by
 zero caught by `__except`; 300 `TlsAlloc`/`TlsFree` pairs, which fail when a module's `TlsFree` is not answered by kernel32rt. A second run throws an `int` nothing catches: it is reported, and the C
-runtime's own filter ends it with `abnormal program termination`.
+runtime's own filter ends it with `abnormal program termination`. On a POSIX host the test also
+counts the 28 access violations' report lines, each of which says whether its handler ran on the
+main thread's alternate signal stack, and fails unless all 28 did; on macOS it also needs one
+return into an older frame per fault, each on the alternate stack. The counts are at the top of
+`tests/run_ehtest.sh`; a new fault case changes them.
+
+A new case that expects a `catch` or `__except` to take a fault needs a call in its `try` that the
+compiler cannot see through. VC6's `/GX` drops a `try` block whose calls it can see never throw: a
+store through a pointer in a small `static` function called directly is such a call, and the case
+then has no handler at all (`case_fault_twice` calls through a function pointer for this reason).
+Taking the address of a function the other cases call directly can change how those cases are
+compiled too, so give a new case its own function. `llvm-objdump -d -r` on `ehtest.obj` shows
+whether a case function still links a record into `fs:[0]` (`__except_list`).
 
     cmake --build <build> --target sfcop_ehtest_lift   # VC6 compile and lift; sets SFCOP_ROOT itself
     cmake <build>                     # the sfcop_guest_tests target appears once the lift exists

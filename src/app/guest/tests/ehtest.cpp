@@ -223,6 +223,81 @@ static int case_fault_kind(void) {
     return read_kind == 0 && write_kind == 1 && g_av_addr == 0;
 }
 
+// Access violations one after another on one thread, each caught by catch(...)
+// and rethrown from that catch block as an int, which the outer catch takes:
+// every catch runs while the fault is still being handled, and every
+// continuation is in a frame older than the fault. The store is called through
+// a pointer: a direct call, which the compiler can see never throws, would let
+// /GX drop both try blocks. (poke itself is left alone: taking its address
+// changes how the cases above are compiled.)
+static void poke_through_pointer(volatile int *p) { *p = 1; }
+static void (*volatile g_poke)(volatile int *) = poke_through_pointer;
+
+static int case_fault_twice(void) {
+    int sum = 0;
+    for (int i = 1; i <= 20; i++) {
+        try {
+            try {
+                g_poke(g_null);
+                sum = -1000;
+            } catch (...) {
+                throw i;
+            }
+        } catch (int v) {
+            sum += v;
+        }
+    }
+    return sum;
+}
+
+// Faults inside a fault's catch block. The catch block calls a function with
+// try blocks of its own, pushed while the first fault is still being handled:
+// a throw caught there continues in that newer frame, and a second fault caught
+// there continues in a frame older than that fault and newer than the first.
+// Then a third fault in the catch block is caught by the outer try, older than
+// all of them, and a fourth, after everything, by a try of its own. Each
+// continuation must find the fault it lies beyond still live, and the last
+// fault must start from a clean state.
+static int nested_catches(void) {
+    int r = 0;
+    try {
+        throw 5;
+    } catch (int v) {
+        r = v;
+    }
+    try {
+        g_poke(g_null);
+        r = -1000;
+    } catch (...) {
+        r += 10;
+    }
+    return r;
+}
+static int (*volatile g_nested_catches)(void) = nested_catches;
+
+static int case_fault_nested(void) {
+    int r = 0;
+    try {
+        try {
+            g_poke(g_null);
+            r = -1000;
+        } catch (...) {
+            r += g_nested_catches();
+            g_poke(g_null);
+            r = -2000;
+        }
+    } catch (...) {
+        r += 100;
+    }
+    try {
+        g_poke(g_null);
+        r = -3000;
+    } catch (...) {
+        r += 1000;
+    }
+    return r;
+}
+
 // Static TLS: each thread has its own copy, initialised from the image's template.
 __declspec(thread) static int t_value = 5;
 
@@ -382,6 +457,10 @@ int main(int argc, char **argv) {
           && strcmp(g_log, "F") == 0);
     check("access violation caught by __except", case_fault_except() == 32);
     check("access violation records a read and a write", case_fault_kind());
+    check("20 access violations in a row on one thread, each rethrown from its catch",
+          case_fault_twice() == 210);
+    check("faults inside a fault's catch block, caught by newer and older frames",
+          case_fault_nested() == 1115);
     check("throw across a system callback, lock depth unchanged", case_throw_across_callback());
     check("divide by zero caught by __except", case_divide());
     check("TlsFree gives the index back, 300 alloc/free pairs", case_tls_free());
