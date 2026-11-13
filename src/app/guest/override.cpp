@@ -11,16 +11,22 @@
 #include "Common/DynamicAllocator.h"
 #include "Source/entity/entity_physical.cpp"
 #include "Source/entity/entity_physical.h"
+#include "Tiger/Twdebug.cpp"
 #include "Tiger/tBag.h"
+#include "Tiger/tFormatStr.cpp"
+#include "Tiger/tFormatStr.h"
+#include "Tiger/tStrManagerPart.h"
 #include "Tiger/tatomic.cpp"
 #include "Tiger/taudiochannel.cpp"
 #include "Tiger/tcglue.h"
 #include "Tiger/tcrandsequence.h"
 #include "Tiger/tgfsys.cpp"
 #include "Tiger/tgfsys.h"
+#include "Tiger/tinifile.cpp"
 #include "Tiger/tpart.h"
 #include "Tiger/tsay.h"
 #include "Tiger/tsequence.h"
+#include "Tiger/tstringtag.h"
 #include "unsorted/sfcstreams.h"
 #include "unsorted/t3DListenerProfile.h"
 #include "unsorted/tAICaptain.cpp"
@@ -357,7 +363,7 @@ extern "C" void sub_0040CF58(void) {
 // tINIMgr::fn_0040cf8b(int,int,int), game/unsorted/tINIMgr.cpp
 extern "C" void sub_0040CF8B(void) {
     ::sfcop::guest::entered(49);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< bool( int, int, int ) >( &tINIMgr::fn_0040cf8b ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( int, int, int ) >( &tINIMgr::fn_0040cf8b ) >::run();
 }
 
 // tINIMgr::fn_0040cfbe(int,int,int), game/unsorted/tINIMgr.cpp
@@ -369,7 +375,7 @@ extern "C" void sub_0040CFBE(void) {
 // tINIMgr::fn_0040cff2(int,int,int), game/unsorted/tINIMgr.cpp
 extern "C" void sub_0040CFF2(void) {
     ::sfcop::guest::entered(51);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< bool( int, int, int ) >( &tINIMgr::fn_0040cff2 ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( int, int, int ) >( &tINIMgr::fn_0040cff2 ) >::run();
 }
 
 // tINIMgr::fn_0040d025(int,int,int,int,int), game/unsorted/tINIMgr.cpp
@@ -381,7 +387,7 @@ extern "C" void sub_0040D025(void) {
 // tINIMgr::fn_0040d05e(int,int,int), game/unsorted/tINIMgr.cpp
 extern "C" void sub_0040D05E(void) {
     ::sfcop::guest::entered(53);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< bool( int, int, int ) >( &tINIMgr::fn_0040d05e ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( int, int, int ) >( &tINIMgr::fn_0040d05e ) >::run();
 }
 
 // tSphere::vfunction4(fn_0040f87f_Target *), game/unsorted/tSphere.cpp
@@ -3288,207 +3294,483 @@ extern "C" void sub_00628F20(void) {
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tAtomicLock::mRelease ) >::run();
 }
 
+// twDebugPart::mGetConfiguration(), game/Tiger/Twdebug.cpp
+extern "C" void sub_00629180(void) {
+    ::sfcop::guest::entered(538);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &twDebugPart::mGetConfiguration ) >::run();
+}
+
+// ClampBaudRate(unsigned long), game/Tiger/Twdebug.cpp
+extern "C" void sub_00629660(void) {
+    ::sfcop::guest::entered(539);
+    ::sfcop::guest::Entry< static_cast< unsigned long (*)( unsigned long ) >( &ClampBaudRate ) >::run();
+}
+
+// twDebugPart::mCreateLogFileTarget(const char *,iTruth,iTruth), game/Tiger/Twdebug.cpp
+extern "C" void sub_006298E0(void) {
+    ::sfcop::guest::entered(540);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< int32u( const char *, iTruth, iTruth ) >( &twDebugPart::mCreateLogFileTarget ) >::run();
+}
+
+// twDebugPart::mCloseLogFileTarget(const int32u), game/Tiger/Twdebug.cpp
+extern "C" void sub_00629A10(void) {
+    ::sfcop::guest::entered(541);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( const int32u ) >( &twDebugPart::mCloseLogFileTarget ) >::run();
+}
+
+// twDebugPart::mCloseLogFileTarget(const char *), game/Tiger/Twdebug.cpp
+extern "C" void sub_00629A60(void) {
+    ::sfcop::guest::entered(542);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( const char * ) >( &twDebugPart::mCloseLogFileTarget ) >::run();
+}
+
+// tWinDbg::mDrawItem(HWND,DRAWITEMSTRUCT *), game/Tiger/Twdebug.cpp
+extern "C" void sub_00629B30(void) {
+    ::sfcop::guest::entered(543);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( HWND, DRAWITEMSTRUCT * ) >( &tWinDbg::mDrawItem ) >::run();
+}
+
+// tWinDbg::mInit(), game/Tiger/Twdebug.cpp
+extern "C" void sub_0062A050(void) {
+    ::sfcop::guest::entered(544);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< int() >( &tWinDbg::mInit ) >::run();
+}
+
+// tWinDbg::mAppendToLastLine(const char *,int), game/Tiger/Twdebug.cpp
+extern "C" void sub_0062A160(void) {
+    ::sfcop::guest::entered(545);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( const char *, int ) >( &tWinDbg::mAppendToLastLine ) >::run();
+}
+
+// tWinDbg::mPuts(const char *), game/Tiger/Twdebug.cpp
+extern "C" void sub_0062A210(void) {
+    ::sfcop::guest::entered(546);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( const char * ) >( &tWinDbg::mPuts ) >::run();
+}
+
+// tWin32Mono::mPuts(const char *), game/Tiger/Twdebug.cpp
+extern "C" void sub_0062A4A0(void) {
+    ::sfcop::guest::entered(547);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( const char * ) >( &tWin32Mono::mPuts ) >::run();
+}
+
+// tWinComPort::mInit(), game/Tiger/Twdebug.cpp
+extern "C" void sub_0062A6E0(void) {
+    ::sfcop::guest::entered(548);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< int() >( &tWinComPort::mInit ) >::run();
+}
+
+// tWinComPort::mPuts(const char *), game/Tiger/Twdebug.cpp
+extern "C" void sub_0062A7D0(void) {
+    ::sfcop::guest::entered(549);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( const char * ) >( &tWinComPort::mPuts ) >::run();
+}
+
+// tWinDbgFile::mInit(const char *,iTruth,iTruth), game/Tiger/Twdebug.cpp
+extern "C" void sub_0062A880(void) {
+    ::sfcop::guest::entered(550);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< int( const char *, iTruth, iTruth ) >( &tWinDbgFile::mInit ) >::run();
+}
+
+// tWinDbgFile::mPuts(const char *), game/Tiger/Twdebug.cpp
+extern "C" void sub_0062A930(void) {
+    ::sfcop::guest::entered(551);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( const char * ) >( &tWinDbgFile::mPuts ) >::run();
+}
+
+// tINISectionSimple::mFindLine(const char*,const char**), game/Tiger/tinifile.cpp
+extern "C" void sub_0062B550(void) {
+    ::sfcop::guest::entered(552);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tINILine*( const char*, const char** ) >( &tINISectionSimple::mFindLine ) >::run();
+}
+
+// tINISectionSimple::mGetInteger(const char*,unsigned long,unsigned char), game/Tiger/tinifile.cpp
+extern "C" void sub_0062B5F0(void) {
+    ::sfcop::guest::entered(553);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned long( const char*, unsigned long, unsigned char ) >( &tINISectionSimple::mGetInteger ) >::run();
+}
+
+// tINISectionSimple::mPutInteger(const char*,unsigned long,unsigned char), game/Tiger/tinifile.cpp
+extern "C" void sub_0062B790(void) {
+    ::sfcop::guest::entered(554);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( const char*, unsigned long, unsigned char ) >( &tINISectionSimple::mPutInteger ) >::run();
+}
+
+// tINISectionSimple::mGetInt32u(const char*,unsigned long), game/Tiger/tinifile.cpp
+extern "C" void sub_0062BA10(void) {
+    ::sfcop::guest::entered(555);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned long( const char*, unsigned long ) >( &tINISectionSimple::mGetInt32u ) >::run();
+}
+
+// tINISectionSimple::mGetInt32s(const char*,long), game/Tiger/tinifile.cpp
+extern "C" void sub_0062BA30(void) {
+    ::sfcop::guest::entered(556);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< long( const char*, long ) >( &tINISectionSimple::mGetInt32s ) >::run();
+}
+
+// tINISectionSimple::mPutInt32u(const char*,unsigned long), game/Tiger/tinifile.cpp
+extern "C" void sub_0062BA50(void) {
+    ::sfcop::guest::entered(557);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( const char*, unsigned long ) >( &tINISectionSimple::mPutInt32u ) >::run();
+}
+
+// tINISectionSimple::mPutInt32s(const char*,long), game/Tiger/tinifile.cpp
+extern "C" void sub_0062BA70(void) {
+    ::sfcop::guest::entered(558);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( const char*, long ) >( &tINISectionSimple::mPutInt32s ) >::run();
+}
+
+// tINISectionSimple::mGetString(const char*,const char*,char*,unsigned long), game/Tiger/tinifile.cpp
+extern "C" void sub_0062BA90(void) {
+    ::sfcop::guest::entered(559);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned long( const char*, const char*, char*, unsigned long ) >( &tINISectionSimple::mGetString ) >::run();
+}
+
+// tINISectionSimple::mPutString(const char*,const char*), game/Tiger/tinifile.cpp
+extern "C" void sub_0062BB80(void) {
+    ::sfcop::guest::entered(560);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( const char*, const char* ) >( &tINISectionSimple::mPutString ) >::run();
+}
+
+// tINISectionSimple::mFlush(), game/Tiger/tinifile.cpp
+extern "C" void sub_0062BE80(void) {
+    ::sfcop::guest::entered(561);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char() >( &tINISectionSimple::mFlush ) >::run();
+}
+
+// tINIFileSimple::mAddRef(), game/Tiger/tinifile.cpp
+extern "C" void sub_0062BF30(void) {
+    ::sfcop::guest::entered(562);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< int() >( &tINIFileSimple::mAddRef ) >::run();
+}
+
+// tINIFileSimple::mRelease(), game/Tiger/tinifile.cpp
+extern "C" void sub_0062BF40(void) {
+    ::sfcop::guest::entered(563);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< int() >( &tINIFileSimple::mRelease ) >::run();
+}
+
+// tINIFileSimple::mGetSection(const char*,unsigned char), game/Tiger/tinifile.cpp
+extern "C" void sub_0062BF60(void) {
+    ::sfcop::guest::entered(564);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tINISection*( const char*, unsigned char ) >( &tINIFileSimple::mGetSection ) >::run();
+}
+
+// tINIFileSimple::mDone(), game/Tiger/tinifile.cpp
+extern "C" void sub_0062C480(void) {
+    ::sfcop::guest::entered(565);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char() >( &tINIFileSimple::mDone ) >::run();
+}
+
+// tFormatStr::mGenerateFormatTokenList(tFormatToken *), game/Tiger/tFormatStr.cpp
+extern "C" void sub_0062C840(void) {
+    ::sfcop::guest::entered(566);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< signed char( tFormatToken * ) >( &tFormatStr::mGenerateFormatTokenList ) >::run();
+}
+
+// tFormatStr::mAssembleFormattedString(signed char,tFormatToken *), game/Tiger/tFormatStr.cpp
+extern "C" void sub_0062CA70(void) {
+    ::sfcop::guest::entered(567);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( signed char, tFormatToken * ) >( &tFormatStr::mAssembleFormattedString ) >::run();
+}
+
+// tFormatStr::mGenFormattedStr(tString &,tString), game/Tiger/tFormatStr.cpp
+extern "C" void sub_0062CD70(void) {
+    ::sfcop::guest::entered(568);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( tString &, tString ) >( &tFormatStr::mGenFormattedStr ) >::run();
+}
+
+// tFormatStr::mTag(char *,long), game/Tiger/tFormatStr.cpp
+extern "C" void sub_0062CEE0(void) {
+    ::sfcop::guest::entered(569);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( char *, long ) >( &tFormatStr::mTag ) >::run();
+}
+
+// tFormatStr::mTag(char *,tString &), game/Tiger/tFormatStr.cpp
+extern "C" void sub_0062D110(void) {
+    ::sfcop::guest::entered(570);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( char *, tString & ) >( &tFormatStr::mTag ) >::run();
+}
+
+// tFormatStr::mTag(char *,char *), game/Tiger/tFormatStr.cpp
+extern "C" void sub_0062D350(void) {
+    ::sfcop::guest::entered(571);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( char *, char * ) >( &tFormatStr::mTag ) >::run();
+}
+
+// tTagInfo::mSetTagName(signed char,tTagToken*), game/Tiger/tFormatStr.cpp
+extern "C" void sub_0062D6B0(void) {
+    ::sfcop::guest::entered(572);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( signed char, tTagToken* ) >( &tTagInfo::mSetTagName ) >::run();
+}
+
+// tCharTag::mValidate(), game/Tiger/tFormatStr.cpp
+extern "C" void sub_0062D720(void) {
+    ::sfcop::guest::entered(573);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth() >( &tCharTag::mValidate ) >::run();
+}
+
+// tCharTag::mGetString(tFormatTag*), game/Tiger/tFormatStr.cpp
+extern "C" void sub_0062D750(void) {
+    ::sfcop::guest::entered(574);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tString( tFormatTag* ) >( &tCharTag::mGetString ) >::run();
+}
+
+// tCharTag::mAddCopy(tFormatStr*), game/Tiger/tFormatStr.cpp
+extern "C" void sub_0062D840(void) {
+    ::sfcop::guest::entered(575);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( tFormatStr* ) >( &tCharTag::mAddCopy ) >::run();
+}
+
+// tIntTag::mValidate(), game/Tiger/tFormatStr.cpp
+extern "C" void sub_0062D860(void) {
+    ::sfcop::guest::entered(576);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth() >( &tIntTag::mValidate ) >::run();
+}
+
+// tIntTag::mSetGroupSpec(signed char,tTagToken*), game/Tiger/tFormatStr.cpp
+extern "C" void sub_0062D880(void) {
+    ::sfcop::guest::entered(577);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( signed char, tTagToken* ) >( &tIntTag::mSetGroupSpec ) >::run();
+}
+
+// tIntTag::mAddCopy(tFormatStr*), game/Tiger/tFormatStr.cpp
+extern "C" void sub_0062DA60(void) {
+    ::sfcop::guest::entered(578);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( tFormatStr* ) >( &tIntTag::mAddCopy ) >::run();
+}
+
+// tFormatTag::mSetGroupSpec(signed char,tTagToken*), game/Tiger/tFormatStr.cpp
+extern "C" void sub_0062DA80(void) {
+    ::sfcop::guest::entered(579);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( signed char, tTagToken* ) >( &tFormatTag::mSetGroupSpec ) >::run();
+}
+
+// tFormatTag::mGetString(), game/Tiger/tFormatStr.cpp
+extern "C" void sub_0062DAD0(void) {
+    ::sfcop::guest::entered(580);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tString() >( &tFormatTag::mGetString ) >::run();
+}
+
 // clib::memset(void *,int8u,iCount), game/Tiger/tcglue.cpp
 extern "C" void sub_0062DDB0(void) {
-    ::sfcop::guest::entered(538);
+    ::sfcop::guest::entered(581);
     ::sfcop::guest::Entry< static_cast< void (*)( void *, int8u, iCount ) >( &clib::memset ) >::run();
 }
 
 // clib::strcpy(char *,const char *), game/Tiger/tcglue.cpp
 extern "C" void sub_0062DDE0(void) {
-    ::sfcop::guest::entered(539);
+    ::sfcop::guest::entered(582);
     ::sfcop::guest::Entry< static_cast< void (*)( char *, const char * ) >( &clib::strcpy ) >::run();
 }
 
 // clib::memcpy(void *,const void *,size_t), game/Tiger/tcglue.cpp
 extern "C" void sub_0062DE10(void) {
-    ::sfcop::guest::entered(540);
+    ::sfcop::guest::entered(583);
     ::sfcop::guest::Entry< static_cast< void * (*)( void *, const void *, size_t ) >( &clib::memcpy ) >::run();
+}
+
+// tStringTag::mGetString(), game/Tiger/tstringtag.cpp
+extern "C" void sub_0062DE60(void) {
+    ::sfcop::guest::entered(584);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< const tString&() >( &tStringTag::mGetString ) >::run();
+}
+
+// tStringGroupTag::mGetNumElements(), game/Tiger/tstringtag.cpp
+extern "C" void sub_0062DFA0(void) {
+    ::sfcop::guest::entered(585);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< long() >( &tStringGroupTag::mGetNumElements ) >::run();
+}
+
+// tStringGroupTag::mGetString(long), game/Tiger/tstringtag.cpp
+extern "C" void sub_0062E0B0(void) {
+    ::sfcop::guest::entered(586);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< const tString&( long ) >( &tStringGroupTag::mGetString ) >::run();
 }
 
 // tChannelGroup::mDump(unsigned long,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_006587F0(void) {
-    ::sfcop::guest::entered(541);
+    ::sfcop::guest::entered(587);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( unsigned long, long ) >( &tChannelGroup::mDump ) >::run();
 }
 
 // tChannelGroup::mDump(), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00658890(void) {
-    ::sfcop::guest::entered(542);
+    ::sfcop::guest::entered(588);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tChannelGroup::mDump ) >::run();
 }
 
 // tChannelGroup::mClose(), game/Tiger/taudiochannel.cpp
 extern "C" void sub_006589F0(void) {
-    ::sfcop::guest::entered(543);
+    ::sfcop::guest::entered(589);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tChannelGroup::mClose ) >::run();
 }
 
 // tChannelGroup::mLoad(long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00658E30(void) {
-    ::sfcop::guest::entered(544);
+    ::sfcop::guest::entered(590);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( long ) >( &tChannelGroup::mLoad ) >::run();
 }
 
 // tChannelGroup::mGetChannelNumberFromIndex(long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659470(void) {
-    ::sfcop::guest::entered(545);
+    ::sfcop::guest::entered(591);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( long ) >( &tChannelGroup::mGetChannelNumberFromIndex ) >::run();
 }
 
 // tChannelGroup::mGetIndex(unsigned long,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_006594A0(void) {
-    ::sfcop::guest::entered(546);
+    ::sfcop::guest::entered(592);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( unsigned long, long ) >( &tChannelGroup::mGetIndex ) >::run();
 }
 
 // tChannelGroup::mAddDuplicate(unsigned long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659530(void) {
-    ::sfcop::guest::entered(547);
+    ::sfcop::guest::entered(593);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( unsigned long ) >( &tChannelGroup::mAddDuplicate ) >::run();
 }
 
 // tChannelGroup::mAttachFileToChannel(unsigned long,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659540(void) {
-    ::sfcop::guest::entered(548);
+    ::sfcop::guest::entered(594);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( unsigned long, long ) >( &tChannelGroup::mAttachFileToChannel ) >::run();
 }
 
 // tChannelGroup::mAttachFileToBaseGroup(long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_006597F0(void) {
-    ::sfcop::guest::entered(549);
+    ::sfcop::guest::entered(595);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( long ) >( &tChannelGroup::mAttachFileToBaseGroup ) >::run();
 }
 
 // tChannelGroup::mKillRetainedMode(), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659A20(void) {
-    ::sfcop::guest::entered(550);
+    ::sfcop::guest::entered(596);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char() >( &tChannelGroup::mKillRetainedMode ) >::run();
 }
 
 // tChannelGroup::mClearAttachments(), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659B80(void) {
-    ::sfcop::guest::entered(551);
+    ::sfcop::guest::entered(597);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char() >( &tChannelGroup::mClearAttachments ) >::run();
 }
 
 // tChannelGroup::mGetAvailableChannel(unsigned long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659CA0(void) {
-    ::sfcop::guest::entered(552);
+    ::sfcop::guest::entered(598);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( unsigned long ) >( &tChannelGroup::mGetAvailableChannel ) >::run();
 }
 
 // tChannelGroup::mAttachSoundToChannel(unsigned long,tSoundSelection *,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_0065A0F0(void) {
-    ::sfcop::guest::entered(553);
+    ::sfcop::guest::entered(599);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( unsigned long, tSoundSelection *, long ) >( &tChannelGroup::mAttachSoundToChannel ) >::run();
 }
 
 // tChannelGroup::mPlayChannel(unsigned long,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_0065A370(void) {
-    ::sfcop::guest::entered(554);
+    ::sfcop::guest::entered(600);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( unsigned long, long ) >( &tChannelGroup::mPlayChannel ) >::run();
 }
 
 // tChannelGroup::mPauseChannel(unsigned long,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_0065A7C0(void) {
-    ::sfcop::guest::entered(555);
+    ::sfcop::guest::entered(601);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( unsigned long, long ) >( &tChannelGroup::mPauseChannel ) >::run();
 }
 
 // tCRandomSequence::mSetSeed(int32u), game/Tiger/tcrandsequence.cpp
 extern "C" void sub_0066C1C0(void) {
-    ::sfcop::guest::entered(556);
+    ::sfcop::guest::entered(602);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( int32u ) >( &tCRandomSequence::mSetSeed ) >::run();
 }
 
 // tCRandomSequence::mGenerateNumber(), game/Tiger/tcrandsequence.cpp
 extern "C" void sub_0066C1E0(void) {
-    ::sfcop::guest::entered(557);
+    ::sfcop::guest::entered(603);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32u() >( &tCRandomSequence::mGenerateNumber ) >::run();
 }
 
 // tSay::mHandleOutput(const int,const char *), game/Tiger/tsay.cpp
 extern "C" void sub_0066C6A0(void) {
-    ::sfcop::guest::entered(558);
+    ::sfcop::guest::entered(604);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( const int, const char * ) >( &tSay::mHandleOutput ) >::run();
 }
 
 // tSay::mSay(const char *,...), game/Tiger/tsay.cpp
 extern "C" void sub_0066C890(void) {
-    ::sfcop::guest::entered(559);
+    ::sfcop::guest::entered(605);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( const char *, ... ) >( &tSay::mSay ) >::run();
 }
 
 // tSay::mJustSayIt(const char *,...), game/Tiger/tsay.cpp
 extern "C" void sub_0066C8C0(void) {
-    ::sfcop::guest::entered(560);
+    ::sfcop::guest::entered(606);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( const char *, ... ) >( &tSay::mJustSayIt ) >::run();
 }
 
 // tItemBag::mAddToList(tBaseItemBag *,char *), game/Tiger/tBag.cpp
 extern "C" void sub_0066D7E0(void) {
-    ::sfcop::guest::entered(561);
+    ::sfcop::guest::entered(607);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( tBaseItemBag *, char * ) >( &tItemBag::mAddToList ) >::run();
 }
 
 // tItemBag::mFindItemWithLabel(char *), game/Tiger/tBag.cpp
 extern "C" void sub_0066D880(void) {
-    ::sfcop::guest::entered(562);
+    ::sfcop::guest::entered(608);
     ::sfcop::guest::Entry< ::sfcop::guest::member< tBaseItemBag *( char * ) >( &tItemBag::mFindItemWithLabel ) >::run();
 }
 
 // tSequencePart::mGetNumber(), game/Tiger/tsequence.cpp
 extern "C" void sub_00670180(void) {
-    ::sfcop::guest::entered(563);
+    ::sfcop::guest::entered(609);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32u() >( &tSequencePart::mGetNumber ) >::run();
 }
 
 // tSequencePart::mGetNumber(int32u), game/Tiger/tsequence.cpp
 extern "C" void sub_006701C0(void) {
-    ::sfcop::guest::entered(564);
+    ::sfcop::guest::entered(610);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32u( int32u ) >( &tSequencePart::mGetNumber ) >::run();
 }
 
 // tSFCStream::mGetVersionNumber(), game/unsorted/fn_006D2000.cpp
 extern "C" void sub_006D2800(void) {
-    ::sfcop::guest::entered(565);
+    ::sfcop::guest::entered(611);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int() >( &tSFCStream::mGetVersionNumber ) >::run();
 }
 
 // tAllocatedClass::operator==(const type_info&), game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC4D0(void) {
-    ::sfcop::guest::entered(566);
+    ::sfcop::guest::entered(612);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32( const type_info& ) >( &tAllocatedClass::operator== ) >::run();
 }
 
 // tDynamicAllocator::tAllocatorInfo::operator==(const char*) const, game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC5A0(void) {
-    ::sfcop::guest::entered(567);
+    ::sfcop::guest::entered(613);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32( const char* ) const >( &tDynamicAllocator::tAllocatorInfo::operator== ) >::run();
 }
 
 // tDynamicAllocator::LockDownAllocator(), game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC750(void) {
-    ::sfcop::guest::entered(568);
+    ::sfcop::guest::entered(614);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tDynamicAllocator::LockDownAllocator ) >::run();
 }
 
 // tFileDatabaseMgr::tDatabaseInfo::StreamOut(nDataStore::tOutput&) const, game/Common/Database/FileDatabaseMgr.cpp
 extern "C" void sub_00707EF0(void) {
-    ::sfcop::guest::entered(569);
+    ::sfcop::guest::entered(615);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( nDataStore::tOutput& ) const >( &tFileDatabaseMgr::tDatabaseInfo::StreamOut ) >::run();
 }
 
 // tFileDatabaseMgr::GetCurDBInfo(), game/Common/Database/FileDatabaseMgr.cpp
 extern "C" void sub_00708FC0(void) {
-    ::sfcop::guest::entered(570);
+    ::sfcop::guest::entered(616);
     ::sfcop::guest::Entry< ::sfcop::guest::member< tFileDatabaseMgr::tDatabaseInfo() >( &tFileDatabaseMgr::GetCurDBInfo ) >::run();
 }
 
 // tFileDatabaseMgr::GetDBInfo(int32) const, game/Common/Database/FileDatabaseMgr.cpp
 extern "C" void sub_00709060(void) {
-    ::sfcop::guest::entered(571);
+    ::sfcop::guest::entered(617);
     ::sfcop::guest::Entry< ::sfcop::guest::member< const tFileDatabaseMgr::tDatabaseInfo*( int32 ) const >( &tFileDatabaseMgr::GetDBInfo ) >::run();
 }
 
@@ -4050,9 +4332,55 @@ const sfcop_guest_override sfcop_guest_overrides[] = {
     {0x00628E50u, sub_00628E50, "tPart::mAddToPartCachePtrList(tPart **)", "Tiger/tpart.cpp"},
     {0x00628EF0u, sub_00628EF0, "tAtomicLock::mAcquire()", "Tiger/tatomic.cpp"},
     {0x00628F20u, sub_00628F20, "tAtomicLock::mRelease()", "Tiger/tatomic.cpp"},
+    {0x00629180u, sub_00629180, "twDebugPart::mGetConfiguration()", "Tiger/Twdebug.cpp"},
+    {0x00629660u, sub_00629660, "ClampBaudRate(unsigned long)", "Tiger/Twdebug.cpp"},
+    {0x006298E0u, sub_006298E0, "twDebugPart::mCreateLogFileTarget(const char *,iTruth,iTruth)", "Tiger/Twdebug.cpp"},
+    {0x00629A10u, sub_00629A10, "twDebugPart::mCloseLogFileTarget(const int32u)", "Tiger/Twdebug.cpp"},
+    {0x00629A60u, sub_00629A60, "twDebugPart::mCloseLogFileTarget(const char *)", "Tiger/Twdebug.cpp"},
+    {0x00629B30u, sub_00629B30, "tWinDbg::mDrawItem(HWND,DRAWITEMSTRUCT *)", "Tiger/Twdebug.cpp"},
+    {0x0062A050u, sub_0062A050, "tWinDbg::mInit()", "Tiger/Twdebug.cpp"},
+    {0x0062A160u, sub_0062A160, "tWinDbg::mAppendToLastLine(const char *,int)", "Tiger/Twdebug.cpp"},
+    {0x0062A210u, sub_0062A210, "tWinDbg::mPuts(const char *)", "Tiger/Twdebug.cpp"},
+    {0x0062A4A0u, sub_0062A4A0, "tWin32Mono::mPuts(const char *)", "Tiger/Twdebug.cpp"},
+    {0x0062A6E0u, sub_0062A6E0, "tWinComPort::mInit()", "Tiger/Twdebug.cpp"},
+    {0x0062A7D0u, sub_0062A7D0, "tWinComPort::mPuts(const char *)", "Tiger/Twdebug.cpp"},
+    {0x0062A880u, sub_0062A880, "tWinDbgFile::mInit(const char *,iTruth,iTruth)", "Tiger/Twdebug.cpp"},
+    {0x0062A930u, sub_0062A930, "tWinDbgFile::mPuts(const char *)", "Tiger/Twdebug.cpp"},
+    {0x0062B550u, sub_0062B550, "tINISectionSimple::mFindLine(const char*,const char**)", "Tiger/tinifile.cpp"},
+    {0x0062B5F0u, sub_0062B5F0, "tINISectionSimple::mGetInteger(const char*,unsigned long,unsigned char)", "Tiger/tinifile.cpp"},
+    {0x0062B790u, sub_0062B790, "tINISectionSimple::mPutInteger(const char*,unsigned long,unsigned char)", "Tiger/tinifile.cpp"},
+    {0x0062BA10u, sub_0062BA10, "tINISectionSimple::mGetInt32u(const char*,unsigned long)", "Tiger/tinifile.cpp"},
+    {0x0062BA30u, sub_0062BA30, "tINISectionSimple::mGetInt32s(const char*,long)", "Tiger/tinifile.cpp"},
+    {0x0062BA50u, sub_0062BA50, "tINISectionSimple::mPutInt32u(const char*,unsigned long)", "Tiger/tinifile.cpp"},
+    {0x0062BA70u, sub_0062BA70, "tINISectionSimple::mPutInt32s(const char*,long)", "Tiger/tinifile.cpp"},
+    {0x0062BA90u, sub_0062BA90, "tINISectionSimple::mGetString(const char*,const char*,char*,unsigned long)", "Tiger/tinifile.cpp"},
+    {0x0062BB80u, sub_0062BB80, "tINISectionSimple::mPutString(const char*,const char*)", "Tiger/tinifile.cpp"},
+    {0x0062BE80u, sub_0062BE80, "tINISectionSimple::mFlush()", "Tiger/tinifile.cpp"},
+    {0x0062BF30u, sub_0062BF30, "tINIFileSimple::mAddRef()", "Tiger/tinifile.cpp"},
+    {0x0062BF40u, sub_0062BF40, "tINIFileSimple::mRelease()", "Tiger/tinifile.cpp"},
+    {0x0062BF60u, sub_0062BF60, "tINIFileSimple::mGetSection(const char*,unsigned char)", "Tiger/tinifile.cpp"},
+    {0x0062C480u, sub_0062C480, "tINIFileSimple::mDone()", "Tiger/tinifile.cpp"},
+    {0x0062C840u, sub_0062C840, "tFormatStr::mGenerateFormatTokenList(tFormatToken *)", "Tiger/tFormatStr.cpp"},
+    {0x0062CA70u, sub_0062CA70, "tFormatStr::mAssembleFormattedString(signed char,tFormatToken *)", "Tiger/tFormatStr.cpp"},
+    {0x0062CD70u, sub_0062CD70, "tFormatStr::mGenFormattedStr(tString &,tString)", "Tiger/tFormatStr.cpp"},
+    {0x0062CEE0u, sub_0062CEE0, "tFormatStr::mTag(char *,long)", "Tiger/tFormatStr.cpp"},
+    {0x0062D110u, sub_0062D110, "tFormatStr::mTag(char *,tString &)", "Tiger/tFormatStr.cpp"},
+    {0x0062D350u, sub_0062D350, "tFormatStr::mTag(char *,char *)", "Tiger/tFormatStr.cpp"},
+    {0x0062D6B0u, sub_0062D6B0, "tTagInfo::mSetTagName(signed char,tTagToken*)", "Tiger/tFormatStr.cpp"},
+    {0x0062D720u, sub_0062D720, "tCharTag::mValidate()", "Tiger/tFormatStr.cpp"},
+    {0x0062D750u, sub_0062D750, "tCharTag::mGetString(tFormatTag*)", "Tiger/tFormatStr.cpp"},
+    {0x0062D840u, sub_0062D840, "tCharTag::mAddCopy(tFormatStr*)", "Tiger/tFormatStr.cpp"},
+    {0x0062D860u, sub_0062D860, "tIntTag::mValidate()", "Tiger/tFormatStr.cpp"},
+    {0x0062D880u, sub_0062D880, "tIntTag::mSetGroupSpec(signed char,tTagToken*)", "Tiger/tFormatStr.cpp"},
+    {0x0062DA60u, sub_0062DA60, "tIntTag::mAddCopy(tFormatStr*)", "Tiger/tFormatStr.cpp"},
+    {0x0062DA80u, sub_0062DA80, "tFormatTag::mSetGroupSpec(signed char,tTagToken*)", "Tiger/tFormatStr.cpp"},
+    {0x0062DAD0u, sub_0062DAD0, "tFormatTag::mGetString()", "Tiger/tFormatStr.cpp"},
     {0x0062DDB0u, sub_0062DDB0, "clib::memset(void *,int8u,iCount)", "Tiger/tcglue.cpp"},
     {0x0062DDE0u, sub_0062DDE0, "clib::strcpy(char *,const char *)", "Tiger/tcglue.cpp"},
     {0x0062DE10u, sub_0062DE10, "clib::memcpy(void *,const void *,size_t)", "Tiger/tcglue.cpp"},
+    {0x0062DE60u, sub_0062DE60, "tStringTag::mGetString()", "Tiger/tstringtag.cpp"},
+    {0x0062DFA0u, sub_0062DFA0, "tStringGroupTag::mGetNumElements()", "Tiger/tstringtag.cpp"},
+    {0x0062E0B0u, sub_0062E0B0, "tStringGroupTag::mGetString(long)", "Tiger/tstringtag.cpp"},
     {0x006587F0u, sub_006587F0, "tChannelGroup::mDump(unsigned long,long)", "Tiger/taudiochannel.cpp"},
     {0x00658890u, sub_00658890, "tChannelGroup::mDump()", "Tiger/taudiochannel.cpp"},
     {0x006589F0u, sub_006589F0, "tChannelGroup::mClose()", "Tiger/taudiochannel.cpp"},
@@ -4085,7 +4413,7 @@ const sfcop_guest_override sfcop_guest_overrides[] = {
     {0x00708FC0u, sub_00708FC0, "tFileDatabaseMgr::GetCurDBInfo()", "Common/Database/FileDatabaseMgr.cpp"},
     {0x00709060u, sub_00709060, "tFileDatabaseMgr::GetDBInfo(int32) const", "Common/Database/FileDatabaseMgr.cpp"},
 };
-const unsigned sfcop_guest_override_count = 572u;
+const unsigned sfcop_guest_override_count = 618u;
 
 }  // extern "C"
 
