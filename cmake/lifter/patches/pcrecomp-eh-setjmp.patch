@@ -1,0 +1,83 @@
+diff --git a/runtime/native32/eh32.c b/runtime/native32/eh32.c
+index 867a6bf..a475392 100644
+--- a/runtime/native32/eh32.c
++++ b/runtime/native32/eh32.c
+@@ -77,7 +77,7 @@ void recomp_eh_resume(recomp_ehframe_t* f, uint32_t resume) {
+     t_frames = f;
+     f->resume = resume;
+     g_cur_func = f->func;
+-    longjmp(f->jb, 1);
++    RECOMP_EH_LONGJMP(f->jb);
+ }
+ 
+ /* The FuncInfo a C++ frame's handler stub names, or 0 if it is not one. */
+@@ -206,7 +206,7 @@ static int dispatch(uint32_t obj, uint32_t info) {
+                     g_esp = MEM32(ebp - 0x10);
+                     g_eax = resume;
+                     f->resume = resume;
+-                    longjmp(f->jb, 1);
++                    RECOMP_EH_LONGJMP(f->jb);
+                 }
+                 fprintf(stderr, "[eh32] frame 0x%08X caught, but no lifted body owns it (resume 0x%08X)\n",
+                         ebp, resume);
+diff --git a/runtime/native32/native32_selftest.c b/runtime/native32/native32_selftest.c
+index ff6a6c3..e077a63 100644
+--- a/runtime/native32/native32_selftest.c
++++ b/runtime/native32/native32_selftest.c
+@@ -210,7 +210,7 @@ int main(void) {
+         CHECK(recomp_eh_owner(0x0F80) == &outer);
+         CHECK(recomp_eh_owner(0x0E00) == &inner);
+         CHECK(recomp_eh_owner(0x2000) == NULL);
+-        if (!setjmp(outer.jb)) {
++        if (!RECOMP_EH_SETJMP(outer.jb)) {
+             recomp_eh_resume(&outer, 0x00401234u);
+             CHECK(!"recomp_eh_resume returned");
+         } else {
+diff --git a/runtime/recomp32/recomp_types.h b/runtime/recomp32/recomp_types.h
+index adfcf78..f19f41f 100644
+--- a/runtime/recomp32/recomp_types.h
++++ b/runtime/recomp32/recomp_types.h
+@@ -1256,12 +1256,42 @@ void recomp_eh_pop(recomp_ehframe_t* f);
+  * registers already set. Never returns. */
+ recomp_ehframe_t* recomp_eh_owner(uint32_t esp);
+ void recomp_eh_resume(recomp_ehframe_t* f, uint32_t resume);
++/* The landing pad's jump. A POSIX host takes _setjmp and _longjmp, which
++ * leave the signal mask alone: setjmp saves it with a system call (on macOS
++ * two, the mask and the alternate stack's state), and every lifted function
++ * with an EH frame paid that on entry. A Windows host keeps setjmp and
++ * longjmp, whose longjmp unwinds through the system's exception handling. A
++ * host jumps to a pad with RECOMP_EH_LONGJMP, never with plain longjmp, which
++ * on a POSIX host would restore a mask the pad never saved.
++ *
++ * A host that turns a hardware fault into a guest exception runs the guest's
++ * handlers inside its signal handler, on the thread's alternate signal stack,
++ * and reaches the catching function's pad from there. With setjmp and longjmp
++ * that was enough. With _longjmp it is enough on Linux, which decides from the
++ * stack pointer whether a thread is on its alternate stack. It is not on
++ * macOS: the kernel keeps a per-thread flag that only sigreturn clears (libc's
++ * longjmp makes that call; _longjmp does not), so after one fault caught this
++ * way every later fault on the thread would be handled on whatever stack the
++ * thread is then using, the guest's frames below it included, and a fault from
++ * a stack overflow could not be handled at all. Such a host, on macOS, jumps
++ * to a pad older than the fault by first going back into its signal handler,
++ * setting the interrupted context to resume in a function that makes the
++ * jump, and returning, so that sigreturn ends the signal properly. A pad
++ * pushed while the handler runs (by a guest handler it called) is on the
++ * alternate stack itself and is jumped to directly. */
++#if defined(_WIN32)
++#define RECOMP_EH_SETJMP(jb)  setjmp(jb)
++#define RECOMP_EH_LONGJMP(jb) longjmp((jb), 1)
++#else
++#define RECOMP_EH_SETJMP(jb)  _setjmp(jb)
++#define RECOMP_EH_LONGJMP(jb) _longjmp((jb), 1)
++#endif
+ #define RECOMP_EH_ENTER()                                                     \
+     recomp_ehframe_t _ehf;                                                    \
+     _ehf.entry_esp = g_esp;                                                   \
+     _ehf.func = g_cur_func;                                                   \
+     recomp_eh_push(&_ehf);                                                    \
+-    if (setjmp(_ehf.jb)) { RECOMP_REGS_IN(); _flag_k = FK_NONE;               \
++    if (RECOMP_EH_SETJMP(_ehf.jb)) { RECOMP_REGS_IN(); _flag_k = FK_NONE;               \
+                            _itail_tgt = _ehf.resume; goto _ljump; }
+ #define RECOMP_EH_LEAVE() recomp_eh_pop(&_ehf)
+ /* A backward branch in lifted code: a loop. Every RECOMP_YIELD_EVERY of them,
