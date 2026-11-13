@@ -450,6 +450,23 @@ TEST_CASE("the record of an import is read for its changed and unchecked files")
     CHECK(parseImportRecord("").changed.empty());
 }
 
+TEST_CASE("the record of an import says where the copy came from and how much was copied") {
+    const ImportRecord record = parseImportRecord(
+        "# What sfcop --import copied here. Not read by the game.\n"
+        "manifest-files\t5\n"
+        "source\t/games/Orion Pirates\r\n"
+        "files\t4215\n"
+        "bytes\t750312448\n");
+    CHECK(record.source == "/games/Orion Pirates");
+    CHECK(record.files == 4215);
+    CHECK(record.bytes == 750312448u);
+    const ImportRecord odd = parseImportRecord("files\t-3\nbytes\t12x\nsource\t\n");
+    CHECK(odd.source.empty());
+    CHECK(odd.files == 0);
+    CHECK(odd.bytes == 0);
+    CHECK(parseImportRecord("").source.empty());
+}
+
 TEST_CASE("names are matched ignoring case and copied under the manifest's spelling") {
     const Scratch s("sfcop-l2a-case");
     writeGoodInstall(s);

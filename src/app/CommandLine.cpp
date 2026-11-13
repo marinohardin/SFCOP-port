@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <set>
+#include <utility>
 
 #include "app/ExitCodes.h"
 
@@ -132,6 +133,11 @@ const Flag kFlags[] = {
     {"--verify-import", "", "check the imported game against the 2.5.5.2 release, then exit",
      [](ClientOptions &o, const std::string &, std::string &) {
          o.verifyImport = true;
+         return true;
+     }},
+    {"--launcher", "", "open the launcher first: import, check or change the game files, then play",
+     [](ClientOptions &o, const std::string &, std::string &) {
+         o.launcher = true;
          return true;
      }},
     {"--data", "DIR", "the per-user data folder (default: the platform's own)",
@@ -370,6 +376,22 @@ ParseResult parseCommandLine(const std::vector<std::string> &args,
     }
     if (options.oracleTrace && !options.inputScript) {
         return failWith("--oracle needs --input SCRIPT as well");
+    }
+    // The launcher is a window for a player; a scripted, headless or one-off run never opens it.
+    if (options.launcher) {
+        const std::pair<bool, const char *> excluded[] = {
+            {options.installDir.has_value(), "--install"},
+            {options.importFrom.has_value(), "--import"},
+            {options.verifyImport, "--verify-import"},
+            {options.headless, "--headless"},
+            {options.inputScript.has_value(), "--input"},
+            {options.oracleTrace.has_value(), "--oracle"},
+        };
+        for (const auto &[given, flag] : excluded) {
+            if (given) {
+                return failWith(std::string("--launcher cannot be given with ") + flag);
+            }
+        }
     }
     return result;
 }

@@ -5,11 +5,15 @@
 //         [--fixed-step MS]
 //   sfcop --import DIR [--data DIR]
 //   sfcop --verify-import [--data DIR]
+//   sfcop --launcher [--data DIR] [--windowed [WxH]|--fullscreen]
 //
 // --import DIR copies the installed game in or below DIR into the client's own folder, verified
 // (app/Import.h), remembers it, and exits; later runs use that copy with no --install. It cannot
 // be given with --install. --verify-import checks that copy again against the 2.5.5.2 release,
 // changes nothing, and exits; it goes with neither --import nor --install.
+// --launcher opens the launcher's window first (src/app/launcher/README.md): Ready with Play, Check
+// game files and Change game files, or Welcome when no game is set up. A run with a window and
+// no game set up (no --install, no usable install.txt) opens it without the flag.
 // --windowed WxH opens the window W by H points with the game's frame scaled into it; without
 // WxH the window takes the game's own size. --fullscreen scales the frame to the display.
 // --input may be given alone: a script with no trace is a menu run. --oracle needs --input.
@@ -50,6 +54,9 @@ struct ClientOptions {
     std::optional<std::string> importFrom;
     // --verify-import: check the imported game and exit.
     bool verifyImport = false;
+    // --launcher: open the launcher before the game (src/app/launcher/), even when a game is set
+    // up. It goes with none of --install, --import, --verify-import, --headless, --input, --oracle.
+    bool launcher = false;
     std::optional<std::string> dataDir;
     std::optional<std::string> logsDir;
     WindowMode window = WindowMode::kDefault;
