@@ -3,11 +3,15 @@
 # Source: the SDK, release R2.1, scripting library version 22.0,
 #   ScriptInterfaceR.lib sha256 468789f889bb8d844b3e24d17c54e1d3df1b22cec52d824d974e34d4e5583ee1;
 #   the Single template built with VC6 SP4 (sfcop-msvc6), VC6 Lib set initial.
-# Parts (a symbol may be in more than one): library 2896, linked 114, runtime 84, imports 89, and 1 by hand.
+# Parts (a symbol may be in more than one): library 2896, linked 114, runtime 84, imports 89, and 3 by hand.
 # References the template link left unresolved, dropped: 147.
 # Added by hand (A3): KERNEL32.DLL!GetEnvironmentVariableA, which 87 of the 88 shipped scripts import:
 #   their C runtime reads its heap-select variable through it; the Lib set the template links does not.
-# Symbols: 3184. Sorted by byte value, one per line; DLL imports are written DLL!Name.
+# Added by hand (I1b): OSSPECIFIC95.DLL!OS_InterlockedCompareExchange and
+#   OSSPECIFIC98.DLL!OS_InterlockedCompareExchange, which every shipped script looks up at start-up:
+#   the game library's tOSVersion loads the game's OSSpecific DLL for the platform and takes its
+#   compare-exchange for the lock it uses; without it the lock throws.
+# Symbols: 3186. Sorted by byte value, one per line; DLL imports are written DLL!Name.
 ??0?$_Tree@DU?$pair@$$CBDV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@std@@U_Kfn@?$map@DV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@U?$less@D@2@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@2@U?$less@D@2@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@std@@QAE@ABU?$less@D@1@_NABV?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@1@@Z
 ??0?$_Tree@DU?$pair@$$CBDW4eMapObjectType@@@std@@U_Kfn@?$map@DW4eMapObjectType@@U?$less@D@std@@V?$allocator@W4eMapObjectType@@@3@@2@U?$less@D@2@V?$allocator@W4eMapObjectType@@@2@@std@@QAE@ABU?$less@D@1@_NABV?$allocator@W4eMapObjectType@@@1@@Z
 ??0?$_Tree@DU?$pair@$$CBDW4eMapObjectType@@@std@@U_Kfn@?$map@DW4eMapObjectType@@U?$less@D@std@@V?$allocator@W4eMapObjectType@@@3@@2@U?$less@D@2@V?$allocator@W4eMapObjectType@@@2@@std@@QAE@ABV01@@Z
@@ -3144,6 +3148,8 @@ KERNEL32.DLL!VirtualFree
 KERNEL32.DLL!WaitForSingleObject
 KERNEL32.DLL!WideCharToMultiByte
 KERNEL32.DLL!WriteFile
+OSSPECIFIC95.DLL!OS_InterlockedCompareExchange
+OSSPECIFIC98.DLL!OS_InterlockedCompareExchange
 USER32.DLL!wsprintfA
 _MissionSpecEntry
 _ScriptEntry

@@ -2,6 +2,7 @@
 #include "app/scripts/loader/InterpretedModules.h"
 
 #include "app/scripts/interp/CodeSurvey.h"
+#include "app/scripts/interp/Cpu.h"
 
 #include "app/scripts/interp/EntryThunks.h"
 #include "app/scripts/loader/NativeModuleLoader.h"
@@ -80,12 +81,42 @@ using LiftedLookup = interp::HostFunction (*)(std::uint32_t);
 LiftedLookup g_lookupManual = nullptr;
 LiftedLookup g_lookupLifted = nullptr;
 LiftedLookup g_lookupImport = nullptr;
+// The name of the client row at a guest address (pcrecomp's hle_name), or null.
+using RowName = const char *(*)(std::uint32_t);
+RowName g_rowName = nullptr;
+
+// A script's call out: the game's own code (the manual hooks, which also answer the mission
+// modules' code, then the lifted dispatch), or a client row the provider allows
+// (InterpretedModuleProvider::AllowsRow). Any other row answers nothing: the call is unresolved
+// (Interpreter::callOut).
+// A script's dynamic-lookup imports (LoadLibraryA, LoadLibraryExA, GetModuleHandleA,
+// GetProcAddress) are bound to the provider's shims, at addresses just past the last script slot,
+// where nothing is code; each shim passes an allowed lookup on to the client's own row.
+constexpr std::uint32_t kShimBase = 0x70000000u;
+constexpr const char *kShimImports[] = {"KERNEL32.DLL!LoadLibraryA", "KERNEL32.DLL!LoadLibraryExA",
+                                        "KERNEL32.DLL!GetModuleHandleA", "KERNEL32.DLL!GetProcAddress"};
+constexpr std::uint32_t kShims = sizeof kShimImports / sizeof kShimImports[0];
+std::uint32_t g_clientRows[kShims] = {}; // the client's own row for each, which the shims pass on to
+
+void loadLibraryA() { g_active->LoadForScript(0, 4); }
+void loadLibraryExA() { g_active->LoadForScript(1, 12); }
+void getModuleHandleA() { g_active->LoadForScript(2, 4); }
+void getProcAddress() { g_active->FindForScript(); }
+constexpr interp::HostFunction kShimFunctions[kShims] = {loadLibraryA, loadLibraryExA, getModuleHandleA,
+                                                         getProcAddress};
 
 interp::HostFunction clientLookup(std::uint32_t address) {
-    for (const LiftedLookup lookup : {g_lookupManual, g_lookupLifted, g_lookupImport}) {
+    if (const interp::HostFunction shim = InterpretedModuleProvider::ShimAt(address)) {
+        return shim;
+    }
+    for (const LiftedLookup lookup : {g_lookupManual, g_lookupLifted}) {
         if (const interp::HostFunction found = lookup(address)) {
             return found;
         }
+    }
+    const interp::HostFunction row = g_lookupImport(address);
+    if (row != nullptr && g_active != nullptr && g_active->AllowsRow(address)) {
+        return row;
     }
     return nullptr;
 }
@@ -222,6 +253,7 @@ std::optional<interp::Machine> clientMachine() {
     g_lookupManual = reinterpret_cast<LiftedLookup>(symbol("recomp_lookup_manual"));
     g_lookupLifted = reinterpret_cast<LiftedLookup>(symbol("recomp_lookup"));
     g_lookupImport = reinterpret_cast<LiftedLookup>(symbol("recomp_lookup_import"));
+    g_rowName = reinterpret_cast<RowName>(symbol("hle_name"));
     const auto *memoryBase = static_cast<const std::ptrdiff_t *>(symbol("g_mem_base"));
     if (machine.flagKind == nullptr || machine.flagA == nullptr || machine.flagB == nullptr ||
         machine.flagCarry == nullptr || machine.st == nullptr || machine.stExact == nullptr ||
@@ -356,7 +388,15 @@ std::uint32_t InterpretedModuleProvider::Load(std::string_view scriptName) {
     std::uint8_t *memory = runtime_->memory(image.base);
     std::memcpy(memory, image.bytes.data(), image.bytes.size());
     for (const interp::ScriptImport &import : image.imports) {
-        const std::uint32_t address = runtime_->importAddress(import.name);
+        std::uint32_t address = runtime_->importAddress(import.name);
+        const auto shim = std::find(std::begin(kShimImports), std::end(kShimImports), import.name);
+        if (shim != std::end(kShimImports)) {
+            const auto index = static_cast<std::uint32_t>(shim - std::begin(kShimImports));
+            g_clientRows[index] = address;
+            address = kShimBase + index;
+        } else {
+            boundRows_.insert(address);
+        }
         std::memcpy(memory + import.iatRva, &address, sizeof address);
     }
     const std::uint32_t base = image.base;
@@ -421,6 +461,203 @@ void InterpretedModuleProvider::Free(std::uint32_t handle) {
     byBase_.erase(found);
     Unmap(module);
     say("[scripts] unloaded %s\n", module.name);
+}
+
+interp::HostFunction InterpretedModuleProvider::ShimAt(std::uint32_t address) {
+    if (g_active == nullptr || address < kShimBase || address - kShimBase >= kShims) {
+        return nullptr;
+    }
+    return kShimFunctions[address - kShimBase];
+}
+
+bool InterpretedModuleProvider::ScriptMayLoad(std::string_view module) const {
+    return !checkDynamicLookup("", module, "", allowList_).has_value();
+}
+
+bool InterpretedModuleProvider::ScriptMayFind(std::uint32_t handle, std::string_view name) const {
+    if (Owns(handle)) {
+        return true; // a script's own exports
+    }
+    const auto names = handleNames_.find(handle);
+    if (names == handleNames_.end() || name.empty() || name.front() == '#') {
+        return false;
+    }
+    for (const std::string &module : names->second) {
+        if (!checkDynamicLookup("", module, name, allowList_)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+namespace {
+// A script's text as a log line may show it: anything but printable ASCII is '?'.
+std::string Printable(std::string text) {
+    for (char &c : text) {
+        if (c < 0x20 || c > 0x7E) {
+            c = '?';
+        }
+    }
+    return text;
+}
+} // namespace
+
+std::optional<std::string> InterpretedModuleProvider::Text(std::uint32_t address) const {
+    const interp::Machine &m = *machine_;
+    std::string text;
+    for (std::uint32_t at = address;; ++at) {
+        if (!interp::Cpu::fits(at, 1)) {
+            return std::nullopt;
+        }
+        const char c = static_cast<char>(m.memory[at]);
+        if (c == 0) {
+            return text;
+        }
+        if (text.size() == kLookupNameLimit) {
+            return std::nullopt; // longer than any name the shims take: refused whole, never cut
+        }
+        text += c;
+    }
+}
+
+std::string InterpretedModuleProvider::Caller() const {
+    const interp::Machine &m = *machine_;
+    const std::uint32_t esp = *m.regs[interp::kEsp];
+    std::uint32_t back = 0;
+    if (interp::Cpu::fits(esp, 4)) {
+        std::memcpy(&back, m.memory + esp, 4);
+    }
+    for (const auto &[base, module] : byBase_) {
+        if (back >= base && back - base < module.image.size) {
+            return module.name;
+        }
+    }
+    return "a script";
+}
+
+bool InterpretedModuleProvider::PassOn(std::uint32_t shim, std::uint32_t argumentBytes, std::uint32_t argument,
+                                       const std::string *name) {
+    const std::uint32_t address = g_clientRows[shim];
+    if (address == 0) {
+        return false;
+    }
+    // The client's import lookup; a machine with none (a test's) answers rows itself.
+    const interp::HostFunction row = g_lookupImport != nullptr ? g_lookupImport(address) : machine_->lookup(address);
+    if (row == nullptr) {
+        return false;
+    }
+    if (name == nullptr) {
+        row(); // pops its own arguments
+        return true;
+    }
+    // The client reads the name that was checked, not the script's string, which it could change
+    // or which could say more than was checked: a copy of the name and of the shim's frame, below
+    // the frame on the guest stack, where the call would put its own.
+    const interp::Machine &m = *machine_;
+    const std::uint32_t esp = *m.regs[interp::kEsp];
+    const std::uint32_t frameBytes = 4 + argumentBytes;
+    const std::uint32_t text = (esp - static_cast<std::uint32_t>(name->size() + 1)) & ~3u;
+    const std::uint32_t frame = text - frameBytes;
+    if (frame >= esp || !interp::Cpu::fits(frame, esp - frame) || !interp::Cpu::fits(esp, frameBytes)) {
+        return false;
+    }
+    std::memcpy(m.memory + frame, m.memory + esp, frameBytes); // ends at `text`, below esp
+    std::memcpy(m.memory + text, name->c_str(), name->size() + 1);
+    std::memcpy(m.memory + frame + 4 + 4 * argument, &text, 4);
+    *m.regs[interp::kEsp] = frame;
+    row(); // pops the copy's arguments
+    *m.regs[interp::kEsp] = esp + frameBytes;
+    return true;
+}
+
+void InterpretedModuleProvider::Refuse(const std::string &what, std::uint32_t argumentBytes) {
+    const std::string line = describe(LoadError{Refusal::kForeignImport, Caller(), what});
+    if (refusedLookups_.insert(line).second) {
+        say("[scripts] a lookup answers 0 (%s)\n", line);
+    }
+    const interp::Machine &m = *machine_;
+    *m.regs[interp::kEax] = 0;
+    *m.regs[interp::kEsp] += 4 + argumentBytes;
+}
+
+void InterpretedModuleProvider::LoadForScript(std::uint32_t shim, std::uint32_t argumentBytes) {
+    // LoadLibraryA(name), LoadLibraryExA(name, file, flags), GetModuleHandleA(name): stdcall, the
+    // return address on top. A null name is the calling program's own module, as Windows answers.
+    const interp::Machine &m = *machine_;
+    const std::uint32_t esp = *m.regs[interp::kEsp];
+    if (!interp::Cpu::fits(esp, 4 + argumentBytes)) {
+        Refuse(kShimImports[shim], argumentBytes); // its arguments are not in the guest
+        return;
+    }
+    std::uint32_t name = 0;
+    std::memcpy(&name, m.memory + esp + 4, 4);
+    if (name == 0) {
+        if (!PassOn(shim)) {
+            Refuse(kShimImports[shim], argumentBytes);
+        }
+        return;
+    }
+    // The module is named bare: a path, even one that ends in a name on the list, could reach
+    // another file, and a name too long to read is refused whole.
+    const std::optional<std::string> text = Text(name);
+    if (!text) {
+        Refuse("a module name longer than " + std::to_string(kLookupNameLimit) + " bytes", argumentBytes);
+        return;
+    }
+    if (text->empty() || text->find_first_of("\\/:") != std::string::npos) {
+        Refuse(Printable(*text), argumentBytes);
+        return;
+    }
+    const std::string module = normalizeModuleName(*text);
+    if (!ScriptMayLoad(module) || !PassOn(shim, argumentBytes, 0, &module)) {
+        Refuse(Printable(module), argumentBytes);
+        return;
+    }
+    if (const std::uint32_t handle = *m.regs[interp::kEax]; handle != 0) {
+        handleNames_[handle].insert(module);
+    }
+}
+
+void InterpretedModuleProvider::FindForScript() {
+    // GetProcAddress(module, name), stdcall, as lifted code calls it: the return address on top.
+    const interp::Machine &m = *machine_;
+    const std::uint32_t esp = *m.regs[interp::kEsp];
+    if (!interp::Cpu::fits(esp, 12)) {
+        Refuse(kShimImports[3], 8); // its arguments are not in the guest
+        return;
+    }
+    std::uint32_t module = 0, name = 0;
+    std::memcpy(&module, m.memory + esp + 4, 4);
+    std::memcpy(&name, m.memory + esp + 8, 4);
+    const auto names = handleNames_.find(module);
+    const std::string dll = names != handleNames_.end() ? *names->second.begin() : "a module it did not load";
+    // An ordinal is on no list ("DLL!#n"); a name is checked and handed to the client as read.
+    const bool ordinal = name <= 0xFFFFu;
+    const std::optional<std::string> text = ordinal ? std::optional<std::string>("#" + std::to_string(name)) : Text(name);
+    if (!text) {
+        Refuse(dll + "!a name longer than " + std::to_string(kLookupNameLimit) + " bytes", 8);
+        return;
+    }
+    if (!ScriptMayFind(module, *text) || !(ordinal ? PassOn(3) : PassOn(3, 8, 1, &*text))) {
+        Refuse(dll + "!" + Printable(*text), 8);
+        return;
+    }
+    if (const std::uint32_t row = *m.regs[interp::kEax]; row != 0) {
+        foundRows_.insert(row);
+    }
+}
+
+bool InterpretedModuleProvider::AllowsRow(std::uint32_t address) {
+    if (BindsRow(address) || foundRows_.count(address) != 0) {
+        return true;
+    }
+    if (unresolvedRows_.insert(address).second) {
+        const char *name = g_rowName != nullptr ? g_rowName(address) : nullptr;
+        if (name != nullptr) {
+            say("[scripts] a script called %s, which its imports and lookups did not give it; nothing is called\n", name);
+        }
+    }
+    return false;
 }
 
 sfcop_guest_fn InterpretedModuleProvider::Lookup(std::uint32_t address) {

@@ -55,13 +55,47 @@ struct Cpu {
     std::uint32_t entryRegs[8] = {}; // the registers at entry, for an entry that gives up
     int entryTop = 0;                // and the x87 depth
 
-    std::uint8_t *at(std::uint32_t va) const { return mem + va; }
+    // An access that would run past the guest's last byte, at strayAddress for straySize bytes
+    // (0: none since the block began). It reads 0 and writes nothing; the run loop stops the script
+    // when the block ends (Interpreter::run). Every access goes through fits() or load and store, so
+    // no address the script makes reaches host memory outside the guest's 4 GiB.
+    mutable std::uint32_t strayAddress = 0;
+    mutable std::uint32_t straySize = 0;
+
+    // Whether `size` bytes from `va` lie inside the guest's 4 GiB (they do not wrap).
+    static bool fits(std::uint32_t va, std::uint64_t size) {
+        return std::uint64_t{va} + size <= std::uint64_t{0x100000000ull};
+    }
+    void strayed(std::uint32_t va, std::uint64_t size) const {
+        if (straySize == 0) {
+            strayAddress = va;
+            straySize = size > 0xFFFFFFFFu ? 0xFFFFFFFFu : static_cast<std::uint32_t>(size);
+        }
+    }
+    // The host address of guest `va`, for an access of `size` bytes; null (and stray) past the end.
+    std::uint8_t *at(std::uint32_t va, std::uint64_t size) const {
+        if (!fits(va, size)) {
+            strayed(va, size);
+            return nullptr;
+        }
+        return mem + va;
+    }
     template <class T> T load(std::uint32_t va) const {
-        T v;
-        std::memcpy(&v, mem + va, sizeof v);
+        T v{};
+        if (sizeof v == 1 || fits(va, sizeof v)) {
+            std::memcpy(&v, mem + va, sizeof v);
+        } else {
+            strayed(va, sizeof v);
+        }
         return v;
     }
-    template <class T> void store(std::uint32_t va, T v) const { std::memcpy(mem + va, &v, sizeof v); }
+    template <class T> void store(std::uint32_t va, T v) const {
+        if (sizeof v == 1 || fits(va, sizeof v)) {
+            std::memcpy(mem + va, &v, sizeof v);
+        } else {
+            strayed(va, sizeof v);
+        }
+    }
     std::uint32_t load32(std::uint32_t va) const { return load<std::uint32_t>(va); }
     void store32(std::uint32_t va, std::uint32_t v) const { store<std::uint32_t>(va, v); }
     void push(std::uint32_t v) {
