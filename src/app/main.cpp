@@ -1,8 +1,10 @@
 // The native client's entry point.
 //
 // startClient (Startup.h) takes the command line of DESIGN §6.8, finds or makes the per-user data
-// folder, and finds, hash-verifies and remembers the install. The client then constructs the
-// platform components and runs the lifted game on them in the guest host (src/app/guest/).
+// folder, and finds, hash-verifies and remembers the install; with no game set up, or with
+// --launcher, it first opens the launcher's window (src/app/launcher/). The client then
+// constructs the platform components and runs the lifted game on them in the guest host
+// (src/app/guest/).
 // With --input, the client's Window is wrapped so the steps file plays into the game through the
 // path real input takes (src/app/input/). With --oracle TRACE (or --record-trace OUT) the replay
 // oracle waits for the mission's END on a thread of its own, makes the trace and compares it
@@ -30,6 +32,7 @@
 #include "input/Marks.h"
 #include "input/ScriptedGpu.h"
 #include "input/ScriptedWindow.h"
+#include "launcher/LauncherWindow.h"
 #include "oracle/OracleRun.h"
 #include "platform/Clock/FixedStepClock.h"
 #include "sfcop_build_config.h"
@@ -44,6 +47,9 @@ const std::vector<sfcop::app::ExtraFlag> kClientFlags = {
     {"--dry-run", "", "map and bind the exe, then stop"},
     {"--shots", "DIR", "write a BMP of the game's display into DIR (needs a window)"},
     {"--shot-every", "S", "seconds between shots (default 5; with --shots)"},
+    {"--launcher-steps", "FILE",
+     "drive the launcher's window from FILE instead of a player (src/app/launcher/"
+     "LauncherSteps.h), for captures"},
     {"--record-trace", "OUT",
      "play the mission to END and write its trace to OUT, <dir>/<mission>/<input>.trace "
      "(needs --input; --oracle compares as well; the window is then read only when the game "
@@ -65,6 +71,19 @@ std::optional<sfcop::app::input::InputScript> readInputScript(const std::string 
         return std::nullopt;
     }
     return std::move(parsed.script);
+}
+
+// The --launcher-steps file, if one is given. startClient opens the launcher before it hands the
+// extra flags back, so the name is found on the command line here; the file itself is read only
+// when the launcher opens.
+std::string launcherStepsPath(int argc, char **argv) {
+    std::string path;
+    for (int i = 1; i + 1 < argc; ++i) {
+        if (std::string(argv[i]) == "--launcher-steps") {
+            path = argv[i + 1];
+        }
+    }
+    return path;
 }
 
 // `waitfile`'s path: a Windows path (a drive or a backslash) is looked up by its last name in the
@@ -186,8 +205,15 @@ int main(int argc, char **argv) {
         std::fprintf(stderr, "sfcop: the bundle has no %s in Resources; using the build's list\n",
                      kBundledHashList);
     }
-    const Startup start = startClient(
-        argc, argv, consoleStartup(hashList, kClientFlags, builtInInstallDirs(SFCOP_INSTALL_DIR)));
+    // --launcher, or a run with no game set up, opens the launcher's window: first in a package
+    // build, in place of the terminal question in a developer build; a scripted or headless run
+    // never does (Startup.h).
+    StartupConfig config =
+        consoleStartup(hashList, kClientFlags, builtInInstallDirs(SFCOP_INSTALL_DIR));
+    config.launcher = launcher::windowLauncher(launcherStepsPath(argc, argv));
+    // A package build compiles in no hash list (SFCOP_PACKAGE_BUILD, sfcop_build_config.h).
+    config.packageBuild = std::string(SFCOP_HASH_LIST).empty();
+    const Startup start = startClient(argc, argv, config);
     if (start.exitCode) {
         return *start.exitCode;
     }

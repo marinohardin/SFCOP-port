@@ -318,3 +318,20 @@ TEST_CASE("--verify-import takes no value and goes with neither --import nor --i
                  "--verify-import goes with neither --import nor --install");
     CHECK(sfcop::app::helpText().find("  --verify-import ") != std::string::npos);
 }
+
+TEST_CASE("--launcher takes no value and goes with no scripted, headless or one-off run") {
+    const ParseResult result = parse({"--launcher", "--data", "/d", "--windowed"});
+    REQUIRE(result.outcome == ParseOutcome::kRun);
+    CHECK(result.options.launcher);
+    CHECK_FALSE(parse({}).options.launcher);
+    requireError({"--launcher", "--install", "/a"}, "--launcher cannot be given with --install");
+    requireError({"--launcher", "--import", "/a"}, "--launcher cannot be given with --import");
+    requireError({"--launcher", "--verify-import"},
+                 "--launcher cannot be given with --verify-import");
+    requireError({"--launcher", "--headless"}, "--launcher cannot be given with --headless");
+    requireError({"--launcher", "--input", "menu.steps"},
+                 "--launcher cannot be given with --input");
+    requireError({"--input", "m.steps", "--oracle", "t.trace", "--launcher"},
+                 "--launcher cannot be given with --input");
+    CHECK(sfcop::app::helpText().find("  --launcher ") != std::string::npos);
+}

@@ -154,7 +154,87 @@ Startup startClient(int argc, const char *const *argv, const StartupConfig &conf
     if (!options.headless) {
         request.ask = config.ask;
     }
+
+    // The launcher (Startup.h, StartupConfig::launcher). It writes install.txt when it imports,
+    // so after Play the install is found as remembered. A scripted or headless run never opens it.
+    const bool scripted = options.headless || options.inputScript || options.oracleTrace;
+    const bool gameSetUp =
+        request.flag || (request.remembered && holdsInstall(*request.remembered, files));
+    std::optional<LauncherChoice> launched;
+    const auto openLauncher = [&](bool onDemand) {
+        LauncherRequest launch;
+        launch.dataDir = dataDir;
+        launch.gameDir = gameDir;
+        launch.hashListPath = config.hashListPath;
+        launch.installDirs = defaultInstallDirs(config.platform, config.env);
+        launch.onDemand = onDemand;
+        launch.platform = config.platform;
+        launch.env = config.env;
+        launch.files = &files;
+        launch.importFiles =
+            config.importFiles != nullptr ? config.importFiles : &hostImportFiles();
+        launched = config.launcher(launch);
+        return *launched;
+    };
+    const auto stopAfterLauncher = [&]() -> std::optional<Startup> {
+        if (launched == LauncherChoice::kQuit) {
+            return stop(kExitSuccess);
+        }
+        if (launched == LauncherChoice::kFailed) {
+            return stop(kExitBadInput);
+        }
+        return std::nullopt;
+    };
+    if (options.launcher && !config.launcher) {
+        err << "sfcop: this client is built without the launcher's window.\n";
+        return stop(kExitFailure);
+    }
+    if (config.launcher && !scripted &&
+        (options.launcher || (config.packageBuild && !gameSetUp))) {
+        // A package build prompts the player whenever no game is set up: the usual places that
+        // hold the game are suggested on Welcome, never used without asking.
+        switch (openLauncher(options.launcher)) {
+        case LauncherChoice::kQuit:
+        case LauncherChoice::kFailed:
+            return *stopAfterLauncher();
+        case LauncherChoice::kNoWindow:
+            if (options.launcher) {
+                err << "sfcop: the launcher needs a window, and none can be opened here.\n";
+                return stop(kExitFailure);
+            }
+            break; // the usual places, then the terminal question, as without a launcher
+        case LauncherChoice::kPlay:
+            request.remembered = rememberedInstallDir(dataDir, gameDir, files);
+            request.defaults.clear();
+            request.ask = nullptr;
+            break;
+        }
+    } else if (config.launcher && !scripted && !config.packageBuild) {
+        // A developer build keeps its order (--install, install.txt, the build's own install,
+        // the usual places); the launcher takes the terminal question's place, and with no
+        // window the question is asked after all.
+        request.ask = [&openLauncher, &dataDir, &gameDir, &files,
+                       terminal = request.ask]() -> std::optional<std::string> {
+            switch (openLauncher(false)) {
+            case LauncherChoice::kNoWindow:
+                return terminal ? terminal() : std::nullopt;
+            case LauncherChoice::kPlay:
+                return rememberedInstallDir(dataDir, gameDir, files);
+            case LauncherChoice::kQuit:
+            case LauncherChoice::kFailed:
+                break;
+            }
+            return std::nullopt;
+        };
+    }
     const LocateResult located = locateInstall(request, files);
+    if (const std::optional<Startup> stopped = stopAfterLauncher()) {
+        return *stopped;
+    }
+    if (launched == LauncherChoice::kPlay) {
+        // The imported copy, as install.txt names it now, so that it is not written again.
+        request.remembered = rememberedInstallDir(dataDir, gameDir, files);
+    }
     if (!located.dir) {
         err << "sfcop: " << located.error << "\n";
         return stop(kExitInstallRefused);

@@ -7,6 +7,7 @@
 #   SDL3::SDL3-static   SDL3, static (window, GPU, input, events)
 #   sfcop_miniaudio     miniaudio, static (audio engine)
 #   sfcop_doctest       doctest headers (C++ tests)
+#   sfcop_imgui         Dear ImGui with its SDL3 and SDL_Renderer backends, static (the launcher)
 #   SDL2::SDL2          TEMPORARY, with SFCOP_LIFT only: sdl2-compat, the SDL2 API over SDL3, for
 #                       the copied boot platform; leaves with Wave 1 B1/B3
 include(FetchContent)
@@ -26,6 +27,13 @@ FetchContent_Declare(miniaudio
 FetchContent_Declare(doctest
     URL https://github.com/doctest/doctest/releases/download/v2.5.3/doctest-v2.5.3.tar.gz
     URL_HASH SHA256=eb4a39729d091e43d4d593888bf4d145ee9a0f0e13f7404484b6f2fb60d5d50f
+    DOWNLOAD_EXTRACT_TIMESTAMP ON
+    SOURCE_SUBDIR do-not-add-its-cmake)
+# Dear ImGui 1.93.0: the tag's commit archive (the release has no source asset); tag v1.93.0 is
+# commit c1aaac65e896a45f81f47a4d68f9959e0f86c859.
+FetchContent_Declare(imgui
+    URL https://github.com/ocornut/imgui/archive/c1aaac65e896a45f81f47a4d68f9959e0f86c859.tar.gz
+    URL_HASH SHA256=b3d8f99838bb3ff05e14185562345f85e00c032da4d8fc277608d7898d847114
     DOWNLOAD_EXTRACT_TIMESTAMP ON
     SOURCE_SUBDIR do-not-add-its-cmake)
 
@@ -48,7 +56,7 @@ set(SDL_DISABLE_INSTALL ON)
 if(SFCOP_LIFT)
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 endif()
-FetchContent_MakeAvailable(SDL3 miniaudio doctest)
+FetchContent_MakeAvailable(SDL3 miniaudio doctest imgui)
 if(SFCOP_LIFT)
     set(SDL2COMPAT_TESTS OFF)
     set(SDL2COMPAT_INSTALL OFF)
@@ -65,3 +73,18 @@ endif()
 
 add_library(sfcop_doctest INTERFACE)
 target_include_directories(sfcop_doctest SYSTEM INTERFACE "${doctest_SOURCE_DIR}")
+
+# The launcher's window (src/app/launcher/): the core and the SDL3 platform and SDL_Renderer
+# backends only, so it needs no shaders and stays clear of the game's SDL GPU device.
+add_library(sfcop_imgui STATIC
+    "${imgui_SOURCE_DIR}/imgui.cpp"
+    "${imgui_SOURCE_DIR}/imgui_draw.cpp"
+    "${imgui_SOURCE_DIR}/imgui_tables.cpp"
+    "${imgui_SOURCE_DIR}/imgui_widgets.cpp"
+    "${imgui_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp"
+    "${imgui_SOURCE_DIR}/backends/imgui_impl_sdlrenderer3.cpp")
+target_include_directories(sfcop_imgui SYSTEM PUBLIC
+    "${imgui_SOURCE_DIR}" "${imgui_SOURCE_DIR}/backends")
+target_compile_definitions(sfcop_imgui PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
+target_compile_options(sfcop_imgui PRIVATE -w)
+target_link_libraries(sfcop_imgui PUBLIC SDL3::SDL3-static)

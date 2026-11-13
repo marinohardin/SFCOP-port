@@ -7,14 +7,15 @@ third-party code found inside the original exe (P0-6).
 
 Pinned by a tagged release and the SHA-256 of its archive in `third_party/CMakeLists.txt`, fetched
 at configure time into the build directory, never vendored. Only the integrator adds, removes or
-bumps one (CONVENTIONS §5). `DependencyPinsTest.cpp` checks that the linked SDL3, miniaudio and
-doctest are these; sdl2-compat is not linked into the tests.
+bumps one (CONVENTIONS §5). `DependencyPinsTest.cpp` checks that the linked SDL3, miniaudio,
+doctest and Dear ImGui are these; sdl2-compat is not linked into the tests.
 
 | Name | Version | Pin | Licence | Where used | Why |
 | --- | --- | --- | --- | --- | --- |
 | SDL3 | 3.4.18 (2026-10-02) | release asset `SDL3-3.4.18.tar.gz`, sha256 `9c75cf16...4334a3`; tag commit `829a65d7` | zlib | `src/platform/` backends (Wave 1); today only `sfcop_tests` links it | Window, GPU (SDL GPU), input and events on all three platforms |
 | miniaudio | 0.11.25 (2026-03-03) | commit archive `9634bedb`, sha256 `1a3a79b8...76fa55` | public domain (Unlicense) or MIT-0 | the Audio backend (Wave 1); today only `sfcop_tests` | The audio engine under the Miles and DirectSound 3D HLE |
 | doctest | 2.5.3 (2026-07-06) | release asset `doctest-v2.5.3.tar.gz`, sha256 `eb4a3972...d5d50f`; tag commit `2d0a9359` | MIT | `sfcop_tests` only | C++ unit tests through CTest (CONVENTIONS §6) |
+| Dear ImGui | 1.93.0 (2026-10-14) | commit archive `c1aaac65`, sha256 `b3d8f998...d847114`; tag `v1.93.0` is that commit | MIT | `sfcop_src` (the launcher, `src/app/launcher/`), so `sfcop` and `sfcop_tests`; the core with the `imgui_impl_sdl3` and `imgui_impl_sdlrenderer3` backends only | The launcher's screens (import, check, change the game files) on an SDL renderer, before the game's window opens |
 | sdl2-compat | 2.32.74 (TEMPORARY: leaves with Wave 1 B1/B3) | release asset `sdl2-compat-2.32.74.tar.gz`, sha256 `ec68abde...8924588` | zlib | `sfcop` only, with `SFCOP_LIFT`: the boot platform (`src/app/boot/`) and win32hle; a shared library that loads the pinned SDL3, built shared beside `sfcop` | The SDL2 API the copied boot platform is written against |
 
 Not a dependency, and not in this directory, but the build uses it until Wave 1 replaces the

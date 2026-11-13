@@ -1,5 +1,6 @@
 #include "app/Startup.h"
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <map>
@@ -7,6 +8,7 @@
 
 #include <doctest/doctest.h>
 
+#include "app/DataDir.h"
 #include "app/FilesMock.h"
 #include "fixes/fixes.h"
 
@@ -46,7 +48,9 @@ struct Run {
 
     Run(std::vector<std::string> args, const std::string &home, FileSystem *files = nullptr,
         std::function<std::optional<std::string>()> ask = nullptr,
-        std::string hashList = fixturesDir() + "/install.sha256") {
+        std::string hashList = fixturesDir() + "/install.sha256",
+        std::function<LauncherChoice(const LauncherRequest &)> launcher = nullptr,
+        std::function<void(StartupConfig &)> adjust = nullptr) {
         std::vector<const char *> argv = {"sfcop"};
         for (const std::string &arg : args) {
             argv.push_back(arg.c_str());
@@ -63,8 +67,12 @@ struct Run {
         };
         config.files = files;
         config.ask = std::move(ask);
+        config.launcher = std::move(launcher);
         config.out = &out;
         config.err = &err;
+        if (adjust) {
+            adjust(config);
+        }
         result = startClient(static_cast<int>(argv.size()), argv.data(), config);
     }
 };
@@ -486,4 +494,269 @@ TEST_CASE("--import of a folder without the game stops with 3 and remembers noth
                                "Orion Pirates is installed in.\n");
     CHECK_FALSE(fs::exists(home.str() + "/.local/share/SFCOP/install.txt"));
     CHECK_FALSE(fs::exists(home.str() + "/.local/share/SFCOP/game"));
+}
+
+namespace {
+
+// A launcher that records how it was opened and answers `choice`; on kPlay it first remembers
+// `install` in install.txt, as the launcher does after an import.
+struct FakeLauncher {
+    std::vector<LauncherRequest> opened;
+    LauncherChoice choice = LauncherChoice::kQuit;
+    std::string install;
+
+    std::function<LauncherChoice(const LauncherRequest &)> fn() {
+        return [this](const LauncherRequest &request) {
+            opened.push_back(request);
+            if (choice == LauncherChoice::kPlay) {
+                REQUIRE(rememberInstall(request.dataDir, install, *request.files));
+            }
+            return choice;
+        };
+    }
+};
+
+} // namespace
+
+TEST_CASE("a developer build opens the launcher where it would ask on the terminal") {
+    const ScratchDir home("sfcop-l2b-startup-first");
+    const std::string data = home.str() + "/.local/share/SFCOP";
+    FakeLauncher launcher;
+    int asked = 0;
+    const Run run({"--windowed"}, home.str(), nullptr,
+                  [&asked]() -> std::optional<std::string> {
+                      ++asked;
+                      return std::nullopt;
+                  },
+                  fixturesDir() + "/install.sha256", launcher.fn());
+    CHECK(run.result.exitCode == std::optional<int>(0)); // the player quit
+    CHECK(run.err.str() == "");
+    CHECK(asked == 0);
+    REQUIRE(launcher.opened.size() == 1);
+    const LauncherRequest &opened = launcher.opened[0];
+    CHECK(opened.dataDir == data);
+    CHECK(opened.gameDir == data + "/game");
+    CHECK(opened.hashListPath == fixturesDir() + "/install.sha256");
+    CHECK_FALSE(opened.onDemand);
+    CHECK(opened.files != nullptr);
+    CHECK(opened.importFiles != nullptr);
+    // The platform's usual places on Linux: the game's folder in a Wine prefix's drive_c.
+    const std::string programs = home.str() + "/.wine/drive_c/Program Files";
+    CHECK(opened.installDirs ==
+          std::vector<std::string>{programs + " (x86)/Taldren/Starfleet Command Orion Pirates",
+                                   programs + "/Taldren/Starfleet Command Orion Pirates"});
+    CHECK(fs::is_directory(data + "/settings")); // the data folder is made before it opens
+}
+
+TEST_CASE("Play in the launcher starts the game it remembered") {
+    const ScratchDir home("sfcop-l2b-startup-play");
+    const std::string install = fixturesDir() + "/install";
+    FakeLauncher launcher;
+    launcher.choice = LauncherChoice::kPlay;
+    launcher.install = install;
+    const Run run({}, home.str(), nullptr, nullptr, fixturesDir() + "/install.sha256",
+                  launcher.fn());
+    CHECK(run.err.str() == "");
+    CHECK_FALSE(run.result.exitCode.has_value());
+    CHECK(run.result.installDir == install);
+    CHECK(launcher.opened.size() == 1);
+
+    // The next run goes straight to the game.
+    FakeLauncher later;
+    const Run again({}, home.str(), nullptr, nullptr, fixturesDir() + "/install.sha256",
+                    later.fn());
+    CHECK_FALSE(again.result.exitCode.has_value());
+    CHECK(again.result.installDir == install);
+    CHECK(later.opened.empty());
+}
+
+TEST_CASE("--launcher opens the launcher on demand when a game is set up") {
+    const ScratchDir home("sfcop-l2b-startup-on-demand");
+    const std::string install = fixturesDir() + "/install";
+    const std::string data = home.str() + "/.local/share/SFCOP";
+    REQUIRE(Run({"--install", install, "--headless"}, home.str()).err.str() == "");
+    FakeLauncher launcher;
+    launcher.choice = LauncherChoice::kPlay;
+    launcher.install = install;
+    const Run run({"--launcher"}, home.str(), nullptr, nullptr,
+                  fixturesDir() + "/install.sha256", launcher.fn());
+    REQUIRE(launcher.opened.size() == 1);
+    CHECK(launcher.opened[0].onDemand);
+    CHECK_FALSE(run.result.exitCode.has_value());
+    CHECK(run.result.installDir == install);
+
+    FakeLauncher quits;
+    const Run quit({"--launcher"}, home.str(), nullptr, nullptr,
+                   fixturesDir() + "/install.sha256", quits.fn());
+    CHECK(quit.result.exitCode == std::optional<int>(0));
+}
+
+TEST_CASE("--launcher on a client built without the launcher's window says so") {
+    const ScratchDir home("sfcop-l2b-startup-no-window-built");
+    const std::string install = fixturesDir() + "/install";
+    REQUIRE(Run({"--install", install, "--headless"}, home.str()).err.str() == "");
+    const Run run({"--launcher"}, home.str());
+    CHECK(run.result.exitCode == std::optional<int>(1));
+    CHECK(run.err.str() == "sfcop: this client is built without the launcher's window.\n");
+}
+
+TEST_CASE("--headless, --input, --oracle and --install never reach the launcher") {
+    const ScratchDir home("sfcop-l2b-startup-never");
+    const std::string install = fixturesDir() + "/install";
+    const std::vector<std::vector<std::string>> runs = {
+        {"--headless"},
+        {"--input", "menu.steps"},
+        {"--oracle", "t/m/i.trace", "--input", "menu.steps"},
+        {"--install", install},
+        {"--install", install, "--windowed"},
+    };
+    for (const std::vector<std::string> &args : runs) {
+        CAPTURE(args.front());
+        FakeLauncher launcher;
+        launcher.choice = LauncherChoice::kPlay;
+        launcher.install = install;
+        const Run run(args, home.str(), nullptr, nullptr, fixturesDir() + "/install.sha256",
+                      launcher.fn());
+        CHECK(launcher.opened.empty());
+    }
+}
+
+TEST_CASE("without a window the launcher hands back to the terminal question") {
+    const ScratchDir home("sfcop-l2b-startup-no-window");
+    const std::string install = fixturesDir() + "/install";
+    FakeLauncher launcher;
+    launcher.choice = LauncherChoice::kNoWindow;
+    int asked = 0;
+    const Run run({}, home.str(), nullptr,
+                  [&]() -> std::optional<std::string> {
+                      ++asked;
+                      return install;
+                  },
+                  fixturesDir() + "/install.sha256", launcher.fn());
+    CHECK(launcher.opened.size() == 1);
+    CHECK(asked == 1);
+    CHECK_FALSE(run.result.exitCode.has_value());
+    CHECK(run.result.installDir == install);
+
+    FakeLauncher onDemand;
+    onDemand.choice = LauncherChoice::kNoWindow;
+    const Run demanded({"--launcher"}, home.str(), nullptr, nullptr,
+                       fixturesDir() + "/install.sha256", onDemand.fn());
+    CHECK(demanded.result.exitCode == std::optional<int>(1));
+    CHECK(demanded.err.str() ==
+          "sfcop: the launcher needs a window, and none can be opened here.\n");
+}
+
+namespace {
+
+// The game where the platform's usual place on Linux has it, in a Wine prefix under `home`.
+std::string installInWinePrefix(const std::string &home) {
+    const std::string dir =
+        home + "/.wine/drive_c/Program Files/Taldren/Starfleet Command Orion Pirates";
+    fs::create_directories(dir);
+    fs::copy(fixturesDir() + "/install", dir, fs::copy_options::recursive);
+    return dir;
+}
+
+const auto packageBuild = [](StartupConfig &config) { config.packageBuild = true; };
+
+} // namespace
+
+TEST_CASE("a developer build keeps its order and finds the game without the launcher") {
+    const ScratchDir home("sfcop-l2b-startup-dev-order");
+    const std::string install = fixturesDir() + "/install";
+    const std::string usual = installInWinePrefix(home.str());
+
+    // The build's own install comes before the usual places.
+    FakeLauncher launcher;
+    const Run built({"--windowed"}, home.str(), nullptr, nullptr,
+                    fixturesDir() + "/install.sha256", launcher.fn(),
+                    [&install](StartupConfig &config) { config.installDirs = {install}; });
+    CHECK(built.err.str() == "");
+    CHECK(built.result.installDir == install);
+    CHECK(built.result.installDir != usual);
+    CHECK(launcher.opened.empty());
+
+    // A usual place that holds the game is used as it is today.
+    const ScratchDir other("sfcop-l2b-startup-dev-usual");
+    const std::string inPrefix = installInWinePrefix(other.str());
+    FakeLauncher second;
+    const Run found({"--windowed"}, other.str(), nullptr, nullptr,
+                    fixturesDir() + "/install.sha256", second.fn());
+    CHECK(found.err.str() == "");
+    CHECK(found.result.installDir == inPrefix);
+    CHECK(second.opened.empty());
+}
+
+TEST_CASE("a package build with no game set up prompts in the launcher, suggesting what it found") {
+    const ScratchDir home("sfcop-l2b-startup-package");
+    const std::string data = home.str() + "/.local/share/SFCOP";
+    const std::string usual = installInWinePrefix(home.str());
+    FakeLauncher launcher;
+    int asked = 0;
+    const Run run({}, home.str(), nullptr,
+                  [&asked]() -> std::optional<std::string> {
+                      ++asked;
+                      return std::nullopt;
+                  },
+                  fixturesDir() + "/install.sha256", launcher.fn(), packageBuild);
+    REQUIRE(launcher.opened.size() == 1);
+    CHECK_FALSE(launcher.opened[0].onDemand);
+    // Found, and only suggested: the player quit, so nothing was used or remembered.
+    const std::vector<std::string> &suggested = launcher.opened[0].installDirs;
+    CHECK(std::find(suggested.begin(), suggested.end(), usual) != suggested.end());
+    CHECK(run.result.exitCode == std::optional<int>(0));
+    CHECK(asked == 0);
+    CHECK_FALSE(fs::exists(data + "/install.txt"));
+
+    // Play starts the game the launcher set up, and the next run goes straight to it.
+    const std::string install = fixturesDir() + "/install";
+    FakeLauncher plays;
+    plays.choice = LauncherChoice::kPlay;
+    plays.install = install;
+    const Run played({}, home.str(), nullptr, nullptr, fixturesDir() + "/install.sha256",
+                     plays.fn(), packageBuild);
+    CHECK(played.err.str() == "");
+    CHECK(played.result.installDir == install);
+    FakeLauncher later;
+    const Run again({}, home.str(), nullptr, nullptr, fixturesDir() + "/install.sha256",
+                    later.fn(), packageBuild);
+    CHECK(again.result.installDir == install);
+    CHECK(later.opened.empty());
+}
+
+TEST_CASE("a package build with no window falls back to the usual places, then the question") {
+    const ScratchDir home("sfcop-l2b-startup-package-no-window");
+    const std::string usual = installInWinePrefix(home.str());
+    FakeLauncher launcher;
+    launcher.choice = LauncherChoice::kNoWindow;
+    int asked = 0;
+    const Run run({}, home.str(), nullptr,
+                  [&asked]() -> std::optional<std::string> {
+                      ++asked;
+                      return std::nullopt;
+                  },
+                  fixturesDir() + "/install.sha256", launcher.fn(), packageBuild);
+    CHECK(launcher.opened.size() == 1);
+    CHECK(asked == 0);
+    CHECK_FALSE(run.result.exitCode.has_value());
+    CHECK(run.result.installDir == usual);
+}
+
+TEST_CASE("--headless, --input and --oracle never reach the launcher in a package build") {
+    const ScratchDir home("sfcop-l2b-startup-package-never");
+    const std::string install = fixturesDir() + "/install";
+    const std::vector<std::vector<std::string>> runs = {
+        {"--headless"},
+        {"--input", "menu.steps"},
+        {"--oracle", "t/m/i.trace", "--input", "menu.steps"},
+        {"--install", install, "--windowed"},
+    };
+    for (const std::vector<std::string> &args : runs) {
+        CAPTURE(args.front());
+        FakeLauncher launcher;
+        const Run run(args, home.str(), nullptr, nullptr, fixturesDir() + "/install.sha256",
+                      launcher.fn(), packageBuild);
+        CHECK(launcher.opened.empty());
+    }
 }

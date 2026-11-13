@@ -2,7 +2,9 @@
 // data folder (DataDir.h), finding and verifying the install (Install.h), remembering it, and
 // installing the fix switches' positions (src/fixes/README.md). main()
 // calls startClient() and either returns the exit code it gives or starts the game. With
-// --import, startClient imports the game (ImportCommand.h) and stops with its exit code.
+// --import, startClient imports the game (ImportCommand.h) and stops with its exit code. On a run
+// with a window and no game set up, or with --launcher, it opens the launcher first
+// (StartupConfig::launcher).
 #pragma once
 
 #include <functional>
@@ -18,6 +20,30 @@
 #include "app/Install.h"
 
 namespace sfcop::app {
+
+// What the launcher (src/app/launcher/) is given when start-up opens it: the run's folders, the
+// manifest's place, the folders to suggest, and the file systems to work on.
+struct LauncherRequest {
+    std::string dataDir;
+    std::string gameDir;
+    // The hash list; the install manifest sits beside it (Import.h, installManifestBeside).
+    std::string hashListPath;
+    // The platform's usual places for the install (defaultInstallDirs), to suggest.
+    std::vector<std::string> installDirs;
+    // --launcher: open on Ready when a game is set up. Otherwise no game was found.
+    bool onDemand = false;
+    Platform platform = hostPlatform();
+    EnvLookup env;
+    FileSystem *files = nullptr;
+    ImportFiles *importFiles = nullptr;
+};
+
+enum class LauncherChoice {
+    kPlay,     // start the game: install.txt names it
+    kQuit,     // the player closed the launcher; the client exits 0
+    kNoWindow, // no window can be opened here: the terminal question is asked instead
+    kFailed,   // the launcher could not go on (a bad steps file); the reason is printed; exit 2
+};
 
 struct StartupConfig {
     // analysis/results/retail_hashes.sha256, or any list in its format.
@@ -37,6 +63,16 @@ struct StartupConfig {
     std::function<double()> seconds;
     // Asks the player where the install is, on a run that found none; never on a headless run.
     std::function<std::optional<std::string>()> ask;
+    // The launcher's window; empty: the client has no launcher and asks on the terminal.
+    // --launcher opens it first. Otherwise, in a package build, a run with a window and no game
+    // set up (no --install and no install.txt naming a folder that holds the game) opens it
+    // before any other place is tried; in a developer build the order stays --install,
+    // install.txt, `installDirs`, the usual places, and the launcher opens only where `ask` would
+    // be called. A run with --headless, --input or --oracle never opens it.
+    std::function<LauncherChoice(const LauncherRequest &)> launcher;
+    // A release package's client (SFCOP_PACKAGE_BUILD), which compiles in no install or hash
+    // list: no game set up means the player is prompted and the game imported.
+    bool packageBuild = false;
     // Called while the install is hashed.
     ProgressFn progress;
     // std::cout and std::cerr when null.

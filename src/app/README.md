@@ -13,6 +13,7 @@ verifying it. DESIGN §5.1, §5.3, §6.6, §6.8 and §8 define the behavior.
 | `Import.h` | `--import DIR`: copies the installed game into the client's own folder (below, "Importing the game"), and `--verify-import` checks that copy again. A library with progress and cancel callbacks for the launcher; `ImportCommand.h` is the command line's thin caller, `ImportFiles.h` the file operations it needs (`ImportClone_<platform>.cpp` the copy-on-write clone) |
 | `DataDir.h` | The per-user data folder on each platform (`--data` overrides it), its subfolders `settings/`, `saves/`, `replays/`, `logs/` and `mods/`, created on first use, `game/`, the imported game (`gameDirFor`), `install.txt`, the install path remembered after the first verified run (`game` for the imported copy), and `mission-modules.txt`, the folder of translated mission modules, which the player writes once (below) |
 | `Startup.h` | All of the above in order, for `main()`, then the fix switches: their defaults, `settings/fixes.gf` in the data folder when it exists, then each `--fix`, installed with `fixes::install` before the game starts; each problem with a switch (an unknown name, a bad value, a build switch asked for in its other position) is printed once and the run goes on (`src/fixes/README.md`) |
+| `launcher/` | The launcher (below, "The launcher"): the first-run screens that import the game, and `--launcher` on demand. A state machine tested without a window (`Launcher.h`), the import library on a worker thread (`LauncherJobs.h`), its setup (`LauncherSetup.h`), every string (`LauncherText.h`), and the SDL3 window with Dear ImGui that draws it (`LauncherWindow.h`), driven by a steps file for captures (`LauncherSteps.h`) |
 | `Sha256.h` | SHA-256, fed in pieces |
 | `ServiceHosts.h` | The hosts of the Dynaverse stand-ins, from the `services` object of `servers.json` in the data folder, as the alias map the winsock module resolves the original's service host names by (`src/net/DIRECTORY_API.md`, "Pointing the client at the stand-ins"). With no `servers.json`, or a service it does not name, the host is a reserved name that resolves nowhere: the client fails closed and reaches no one's server until the file names the services (the integrator's decision; the original hosts are gone). A malformed file is reported on stderr and has the same effect |
 | `HostPlatform.h` | The platform, its environment and the running program's own path, one file per platform, passed in so every platform's rules are tested everywhere |
@@ -34,6 +35,51 @@ defined by `cmake/sfcop_build_config.h.in`.
 `kDataSubdirs` is built from `Store`'s `userFolderName` (`src/platform/Store/Store.h`), so the
 per-user subfolders have one list. `Files.h` stays until a real `Store` backend lands (B5); the
 swap to `Store` is the integrator's, in its own pull request, once that backend exists.
+
+## The launcher
+
+When it opens depends on the kind of build:
+
+- **A package build** (`SFCOP_PACKAGE_BUILD`, the release packages): a run with a window and no
+  game set up (no `--install`, and no `install.txt` naming a folder that holds the game) opens
+  the launcher before any other place is tried. The player is prompted and the game imported; a
+  usual place that holds the game is a suggestion on Welcome, never used without asking.
+- **A developer build** (any other): the order stays `--install`, `install.txt`, the build's own
+  install, the platform's usual places. The launcher opens only where the terminal question
+  would be asked on a windowed run, so every developer and oracle run is as before.
+
+In both, `--launcher` opens it first, on Ready when a game is set up. `--headless`, `--input`,
+`--oracle` and `--install` runs never open it, and `--launcher` with any of them, or with
+`--import` or `--verify-import`, is bad input. `startClient` calls `StartupConfig::launcher`
+after the data folder is made (`StartupConfig::packageBuild` says which build it is); `main.cpp`
+passes the window, and a build with no compiled-in hash list is a package build.
+
+- **Welcome.** The installed game's folder, chosen in the system's folder picker, dropped on the
+  window or typed. The platform's usual folders that exist are suggested, each marked when the
+  game is in it. On Linux with no desktop portal (no session bus) and no `zenity`, there is no
+  folder picker; Welcome says so and the path field and dropping are the ways in.
+- **Working.** The phase in words, the file, a bar of bytes while copying and checking and an
+  indeterminate one otherwise, and Cancel. The import library runs on a worker thread; cancel
+  is an atomic flag it polls, and the copy it was making is removed as with Ctrl-C.
+- **Result.** Every status of `importGame` and `verifyImportedGame` has its screen: the
+  report's message as written, its lists scrollable, and the actions that fit (Try again,
+  Choose another folder, Import the game again, Back, Quit).
+- **Ready.** After an import, `install.txt` names the copy (`game`). Play starts the game in the
+  same process; Check game files runs `verifyImportedGame` and lists any file that differs;
+  Change game files goes back to Welcome, and the game in use stays until a new import succeeds.
+
+One job runs at a time, and closing the window during one cancels it and waits for it before the
+window goes. An import that completes anyway in that time is not remembered (`install.txt` is
+left as it was): the player closed the window before seeing it succeed, so the next start asks
+again rather than starting a game they did not see imported. The window (SDL3, Dear ImGui on an SDL renderer, no shaders) is destroyed and the
+video subsystem released before the game opens its own. With no display it cannot open: the
+terminal question is asked instead, and `--launcher` exits 1.
+
+`--launcher-steps FILE` drives the window from a steps file instead of a player, for captures
+(`launcher/LauncherSteps.h`): `wait welcome|working|result|ready`, `frames N`, `choose PATH`,
+`type TEXT`, `press NAME`, `close` and `shot FILE`. The file is read when the launcher opens, so
+a run that never opens it never reads it; a file that cannot be read or holds a wrong step, or a
+step the screen cannot do, ends the launcher with exit 2 and the reason named.
 
 ## Importing the game
 
