@@ -31,12 +31,15 @@
 #include "Tiger/tgStrMgr.h"
 #include "Tiger/tgfsys.cpp"
 #include "Tiger/tgfsys.h"
+#include "Tiger/tgthread.h"
 #include "Tiger/tinifile.cpp"
 #include "Tiger/tpart.h"
 #include "Tiger/tsay.h"
 #include "Tiger/tsequence.h"
 #include "Tiger/tsound_fileio.cpp"
 #include "Tiger/tstringtag.h"
+#include "Tiger/twSound.cpp"
+#include "Tiger/twthread.cpp"
 #include "dmp3d/common/stream_basicfile.h"
 #include "dmp3d/common/texBmp.h"
 #include "dmp3d/dx6/d3dframe.cpp"
@@ -3601,1437 +3604,1683 @@ extern "C" void sub_0062E0B0(void) {
     ::sfcop::guest::Entry< ::sfcop::guest::member< const tString&( long ) >( &tStringGroupTag::mGetString ) >::run();
 }
 
+// tCoopThreadPart::mSetTime(), game/Tiger/tgthread.cpp
+extern "C" void sub_0063EDD0(void) {
+    ::sfcop::guest::entered(587);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< double() >( &tCoopThreadPart::mSetTime ) >::run();
+}
+
+// tCoopThreadPart::mGetTime(), game/Tiger/tgthread.cpp
+extern "C" void sub_0063EE80(void) {
+    ::sfcop::guest::entered(588);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< double() >( &tCoopThreadPart::mGetTime ) >::run();
+}
+
+// tCoopThreadPart::mIsReady(), game/Tiger/tgthread.cpp
+extern "C" void sub_0063EE90(void) {
+    ::sfcop::guest::entered(589);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth() >( &tCoopThreadPart::mIsReady ) >::run();
+}
+
+// tCoopThreadPart::mActivate(), game/Tiger/tgthread.cpp
+extern "C" void sub_0063EEB0(void) {
+    ::sfcop::guest::entered(590);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tCoopThreadPart::mActivate ) >::run();
+}
+
+// tCoopThreadPart::mDeactivate(), game/Tiger/tgthread.cpp
+extern "C" void sub_0063F110(void) {
+    ::sfcop::guest::entered(591);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tCoopThreadPart::mDeactivate ) >::run();
+}
+
+// tCoopThreadPart::mNewThread(tClientThread*,long), game/Tiger/tgthread.cpp
+extern "C" void sub_0063F180(void) {
+    ::sfcop::guest::entered(592);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( tClientThread*, long ) >( &tCoopThreadPart::mNewThread ) >::run();
+}
+
+// tCoopThreadPart::mSetThreadFreq(tClientThread*,long), game/Tiger/tgthread.cpp
+extern "C" void sub_0063F280(void) {
+    ::sfcop::guest::entered(593);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( tClientThread*, long ) >( &tCoopThreadPart::mSetThreadFreq ) >::run();
+}
+
+// tCoopThreadPart::mSetMainThreadFreq(long), game/Tiger/tgthread.cpp
+extern "C" void sub_0063F2F0(void) {
+    ::sfcop::guest::entered(594);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( long ) >( &tCoopThreadPart::mSetMainThreadFreq ) >::run();
+}
+
+// tCoopThreadPart::mResetPriorities(), game/Tiger/tgthread.cpp
+extern "C" void sub_0063F370(void) {
+    ::sfcop::guest::entered(595);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tCoopThreadPart::mResetPriorities ) >::run();
+}
+
+// tCoopThreadPart::mSetThreadPriority(tClientThread*,long), game/Tiger/tgthread.cpp
+extern "C" void sub_0063F3C0(void) {
+    ::sfcop::guest::entered(596);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( tClientThread*, long ) >( &tCoopThreadPart::mSetThreadPriority ) >::run();
+}
+
+// tCoopThreadPart::mSetMainThreadPriority(long), game/Tiger/tgthread.cpp
+extern "C" void sub_0063F420(void) {
+    ::sfcop::guest::entered(597);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( long ) >( &tCoopThreadPart::mSetMainThreadPriority ) >::run();
+}
+
+// tCoopThreadPart::mRest(), game/Tiger/tgthread.cpp
+extern "C" void sub_0063F490(void) {
+    ::sfcop::guest::entered(598);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tCoopThreadPart::mRest ) >::run();
+}
+
+// tCoopThreadPart::mSleepFor(double), game/Tiger/tgthread.cpp
+extern "C" void sub_0063F4F0(void) {
+    ::sfcop::guest::entered(599);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( double ) >( &tCoopThreadPart::mSleepFor ) >::run();
+}
+
+// tCoopThreadPart::mSleepUntil(double), game/Tiger/tgthread.cpp
+extern "C" void sub_0063F540(void) {
+    ::sfcop::guest::entered(600);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( double ) >( &tCoopThreadPart::mSleepUntil ) >::run();
+}
+
+// tCoopThreadPart::mAllocCoopThread(), game/Tiger/tgthread.cpp
+extern "C" void sub_0063F6E0(void) {
+    ::sfcop::guest::entered(601);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tCoopThread*() >( &tCoopThreadPart::mAllocCoopThread ) >::run();
+}
+
+// tCoopThreadPart::mFreeCoopThread(tCoopThread*), game/Tiger/tgthread.cpp
+extern "C" void sub_0063F8F0(void) {
+    ::sfcop::guest::entered(602);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( tCoopThread* ) >( &tCoopThreadPart::mFreeCoopThread ) >::run();
+}
+
+// tCoopThreadPart::mFindCoopThread(tClientThread*), game/Tiger/tgthread.cpp
+extern "C" void sub_0063FB10(void) {
+    ::sfcop::guest::entered(603);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tCoopThread*( tClientThread* ) >( &tCoopThreadPart::mFindCoopThread ) >::run();
+}
+
+// tCoopThreadPart::mFindCoopThread(tNativeThread*), game/Tiger/tgthread.cpp
+extern "C" void sub_0063FB70(void) {
+    ::sfcop::guest::entered(604);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tCoopThread*( tNativeThread* ) >( &tCoopThreadPart::mFindCoopThread ) >::run();
+}
+
+// tCoopThreadPart::mGetBestNextThread(tCoopThread*,double), game/Tiger/tgthread.cpp
+extern "C" void sub_0063FBD0(void) {
+    ::sfcop::guest::entered(605);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tCoopThread*( tCoopThread*, double ) >( &tCoopThreadPart::mGetBestNextThread ) >::run();
+}
+
+// tCoopThreadPart::mDoDelThread(tClientThread*), game/Tiger/tgthread.cpp
+extern "C" void sub_00640220(void) {
+    ::sfcop::guest::entered(606);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( tClientThread* ) >( &tCoopThreadPart::mDoDelThread ) >::run();
+}
+
+// tCoopThreadPart::mDelThread(tClientThread*), game/Tiger/tgthread.cpp
+extern "C" void sub_006402E0(void) {
+    ::sfcop::guest::entered(607);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( tClientThread* ) >( &tCoopThreadPart::mDelThread ) >::run();
+}
+
+// DumpEventLog(), game/Tiger/twthread.cpp
+extern "C" void sub_00640700(void) {
+    ::sfcop::guest::entered(608);
+    ::sfcop::guest::Entry< static_cast< void (*)() >( &DumpEventLog ) >::run();
+}
+
+// MyReleaseSemaphore(void*), game/Tiger/twthread.cpp
+extern "C" void sub_006407B0(void) {
+    ::sfcop::guest::entered(609);
+    ::sfcop::guest::Entry< static_cast< unsigned char (*)( void* ) >( &MyReleaseSemaphore ) >::run();
+}
+
+// MyWaitForSingleObject(void*), game/Tiger/twthread.cpp
+extern "C" void sub_00640810(void) {
+    ::sfcop::guest::entered(610);
+    ::sfcop::guest::Entry< static_cast< void (*)( void* ) >( &MyWaitForSingleObject ) >::run();
+}
+
+// twNativeThread::twNativeThreadEntryProc(tNativeThread*), game/Tiger/twthread.cpp
+extern "C" void sub_00640870(void) {
+    ::sfcop::guest::entered(611);
+    ::sfcop::guest::Entry< static_cast< unsigned long (*)( tNativeThread* ) >( &twNativeThread::twNativeThreadEntryProc ) >::run();
+}
+
+// twCoopThreadPart::mNewMainThread(), game/Tiger/twthread.cpp
+extern "C" void sub_00641100(void) {
+    ::sfcop::guest::entered(612);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tNativeThread*() >( &twCoopThreadPart::mNewMainThread ) >::run();
+}
+
+// twCoopThreadPart::mNewNativeThread(class tClientThread*,long), game/Tiger/twthread.cpp
+extern "C" void sub_00641160(void) {
+    ::sfcop::guest::entered(613);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tNativeThread*( class tClientThread*, long ) >( &twCoopThreadPart::mNewNativeThread ) >::run();
+}
+
+// twCoopThreadPart::mDelNativeThread(tNativeThread*), game/Tiger/twthread.cpp
+extern "C" void sub_006411D0(void) {
+    ::sfcop::guest::entered(614);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( tNativeThread* ) >( &twCoopThreadPart::mDelNativeThread ) >::run();
+}
+
+// twCoopThreadPart::mDoDelThread(class tClientThread*), game/Tiger/twthread.cpp
+extern "C" void sub_006411F0(void) {
+    ::sfcop::guest::entered(615);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( class tClientThread* ) >( &twCoopThreadPart::mDoDelThread ) >::run();
+}
+
+// twSoundPart::mInitDirectSound(tInitSoundPartInfo*), game/Tiger/twSound.cpp
+extern "C" void sub_00641320(void) {
+    ::sfcop::guest::entered(616);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( tInitSoundPartInfo* ) >( &twSoundPart::mInitDirectSound ) >::run();
+}
+
+// twStandardSoundChannel::mClear(), game/Tiger/twSound.cpp
+extern "C" void sub_00641640(void) {
+    ::sfcop::guest::entered(617);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &twStandardSoundChannel::mClear ) >::run();
+}
+
+// twStandardSoundChannel::mReset(iTruth), game/Tiger/twSound.cpp
+extern "C" void sub_00641710(void) {
+    ::sfcop::guest::entered(618);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( iTruth ) >( &twStandardSoundChannel::mReset ) >::run();
+}
+
+// twStandardSoundChannel::mPauseChannel(), game/Tiger/twSound.cpp
+extern "C" void sub_006417F0(void) {
+    ::sfcop::guest::entered(619);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth() >( &twStandardSoundChannel::mPauseChannel ) >::run();
+}
+
+// twStandardSoundChannel::mDone(), game/Tiger/twSound.cpp
+extern "C" void sub_00641AF0(void) {
+    ::sfcop::guest::entered(620);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &twStandardSoundChannel::mDone ) >::run();
+}
+
+// twStandardSoundChannel::mInit(), game/Tiger/twSound.cpp
+extern "C" void sub_00641BF0(void) {
+    ::sfcop::guest::entered(621);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &twStandardSoundChannel::mInit ) >::run();
+}
+
+// twStandardSoundChannel::mLockHardware(), game/Tiger/twSound.cpp
+extern "C" void sub_00641CF0(void) {
+    ::sfcop::guest::entered(622);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char() >( &twStandardSoundChannel::mLockHardware ) >::run();
+}
+
+// twStandardSoundChannel::mLockHardwareForSilence(), game/Tiger/twSound.cpp
+extern "C" void sub_00641E50(void) {
+    ::sfcop::guest::entered(623);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char() >( &twStandardSoundChannel::mLockHardwareForSilence ) >::run();
+}
+
+// twStandardSoundChannel::mUnlockHardware(), game/Tiger/twSound.cpp
+extern "C" void sub_00641FE0(void) {
+    ::sfcop::guest::entered(624);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char() >( &twStandardSoundChannel::mUnlockHardware ) >::run();
+}
+
+// twStandardSoundChannel::mWriteSilence(), game/Tiger/twSound.cpp
+extern "C" void sub_00642410(void) {
+    ::sfcop::guest::entered(625);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &twStandardSoundChannel::mWriteSilence ) >::run();
+}
+
+// twStandardSoundChannel::mUpdateAmountReadableAndAmountPlayed(double), game/Tiger/twSound.cpp
+extern "C" void sub_00642510(void) {
+    ::sfcop::guest::entered(626);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( double ) >( &twStandardSoundChannel::mUpdateAmountReadableAndAmountPlayed ) >::run();
+}
+
+// twStandardSoundChannel::mUpdateAmountPlayed(), game/Tiger/twSound.cpp
+extern "C" void sub_006432B0(void) {
+    ::sfcop::guest::entered(627);
+    ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char() >( &twStandardSoundChannel::mUpdateAmountPlayed ) >::run();
+}
+
 // AddSoundErrorDuringInterrupt(const char*,...), game/Tiger/tgSound.cpp
 extern "C" void sub_00646CE0(void) {
-    ::sfcop::guest::entered(587);
+    ::sfcop::guest::entered(628);
     ::sfcop::guest::Entry< static_cast< void (*)( const char*, ... ) >( &AddSoundErrorDuringInterrupt ) >::run();
 }
 
 // PrintOutBufferedErrors(), game/Tiger/tgSound.cpp
 extern "C" void sub_00646D10(void) {
-    ::sfcop::guest::entered(588);
+    ::sfcop::guest::entered(629);
     ::sfcop::guest::Entry< static_cast< void (*)() >( &PrintOutBufferedErrors ) >::run();
 }
 
 // GetSilenceData(long), game/Tiger/tgSound.cpp
 extern "C" void sub_00646D60(void) {
-    ::sfcop::guest::entered(589);
+    ::sfcop::guest::entered(630);
     ::sfcop::guest::Entry< static_cast< iTruth (*)( long ) >( &GetSilenceData ) >::run();
 }
 
 // t3DListenerProfile::mInit(), game/Tiger/tgSound.cpp
 extern "C" void sub_00646E70(void) {
-    ::sfcop::guest::entered(590);
+    ::sfcop::guest::entered(631);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &t3DListenerProfile::mInit ) >::run();
 }
 
 // t3DListenerProfile::operator=(t3DListenerProfile&), game/Tiger/tgSound.cpp
 extern "C" void sub_00646EB0(void) {
-    ::sfcop::guest::entered(591);
+    ::sfcop::guest::entered(632);
     ::sfcop::guest::Entry< ::sfcop::guest::member< t3DListenerProfile&( t3DListenerProfile& ) >( &t3DListenerProfile::operator= ) >::run();
 }
 
 // t3DListenerProfile::mDump(), game/Tiger/tgSound.cpp
 extern "C" void sub_00646F10(void) {
-    ::sfcop::guest::entered(592);
+    ::sfcop::guest::entered(633);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &t3DListenerProfile::mDump ) >::run();
 }
 
 // t3DSoundProfile::mInit(), game/Tiger/tgSound.cpp
 extern "C" void sub_00647460(void) {
-    ::sfcop::guest::entered(593);
+    ::sfcop::guest::entered(634);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &t3DSoundProfile::mInit ) >::run();
 }
 
 // t3DSoundProfile::operator=(t3DSoundProfile&), game/Tiger/tgSound.cpp
 extern "C" void sub_006474A0(void) {
-    ::sfcop::guest::entered(594);
+    ::sfcop::guest::entered(635);
     ::sfcop::guest::Entry< ::sfcop::guest::member< t3DSoundProfile&( t3DSoundProfile& ) >( &t3DSoundProfile::operator= ) >::run();
 }
 
 // t3DSoundProfile::mDump(), game/Tiger/tgSound.cpp
 extern "C" void sub_00647500(void) {
-    ::sfcop::guest::entered(595);
+    ::sfcop::guest::entered(636);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &t3DSoundProfile::mDump ) >::run();
 }
 
 // tChannelAttributes::mInit(), game/Tiger/tgSound.cpp
 extern "C" void sub_00647AD0(void) {
-    ::sfcop::guest::entered(596);
+    ::sfcop::guest::entered(637);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tChannelAttributes::mInit ) >::run();
 }
 
 // tChannelAttributes::mDump(), game/Tiger/tgSound.cpp
 extern "C" void sub_00647AF0(void) {
-    ::sfcop::guest::entered(597);
+    ::sfcop::guest::entered(638);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tChannelAttributes::mDump ) >::run();
 }
 
 // tSoundChannelFormat::operator=(tSoundChannelFormat&), game/Tiger/tgSound.cpp
 extern "C" void sub_00647C40(void) {
-    ::sfcop::guest::entered(598);
+    ::sfcop::guest::entered(639);
     ::sfcop::guest::Entry< ::sfcop::guest::member< tSoundChannelFormat&( tSoundChannelFormat& ) >( &tSoundChannelFormat::operator= ) >::run();
 }
 
 // tSoundChannelFormat::mInit(), game/Tiger/tgSound.cpp
 extern "C" void sub_00647C70(void) {
-    ::sfcop::guest::entered(599);
+    ::sfcop::guest::entered(640);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tSoundChannelFormat::mInit ) >::run();
 }
 
 // tSoundChannelFormat::mDump(), game/Tiger/tgSound.cpp
 extern "C" void sub_00647CA0(void) {
-    ::sfcop::guest::entered(600);
+    ::sfcop::guest::entered(641);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tSoundChannelFormat::mDump ) >::run();
 }
 
 // tSoundCommandList::mGetListMemberWithHandleFromHandle(long), game/Tiger/tgSound.cpp
 extern "C" void sub_00648D50(void) {
-    ::sfcop::guest::entered(601);
+    ::sfcop::guest::entered(642);
     ::sfcop::guest::Entry< ::sfcop::guest::member< tListMemberWithHandle*( long ) >( &tSoundCommandList::mGetListMemberWithHandleFromHandle ) >::run();
 }
 
 // tSoundChannelList::mGetListMemberWithHandleFromHandle(long), game/Tiger/tgSound.cpp
 extern "C" void sub_00648E60(void) {
-    ::sfcop::guest::entered(602);
+    ::sfcop::guest::entered(643);
     ::sfcop::guest::Entry< ::sfcop::guest::member< tListMemberWithHandle*( long ) >( &tSoundChannelList::mGetListMemberWithHandleFromHandle ) >::run();
 }
 
 // tSoundChannel::mAddDelayedCommand(long), game/Tiger/tgSound.cpp
 extern "C" void sub_00648F70(void) {
-    ::sfcop::guest::entered(603);
+    ::sfcop::guest::entered(644);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( long ) >( &tSoundChannel::mAddDelayedCommand ) >::run();
 }
 
 // tSoundChannel::mFadeToVolume(long,double), game/Tiger/tgSound.cpp
 extern "C" void sub_00649290(void) {
-    ::sfcop::guest::entered(604);
+    ::sfcop::guest::entered(645);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( long, double ) >( &tSoundChannel::mFadeToVolume ) >::run();
 }
 
 // tSoundChannel::mGetFirstAttachment(), game/Tiger/tgSound.cpp
 extern "C" void sub_00649570(void) {
-    ::sfcop::guest::entered(605);
+    ::sfcop::guest::entered(646);
     ::sfcop::guest::Entry< ::sfcop::guest::member< tSoundChannelCommand*() >( &tSoundChannel::mGetFirstAttachment ) >::run();
 }
 
 // tSoundChannel::mFadeToStopAndResetNow(double), game/Tiger/tgSound.cpp
 extern "C" void sub_006496C0(void) {
-    ::sfcop::guest::entered(606);
+    ::sfcop::guest::entered(647);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( double ) >( &tSoundChannel::mFadeToStopAndResetNow ) >::run();
 }
 
 // tSoundChannel::mFadeToStopAndClearNow(double), game/Tiger/tgSound.cpp
 extern "C" void sub_00649920(void) {
-    ::sfcop::guest::entered(607);
+    ::sfcop::guest::entered(648);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( double ) >( &tSoundChannel::mFadeToStopAndClearNow ) >::run();
 }
 
 // tSoundChannel::mAddAttachment(long), game/Tiger/tgSound.cpp
 extern "C" void sub_00649B70(void) {
-    ::sfcop::guest::entered(608);
+    ::sfcop::guest::entered(649);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( long ) >( &tSoundChannel::mAddAttachment ) >::run();
 }
 
 // tSoundChannel::mAddImmediateCommand(long), game/Tiger/tgSound.cpp
 extern "C" void sub_00649F50(void) {
-    ::sfcop::guest::entered(609);
+    ::sfcop::guest::entered(650);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( long ) >( &tSoundChannel::mAddImmediateCommand ) >::run();
 }
 
 // tSoundChannel::mAddImmediateNonInterruptCommandCommand(long), game/Tiger/tgSound.cpp
 extern "C" void sub_0064A080(void) {
-    ::sfcop::guest::entered(610);
+    ::sfcop::guest::entered(651);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( long ) >( &tSoundChannel::mAddImmediateNonInterruptCommandCommand ) >::run();
 }
 
 // tSoundChannel::mInit(), game/Tiger/tgSound.cpp
 extern "C" void sub_0064A1D0(void) {
-    ::sfcop::guest::entered(611);
+    ::sfcop::guest::entered(652);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tSoundChannel::mInit ) >::run();
 }
 
 // tSoundChannel::mDone(), game/Tiger/tgSound.cpp
 extern "C" void sub_0064A460(void) {
-    ::sfcop::guest::entered(612);
+    ::sfcop::guest::entered(653);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tSoundChannel::mDone ) >::run();
 }
 
 // tSoundChannel::mClearCommands(), game/Tiger/tgSound.cpp
 extern "C" void sub_0064A590(void) {
-    ::sfcop::guest::entered(613);
+    ::sfcop::guest::entered(654);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tSoundChannel::mClearCommands ) >::run();
 }
 
 // tSoundChannel::mAddGetNextAttachmentFunction(void (*function)(unsigned long, long),long,double), game/Tiger/tgSound.cpp
 extern "C" void sub_0064A890(void) {
-    ::sfcop::guest::entered(614);
+    ::sfcop::guest::entered(655);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( void (*function)(unsigned long, long), long, double ) >( &tSoundChannel::mAddGetNextAttachmentFunction ) >::run();
 }
 
 // tSoundChannel::mGetTotalBytesLeftToPlay(), game/Tiger/tgSound.cpp
 extern "C" void sub_0064ABB0(void) {
-    ::sfcop::guest::entered(615);
+    ::sfcop::guest::entered(656);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long() >( &tSoundChannel::mGetTotalBytesLeftToPlay ) >::run();
 }
 
 // tSoundChannel::mGetTotalNumberOfSecondsLeftToPlay(), game/Tiger/tgSound.cpp
 extern "C" void sub_0064B030(void) {
-    ::sfcop::guest::entered(616);
+    ::sfcop::guest::entered(657);
     ::sfcop::guest::Entry< ::sfcop::guest::member< double() >( &tSoundChannel::mGetTotalNumberOfSecondsLeftToPlay ) >::run();
 }
 
 // tSoundChannel::mClearAllCommands(), game/Tiger/tgSound.cpp
 extern "C" void sub_0064B050(void) {
-    ::sfcop::guest::entered(617);
+    ::sfcop::guest::entered(658);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tSoundChannel::mClearAllCommands ) >::run();
 }
 
 // tSoundChannel::mClearAttachments(), game/Tiger/tgSound.cpp
 extern "C" void sub_0064B2D0(void) {
-    ::sfcop::guest::entered(618);
+    ::sfcop::guest::entered(659);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tSoundChannel::mClearAttachments ) >::run();
 }
 
 // tSoundChannel::mClearAllAttachments(), game/Tiger/tgSound.cpp
 extern "C" void sub_0064B610(void) {
-    ::sfcop::guest::entered(619);
+    ::sfcop::guest::entered(660);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tSoundChannel::mClearAllAttachments ) >::run();
 }
 
 // tSoundChannel::mSetUpdateMode(eSoundChannelUpdateMode), game/Tiger/tgSound.cpp
 extern "C" void sub_0064B8F0(void) {
-    ::sfcop::guest::entered(620);
+    ::sfcop::guest::entered(661);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( eSoundChannelUpdateMode ) >( &tSoundChannel::mSetUpdateMode ) >::run();
 }
 
 // tSoundChannel::mGetSelectionToAttach(), game/Tiger/tgSound.cpp
 extern "C" void sub_0064B910(void) {
-    ::sfcop::guest::entered(621);
+    ::sfcop::guest::entered(662);
     ::sfcop::guest::Entry< ::sfcop::guest::member< tSoundSelection*() >( &tSoundChannel::mGetSelectionToAttach ) >::run();
 }
 
 // tSoundChannel::mLockInData(), game/Tiger/tgSound.cpp
 extern "C" void sub_0064BB20(void) {
-    ::sfcop::guest::entered(622);
+    ::sfcop::guest::entered(663);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tSoundChannel::mLockInData ) >::run();
 }
 
 // tSoundChannel::mGetLastSelectionToAttach(), game/Tiger/tgSound.cpp
 extern "C" void sub_0064C1C0(void) {
-    ::sfcop::guest::entered(623);
+    ::sfcop::guest::entered(664);
     ::sfcop::guest::Entry< ::sfcop::guest::member< tSoundSelection*() >( &tSoundChannel::mGetLastSelectionToAttach ) >::run();
 }
 
 // tSoundChannel::mCleanupSelections(), game/Tiger/tgSound.cpp
 extern "C" void sub_0064C410(void) {
-    ::sfcop::guest::entered(624);
+    ::sfcop::guest::entered(665);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth() >( &tSoundChannel::mCleanupSelections ) >::run();
 }
 
 // tSoundChannel::mClear(), game/Tiger/tgSound.cpp
 extern "C" void sub_0064C970(void) {
-    ::sfcop::guest::entered(625);
+    ::sfcop::guest::entered(666);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tSoundChannel::mClear ) >::run();
 }
 
 // tSoundChannel::mClearAll(), game/Tiger/tgSound.cpp
 extern "C" void sub_0064CB00(void) {
-    ::sfcop::guest::entered(626);
+    ::sfcop::guest::entered(667);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tSoundChannel::mClearAll ) >::run();
 }
 
 // tSoundChannel::mReset(iTruth), game/Tiger/tgSound.cpp
 extern "C" void sub_0064CC90(void) {
-    ::sfcop::guest::entered(627);
+    ::sfcop::guest::entered(668);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( iTruth ) >( &tSoundChannel::mReset ) >::run();
 }
 
 // tSoundChannel::mTestInList(), game/Tiger/tgSound.cpp
 extern "C" void sub_0064D200(void) {
-    ::sfcop::guest::entered(628);
+    ::sfcop::guest::entered(669);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth() >( &tSoundChannel::mTestInList ) >::run();
 }
 
 // tSoundChannel::mSetChannelPriority(long), game/Tiger/tgSound.cpp
 extern "C" void sub_0064D350(void) {
-    ::sfcop::guest::entered(629);
+    ::sfcop::guest::entered(670);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( long ) >( &tSoundChannel::mSetChannelPriority ) >::run();
 }
 
 // tSoundChannel::mDump(), game/Tiger/tgSound.cpp
 extern "C" void sub_0064D360(void) {
-    ::sfcop::guest::entered(630);
+    ::sfcop::guest::entered(671);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tSoundChannel::mDump ) >::run();
 }
 
 // tSoundChannelCommand::mIsInvalid(), game/Tiger/tgSound.cpp
 extern "C" void sub_0064D820(void) {
-    ::sfcop::guest::entered(631);
+    ::sfcop::guest::entered(672);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth() >( &tSoundChannelCommand::mIsInvalid ) >::run();
 }
 
 // tSoundChannelCommand::mMakeInvalid(), game/Tiger/tgSound.cpp
 extern "C" void sub_0064D830(void) {
-    ::sfcop::guest::entered(632);
+    ::sfcop::guest::entered(673);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tSoundChannelCommand::mMakeInvalid ) >::run();
 }
 
 // tSoundChannelCommand::mMakeAvailable(), game/Tiger/tgSound.cpp
 extern "C" void sub_0064D840(void) {
-    ::sfcop::guest::entered(633);
+    ::sfcop::guest::entered(674);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tSoundChannelCommand::mMakeAvailable ) >::run();
 }
 
 // tSoundChannelCommand::mMakeUnavailable(), game/Tiger/tgSound.cpp
 extern "C" void sub_0064D850(void) {
-    ::sfcop::guest::entered(634);
+    ::sfcop::guest::entered(675);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth() >( &tSoundChannelCommand::mMakeUnavailable ) >::run();
 }
 
 // tChannelAttributes::vfunction7(long), game/Tiger/tgSound.cpp
 extern "C" void sub_0064D860(void) {
-    ::sfcop::guest::entered(635);
+    ::sfcop::guest::entered(676);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( long ) >( &tChannelAttributes::vfunction7 ) >::run();
 }
 
 // tSoundChannelFormat::vfunction12(), game/Tiger/tgSound.cpp
 extern "C" void sub_0064D870(void) {
-    ::sfcop::guest::entered(636);
+    ::sfcop::guest::entered(677);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long() >( &tSoundChannelFormat::vfunction12 ) >::run();
 }
 
 // tSoundChannelCommand::mGetUserData(), game/Tiger/tgSound.cpp
 extern "C" void sub_0064D880(void) {
-    ::sfcop::guest::entered(637);
+    ::sfcop::guest::entered(678);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long() >( &tSoundChannelCommand::mGetUserData ) >::run();
 }
 
 // tSoundChannel::mUpdateRegular(double), game/Tiger/tgSound.cpp
 extern "C" void sub_0064D890(void) {
-    ::sfcop::guest::entered(638);
+    ::sfcop::guest::entered(679);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( double ) >( &tSoundChannel::mUpdateRegular ) >::run();
 }
 
 // tSoundChannelCommand::mSetPan(long), game/Tiger/tgSound.cpp
 extern "C" void sub_0064DC40(void) {
-    ::sfcop::guest::entered(639);
+    ::sfcop::guest::entered(680);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( long ) >( &tSoundChannelCommand::mSetPan ) >::run();
 }
 
 // tSoundChannelCommand::mSetChannelAttributes(tChannelAttributes*), game/Tiger/tgSound.cpp
 extern "C" void sub_0064DC50(void) {
-    ::sfcop::guest::entered(640);
+    ::sfcop::guest::entered(681);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( tChannelAttributes* ) >( &tSoundChannelCommand::mSetChannelAttributes ) >::run();
 }
 
 // tSoundChannelCommand::mGetPan(), game/Tiger/tgSound.cpp
 extern "C" void sub_0064DC70(void) {
-    ::sfcop::guest::entered(641);
+    ::sfcop::guest::entered(682);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long() >( &tSoundChannelCommand::mGetPan ) >::run();
 }
 
 // tSoundChannelCommand::mGet3DSoundPosition(), game/Tiger/tgSound.cpp
 extern "C" void sub_0064DC80(void) {
-    ::sfcop::guest::entered(642);
+    ::sfcop::guest::entered(683);
     ::sfcop::guest::Entry< ::sfcop::guest::member< tPoint3*() >( &tSoundChannelCommand::mGet3DSoundPosition ) >::run();
 }
 
 // tSoundChannelCommand::mSet3DSoundProfile(t3DSoundProfile*), game/Tiger/tgSound.cpp
 extern "C" void sub_0064DC90(void) {
-    ::sfcop::guest::entered(643);
+    ::sfcop::guest::entered(684);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( t3DSoundProfile* ) >( &tSoundChannelCommand::mSet3DSoundProfile ) >::run();
 }
 
 // tSoundChannelCommand::mSet3DSoundPosition(tPoint3*), game/Tiger/tgSound.cpp
 extern "C" void sub_0064DCB0(void) {
-    ::sfcop::guest::entered(644);
+    ::sfcop::guest::entered(685);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( tPoint3* ) >( &tSoundChannelCommand::mSet3DSoundPosition ) >::run();
 }
 
 // tSoundChannelCommand::mGet3DSoundConeAngleForNoAttenuation(), game/Tiger/tgSound.cpp
 extern "C" void sub_0064DCD0(void) {
-    ::sfcop::guest::entered(645);
+    ::sfcop::guest::entered(686);
     ::sfcop::guest::Entry< ::sfcop::guest::member< float() >( &tSoundChannelCommand::mGet3DSoundConeAngleForNoAttenuation ) >::run();
 }
 
 // tSoundChannelCommand::mSetUserData(long), game/Tiger/tgSound.cpp
 extern "C" void sub_0064DCE0(void) {
-    ::sfcop::guest::entered(646);
+    ::sfcop::guest::entered(687);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( long ) >( &tSoundChannelCommand::mSetUserData ) >::run();
 }
 
 // tSoundChannelCommand::mGetTimeToTake(), game/Tiger/tgSound.cpp
 extern "C" void sub_0064DCF0(void) {
-    ::sfcop::guest::entered(647);
+    ::sfcop::guest::entered(688);
     ::sfcop::guest::Entry< ::sfcop::guest::member< double() >( &tSoundChannelCommand::mGetTimeToTake ) >::run();
 }
 
 // tSoundChannelCommand::mSetTimeToTake(double), game/Tiger/tgSound.cpp
 extern "C" void sub_0064DD00(void) {
-    ::sfcop::guest::entered(648);
+    ::sfcop::guest::entered(689);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( double ) >( &tSoundChannelCommand::mSetTimeToTake ) >::run();
 }
 
 // tSoundChannel::mUpdateAtInterrupt(double), game/Tiger/tgSound.cpp
 extern "C" void sub_0064DD20(void) {
-    ::sfcop::guest::entered(649);
+    ::sfcop::guest::entered(690);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( double ) >( &tSoundChannel::mUpdateAtInterrupt ) >::run();
 }
 
 // tSoundChannel::mAreWeStillActive(), game/Tiger/tgSound.cpp
 extern "C" void sub_0064E0E0(void) {
-    ::sfcop::guest::entered(650);
+    ::sfcop::guest::entered(691);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth() >( &tSoundChannel::mAreWeStillActive ) >::run();
 }
 
 // tSoundChannel::mDoCommand(tSoundChannelCommand*), game/Tiger/tgSound.cpp
 extern "C" void sub_0064E150(void) {
-    ::sfcop::guest::entered(651);
+    ::sfcop::guest::entered(692);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( tSoundChannelCommand* ) >( &tSoundChannel::mDoCommand ) >::run();
 }
 
 // tSoundChannel::mRemoveSoundChannel(), game/Tiger/tgSound.cpp
 extern "C" void sub_0064EB70(void) {
-    ::sfcop::guest::entered(652);
+    ::sfcop::guest::entered(693);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth() >( &tSoundChannel::mRemoveSoundChannel ) >::run();
 }
 
 // tSoundChannel::mAddFinishCommand(iTruth), game/Tiger/tgSound.cpp
 extern "C" void sub_0064EB80(void) {
-    ::sfcop::guest::entered(653);
+    ::sfcop::guest::entered(694);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( iTruth ) >( &tSoundChannel::mAddFinishCommand ) >::run();
 }
 
 // tSoundChannel::mPlaySpecialLoop(long,long,long,long), game/Tiger/tgSound.cpp
 extern "C" void sub_0064ED00(void) {
-    ::sfcop::guest::entered(654);
+    ::sfcop::guest::entered(695);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( long, long, long, long ) >( &tSoundChannel::mPlaySpecialLoop ) >::run();
 }
 
 // tSoundChannel::mEndSpecialLoop(), game/Tiger/tgSound.cpp
 extern "C" void sub_0064F040(void) {
-    ::sfcop::guest::entered(655);
+    ::sfcop::guest::entered(696);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth() >( &tSoundChannel::mEndSpecialLoop ) >::run();
 }
 
 // tgSoundPart::mUpdateAtInterrupt(), game/Tiger/tgSound.cpp
 extern "C" void sub_0064F670(void) {
-    ::sfcop::guest::entered(656);
+    ::sfcop::guest::entered(697);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tgSoundPart::mUpdateAtInterrupt ) >::run();
 }
 
 // tChannelGroupManagerPart::mIsReady(), game/Tiger/tgSound.cpp
 extern "C" void sub_0064FBE0(void) {
-    ::sfcop::guest::entered(657);
+    ::sfcop::guest::entered(698);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth() >( &tChannelGroupManagerPart::mIsReady ) >::run();
 }
 
 // tgSoundPart::mActivate(), game/Tiger/tgSound.cpp
 extern "C" void sub_0064FCC0(void) {
-    ::sfcop::guest::entered(658);
+    ::sfcop::guest::entered(699);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tgSoundPart::mActivate ) >::run();
 }
 
 // tgSoundPart::mDeactivate(), game/Tiger/tgSound.cpp
 extern "C" void sub_0064FD00(void) {
-    ::sfcop::guest::entered(659);
+    ::sfcop::guest::entered(700);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tgSoundPart::mDeactivate ) >::run();
 }
 
 // tgSoundPart::mDone(), game/Tiger/tgSound.cpp
 extern "C" void sub_0064FD10(void) {
-    ::sfcop::guest::entered(660);
+    ::sfcop::guest::entered(701);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tgSoundPart::mDone ) >::run();
 }
 
 // tgSoundPart::mInit(tInitSoundPartInfo*), game/Tiger/tgSound.cpp
 extern "C" void sub_0064FF30(void) {
-    ::sfcop::guest::entered(661);
+    ::sfcop::guest::entered(702);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( tInitSoundPartInfo* ) >( &tgSoundPart::mInit ) >::run();
 }
 
 // tSoundMemoryBlockManager::mGetTrueHandle(unsigned long), game/Tiger/tgSound.cpp
 extern "C" void sub_006501C0(void) {
-    ::sfcop::guest::entered(662);
+    ::sfcop::guest::entered(703);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( unsigned long ) >( &tSoundMemoryBlockManager::mGetTrueHandle ) >::run();
 }
 
 // tSoundMemoryBlockManager::mNumberOfBlocksNeeded(long), game/Tiger/tgSound.cpp
 extern "C" void sub_006501D0(void) {
-    ::sfcop::guest::entered(663);
+    ::sfcop::guest::entered(704);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( long ) >( &tSoundMemoryBlockManager::mNumberOfBlocksNeeded ) >::run();
 }
 
 // tSoundMemoryBlockManager::scalar_deleting_destructor(unsigned char), game/Tiger/tgSound.cpp
 extern "C" void sub_006501F0(void) {
-    ::sfcop::guest::entered(664);
+    ::sfcop::guest::entered(705);
     ::sfcop::guest::Entry< ::sfcop::guest::member< tSoundMemoryBlockManager *( unsigned char ) >( &tSoundMemoryBlockManager::scalar_deleting_destructor ) >::run();
 }
 
 // SoundPartCurrentTime(), game/Tiger/tgSound.cpp
 extern "C" void sub_00650230(void) {
-    ::sfcop::guest::entered(665);
+    ::sfcop::guest::entered(706);
     ::sfcop::guest::Entry< static_cast< double (*)() >( &SoundPartCurrentTime ) >::run();
 }
 
 // tgSoundPart::mClearOutSoundChannel(long), game/Tiger/tgSound.cpp
 extern "C" void sub_006502B0(void) {
-    ::sfcop::guest::entered(666);
+    ::sfcop::guest::entered(707);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( long ) >( &tgSoundPart::mClearOutSoundChannel ) >::run();
 }
 
 // tgSoundPart::mRemoveSoundChannel(long), game/Tiger/tgSound.cpp
 extern "C" void sub_006502F0(void) {
-    ::sfcop::guest::entered(667);
+    ::sfcop::guest::entered(708);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( long ) >( &tgSoundPart::mRemoveSoundChannel ) >::run();
 }
 
 // tgSoundPart::mRemoveAllSoundChannels(), game/Tiger/tgSound.cpp
 extern "C" void sub_006503A0(void) {
-    ::sfcop::guest::entered(668);
+    ::sfcop::guest::entered(709);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char() >( &tgSoundPart::mRemoveAllSoundChannels ) >::run();
 }
 
 // tgSoundPart::mGetSoundChannelCommandPtrFromHandle(long), game/Tiger/tgSound.cpp
 extern "C" void sub_00650440(void) {
-    ::sfcop::guest::entered(669);
+    ::sfcop::guest::entered(710);
     ::sfcop::guest::Entry< ::sfcop::guest::member< tSoundChannelCommand*( long ) >( &tgSoundPart::mGetSoundChannelCommandPtrFromHandle ) >::run();
 }
 
 // tgSoundPart::mFindAvailableSoundChannelCommandPtrAndReturnAHandle(), game/Tiger/tgSound.cpp
 extern "C" void sub_00650470(void) {
-    ::sfcop::guest::entered(670);
+    ::sfcop::guest::entered(711);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long() >( &tgSoundPart::mFindAvailableSoundChannelCommandPtrAndReturnAHandle ) >::run();
 }
 
 // tgSoundPart::mFindAvailableSoundChannelHandle(), game/Tiger/tgSound.cpp
 extern "C" void sub_00650800(void) {
-    ::sfcop::guest::entered(671);
+    ::sfcop::guest::entered(712);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long() >( &tgSoundPart::mFindAvailableSoundChannelHandle ) >::run();
 }
 
 // tgSoundPart::mAddChannelAtHandle(tSoundChannel*,long), game/Tiger/tgSound.cpp
 extern "C" void sub_00650A40(void) {
-    ::sfcop::guest::entered(672);
+    ::sfcop::guest::entered(713);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( tSoundChannel*, long ) >( &tgSoundPart::mAddChannelAtHandle ) >::run();
 }
 
 // tgSoundPart::mSetNumberOfSoundChannelCommands(long), game/Tiger/tgSound.cpp
 extern "C" void sub_00650B70(void) {
-    ::sfcop::guest::entered(673);
+    ::sfcop::guest::entered(714);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( long ) >( &tgSoundPart::mSetNumberOfSoundChannelCommands ) >::run();
 }
 
 // tgSoundPart::mSetNumberOfSoundChannels(long), game/Tiger/tgSound.cpp
 extern "C" void sub_00651020(void) {
-    ::sfcop::guest::entered(674);
+    ::sfcop::guest::entered(715);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( long ) >( &tgSoundPart::mSetNumberOfSoundChannels ) >::run();
 }
 
 // tgSoundPart::mGetSoundChannelPtrFromHandle(long), game/Tiger/tgSound.cpp
 extern "C" void sub_006512E0(void) {
-    ::sfcop::guest::entered(675);
+    ::sfcop::guest::entered(716);
     ::sfcop::guest::Entry< ::sfcop::guest::member< tSoundChannel*( long ) >( &tgSoundPart::mGetSoundChannelPtrFromHandle ) >::run();
 }
 
 // tChannelGroup::mDump(unsigned long,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_006587F0(void) {
-    ::sfcop::guest::entered(676);
+    ::sfcop::guest::entered(717);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( unsigned long, long ) >( &tChannelGroup::mDump ) >::run();
 }
 
 // tChannelGroup::mDump(), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00658890(void) {
-    ::sfcop::guest::entered(677);
+    ::sfcop::guest::entered(718);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tChannelGroup::mDump ) >::run();
 }
 
 // tChannelGroup::mClose(), game/Tiger/taudiochannel.cpp
 extern "C" void sub_006589F0(void) {
-    ::sfcop::guest::entered(678);
+    ::sfcop::guest::entered(719);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tChannelGroup::mClose ) >::run();
 }
 
 // tChannelGroup::mLoad(long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00658E30(void) {
-    ::sfcop::guest::entered(679);
+    ::sfcop::guest::entered(720);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( long ) >( &tChannelGroup::mLoad ) >::run();
 }
 
 // tChannelGroup::mGetChannelNumberFromIndex(long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659470(void) {
-    ::sfcop::guest::entered(680);
+    ::sfcop::guest::entered(721);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( long ) >( &tChannelGroup::mGetChannelNumberFromIndex ) >::run();
 }
 
 // tChannelGroup::mGetIndex(unsigned long,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_006594A0(void) {
-    ::sfcop::guest::entered(681);
+    ::sfcop::guest::entered(722);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( unsigned long, long ) >( &tChannelGroup::mGetIndex ) >::run();
 }
 
 // tChannelGroup::mAddDuplicate(unsigned long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659530(void) {
-    ::sfcop::guest::entered(682);
+    ::sfcop::guest::entered(723);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( unsigned long ) >( &tChannelGroup::mAddDuplicate ) >::run();
 }
 
 // tChannelGroup::mAttachFileToChannel(unsigned long,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659540(void) {
-    ::sfcop::guest::entered(683);
+    ::sfcop::guest::entered(724);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( unsigned long, long ) >( &tChannelGroup::mAttachFileToChannel ) >::run();
 }
 
 // tChannelGroup::mAttachFileToBaseGroup(long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_006597F0(void) {
-    ::sfcop::guest::entered(684);
+    ::sfcop::guest::entered(725);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( long ) >( &tChannelGroup::mAttachFileToBaseGroup ) >::run();
 }
 
 // tChannelGroup::mKillRetainedMode(), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659A20(void) {
-    ::sfcop::guest::entered(685);
+    ::sfcop::guest::entered(726);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char() >( &tChannelGroup::mKillRetainedMode ) >::run();
 }
 
 // tChannelGroup::mClearAttachments(), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659B80(void) {
-    ::sfcop::guest::entered(686);
+    ::sfcop::guest::entered(727);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char() >( &tChannelGroup::mClearAttachments ) >::run();
 }
 
 // tChannelGroup::mGetAvailableChannel(unsigned long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_00659CA0(void) {
-    ::sfcop::guest::entered(687);
+    ::sfcop::guest::entered(728);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( unsigned long ) >( &tChannelGroup::mGetAvailableChannel ) >::run();
 }
 
 // tChannelGroup::mAttachSoundToChannel(unsigned long,tSoundSelection *,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_0065A0F0(void) {
-    ::sfcop::guest::entered(688);
+    ::sfcop::guest::entered(729);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( unsigned long, tSoundSelection *, long ) >( &tChannelGroup::mAttachSoundToChannel ) >::run();
 }
 
 // tChannelGroup::mPlayChannel(unsigned long,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_0065A370(void) {
-    ::sfcop::guest::entered(689);
+    ::sfcop::guest::entered(730);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( unsigned long, long ) >( &tChannelGroup::mPlayChannel ) >::run();
 }
 
 // tChannelGroup::mPauseChannel(unsigned long,long), game/Tiger/taudiochannel.cpp
 extern "C" void sub_0065A7C0(void) {
-    ::sfcop::guest::entered(690);
+    ::sfcop::guest::entered(731);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( unsigned long, long ) >( &tChannelGroup::mPauseChannel ) >::run();
 }
 
 // tgStrManager::mDeactivate(), game/Tiger/tgStrMgr.cpp
 extern "C" void sub_0066BE30(void) {
-    ::sfcop::guest::entered(691);
+    ::sfcop::guest::entered(732);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tgStrManager::mDeactivate ) >::run();
 }
 
 // tgStrManager::mDone(), game/Tiger/tgStrMgr.cpp
 extern "C" void sub_0066BE50(void) {
-    ::sfcop::guest::entered(692);
+    ::sfcop::guest::entered(733);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tgStrManager::mDone ) >::run();
 }
 
 // tgStrManager::mLoadStringFile(const char *,bool), game/Tiger/tgStrMgr.cpp
 extern "C" void sub_0066BE60(void) {
-    ::sfcop::guest::entered(693);
+    ::sfcop::guest::entered(734);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( const char *, bool ) >( &tgStrManager::mLoadStringFile ) >::run();
 }
 
 // tgStrManager::mLoadStringFile(tBasicFile &,bool), game/Tiger/tgStrMgr.cpp
 extern "C" void sub_0066BE80(void) {
-    ::sfcop::guest::entered(694);
+    ::sfcop::guest::entered(735);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( tBasicFile &, bool ) >( &tgStrManager::mLoadStringFile ) >::run();
 }
 
 // tgStrManager::mGetStringIndex(const char *), game/Tiger/tgStrMgr.cpp
 extern "C" void sub_0066BEA0(void) {
-    ::sfcop::guest::entered(695);
+    ::sfcop::guest::entered(736);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int( const char * ) >( &tgStrManager::mGetStringIndex ) >::run();
 }
 
 // tgStrManager::mGetStringIndex(const tString &), game/Tiger/tgStrMgr.cpp
 extern "C" void sub_0066BEC0(void) {
-    ::sfcop::guest::entered(696);
+    ::sfcop::guest::entered(737);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int( const tString & ) >( &tgStrManager::mGetStringIndex ) >::run();
 }
 
 // tgStrManager::mGetString(int), game/Tiger/tgStrMgr.cpp
 extern "C" void sub_0066BEE0(void) {
-    ::sfcop::guest::entered(697);
+    ::sfcop::guest::entered(738);
     ::sfcop::guest::Entry< ::sfcop::guest::member< const tString &( int ) >( &tgStrManager::mGetString ) >::run();
 }
 
 // tgStrManager::mGetString(const char *), game/Tiger/tgStrMgr.cpp
 extern "C" void sub_0066BF00(void) {
-    ::sfcop::guest::entered(698);
+    ::sfcop::guest::entered(739);
     ::sfcop::guest::Entry< ::sfcop::guest::member< const tString &( const char * ) >( &tgStrManager::mGetString ) >::run();
 }
 
 // tgStrManager::mGetString(const tString &), game/Tiger/tgStrMgr.cpp
 extern "C" void sub_0066BF20(void) {
-    ::sfcop::guest::entered(699);
+    ::sfcop::guest::entered(740);
     ::sfcop::guest::Entry< ::sfcop::guest::member< const tString &( const tString & ) >( &tgStrManager::mGetString ) >::run();
 }
 
 // tgStrManager::mGetNumElements(long), game/Tiger/tgStrMgr.cpp
 extern "C" void sub_0066BF40(void) {
-    ::sfcop::guest::entered(700);
+    ::sfcop::guest::entered(741);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( long ) >( &tgStrManager::mGetNumElements ) >::run();
 }
 
 // tgStrManager::mGetNumElements(const char *), game/Tiger/tgStrMgr.cpp
 extern "C" void sub_0066BF60(void) {
-    ::sfcop::guest::entered(701);
+    ::sfcop::guest::entered(742);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( const char * ) >( &tgStrManager::mGetNumElements ) >::run();
 }
 
 // tgStrManager::mGetRandStr(long), game/Tiger/tgStrMgr.cpp
 extern "C" void sub_0066BF80(void) {
-    ::sfcop::guest::entered(702);
+    ::sfcop::guest::entered(743);
     ::sfcop::guest::Entry< ::sfcop::guest::member< const tString &( long ) >( &tgStrManager::mGetRandStr ) >::run();
 }
 
 // tgStrManager::mGetRandStr(const char *), game/Tiger/tgStrMgr.cpp
 extern "C" void sub_0066BFA0(void) {
-    ::sfcop::guest::entered(703);
+    ::sfcop::guest::entered(744);
     ::sfcop::guest::Entry< ::sfcop::guest::member< const tString &( const char * ) >( &tgStrManager::mGetRandStr ) >::run();
 }
 
 // tgStrManager::mGetGrpStr(long,long), game/Tiger/tgStrMgr.cpp
 extern "C" void sub_0066BFC0(void) {
-    ::sfcop::guest::entered(704);
+    ::sfcop::guest::entered(745);
     ::sfcop::guest::Entry< ::sfcop::guest::member< const tString &( long, long ) >( &tgStrManager::mGetGrpStr ) >::run();
 }
 
 // tgStrManager::mGetGrpStr(const char *,int), game/Tiger/tgStrMgr.cpp
 extern "C" void sub_0066BFE0(void) {
-    ::sfcop::guest::entered(705);
+    ::sfcop::guest::entered(746);
     ::sfcop::guest::Entry< ::sfcop::guest::member< const tString &( const char *, int ) >( &tgStrManager::mGetGrpStr ) >::run();
 }
 
 // tgStrManager::mIsAnElement(long,long), game/Tiger/tgStrMgr.cpp
 extern "C" void sub_0066C000(void) {
-    ::sfcop::guest::entered(706);
+    ::sfcop::guest::entered(747);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( long, long ) >( &tgStrManager::mIsAnElement ) >::run();
 }
 
 // tgStrManager::mIsAnElement(const char *,long), game/Tiger/tgStrMgr.cpp
 extern "C" void sub_0066C020(void) {
-    ::sfcop::guest::entered(707);
+    ::sfcop::guest::entered(748);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( const char *, long ) >( &tgStrManager::mIsAnElement ) >::run();
 }
 
 // tgStrManager::mIsAnElement(long,const tString &), game/Tiger/tgStrMgr.cpp
 extern "C" void sub_0066C040(void) {
-    ::sfcop::guest::entered(708);
+    ::sfcop::guest::entered(749);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( long, const tString & ) >( &tgStrManager::mIsAnElement ) >::run();
 }
 
 // tgStrManager::mIsAnElement(const char *,const tString &), game/Tiger/tgStrMgr.cpp
 extern "C" void sub_0066C060(void) {
-    ::sfcop::guest::entered(709);
+    ::sfcop::guest::entered(750);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( const char *, const tString & ) >( &tgStrManager::mIsAnElement ) >::run();
 }
 
 // tCRandomSequence::mSetSeed(int32u), game/Tiger/tcrandsequence.cpp
 extern "C" void sub_0066C1C0(void) {
-    ::sfcop::guest::entered(710);
+    ::sfcop::guest::entered(751);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( int32u ) >( &tCRandomSequence::mSetSeed ) >::run();
 }
 
 // tCRandomSequence::mGenerateNumber(), game/Tiger/tcrandsequence.cpp
 extern "C" void sub_0066C1E0(void) {
-    ::sfcop::guest::entered(711);
+    ::sfcop::guest::entered(752);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32u() >( &tCRandomSequence::mGenerateNumber ) >::run();
 }
 
 // tUniFont::mSetFontID(ulong), game/Tiger/tUniFont.cpp
 extern "C" void sub_0066C270(void) {
-    ::sfcop::guest::entered(712);
+    ::sfcop::guest::entered(753);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( ulong ) >( &tUniFont::mSetFontID ) >::run();
 }
 
 // tUniFont::scalar_deleting_destructor(unsigned char), game/Tiger/tUniFont.cpp
 extern "C" void sub_0066C370(void) {
-    ::sfcop::guest::entered(713);
+    ::sfcop::guest::entered(754);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void*( unsigned char ) >( &tUniFont::scalar_deleting_destructor ) >::run();
 }
 
 // tUniFont::mGetCharInfo(unsigned short) const, game/Tiger/tUniFont.cpp
 extern "C" void sub_0066C3A0(void) {
-    ::sfcop::guest::entered(714);
+    ::sfcop::guest::entered(755);
     ::sfcop::guest::Entry< ::sfcop::guest::member< const tCharInfo*( unsigned short ) const >( &tUniFont::mGetCharInfo ) >::run();
 }
 
 // tUniFont::mChangePtSize(ePointSize), game/Tiger/tUniFont.cpp
 extern "C" void sub_0066C3C0(void) {
-    ::sfcop::guest::entered(715);
+    ::sfcop::guest::entered(756);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( ePointSize ) >( &tUniFont::mChangePtSize ) >::run();
 }
 
 // tUniFont::mSetFont(eTypeface,eFontStyle,ePointSize), game/Tiger/tUniFont.cpp
 extern "C" void sub_0066C450(void) {
-    ::sfcop::guest::entered(716);
+    ::sfcop::guest::entered(757);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( eTypeface, eFontStyle, ePointSize ) >( &tUniFont::mSetFont ) >::run();
 }
 
 // tUniFont::mGetCharWidth(unsigned short) const, game/Tiger/tUniFont.cpp
 extern "C" void sub_0066C4F0(void) {
-    ::sfcop::guest::entered(717);
+    ::sfcop::guest::entered(758);
     ::sfcop::guest::Entry< ::sfcop::guest::member< const ulong( unsigned short ) const >( &tUniFont::mGetCharWidth ) >::run();
 }
 
 // tUniFont::mGetTextWidth(const unsigned short*) const, game/Tiger/tUniFont.cpp
 extern "C" void sub_0066C510(void) {
-    ::sfcop::guest::entered(718);
+    ::sfcop::guest::entered(759);
     ::sfcop::guest::Entry< ::sfcop::guest::member< const ulong( const unsigned short* ) const >( &tUniFont::mGetTextWidth ) >::run();
 }
 
 // tUniFont::mGetFontHeight(unsigned short) const, game/Tiger/tUniFont.cpp
 extern "C" void sub_0066C550(void) {
-    ::sfcop::guest::entered(719);
+    ::sfcop::guest::entered(760);
     ::sfcop::guest::Entry< ::sfcop::guest::member< const ulong( unsigned short ) const >( &tUniFont::mGetFontHeight ) >::run();
 }
 
 // tSay::mHandleOutput(const int,const char *), game/Tiger/tsay.cpp
 extern "C" void sub_0066C6A0(void) {
-    ::sfcop::guest::entered(720);
+    ::sfcop::guest::entered(761);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( const int, const char * ) >( &tSay::mHandleOutput ) >::run();
 }
 
 // tSay::mSay(const char *,...), game/Tiger/tsay.cpp
 extern "C" void sub_0066C890(void) {
-    ::sfcop::guest::entered(721);
+    ::sfcop::guest::entered(762);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( const char *, ... ) >( &tSay::mSay ) >::run();
 }
 
 // tSay::mJustSayIt(const char *,...), game/Tiger/tsay.cpp
 extern "C" void sub_0066C8C0(void) {
-    ::sfcop::guest::entered(722);
+    ::sfcop::guest::entered(763);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( const char *, ... ) >( &tSay::mJustSayIt ) >::run();
 }
 
 // tBasicFileCRT::mClose(), game/unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp
 extern "C" void sub_0066D1C0(void) {
-    ::sfcop::guest::entered(723);
+    ::sfcop::guest::entered(764);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char() >( &tBasicFileCRT::mClose ) >::run();
 }
 
 // tBasicFileCRT::mIsOpen(), game/unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp
 extern "C" void sub_0066D1E0(void) {
-    ::sfcop::guest::entered(724);
+    ::sfcop::guest::entered(765);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char() >( &tBasicFileCRT::mIsOpen ) >::run();
 }
 
 // tBasicFileCRT::mEOF(), game/unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp
 extern "C" void sub_0066D1F0(void) {
-    ::sfcop::guest::entered(725);
+    ::sfcop::guest::entered(766);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char() >( &tBasicFileCRT::mEOF ) >::run();
 }
 
 // tBasicFileCRT::mRead(void*,unsigned long), game/unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp
 extern "C" void sub_0066D210(void) {
-    ::sfcop::guest::entered(726);
+    ::sfcop::guest::entered(767);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned long( void*, unsigned long ) >( &tBasicFileCRT::mRead ) >::run();
 }
 
 // tBasicFileCRT::vfunction8(const void*,unsigned long), game/unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp
 extern "C" void sub_0066D240(void) {
-    ::sfcop::guest::entered(727);
+    ::sfcop::guest::entered(768);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned long( const void*, unsigned long ) >( &tBasicFileCRT::vfunction8 ) >::run();
 }
 
 // tBasicFileCRT::mFilePos(), game/unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp
 extern "C" void sub_0066D270(void) {
-    ::sfcop::guest::entered(728);
+    ::sfcop::guest::entered(769);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned long() >( &tBasicFileCRT::mFilePos ) >::run();
 }
 
 // tBasicFileCRT::mFileSize(), game/unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp
 extern "C" void sub_0066D290(void) {
-    ::sfcop::guest::entered(729);
+    ::sfcop::guest::entered(770);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned long() >( &tBasicFileCRT::mFileSize ) >::run();
 }
 
 // tBasicFileCRT::mSeekSet(long), game/unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp
 extern "C" void sub_0066D2E0(void) {
-    ::sfcop::guest::entered(730);
+    ::sfcop::guest::entered(771);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( long ) >( &tBasicFileCRT::mSeekSet ) >::run();
 }
 
 // tBasicFileCRT::mSeekCur(long), game/unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp
 extern "C" void sub_0066D310(void) {
-    ::sfcop::guest::entered(731);
+    ::sfcop::guest::entered(772);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( long ) >( &tBasicFileCRT::mSeekCur ) >::run();
 }
 
 // tBasicFileCRT::mSeekEnd(long), game/unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp
 extern "C" void sub_0066D340(void) {
-    ::sfcop::guest::entered(732);
+    ::sfcop::guest::entered(773);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( long ) >( &tBasicFileCRT::mSeekEnd ) >::run();
 }
 
 // _InitNewBasicFileCRT(unsigned char), game/unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp
 extern "C" void sub_0066D370(void) {
-    ::sfcop::guest::entered(733);
+    ::sfcop::guest::entered(774);
     ::sfcop::guest::Entry< static_cast< unsigned char (*)( unsigned char ) >( &_InitNewBasicFileCRT ) >::run();
 }
 
 // _DoneNewBasicFileCRT(), game/unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp
 extern "C" void sub_0066D460(void) {
-    ::sfcop::guest::entered(734);
+    ::sfcop::guest::entered(775);
     ::sfcop::guest::Entry< static_cast< void (*)() >( &_DoneNewBasicFileCRT ) >::run();
 }
 
 // _NewBasicFileCRT(), game/unsorted/tBasicFileCRTNamespace__tBasicFileCRT.cpp
 extern "C" void sub_0066D480(void) {
-    ::sfcop::guest::entered(735);
+    ::sfcop::guest::entered(776);
     ::sfcop::guest::Entry< static_cast< tBasicFile* (*)() >( &_NewBasicFileCRT ) >::run();
 }
 
 // tItemBag::scalar_deleting_destructor(unsigned char), game/Tiger/tBag.cpp
 extern "C" void sub_0066D6F0(void) {
-    ::sfcop::guest::entered(736);
+    ::sfcop::guest::entered(777);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void *( unsigned char ) >( &tItemBag::scalar_deleting_destructor ) >::run();
 }
 
 // tItemBag::mAddToList(tBaseItemBag *,char *), game/Tiger/tBag.cpp
 extern "C" void sub_0066D7E0(void) {
-    ::sfcop::guest::entered(737);
+    ::sfcop::guest::entered(778);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( tBaseItemBag *, char * ) >( &tItemBag::mAddToList ) >::run();
 }
 
 // tItemBag::mFindItemWithLabel(char *), game/Tiger/tBag.cpp
 extern "C" void sub_0066D880(void) {
-    ::sfcop::guest::entered(738);
+    ::sfcop::guest::entered(779);
     ::sfcop::guest::Entry< ::sfcop::guest::member< tBaseItemBag *( char * ) >( &tItemBag::mFindItemWithLabel ) >::run();
 }
 
 // tSoundMemoryBlockList::mGetListMemberWithHandleFromHandle(long), game/Tiger/tSndMemMgr.cpp
 extern "C" void sub_0066D8E0(void) {
-    ::sfcop::guest::entered(739);
+    ::sfcop::guest::entered(780);
     ::sfcop::guest::Entry< ::sfcop::guest::member< tListMemberWithHandle *( long ) >( &tSoundMemoryBlockList::mGetListMemberWithHandleFromHandle ) >::run();
 }
 
 // tSoundMemoryBlockList::mInsertIntoList(long), game/Tiger/tSndMemMgr.cpp
 extern "C" void sub_0066D900(void) {
-    ::sfcop::guest::entered(740);
+    ::sfcop::guest::entered(781);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( long ) >( &tSoundMemoryBlockList::mInsertIntoList ) >::run();
 }
 
 // tSoundMemoryBlock::mMergeBlocks(), game/Tiger/tSndMemMgr.cpp
 extern "C" void sub_0066D9A0(void) {
-    ::sfcop::guest::entered(741);
+    ::sfcop::guest::entered(782);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long() >( &tSoundMemoryBlock::mMergeBlocks ) >::run();
 }
 
 // tSoundMemoryBlock::mUseThisMuch(long), game/Tiger/tSndMemMgr.cpp
 extern "C" void sub_0066DAE0(void) {
-    ::sfcop::guest::entered(742);
+    ::sfcop::guest::entered(783);
     ::sfcop::guest::Entry< ::sfcop::guest::member< long( long ) >( &tSoundMemoryBlock::mUseThisMuch ) >::run();
 }
 
 // tSoundMemoryBlock::mDump(), game/Tiger/tSndMemMgr.cpp
 extern "C" void sub_0066DB80(void) {
-    ::sfcop::guest::entered(743);
+    ::sfcop::guest::entered(784);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tSoundMemoryBlock::mDump ) >::run();
 }
 
 // tSoundMemoryBlockManager::mInit(unsigned short,long), game/Tiger/tSndMemMgr.cpp
 extern "C" void sub_0066DC50(void) {
-    ::sfcop::guest::entered(744);
+    ::sfcop::guest::entered(785);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( unsigned short, long ) >( &tSoundMemoryBlockManager::mInit ) >::run();
 }
 
 // tSoundMemoryBlockManager::mNewLockedBlock(unsigned long,void (*callback)(long),long), game/Tiger/tSndMemMgr.cpp
 extern "C" void sub_0066E000(void) {
-    ::sfcop::guest::entered(745);
+    ::sfcop::guest::entered(786);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char *( unsigned long, void (*callback)(long), long ) >( &tSoundMemoryBlockManager::mNewLockedBlock ) >::run();
 }
 
 // tSoundMemoryBlockManager::mFreeLockedBlock(unsigned char *), game/Tiger/tSndMemMgr.cpp
 extern "C" void sub_0066E030(void) {
-    ::sfcop::guest::entered(746);
+    ::sfcop::guest::entered(787);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( unsigned char * ) >( &tSoundMemoryBlockManager::mFreeLockedBlock ) >::run();
 }
 
 // tSoundMemoryBlockManager::mNewBlock(unsigned long,void (*callback)(long),long), game/Tiger/tSndMemMgr.cpp
 extern "C" void sub_0066E0F0(void) {
-    ::sfcop::guest::entered(747);
+    ::sfcop::guest::entered(788);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned long( unsigned long, void (*callback)(long), long ) >( &tSoundMemoryBlockManager::mNewBlock ) >::run();
 }
 
 // tSoundMemoryBlockManager::mFreeBlock(unsigned long), game/Tiger/tSndMemMgr.cpp
 extern "C" void sub_0066E420(void) {
-    ::sfcop::guest::entered(748);
+    ::sfcop::guest::entered(789);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( unsigned long ) >( &tSoundMemoryBlockManager::mFreeBlock ) >::run();
 }
 
 // tSoundMemoryBlockManager::mLockBlock(unsigned long), game/Tiger/tSndMemMgr.cpp
 extern "C" void sub_0066E4E0(void) {
-    ::sfcop::guest::entered(749);
+    ::sfcop::guest::entered(790);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char *( unsigned long ) >( &tSoundMemoryBlockManager::mLockBlock ) >::run();
 }
 
 // tSoundMemoryBlockManager::mUnlockBlock(long), game/Tiger/tSndMemMgr.cpp
 extern "C" void sub_0066E5E0(void) {
-    ::sfcop::guest::entered(750);
+    ::sfcop::guest::entered(791);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( long ) >( &tSoundMemoryBlockManager::mUnlockBlock ) >::run();
 }
 
 // tSoundMemoryBlockManager::mGetBlock(long), game/Tiger/tSndMemMgr.cpp
 extern "C" void sub_0066E620(void) {
-    ::sfcop::guest::entered(751);
+    ::sfcop::guest::entered(792);
     ::sfcop::guest::Entry< ::sfcop::guest::member< tSoundMemoryBlock *( long ) >( &tSoundMemoryBlockManager::mGetBlock ) >::run();
 }
 
 // tSoundMemoryBlockManager::mDumpBlock(unsigned long), game/Tiger/tSndMemMgr.cpp
 extern "C" void sub_0066E650(void) {
-    ::sfcop::guest::entered(752);
+    ::sfcop::guest::entered(793);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( unsigned long ) >( &tSoundMemoryBlockManager::mDumpBlock ) >::run();
 }
 
 // tSoundMemoryBlockManager::mDump(), game/Tiger/tSndMemMgr.cpp
 extern "C" void sub_0066E910(void) {
-    ::sfcop::guest::entered(753);
+    ::sfcop::guest::entered(794);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tSoundMemoryBlockManager::mDump ) >::run();
 }
 
 // tSoundMemoryBlockManager::mIsThisHandleValid(unsigned long), game/Tiger/tSndMemMgr.cpp
 extern "C" void sub_0066E9C0(void) {
-    ::sfcop::guest::entered(754);
+    ::sfcop::guest::entered(795);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( unsigned long ) >( &tSoundMemoryBlockManager::mIsThisHandleValid ) >::run();
 }
 
 // tSoundMemoryBlockManager::mFreeLowestPriorityBlockWithNoLocks(), game/Tiger/tSndMemMgr.cpp
 extern "C" void sub_0066EA20(void) {
-    ::sfcop::guest::entered(755);
+    ::sfcop::guest::entered(796);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char() >( &tSoundMemoryBlockManager::mFreeLowestPriorityBlockWithNoLocks ) >::run();
 }
 
 // tAsynchSoundQueue::mReadNext(), game/Tiger/tsound_fileio.cpp
 extern "C" void sub_0066EC50(void) {
-    ::sfcop::guest::entered(756);
+    ::sfcop::guest::entered(797);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth() >( &tAsynchSoundQueue::mReadNext ) >::run();
 }
 
 // tAsynchSoundQueue::mReadNextInterrupt(), game/Tiger/tsound_fileio.cpp
 extern "C" void sub_0066EE80(void) {
-    ::sfcop::guest::entered(757);
+    ::sfcop::guest::entered(798);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tAsynchSoundQueue::mReadNextInterrupt ) >::run();
 }
 
 // tSoundFileIO::mOpenForRead(const char *), game/Tiger/tsound_fileio.cpp
 extern "C" void sub_0066F2D0(void) {
-    ::sfcop::guest::entered(758);
+    ::sfcop::guest::entered(799);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( const char * ) >( &tSoundFileIO::mOpenForRead ) >::run();
 }
 
 // tSoundFileIO::mOpenForWrite(const char *), game/Tiger/tsound_fileio.cpp
 extern "C" void sub_0066F440(void) {
-    ::sfcop::guest::entered(759);
+    ::sfcop::guest::entered(800);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( const char * ) >( &tSoundFileIO::mOpenForWrite ) >::run();
 }
 
 // tSoundFileIO::mClose(), game/Tiger/tsound_fileio.cpp
 extern "C" void sub_0066F4E0(void) {
-    ::sfcop::guest::entered(760);
+    ::sfcop::guest::entered(801);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth() >( &tSoundFileIO::mClose ) >::run();
 }
 
 // tSoundFileIO::mRead(void *,int32u), game/Tiger/tsound_fileio.cpp
 extern "C" void sub_0066F5D0(void) {
-    ::sfcop::guest::entered(761);
+    ::sfcop::guest::entered(802);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32u( void *, int32u ) >( &tSoundFileIO::mRead ) >::run();
 }
 
 // tSoundFileIO::mWrite(const void *,int32u), game/Tiger/tsound_fileio.cpp
 extern "C" void sub_0066F710(void) {
-    ::sfcop::guest::entered(762);
+    ::sfcop::guest::entered(803);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32u( const void *, int32u ) >( &tSoundFileIO::mWrite ) >::run();
 }
 
 // tSoundFileIO::mEOF(), game/Tiger/tsound_fileio.cpp
 extern "C" void sub_0066F830(void) {
-    ::sfcop::guest::entered(763);
+    ::sfcop::guest::entered(804);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth() >( &tSoundFileIO::mEOF ) >::run();
 }
 
 // tSoundFileIO::mFilePos(), game/Tiger/tsound_fileio.cpp
 extern "C" void sub_0066F850(void) {
-    ::sfcop::guest::entered(764);
+    ::sfcop::guest::entered(805);
     ::sfcop::guest::Entry< ::sfcop::guest::member< DWORD() >( &tSoundFileIO::mFilePos ) >::run();
 }
 
 // tSoundFileIO::mFileSize(), game/Tiger/tsound_fileio.cpp
 extern "C" void sub_0066F8B0(void) {
-    ::sfcop::guest::entered(765);
+    ::sfcop::guest::entered(806);
     ::sfcop::guest::Entry< ::sfcop::guest::member< DWORD() >( &tSoundFileIO::mFileSize ) >::run();
 }
 
 // tSoundFileIO::mSeekSet(LONG), game/Tiger/tsound_fileio.cpp
 extern "C" void sub_0066F910(void) {
-    ::sfcop::guest::entered(766);
+    ::sfcop::guest::entered(807);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( LONG ) >( &tSoundFileIO::mSeekSet ) >::run();
 }
 
 // tSoundFileIO::mSeekCur(LONG), game/Tiger/tsound_fileio.cpp
 extern "C" void sub_0066F960(void) {
-    ::sfcop::guest::entered(767);
+    ::sfcop::guest::entered(808);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( LONG ) >( &tSoundFileIO::mSeekCur ) >::run();
 }
 
 // tSoundFileIO::mSeekEnd(LONG), game/Tiger/tsound_fileio.cpp
 extern "C" void sub_0066F9B0(void) {
-    ::sfcop::guest::entered(768);
+    ::sfcop::guest::entered(809);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( LONG ) >( &tSoundFileIO::mSeekEnd ) >::run();
 }
 
 // tSoundFileIO::mRead(void *,int32u,int32u), game/Tiger/tsound_fileio.cpp
 extern "C" void sub_0066FA40(void) {
-    ::sfcop::guest::entered(769);
+    ::sfcop::guest::entered(810);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32u( void *, int32u, int32u ) >( &tSoundFileIO::mRead ) >::run();
 }
 
 // tSoundFileIO::mReadAsync(void *,int32u,void (*callback)( void *, int32u ),void *), game/Tiger/tsound_fileio.cpp
 extern "C" void sub_0066FC50(void) {
-    ::sfcop::guest::entered(770);
+    ::sfcop::guest::entered(811);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( void *, int32u, void (*callback)( void *, int32u ), void * ) >( &tSoundFileIO::mReadAsync ) >::run();
 }
 
 // tSoundFileIO::mReadAsync(void *,int32u,int32u,void (*callback)( void *, int32u ),void *), game/Tiger/tsound_fileio.cpp
 extern "C" void sub_0066FC80(void) {
-    ::sfcop::guest::entered(771);
+    ::sfcop::guest::entered(812);
     ::sfcop::guest::Entry< ::sfcop::guest::member< iTruth( void *, int32u, int32u, void (*callback)( void *, int32u ), void * ) >( &tSoundFileIO::mReadAsync ) >::run();
 }
 
 // _InitSoundFileIO(), game/Tiger/tsound_fileio.cpp
 extern "C" void sub_0066FDA0(void) {
-    ::sfcop::guest::entered(772);
+    ::sfcop::guest::entered(813);
     ::sfcop::guest::Entry< static_cast< int8u (*)() >( &_InitSoundFileIO ) >::run();
 }
 
 // _DoneSoundFileIO(), game/Tiger/tsound_fileio.cpp
 extern "C" void sub_0066FEE0(void) {
-    ::sfcop::guest::entered(773);
+    ::sfcop::guest::entered(814);
     ::sfcop::guest::Entry< static_cast< void (*)() >( &_DoneSoundFileIO ) >::run();
 }
 
 // _NewSoundFileIO(), game/Tiger/tsound_fileio.cpp
 extern "C" void sub_00670000(void) {
-    ::sfcop::guest::entered(774);
+    ::sfcop::guest::entered(815);
     ::sfcop::guest::Entry< static_cast< tSoundFileIOBase * (*)() >( &_NewSoundFileIO ) >::run();
 }
 
 // tSequencePart::mGetNumber(), game/Tiger/tsequence.cpp
 extern "C" void sub_00670180(void) {
-    ::sfcop::guest::entered(775);
+    ::sfcop::guest::entered(816);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32u() >( &tSequencePart::mGetNumber ) >::run();
 }
 
 // tSequencePart::mGetNumber(int32u), game/Tiger/tsequence.cpp
 extern "C" void sub_006701C0(void) {
-    ::sfcop::guest::entered(776);
+    ::sfcop::guest::entered(817);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32u( int32u ) >( &tSequencePart::mGetNumber ) >::run();
 }
 
 // tFontTable::mResetDataMembers(), game/Tiger/tFontmgr.cpp
 extern "C" void sub_006702C0(void) {
-    ::sfcop::guest::entered(777);
+    ::sfcop::guest::entered(818);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tFontTable::mResetDataMembers ) >::run();
 }
 
 // tFontTable::mInit(const char*,tFontFileIO&), game/Tiger/tFontmgr.cpp
 extern "C" void sub_006702F0(void) {
-    ::sfcop::guest::entered(778);
+    ::sfcop::guest::entered(819);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( const char*, tFontFileIO& ) >( &tFontTable::mInit ) >::run();
 }
 
 // tFontTable::mStoreCustomTypeface(unsigned short*), game/Tiger/tFontmgr.cpp
 extern "C" void sub_00670520(void) {
-    ::sfcop::guest::entered(779);
+    ::sfcop::guest::entered(820);
     ::sfcop::guest::Entry< ::sfcop::guest::member< unsigned char( unsigned short* ) >( &tFontTable::mStoreCustomTypeface ) >::run();
 }
 
 // tFontTable::mMakeGlyph(unsigned short,tFontFileIO*), game/Tiger/tFontmgr.cpp
 extern "C" void sub_00670710(void) {
-    ::sfcop::guest::entered(780);
+    ::sfcop::guest::entered(821);
     ::sfcop::guest::Entry< ::sfcop::guest::member< tCharInfo*( unsigned short, tFontFileIO* ) >( &tFontTable::mMakeGlyph ) >::run();
 }
 
 // tTextFontFileIO::mGetC(), game/Tiger/tFontmgr.cpp
 extern "C" void sub_006708C0(void) {
-    ::sfcop::guest::entered(781);
+    ::sfcop::guest::entered(822);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int() >( &tTextFontFileIO::mGetC ) >::run();
 }
 
 // tFontMgr::mDone(), game/Tiger/tFontmgr.cpp
 extern "C" void sub_00670D50(void) {
-    ::sfcop::guest::entered(782);
+    ::sfcop::guest::entered(823);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tFontMgr::mDone ) >::run();
 }
 
 // tFontMgr::mGetCharInfo(unsigned short,unsigned long), game/Tiger/tFontmgr.cpp
 extern "C" void sub_00670DD0(void) {
-    ::sfcop::guest::entered(783);
+    ::sfcop::guest::entered(824);
     ::sfcop::guest::Entry< ::sfcop::guest::member< const tCharInfo*( unsigned short, unsigned long ) >( &tFontMgr::mGetCharInfo ) >::run();
 }
 
 // tFontMgr::mGetTypefacebyName(const tString&), game/Tiger/tFontmgr.cpp
 extern "C" void sub_00670EE0(void) {
-    ::sfcop::guest::entered(784);
+    ::sfcop::guest::entered(825);
     ::sfcop::guest::Entry< ::sfcop::guest::member< eTypeface( const tString& ) >( &tFontMgr::mGetTypefacebyName ) >::run();
 }
 
 // _GetCharInfo(unsigned short,unsigned long), game/Tiger/tFontmgr.cpp
 extern "C" void sub_00671110(void) {
-    ::sfcop::guest::entered(785);
+    ::sfcop::guest::entered(826);
     ::sfcop::guest::Entry< static_cast< const tCharInfo* (*)( unsigned short, unsigned long ) >( &_GetCharInfo ) >::run();
 }
 
 // _GetCharHeight(unsigned long,unsigned short), game/Tiger/tFontmgr.cpp
 extern "C" void sub_00671130(void) {
-    ::sfcop::guest::entered(786);
+    ::sfcop::guest::entered(827);
     ::sfcop::guest::Entry< static_cast< unsigned long (*)( unsigned long, unsigned short ) >( &_GetCharHeight ) >::run();
 }
 
 // tStream_BasicFile::mGet(void *,unsigned long), game/dmp3d/common/stream_basicfile.cpp
 extern "C" void sub_006A2DC0(void) {
-    ::sfcop::guest::entered(787);
+    ::sfcop::guest::entered(828);
     ::sfcop::guest::Entry< ::sfcop::guest::member< bool( void *, unsigned long ) >( &tStream_BasicFile::mGet ) >::run();
 }
 
 // tStream_BasicFile::mPut(const void *,unsigned long), game/dmp3d/common/stream_basicfile.cpp
 extern "C" void sub_006A2E40(void) {
-    ::sfcop::guest::entered(788);
+    ::sfcop::guest::entered(829);
     ::sfcop::guest::Entry< ::sfcop::guest::member< bool( const void *, unsigned long ) >( &tStream_BasicFile::mPut ) >::run();
 }
 
 // tTexBmp::vfunction2(tBasicFile *), game/dmp3d/common/texBmp.cpp
 extern "C" void sub_006A48D0(void) {
-    ::sfcop::guest::entered(789);
+    ::sfcop::guest::entered(830);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( tBasicFile * ) >( &tTexBmp::vfunction2 ) >::run();
 }
 
 // tTexBmp::vfunction8(), game/dmp3d/common/texBmp.cpp
 extern "C" void sub_006A5B90(void) {
-    ::sfcop::guest::entered(790);
+    ::sfcop::guest::entered(831);
     ::sfcop::guest::Entry< ::sfcop::guest::member< bool() >( &tTexBmp::vfunction8 ) >::run();
 }
 
 // tTexBmp::fn_006a5c20(), game/dmp3d/common/texBmp.cpp
 extern "C" void sub_006A5C20(void) {
-    ::sfcop::guest::entered(791);
+    ::sfcop::guest::entered(832);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tTexBmp::fn_006a5c20 ) >::run();
 }
 
 // tTexBmp::vfunction4(tBasicFile *), game/dmp3d/common/texBmp.cpp
 extern "C" void sub_006A5C80(void) {
-    ::sfcop::guest::entered(792);
+    ::sfcop::guest::entered(833);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( tBasicFile * ) >( &tTexBmp::vfunction4 ) >::run();
 }
 
 // CD3DFramework::DestroyObjects(), game/dmp3d/dx6/d3dframe.cpp
 extern "C" void sub_006A7C60(void) {
-    ::sfcop::guest::entered(793);
+    ::sfcop::guest::entered(834);
     ::sfcop::guest::Entry< ::sfcop::guest::member< HRESULT() >( &CD3DFramework::DestroyObjects ) >::run();
 }
 
 // CD3DFramework::Initialize(HWND,GUID*,GUID*,DDSURFACEDESC2*,DWORD), game/dmp3d/dx6/d3dframe.cpp
 extern "C" void sub_006A7D20(void) {
-    ::sfcop::guest::entered(794);
+    ::sfcop::guest::entered(835);
     ::sfcop::guest::Entry< ::sfcop::guest::member< HRESULT( HWND, GUID*, GUID*, DDSURFACEDESC2*, DWORD ) >( &CD3DFramework::Initialize ) >::run();
 }
 
 // CD3DFramework::CreateEnvironment(GUID*,GUID*,DDSURFACEDESC2*,DWORD), game/dmp3d/dx6/d3dframe.cpp
 extern "C" void sub_006A7D90(void) {
-    ::sfcop::guest::entered(795);
+    ::sfcop::guest::entered(836);
     ::sfcop::guest::Entry< ::sfcop::guest::member< HRESULT( GUID*, GUID*, DDSURFACEDESC2*, DWORD ) >( &CD3DFramework::CreateEnvironment ) >::run();
 }
 
 // CD3DFramework::CreateDirectDraw(GUID*,DWORD), game/dmp3d/dx6/d3dframe.cpp
 extern "C" void sub_006A7EE0(void) {
-    ::sfcop::guest::entered(796);
+    ::sfcop::guest::entered(837);
     ::sfcop::guest::Entry< ::sfcop::guest::member< HRESULT( GUID*, DWORD ) >( &CD3DFramework::CreateDirectDraw ) >::run();
 }
 
 // CD3DFramework::CreateDirect3D(GUID*,DWORD), game/dmp3d/dx6/d3dframe.cpp
 extern "C" void sub_006A7F80(void) {
-    ::sfcop::guest::entered(797);
+    ::sfcop::guest::entered(838);
     ::sfcop::guest::Entry< ::sfcop::guest::member< HRESULT( GUID*, DWORD ) >( &CD3DFramework::CreateDirect3D ) >::run();
 }
 
 // CD3DFramework::CreateBuffers(DDSURFACEDESC2*,DWORD), game/dmp3d/dx6/d3dframe.cpp
 extern "C" void sub_006A8110(void) {
-    ::sfcop::guest::entered(798);
+    ::sfcop::guest::entered(839);
     ::sfcop::guest::Entry< ::sfcop::guest::member< HRESULT( DDSURFACEDESC2*, DWORD ) >( &CD3DFramework::CreateBuffers ) >::run();
 }
 
 // CD3DFramework::CreateZBuffer(), game/dmp3d/dx6/d3dframe.cpp
 extern "C" void sub_006A83F0(void) {
-    ::sfcop::guest::entered(799);
+    ::sfcop::guest::entered(840);
     ::sfcop::guest::Entry< ::sfcop::guest::member< HRESULT() >( &CD3DFramework::CreateZBuffer ) >::run();
 }
 
 // CD3DFramework::ShowFrame(), game/dmp3d/dx6/d3dframe.cpp
 extern "C" void sub_006A84B0(void) {
-    ::sfcop::guest::entered(800);
+    ::sfcop::guest::entered(841);
     ::sfcop::guest::Entry< ::sfcop::guest::member< HRESULT() >( &CD3DFramework::ShowFrame ) >::run();
 }
 
 // CD3DFramework::FlipToGDISurface(BOOL), game/dmp3d/dx6/d3dframe.cpp
 extern "C" void sub_006A8500(void) {
-    ::sfcop::guest::entered(801);
+    ::sfcop::guest::entered(842);
     ::sfcop::guest::Entry< ::sfcop::guest::member< HRESULT( BOOL ) >( &CD3DFramework::FlipToGDISurface ) >::run();
 }
 
 // CD3DFramework::RestoreSurfaces(), game/dmp3d/dx6/d3dframe.cpp
 extern "C" void sub_006A8540(void) {
-    ::sfcop::guest::entered(802);
+    ::sfcop::guest::entered(843);
     ::sfcop::guest::Entry< ::sfcop::guest::member< HRESULT() >( &CD3DFramework::RestoreSurfaces ) >::run();
 }
 
 // CD3DFramework::Move(INT,INT), game/dmp3d/dx6/d3dframe.cpp
 extern "C" void sub_006A85A0(void) {
-    ::sfcop::guest::entered(803);
+    ::sfcop::guest::entered(844);
     ::sfcop::guest::Entry< ::sfcop::guest::member< VOID( INT, INT ) >( &CD3DFramework::Move ) >::run();
 }
 
 // D3DUtil_InitSurfaceDesc(DDSURFACEDESC2&,DWORD,DWORD), game/dmp3d/dx6/d3dutil.cpp
 extern "C" void sub_006A94A0(void) {
-    ::sfcop::guest::entered(804);
+    ::sfcop::guest::entered(845);
     ::sfcop::guest::Entry< static_cast< VOID (*)( DDSURFACEDESC2&, DWORD, DWORD ) >( &D3DUtil_InitSurfaceDesc ) >::run();
 }
 
 // D3DUtil_InitViewport(D3DVIEWPORT2&,DWORD,DWORD), game/dmp3d/dx6/d3dutil.cpp
 extern "C" void sub_006A94D0(void) {
-    ::sfcop::guest::entered(805);
+    ::sfcop::guest::entered(846);
     ::sfcop::guest::Entry< static_cast< VOID (*)( D3DVIEWPORT2&, DWORD, DWORD ) >( &D3DUtil_InitViewport ) >::run();
 }
 
 // tSFCStream::mGetVersionNumber(), game/unsorted/fn_006D2000.cpp
 extern "C" void sub_006D2800(void) {
-    ::sfcop::guest::entered(806);
+    ::sfcop::guest::entered(847);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int() >( &tSFCStream::mGetVersionNumber ) >::run();
 }
 
 // tThreadPool::Instance(), game/Common/Thread/ThreadPool.cpp
 extern "C" void sub_006F39B0(void) {
-    ::sfcop::guest::entered(807);
+    ::sfcop::guest::entered(848);
     ::sfcop::guest::Entry< static_cast< tThreadPool* (*)() >( &tThreadPool::Instance ) >::run();
 }
 
 // tThreadPool::Startup(), game/Common/Thread/ThreadPool.cpp
 extern "C" void sub_006F3D40(void) {
-    ::sfcop::guest::entered(808);
+    ::sfcop::guest::entered(849);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tThreadPool::Startup ) >::run();
 }
 
 // tThreadPool::SetMaxThreads(int32u), game/Common/Thread/ThreadPool.cpp
 extern "C" void sub_006F3F30(void) {
-    ::sfcop::guest::entered(809);
+    ::sfcop::guest::entered(850);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( int32u ) >( &tThreadPool::SetMaxThreads ) >::run();
 }
 
 // tThreadPool::GetMaxThreads() const, game/Common/Thread/ThreadPool.cpp
 extern "C" void sub_006F40A0(void) {
-    ::sfcop::guest::entered(810);
+    ::sfcop::guest::entered(851);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32u() const >( &tThreadPool::GetMaxThreads ) >::run();
 }
 
 // tThreadPool::SetMemoryChecking(bool), game/Common/Thread/ThreadPool.cpp
 extern "C" void sub_006F4550(void) {
-    ::sfcop::guest::entered(811);
+    ::sfcop::guest::entered(852);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( bool ) >( &tThreadPool::SetMemoryChecking ) >::run();
 }
 
 // tThreadPool::SetDelayMultiple(float), game/Common/Thread/ThreadPool.cpp
 extern "C" void sub_006F4560(void) {
-    ::sfcop::guest::entered(812);
+    ::sfcop::guest::entered(853);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( float ) >( &tThreadPool::SetDelayMultiple ) >::run();
 }
 
 // tThreadPool::SetTimeBlockSize(int32u), game/Common/Thread/ThreadPool.cpp
 extern "C" void sub_006F46B0(void) {
-    ::sfcop::guest::entered(813);
+    ::sfcop::guest::entered(854);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( int32u ) >( &tThreadPool::SetTimeBlockSize ) >::run();
 }
 
 // tThreadPool::SetPacketQueLimit(int32u), game/Common/Thread/ThreadPool.cpp
 extern "C" void sub_006F4800(void) {
-    ::sfcop::guest::entered(814);
+    ::sfcop::guest::entered(855);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( int32u ) >( &tThreadPool::SetPacketQueLimit ) >::run();
 }
 
 // tThreadPool::GetDelayMultiple() const, game/Common/Thread/ThreadPool.cpp
 extern "C" void sub_006F4950(void) {
-    ::sfcop::guest::entered(815);
+    ::sfcop::guest::entered(856);
     ::sfcop::guest::Entry< ::sfcop::guest::member< float() const >( &tThreadPool::GetDelayMultiple ) >::run();
 }
 
 // tThreadPool::GetTimeBlockSize() const, game/Common/Thread/ThreadPool.cpp
 extern "C" void sub_006F4AA0(void) {
-    ::sfcop::guest::entered(816);
+    ::sfcop::guest::entered(857);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32u() const >( &tThreadPool::GetTimeBlockSize ) >::run();
 }
 
 // tOSVersion::Init(), game/Common/OSVersion.cpp
 extern "C" void sub_006F5570(void) {
-    ::sfcop::guest::entered(817);
+    ::sfcop::guest::entered(858);
     ::sfcop::guest::Entry< ::sfcop::guest::member< bool() >( &tOSVersion::Init ) >::run();
 }
 
 // tOSVersion::IsWindows95(), game/Common/OSVersion.cpp
 extern "C" void sub_006F5580(void) {
-    ::sfcop::guest::entered(818);
+    ::sfcop::guest::entered(859);
     ::sfcop::guest::Entry< ::sfcop::guest::member< bool() >( &tOSVersion::IsWindows95 ) >::run();
 }
 
 // tOSVersion::IsWindows98(), game/Common/OSVersion.cpp
 extern "C" void sub_006F55A0(void) {
-    ::sfcop::guest::entered(819);
+    ::sfcop::guest::entered(860);
     ::sfcop::guest::Entry< ::sfcop::guest::member< bool() >( &tOSVersion::IsWindows98 ) >::run();
 }
 
 // tAllocatedClass::operator==(const type_info&), game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC4D0(void) {
-    ::sfcop::guest::entered(820);
+    ::sfcop::guest::entered(861);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32( const type_info& ) >( &tAllocatedClass::operator== ) >::run();
 }
 
 // tDynamicAllocator::tAllocatorInfo::operator==(const char*) const, game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC5A0(void) {
-    ::sfcop::guest::entered(821);
+    ::sfcop::guest::entered(862);
     ::sfcop::guest::Entry< ::sfcop::guest::member< int32( const char* ) const >( &tDynamicAllocator::tAllocatorInfo::operator== ) >::run();
 }
 
 // tDynamicAllocator::LockDownAllocator(), game/Common/DynamicAllocator.cpp
 extern "C" void sub_006FC750(void) {
-    ::sfcop::guest::entered(822);
+    ::sfcop::guest::entered(863);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void() >( &tDynamicAllocator::LockDownAllocator ) >::run();
 }
 
 // tFileDatabaseMgr::tDatabaseInfo::StreamOut(nDataStore::tOutput&) const, game/Common/Database/FileDatabaseMgr.cpp
 extern "C" void sub_00707EF0(void) {
-    ::sfcop::guest::entered(823);
+    ::sfcop::guest::entered(864);
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( nDataStore::tOutput& ) const >( &tFileDatabaseMgr::tDatabaseInfo::StreamOut ) >::run();
 }
 
 // tFileDatabaseMgr::GetCurDBInfo(), game/Common/Database/FileDatabaseMgr.cpp
 extern "C" void sub_00708FC0(void) {
-    ::sfcop::guest::entered(824);
+    ::sfcop::guest::entered(865);
     ::sfcop::guest::Entry< ::sfcop::guest::member< tFileDatabaseMgr::tDatabaseInfo() >( &tFileDatabaseMgr::GetCurDBInfo ) >::run();
 }
 
 // tFileDatabaseMgr::GetDBInfo(int32) const, game/Common/Database/FileDatabaseMgr.cpp
 extern "C" void sub_00709060(void) {
-    ::sfcop::guest::entered(825);
+    ::sfcop::guest::entered(866);
     ::sfcop::guest::Entry< ::sfcop::guest::member< const tFileDatabaseMgr::tDatabaseInfo*( int32 ) const >( &tFileDatabaseMgr::GetDBInfo ) >::run();
 }
 
@@ -5642,6 +5891,47 @@ const sfcop_guest_override sfcop_guest_overrides[] = {
     {0x0062DE60u, sub_0062DE60, "tStringTag::mGetString()", "Tiger/tstringtag.cpp"},
     {0x0062DFA0u, sub_0062DFA0, "tStringGroupTag::mGetNumElements()", "Tiger/tstringtag.cpp"},
     {0x0062E0B0u, sub_0062E0B0, "tStringGroupTag::mGetString(long)", "Tiger/tstringtag.cpp"},
+    {0x0063EDD0u, sub_0063EDD0, "tCoopThreadPart::mSetTime()", "Tiger/tgthread.cpp"},
+    {0x0063EE80u, sub_0063EE80, "tCoopThreadPart::mGetTime()", "Tiger/tgthread.cpp"},
+    {0x0063EE90u, sub_0063EE90, "tCoopThreadPart::mIsReady()", "Tiger/tgthread.cpp"},
+    {0x0063EEB0u, sub_0063EEB0, "tCoopThreadPart::mActivate()", "Tiger/tgthread.cpp"},
+    {0x0063F110u, sub_0063F110, "tCoopThreadPart::mDeactivate()", "Tiger/tgthread.cpp"},
+    {0x0063F180u, sub_0063F180, "tCoopThreadPart::mNewThread(tClientThread*,long)", "Tiger/tgthread.cpp"},
+    {0x0063F280u, sub_0063F280, "tCoopThreadPart::mSetThreadFreq(tClientThread*,long)", "Tiger/tgthread.cpp"},
+    {0x0063F2F0u, sub_0063F2F0, "tCoopThreadPart::mSetMainThreadFreq(long)", "Tiger/tgthread.cpp"},
+    {0x0063F370u, sub_0063F370, "tCoopThreadPart::mResetPriorities()", "Tiger/tgthread.cpp"},
+    {0x0063F3C0u, sub_0063F3C0, "tCoopThreadPart::mSetThreadPriority(tClientThread*,long)", "Tiger/tgthread.cpp"},
+    {0x0063F420u, sub_0063F420, "tCoopThreadPart::mSetMainThreadPriority(long)", "Tiger/tgthread.cpp"},
+    {0x0063F490u, sub_0063F490, "tCoopThreadPart::mRest()", "Tiger/tgthread.cpp"},
+    {0x0063F4F0u, sub_0063F4F0, "tCoopThreadPart::mSleepFor(double)", "Tiger/tgthread.cpp"},
+    {0x0063F540u, sub_0063F540, "tCoopThreadPart::mSleepUntil(double)", "Tiger/tgthread.cpp"},
+    {0x0063F6E0u, sub_0063F6E0, "tCoopThreadPart::mAllocCoopThread()", "Tiger/tgthread.cpp"},
+    {0x0063F8F0u, sub_0063F8F0, "tCoopThreadPart::mFreeCoopThread(tCoopThread*)", "Tiger/tgthread.cpp"},
+    {0x0063FB10u, sub_0063FB10, "tCoopThreadPart::mFindCoopThread(tClientThread*)", "Tiger/tgthread.cpp"},
+    {0x0063FB70u, sub_0063FB70, "tCoopThreadPart::mFindCoopThread(tNativeThread*)", "Tiger/tgthread.cpp"},
+    {0x0063FBD0u, sub_0063FBD0, "tCoopThreadPart::mGetBestNextThread(tCoopThread*,double)", "Tiger/tgthread.cpp"},
+    {0x00640220u, sub_00640220, "tCoopThreadPart::mDoDelThread(tClientThread*)", "Tiger/tgthread.cpp"},
+    {0x006402E0u, sub_006402E0, "tCoopThreadPart::mDelThread(tClientThread*)", "Tiger/tgthread.cpp"},
+    {0x00640700u, sub_00640700, "DumpEventLog()", "Tiger/twthread.cpp"},
+    {0x006407B0u, sub_006407B0, "MyReleaseSemaphore(void*)", "Tiger/twthread.cpp"},
+    {0x00640810u, sub_00640810, "MyWaitForSingleObject(void*)", "Tiger/twthread.cpp"},
+    {0x00640870u, sub_00640870, "twNativeThread::twNativeThreadEntryProc(tNativeThread*)", "Tiger/twthread.cpp"},
+    {0x00641100u, sub_00641100, "twCoopThreadPart::mNewMainThread()", "Tiger/twthread.cpp"},
+    {0x00641160u, sub_00641160, "twCoopThreadPart::mNewNativeThread(class tClientThread*,long)", "Tiger/twthread.cpp"},
+    {0x006411D0u, sub_006411D0, "twCoopThreadPart::mDelNativeThread(tNativeThread*)", "Tiger/twthread.cpp"},
+    {0x006411F0u, sub_006411F0, "twCoopThreadPart::mDoDelThread(class tClientThread*)", "Tiger/twthread.cpp"},
+    {0x00641320u, sub_00641320, "twSoundPart::mInitDirectSound(tInitSoundPartInfo*)", "Tiger/twSound.cpp"},
+    {0x00641640u, sub_00641640, "twStandardSoundChannel::mClear()", "Tiger/twSound.cpp"},
+    {0x00641710u, sub_00641710, "twStandardSoundChannel::mReset(iTruth)", "Tiger/twSound.cpp"},
+    {0x006417F0u, sub_006417F0, "twStandardSoundChannel::mPauseChannel()", "Tiger/twSound.cpp"},
+    {0x00641AF0u, sub_00641AF0, "twStandardSoundChannel::mDone()", "Tiger/twSound.cpp"},
+    {0x00641BF0u, sub_00641BF0, "twStandardSoundChannel::mInit()", "Tiger/twSound.cpp"},
+    {0x00641CF0u, sub_00641CF0, "twStandardSoundChannel::mLockHardware()", "Tiger/twSound.cpp"},
+    {0x00641E50u, sub_00641E50, "twStandardSoundChannel::mLockHardwareForSilence()", "Tiger/twSound.cpp"},
+    {0x00641FE0u, sub_00641FE0, "twStandardSoundChannel::mUnlockHardware()", "Tiger/twSound.cpp"},
+    {0x00642410u, sub_00642410, "twStandardSoundChannel::mWriteSilence()", "Tiger/twSound.cpp"},
+    {0x00642510u, sub_00642510, "twStandardSoundChannel::mUpdateAmountReadableAndAmountPlayed(double)", "Tiger/twSound.cpp"},
+    {0x006432B0u, sub_006432B0, "twStandardSoundChannel::mUpdateAmountPlayed()", "Tiger/twSound.cpp"},
     {0x00646CE0u, sub_00646CE0, "AddSoundErrorDuringInterrupt(const char*,...)", "Tiger/tgSound.cpp"},
     {0x00646D10u, sub_00646D10, "PrintOutBufferedErrors()", "Tiger/tgSound.cpp"},
     {0x00646D60u, sub_00646D60, "GetSilenceData(long)", "Tiger/tgSound.cpp"},
@@ -5882,7 +6172,7 @@ const sfcop_guest_override sfcop_guest_overrides[] = {
     {0x00708FC0u, sub_00708FC0, "tFileDatabaseMgr::GetCurDBInfo()", "Common/Database/FileDatabaseMgr.cpp"},
     {0x00709060u, sub_00709060, "tFileDatabaseMgr::GetDBInfo(int32) const", "Common/Database/FileDatabaseMgr.cpp"},
 };
-const unsigned sfcop_guest_override_count = 826u;
+const unsigned sfcop_guest_override_count = 867u;
 
 }  // extern "C"
 
