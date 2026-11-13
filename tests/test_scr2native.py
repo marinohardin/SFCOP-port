@@ -253,7 +253,7 @@ def test_the_guest_image_lists_the_segments_the_import_slots_and_the_entry_point
 @pytest.fixture
 def fake_tools(monkeypatch):
     """The lift writes a dispatch table for the entry points; the compiler writes a stand-in
-    library; the symbol check passes."""
+    library; the symbol check passes; the clone is used as it is, with no patched copy."""
     def lift(work, name, rebased, exports, pcrecomp, log):
         gen = os.path.join(work, 'out', 'gen')
         os.makedirs(gen, exist_ok=True)
@@ -273,6 +273,7 @@ def fake_tools(monkeypatch):
     monkeypatch.setattr(scr2native, 'lift', lift)
     monkeypatch.setattr(scr2native, 'compile_module', compile_module)
     monkeypatch.setattr(scr2native, 'verify', lambda *a: None)
+    monkeypatch.setattr(scr2native, 'patched_pcrecomp', lambda args: args.pcrecomp)
 
 
 def run_tool(tmp_path, *extra, data=None):
@@ -445,8 +446,34 @@ def test_an_export_the_lift_missed_refuses_the_module(tmp_path, fake_tools, monk
     assert not (tmp_path / 'modules' / 'Fixture').exists()
 
 
-def test_a_missing_pcrecomp_clone_is_a_missing_tool(tmp_path):
+def test_a_missing_pcrecomp_clone_is_a_missing_tool_named_with_its_fix(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(scr2native, 'lift', lambda *a: pytest.fail('lifted without a clone'))
     assert run_tool(tmp_path, '--pcrecomp', str(tmp_path / 'nowhere')) == scr2native.EXIT_TOOL
+    err = capsys.readouterr().err
+    assert 'no pcrecomp clone at %s' % (tmp_path / 'nowhere') in err
+    assert 'cmake/lifter/setup.sh' in err
+    assert not (tmp_path / 'modules').exists()
+
+
+def test_the_lift_and_the_compiler_get_the_patched_copy_not_the_clone(tmp_path, monkeypatch):
+    calls = []
+
+    def patched_copy(source, root, lifter):
+        calls.append((source, root, lifter))
+        return '/copy/pcrecomp-0123456789abcdef', '0123456789abcdef' * 4
+
+    def lift(work, name, rebased, exports, pcrecomp, log):
+        assert pcrecomp == '/copy/pcrecomp-0123456789abcdef'
+        raise scr2native.Stop(scr2native.EXIT_TOOL, 'stopped after the copy')
+    monkeypatch.setattr(scr2native.pcrecomp_copy, 'patched_copy', patched_copy)
+    monkeypatch.setattr(scr2native, 'lift', lift)
+    assert run_tool(tmp_path, '--pcrecomp', str(tmp_path / 'clone')) == scr2native.EXIT_TOOL
+    assert calls == [(str(tmp_path / 'clone'), str(tmp_path / 'work' / '.pcrecomp'), scr2native.LIFTER)]
+
+
+def test_the_lift_key_covers_the_patch_set():
+    import inspect
+    assert 'pcrecomp_copy.patch_set_key(LIFTER)' in inspect.getsource(scr2native.lift)
 
 
 def test_check_and_trace_go_together(tmp_path):
@@ -555,6 +582,7 @@ def test_all_stops_after_a_tool_failure_and_records_the_rest_as_not_run(tmp_path
     def broken(*a):
         raise scr2native.Stop(scr2native.EXIT_TOOL, 'docker is not installed; the lift runs pcrecomp')
     monkeypatch.setattr(scr2native, 'lift', broken)
+    monkeypatch.setattr(scr2native, 'patched_pcrecomp', lambda args: args.pcrecomp)
     install = make_install(tmp_path, {'A_Good': make_dll(), 'B_Good': make_dll()})
     assert run_all(tmp_path, install) == scr2native.EXIT_TOOL
     rows = results(tmp_path)

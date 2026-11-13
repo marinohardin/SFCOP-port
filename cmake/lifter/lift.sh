@@ -11,10 +11,10 @@
 #   lift      run_lift.py (with eh_frames.py)   -> out/gen/, out/lift_stats.json (about 2 minutes)
 # The layout is the one scripts/progress.py --lifter reads.
 #
-# The lift is keyed by its inputs (the exe's hash, the pcrecomp revision, this directory's files
-# and the patches applied to pcrecomp, the marks, the file count). When the key is unchanged
-# nothing is rerun and no output is touched, so a fresh checkout of the same sources does not
-# recompile the lifted code. When it changes, only the generated files whose content changed are
+# The lift is keyed by its inputs (the exe's hash, the pcrecomp revision, this directory's files,
+# the patch series applied to pcrecomp with each patch, the marks, the file count). When the key
+# is unchanged nothing is rerun and no output is touched, so a fresh checkout of the same sources
+# does not recompile the lifted code. When it changes, only the generated files whose content changed are
 # replaced.
 set -eu
 HERE=$(cd "$(dirname "$0")" && pwd)
@@ -44,7 +44,7 @@ done
 got=$(sha256 "$exe" | cut -d' ' -f1)
 [ "$got" = "$want" ] || die "$exe has sha256 $got, not the original's $want (analysis/results/retail_hashes.sha256)"
 
-[ -f "$pcrecomp/tools/lift/lift32.py" ] || die "no pcrecomp clone at $pcrecomp (run cmake/lifter/setup.sh DIR, or set SFCOP_PCRECOMP_DIR)"
+[ -f "$pcrecomp/tools/lift/lift32.py" ] || die "no patched pcrecomp at $pcrecomp: pass a build folder's copy (<build>/pcrecomp, made at configure) or make one with cmake/lifter/setup.sh --copy CLONE DEST STAMP"
 rev=$(git -C "$pcrecomp" rev-parse HEAD 2>/dev/null) || die "$pcrecomp is not a git clone"
 [ "$rev" = "$PCRECOMP_REV" ] || die "pcrecomp at $pcrecomp is at $rev, not $PCRECOMP_REV"
 
@@ -53,7 +53,7 @@ docker info >/dev/null 2>&1 || die "docker is not running"
 
 key=$( (echo "exe $got"; echo "pcrecomp $rev"; echo "files $files"; echo "marks $marks"
         sha256 "$HERE/run_lift.py" "$HERE/eh_frames.py" "$HERE/lift.sh" "$HERE/Dockerfile" \
-            "$HERE"/patches/*.patch | cut -d' ' -f1) \
+            "$HERE"/patches/series "$HERE"/patches/*.patch | cut -d' ' -f1) \
       | sha256 | cut -d' ' -f1)
 mkdir -p "$out"
 if [ -f "$out/key" ] && [ "$(cat "$out/key")" = "$key" ] && [ -f "$out/out/gen/recomp_dispatch.c" ]; then

@@ -1,7 +1,9 @@
 #!/bin/sh
-# Builds MachineQuantumTest.cpp against a pcrecomp clone's host_lite.c and runs it
-# (../README.md, "Tests"). It needs no lifted program, only the clone (cmake/lifter/setup.sh)
-# and doctest's headers (a configured build tree has them under _deps/doctest-src).
+# Builds MachineQuantumTest.cpp against pcrecomp's host_lite.c and runs it (../README.md,
+# "Tests"). It needs no lifted program, only a pcrecomp clone (cmake/lifter/setup.sh) and doctest's
+# headers (a configured build tree has them under _deps/doctest-src). The clone is only read: the
+# test compiles against SCRATCH/pcrecomp, a copy with cmake/lifter/patches/series applied
+# (setup.sh --copy), which the quantum patch is part of.
 #
 #   run_machine_quantum.sh PCRECOMP DOCTEST SCRATCH
 #
@@ -12,6 +14,8 @@ doctest=${2:?}
 scratch=${3:?}
 here=$(cd "$(dirname "$0")" && pwd)
 mkdir -p "$scratch"
+sh "$here/../../../../cmake/lifter/setup.sh" --copy "$pcrecomp" "$scratch/pcrecomp" "$scratch/pcrecomp.stamp"
+pcrecomp=$scratch/pcrecomp
 
 # As the build compiles the runtime (cmake/SfcopLifter.cmake, SFCOP_RECOMP_DEFINITIONS).
 defs="-DRECOMP_RETADDR=0u -DRECOMP_LOCAL_REGS -DRECOMP_MEM_BASE=0x100000000000ull"

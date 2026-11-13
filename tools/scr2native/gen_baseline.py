@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generate the host baseline list for native mission modules (ModuleContract.md §3 rule 2).
 
-    gen_baseline.py [--pcrecomp DIR] [--out FILE] [--check]
+    gen_baseline.py [--pcrecomp DIR] [--work DIR] [--out FILE] [--check]
 
 A translated module may import, besides the allowed `sfcop_import:` names, only what the host's
 own compiler and C library give the code scr2native emits. This script derives that set from the
@@ -158,11 +158,19 @@ def render(names, used, version):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split('\n\n')[0])
-    ap.add_argument('--pcrecomp', default=scr2native.parse_args(['x', '-o', '.']).pcrecomp)
+    defaults = scr2native.parse_args(['x', '-o', '.'])
+    ap.add_argument('--pcrecomp', default=defaults.pcrecomp)
+    ap.add_argument('--work', default=defaults.work,
+                    help='where the patched copy of pcrecomp is kept (as scr2native.py --work)')
     ap.add_argument('--out', default=scr2native.baseline_path())
     ap.add_argument('--check', action='store_true')
     args = ap.parse_args(argv)
-    text = render(*generate(args.pcrecomp))
+    try:
+        pcrecomp = scr2native.patched_pcrecomp(args)    # the headers a module is compiled against
+    except scr2native.Stop as e:
+        print('gen_baseline: %s' % e, file=sys.stderr)
+        return scr2native.EXIT_TOOL
+    text = render(*generate(pcrecomp))
     if args.check:
         current = open(args.out, encoding='utf-8').read() if os.path.isfile(args.out) else ''
         if current != text:
