@@ -1,0 +1,162 @@
+diff --git a/runtime/recomp32/recomp_types.h b/runtime/recomp32/recomp_types.h
+index adfcf78..0fd1bc9 100644
+--- a/runtime/recomp32/recomp_types.h
++++ b/runtime/recomp32/recomp_types.h
+@@ -1166,6 +1166,25 @@ recomp_func_t recomp_lookup_import(uint32_t va);    /* import bridges */
+     g_cur_func = _caller;  /* the callee RECOMP_ENTER clobbered it */ \
+ } while(0)
+ 
++/* The order an indirect call asks the lookups in depends on whether the host
++ * has folded its own functions into the dispatch table (win32hle's
++ * hle_dispatch_fold, which sets recomp_dispatch_folded).
++ *
++ * Not folded (every host until it calls the fold): the manual hook, the
++ * dispatch table, the import shims. A hook that supplies a function in place
++ * of a lifted one at the same VA must be asked before the table, or the lifted
++ * one would run.
++ *
++ * Folded: the dispatch table first (cached in win32hle's recomp_lookup), then
++ * the hook, then the import shims. The host's replacements are in the table
++ * now, so its hook answers only VAs the table lacks and asking the table first
++ * changes no answer; it takes a host call and a search off every indirect
++ * call.
++ *
++ * selectany/weak, defined here like g_st_i64, so a runtime that never folds
++ * needs no definition of its own and reads 0. */
++RECOMP_SHARED_DATA int recomp_dispatch_folded = 0;
++
+ /* Indirect call through dispatch */
+ #define RECOMP_ICALL(target_va) do { \
+     uint32_t _va = (uint32_t)(target_va); \
+@@ -1173,8 +1192,9 @@ recomp_func_t recomp_lookup_import(uint32_t va);    /* import bridges */
+     g_icall_from[g_icall_trace_idx & (ICALL_TRACE_SIZE-1)] = g_cur_func; \
+     g_icall_trace_idx++; \
+     g_icall_count++; \
+-    recomp_func_t _fn = recomp_lookup_manual(_va); \
++    recomp_func_t _fn = recomp_dispatch_folded ? NULL : recomp_lookup_manual(_va); \
+     if (!_fn) _fn = recomp_lookup(_va); \
++    if (!_fn && recomp_dispatch_folded) _fn = recomp_lookup_manual(_va); \
+     if (!_fn) _fn = recomp_lookup_import(_va); \
+     if (_fn) { \
+         uint32_t _caller = g_cur_func; \
+@@ -1201,8 +1221,9 @@ recomp_func_t recomp_lookup_import(uint32_t va);    /* import bridges */
+     g_icall_from[g_icall_trace_idx & (ICALL_TRACE_SIZE-1)] = g_cur_func; \
+     g_icall_trace_idx++; \
+     g_icall_count++; \
+-    recomp_func_t _fn = recomp_lookup_manual(_va); \
++    recomp_func_t _fn = recomp_dispatch_folded ? NULL : recomp_lookup_manual(_va); \
+     if (!_fn) _fn = recomp_lookup(_va); \
++    if (!_fn && recomp_dispatch_folded) _fn = recomp_lookup_manual(_va); \
+     if (!_fn) _fn = recomp_lookup_import(_va); \
+     if (_fn) { RECOMP_FLAGS_OUT(); RECOMP_REGS_OUT(); _fn(); RECOMP_REGS_IN(); } \
+     else if (_va == RECOMP_RETADDR) { /* setjmp and friends return by jumping \
+diff --git a/runtime/win32hle/host_lite.c b/runtime/win32hle/host_lite.c
+index ed6359c..76c3bc4 100644
+--- a/runtime/win32hle/host_lite.c
++++ b/runtime/win32hle/host_lite.c
+@@ -233,11 +233,80 @@ void hle_preempt(void) {
+ /* ------------------------------------------------------------- dispatch
+  * recomp_lookup searches the generated dispatch table (declared extern in
+  * recomp_types.h; defined by the lifted program, or the selftest). */
++/* That table, or the copy hle_dispatch_fold made of it with a host's entries
++ * written in.
++ *
++ * Every indirect call asks recomp_lookup, so a direct-mapped cache sits in
++ * front of the binary search. A slot is one 64-bit word, read and written
++ * whole, so a reader never sees half of one answer: the VA in the high half,
++ * and in the low half 0 for an empty slot, DISPATCH_ABSENT for a VA the table
++ * does not hold, or the table index + 1. A miss is cached too: an import's VA
++ * is never in the table, and imports are called most of all. The table changes
++ * only in hle_dispatch_fold, which empties the cache, so an answer, once
++ * cached, stays right. The fold is for start-up only, before any guest thread
++ * runs: a lookup on another thread during a fold could pair a slot written
++ * against the old table with the new one. */
++#define DISPATCH_CACHE_BITS 14
++#define DISPATCH_ABSENT     0xFFFFFFFFu
++static uint64_t g_dispatch_cache[1u << DISPATCH_CACHE_BITS];
++static const recomp_dispatch_entry_t *g_dispatch;   /* NULL: the generated table */
++static uint32_t g_dispatch_n;
++
++static const recomp_dispatch_entry_t *dispatch_find(uint32_t va);
++
+ recomp_func_t recomp_lookup(uint32_t va) {
+-    uint32_t lo = 0, hi = recomp_dispatch_count;
++    const recomp_dispatch_entry_t *t = g_dispatch ? g_dispatch : recomp_dispatch_table;
++    uint64_t *slot = &g_dispatch_cache[(va * 0x9E3779B1u) >> (32 - DISPATCH_CACHE_BITS)];
++    uint64_t e = __atomic_load_n(slot, __ATOMIC_RELAXED);
++    if ((uint32_t)(e >> 32) == va && (uint32_t)e != 0)
++        return (uint32_t)e == DISPATCH_ABSENT ? NULL : t[(uint32_t)e - 1].func;
++    const recomp_dispatch_entry_t *found = dispatch_find(va);
++    uint32_t index = found ? (uint32_t)(found - t) + 1 : DISPATCH_ABSENT;
++    __atomic_store_n(slot, ((uint64_t)va << 32) | index, __ATOMIC_RELAXED);
++    return found ? found->func : NULL;
++}
++
++static int dispatch_by_address(const void *a, const void *b) {
++    uint32_t x = ((const recomp_dispatch_entry_t *)a)->address;
++    uint32_t y = ((const recomp_dispatch_entry_t *)b)->address;
++    return x < y ? -1 : x > y;
++}
++
++/* win32hle.h: a host's entries into a copy of the table. Merges two sorted
++ * lists; an entry of the host's at a VA the table holds takes its place. Then
++ * indirect calls ask the table before the manual hook (recomp_types.h,
++ * recomp_dispatch_folded). */
++int hle_dispatch_fold(const recomp_dispatch_entry_t *entries, uint32_t n) {
++    const recomp_dispatch_entry_t *t = g_dispatch ? g_dispatch : recomp_dispatch_table;
++    uint32_t tn = g_dispatch ? g_dispatch_n : recomp_dispatch_count;
++    recomp_dispatch_entry_t *add = malloc(sizeof *add * (n ? n : 1));
++    recomp_dispatch_entry_t *out = malloc(sizeof *out * (tn + n ? tn + n : 1));
++    if (!add || !out) hle_fatal("hle_dispatch_fold: out of memory");
++    if (n) memcpy(add, entries, sizeof *add * n);
++    qsort(add, n, sizeof *add, dispatch_by_address);
++    uint32_t i = 0, j = 0, k = 0;
++    int added = 0;
++    while (i < tn || j < n) {
++        if (j == n || (i < tn && t[i].address < add[j].address)) { out[k++] = t[i++]; continue; }
++        if (i < tn && t[i].address == add[j].address) i++; else added++;
++        out[k++] = add[j++];
++    }
++    free(add);
++    /* A previous copy is not freed: a fold is for start-up only, but a reader
++     * that still held the old table must never read freed memory. */
++    g_dispatch = out;
++    g_dispatch_n = k;
++    memset(g_dispatch_cache, 0, sizeof g_dispatch_cache);
++    recomp_dispatch_folded = 1;
++    return added;
++}
++
++static const recomp_dispatch_entry_t *dispatch_find(uint32_t va) {
++    const recomp_dispatch_entry_t *t = g_dispatch ? g_dispatch : recomp_dispatch_table;
++    uint32_t lo = 0, hi = g_dispatch ? g_dispatch_n : recomp_dispatch_count;
+     while (lo < hi) {
+-        uint32_t mid = lo + (hi - lo) / 2, m = recomp_dispatch_table[mid].address;
+-        if (m == va) return recomp_dispatch_table[mid].func;
++        uint32_t mid = lo + (hi - lo) / 2, m = t[mid].address;
++        if (m == va) return &t[mid];
+         if (m < va) lo = mid + 1; else hi = mid;
+     }
+     return NULL;
+diff --git a/runtime/win32hle/win32hle.h b/runtime/win32hle/win32hle.h
+index da80782..5934b8b 100644
+--- a/runtime/win32hle/win32hle.h
++++ b/runtime/win32hle/win32hle.h
+@@ -124,6 +124,17 @@ uint32_t hle_resolve_or_stub(const char *name);
+ /* Human name for a synthetic shim VA (for traces/faults), or NULL. */
+ const char *hle_name(uint32_t va);
+ 
++/* ---- the dispatch table ----
++ * Write a host's own entries (a function it supplies in place of a lifted one,
++ * or one at a VA the lift has none) into a copy of the dispatch table, where
++ * recomp_lookup finds them: an entry at a VA the table holds replaces it, one
++ * at a new VA is added. One entry per VA. Returns how many were added. Call it
++ * at start-up, before guest code runs; it empties recomp_lookup's cache. From
++ * then on, indirect calls ask the table before the manual hook, so the hook
++ * must answer only VAs the table lacks (recomp_types.h,
++ * recomp_dispatch_folded). */
++int hle_dispatch_fold(const recomp_dispatch_entry_t *entries, uint32_t n);
++
+ /* ---- native -> guest ----
+  * Run a lifted function (window proc, dialog proc, thread start, timer) from
+  * HLE C, pushing `nargs` stdcall args. Returns the guest's eax. Takes the

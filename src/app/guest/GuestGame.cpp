@@ -9,8 +9,15 @@
 //    table, so the lift has no function there. Its bytes do what 0x004014A9's do, constant for
 //    constant (set bit 0 of the guard at 0x00C8193C, then atexit(0x004BD431)): one of the
 //    duplicate initialisers MSVC emits for a guarded static. The lifted 0x004014A9 runs in its
-//    place. B9's override table (override.h) is asked first.
-// 3. The marks the lift puts at the entry of WinMain, of the CD-key prompt, of the main menu
+//    place, answered by the manual lookup hook, which indirect calls ask only for addresses the
+//    dispatch table lacks.
+// 3. The override table (override.h) is written into the dispatch table at start-up
+//    (hle_dispatch_fold), so an indirect call to an overridden address finds the override in the
+//    table, cached, instead of searching the override table first on every call; from the fold
+//    on, indirect calls ask the table before the hook (recomp_types.h). Then every
+//    address the table, the override table and the hook answer is checked against the answer the
+//    old lookup order gave, and a difference stops the run.
+// 4. The marks the lift puts at the entry of WinMain, of the CD-key prompt, of the main menu
 //    ("Select Game", tState_SelectGame) and of Setup (tState_Setup, the Single Player screen one
 //    click further); reaching the prompt or the menu is what a --watchdog run counts as success.
 #include "GuestHost.h"
@@ -25,7 +32,10 @@ extern recomp_func_t (*hle_manual_hook)(uint32_t va);
 void sub_004014A9(void);
 }
 
+#include <algorithm>
+#include <chrono>
 #include <cstdio>
+#include <vector>
 
 namespace sfcop::guest {
 
@@ -53,10 +63,80 @@ const win32hle_shim kOsSpecificExports[] = {
 };
 
 recomp_func_t manualLookup(std::uint32_t address) {
+    return address == kMissedConstructor ? sub_004014A9 : nullptr;
+}
+
+// The generated dispatch table, as recomp_lookup searched it before the overrides were folded in.
+recomp_func_t generatedLookup(std::uint32_t address) {
+    const recomp_dispatch_entry_t *first = recomp_dispatch_table;
+    const recomp_dispatch_entry_t *last = first + recomp_dispatch_count;
+    const auto at = std::lower_bound(first, last, address,
+                                     [](const recomp_dispatch_entry_t &e, std::uint32_t a) {
+                                         return e.address < a;
+                                     });
+    return at != last && at->address == address ? at->func : nullptr;
+}
+
+// What an indirect call found before the fold: the override table, the missed constructor, then
+// the generated table.
+recomp_func_t lookupBefore(std::uint32_t address) {
     if (recomp_func_t replaced = sfcop_guest_override_lookup(address)) {
         return replaced;
     }
-    return address == kMissedConstructor ? sub_004014A9 : nullptr;
+    if (recomp_func_t manual = manualLookup(address)) {
+        return manual;
+    }
+    return generatedLookup(address);
+}
+
+// What an indirect call finds now: the dispatch table (cached), then the manual hook.
+recomp_func_t lookupAfter(std::uint32_t address) {
+    if (recomp_func_t found = recomp_lookup(address)) {
+        return found;
+    }
+    return manualLookup(address);
+}
+
+// Every address with an answer, asked twice (the second answer comes from recomp_lookup's
+// cache). Returns the first address whose answer changed, or 0.
+std::uint32_t firstChangedAddress() {
+    std::vector<std::uint32_t> addresses;
+    addresses.reserve(recomp_dispatch_count + sfcop_guest_override_count + 1);
+    for (std::uint32_t i = 0; i < recomp_dispatch_count; i++) {
+        addresses.push_back(recomp_dispatch_table[i].address);
+    }
+    for (unsigned i = 0; i < sfcop_guest_override_count; i++) {
+        addresses.push_back(sfcop_guest_overrides[i].va);
+    }
+    addresses.push_back(kMissedConstructor);
+    for (int pass = 0; pass < 2; pass++) {
+        for (const std::uint32_t address : addresses) {
+            if (lookupAfter(address) != lookupBefore(address)) {
+                return address;
+            }
+        }
+    }
+    return 0;
+}
+
+void foldOverrides() {
+    std::vector<recomp_dispatch_entry_t> rows;
+    rows.reserve(sfcop_guest_override_count);
+    for (unsigned i = 0; i < sfcop_guest_override_count; i++) {
+        rows.push_back({sfcop_guest_overrides[i].va, sfcop_guest_overrides[i].entry});
+    }
+    const auto start = std::chrono::steady_clock::now();
+    const int added = hle_dispatch_fold(rows.data(), static_cast<std::uint32_t>(rows.size()));
+    if (const std::uint32_t changed = firstChangedAddress()) {
+        hle_fatal("[dispatch] 0x%08X resolves to another function after the overrides were "
+                  "folded in",
+                  changed);
+    }
+    const std::chrono::duration<double, std::milli> took = std::chrono::steady_clock::now() - start;
+    std::fprintf(stderr,
+                 "[dispatch] %u overrides folded into %u entries (%d added); every address "
+                 "resolves as before (%.1f ms)\n",
+                 sfcop_guest_override_count, recomp_dispatch_count, added, took.count());
 }
 
 } // namespace
@@ -69,6 +149,7 @@ void InstallGameSpecifics() {
         modules.Add(name, kOsSpecificModule);
     }
     modules.AddExport(kOsSpecificModule, "OS_InterlockedCompareExchange", export_);
+    foldOverrides();
     hle_manual_hook = manualLookup;
 }
 

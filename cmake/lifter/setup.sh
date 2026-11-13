@@ -5,7 +5,9 @@
 # lock's depth for a longjmp out of nested guest calls, and a host hook for a zero divisor; and the
 # machine's quantum, a count of hand-over points before an import gives the machine to a waiting
 # thread; and for a Windows host, the runtime's POSIX calls on the Windows API, drive-letter host
-# paths, the two kernel32 rows that read POSIX-only state, and no host CPUID on a Windows Arm host).
+# paths, the two kernel32 rows that read POSIX-only state, and no host CPUID on a Windows Arm host;
+# and the dispatch lookup's cache, with a host's overrides written into the table, which indirect
+# calls then ask before the manual hook; a host that writes nothing keeps the hook first).
 #
 #   cmake/lifter/setup.sh SOURCE
 #       Make SOURCE a pcrecomp clone that holds the pinned revision: clone it (the only step that
