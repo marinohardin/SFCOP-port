@@ -22,7 +22,8 @@ jobs:
     if: >-
       (startsWith(github.head_ref, 'wp/') || startsWith(github.head_ref, 'feature/')) &&
       !contains(github.event.pull_request.labels.*.name, 'contract-change')
-    runs-on: [self-hosted, sfcop-mac]
+    # A git diff and a pattern list: a hosted runner, so it never waits behind a build.
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4

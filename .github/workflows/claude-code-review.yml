@@ -13,7 +13,8 @@ jobs:
   claude-review:
     # Draft pull requests are not reviewed. Marking one ready starts the review.
     if: github.event.pull_request.draft == false
-    runs-on: [self-hosted, sfcop-mac]
+    # Reads the pull request through gh only: a hosted runner, so it never waits behind a build.
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
       contents: read
