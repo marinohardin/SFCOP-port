@@ -68,6 +68,8 @@ fi
 
 rm -f "$out/key"
 mkdir -p "$out/game" "$out/cat" "$out/out"
+# The copy keeps the original's read-only mode, so a later lift removes it before copying again.
+rm -f "$out/game/StarFleetOP.exe"
 cp "$exe" "$out/game/StarFleetOP.exe"
 run() {
     docker run --rm --network none --cpus 4 --memory 6g \
