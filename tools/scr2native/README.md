@@ -39,9 +39,12 @@ The module is written to `<modules root>/<Name>/` as `<Name>.dylib` (`.so`, `.dl
 (the rebased DLL, the lift, the objects) goes to `--work`, by default
 `$SFCOP_WORK/scr2native/modules/<Name>/`, and is removed once the module is installed unless
 `--keep-work` is given; a lift is reused while its inputs (the rebased bytes, the pinned pcrecomp
-revision, the lifter's scripts, the seeds) are unchanged. It needs Docker for the lift (the game's
-lifter image, `cmake/lifter/Dockerfile`), a pcrecomp clone (`--pcrecomp`, by default
-`$SFCOP_PCRECOMP_DIR` or `$SFCOP_WORK/lifter-hle/pcrecomp`) and the host's C compiler.
+revision, the patch set, the lifter's scripts, the seeds) are unchanged. It needs Docker for the
+lift (the game's lifter image, `cmake/lifter/Dockerfile`), a pcrecomp clone (`--pcrecomp`, by
+default `$SFCOP_PCRECOMP_DIR` or `$SFCOP_WORK/lifter-hle/pcrecomp`) and the host's C compiler. The
+clone is only read: the lift and the compile use a copy with `cmake/lifter/patches/series`
+applied, as the game's build does, kept in `<--work>/.pcrecomp/` under a name of its patch set
+(`cmake/lifter/README.md`, "Copies outside a build folder").
 
 Exit status: 0 written; 1 refused (a foreign import, a symbol off the lists, an entry point not
 lifted); 2 the input or the command line is wrong; 3 a tool is missing or failed; 4 `--check`
@@ -126,7 +129,7 @@ are answered by pcrecomp's win32hle rows, registered when the first module needs
 ## Limits
 
 - **The lift runs in a container**: `docker run --rm --network none --cpus 1 --memory 4g`, under
-  `nice -n 19`, with the pcrecomp clone and the lifter's scripts mounted read-only. One lift runs at
+  `nice -n 19`, with the patched copy of pcrecomp and the lifter's scripts mounted read-only. One lift runs at
   a time. A lift the container kills for memory (exit 137) ends that script with exit 3; Ski_TShoot
   was killed once while other jobs shared the machine and translated on the repeat.
 - **`--jobs N`** (default 4) is how many of a module's C files are compiled at once, each under
@@ -137,14 +140,14 @@ are answered by pcrecomp's win32hle rows, registered when the first module needs
   `--all` again with every module current takes seconds (the record run below checked 87 modules and
   translated one in 73 s).
 - **The kept lift is keyed on the lift's inputs, not on the compile.** `lift.key` hashes the
-  rebased image, the pcrecomp revision `cmake/lifter/lift.sh` pins, the seeds, the file count and
-  `run_lift.py`, `eh_frames.py` and the `Dockerfile`. Compile flags and `TRANSLATOR_VERSION` are
-  not in it, which is right: they change only what is done with the lifted C, so a translator
-  bump that changes the compile reuses every kept lift. Three inputs of the lift are missing from
-  it, though: the patches `setup.sh` applies to the clone (`cmake/lifter/patches/`), the steps of
-  `lift()` itself (the rtti and disassembly runs and the seed merge), and the clone's real state
-  (the key names the pinned revision, not what is checked out). After a change to any of those,
-  delete the work folder's `lift.key` files, or a stale lift is reused.
+  rebased image, the pcrecomp revision `cmake/lifter/lift.sh` pins, the patch set (the series and
+  each patch, `cmake/lifter/patches/`), the seeds, the file count and `run_lift.py`,
+  `eh_frames.py` and the `Dockerfile`. Compile flags and `TRANSLATOR_VERSION` are not in it, which
+  is right: they change only what is done with the lifted C, so a translator bump that changes the
+  compile reuses every kept lift. The lift runs on a patched copy made from the pinned revision,
+  so what the clone has checked out does not matter. One input of the lift is still missing from
+  the key: the steps of `lift()` itself (the rtti and disassembly runs and the seed merge). After
+  a change to those, delete the work folder's `lift.key` files, or a stale lift is reused.
 - **No retries.** A script that fails stops with its exit status and its reason (below); nothing is
   run twice. `--all` records a refused script (exit 1), a bad input (2) or a mismatch (4) and goes on
   to the next; after a tool failure (3: Docker, the compiler, memory), which would repeat, it stops
@@ -353,7 +356,8 @@ python3 tools/scr2native/gen_baseline.py --check  # exit 1 if the committed list
 It compiles probes with the module flags (the lifter's runtime header and macros, the glue, the
 math and string functions the lifted code calls, a stack frame and a pattern fill the compiler
 turns into library calls) and lists their undefined symbols, less the runtime the module binds by
-name. It needs the host compiler and the pcrecomp clone.
+name. It needs the host compiler and the pcrecomp clone; it compiles against the same patched copy
+as scr2native (`--work`, by default scr2native's).
 
 ## Regenerating the allow-list
 

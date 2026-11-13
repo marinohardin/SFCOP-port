@@ -24,7 +24,7 @@ import pytest
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOOL = os.path.join(REPO, 'tools', 'objlift')
-for _p in (TOOL, os.path.join(TOOL, 'fixtures'), REPO):
+for _p in (os.path.join(REPO, 'cmake', 'lifter'), TOOL, os.path.join(TOOL, 'fixtures'), REPO):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
@@ -33,6 +33,7 @@ import compile as objcompile  # noqa: E402
 import objlift  # noqa: E402
 import placement  # noqa: E402
 from harness.lib import paths  # noqa: E402
+import pcrecomp_copy  # noqa: E402
 from placement import Claim, InputObject, Placer, PlacementError, SymbolIndex  # noqa: E402
 
 EXE_SECTIONS = [(0x00401000, 0x00795000), (0x00795000, 0x00838000), (0x00838000, 0x00C83000)]
@@ -551,9 +552,21 @@ def skip(reason):
     pytest.skip(reason)
 
 
+_PATCHED = {}
+
+
 def _pcrecomp():
-    d = os.environ.get('SFCOP_PCRECOMP_DIR') or os.path.join(paths.WORK, 'lifter-hle', 'pcrecomp')
-    return d if os.path.isfile(os.path.join(d, 'tools', 'lift', 'lift32.py')) else None
+    """The game's patched pcrecomp, as the build lifts with: a copy of the clone
+    (SFCOP_PCRECOMP_DIR, or work/lifter-hle/pcrecomp) with cmake/lifter/patches/series applied,
+    in work/objlift-tests/pcrecomp-<patch set> (cmake/lifter/pcrecomp_copy.py). The folder is named
+    by the patch set, so test runs from checkouts with different series use two folders side by
+    side and never remove each other's. None without a clone."""
+    if 'dir' not in _PATCHED:
+        src = os.environ.get('SFCOP_PCRECOMP_DIR') or os.path.join(paths.WORK, 'lifter-hle', 'pcrecomp')
+        _PATCHED['dir'] = None
+        if os.path.isfile(os.path.join(src, 'tools', 'lift', 'lift32.py')):
+            _PATCHED['dir'] = pcrecomp_copy.patched_copy(src, os.path.join(paths.WORK, 'objlift-tests'))[0]
+    return _PATCHED['dir']
 
 
 def _lifter_image():

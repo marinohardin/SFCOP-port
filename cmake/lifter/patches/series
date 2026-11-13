@@ -1,0 +1,15 @@
+# The patches cmake/lifter/setup.sh applies to pcrecomp, one file name per line, in order.
+# Every *.patch in this folder is listed here, once. The order matters: the manual lookup hook
+# applies on top of the TIB hook.
+pcrecomp-tib-hook.patch
+pcrecomp-kernel32-unnamed-objects.patch
+pcrecomp-manual-lookup-hook.patch
+pcrecomp-wsock32-select-accept.patch
+pcrecomp-eh-landing-pads.patch
+pcrecomp-mach-depth.patch
+pcrecomp-div-fault.patch
+pcrecomp-quantum.patch
+pcrecomp-win32-posix.patch
+pcrecomp-win32-paths.patch
+pcrecomp-win32-kernel32.patch
+pcrecomp-win32-cpuid.patch

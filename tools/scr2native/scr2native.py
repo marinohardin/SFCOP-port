@@ -14,7 +14,9 @@ The steps (tools/scr2native/README.md):
             the translation with the loader's refusal message, and nothing is written
   rebase    the DLL is moved to its guest base: slot n of SFCOP_GUEST_MODULE_FIRST for the n-th .scr
             of its folder (GuestModuleAbi.h), or --base; every base relocation is applied
-  lift      pcrecomp, as the game is lifted (cmake/lifter/run_lift.py), in the lifter container:
+  lift      pcrecomp, as the game is lifted (cmake/lifter/run_lift.py), in the lifter container,
+            with cmake/lifter/patches/series applied to a copy of the clone named by its patch set
+            (<work>/.pcrecomp, cmake/lifter/pcrecomp_copy.py; the clone is only read):
             every function of the DLL, the scripting library and the C runtime it links included,
             to C at the rebased addresses; seeded with the exports, RTTI and the code pointers its
             relocations name in data
@@ -52,7 +54,9 @@ REPO = os.path.dirname(os.path.dirname(HERE))
 sys.dont_write_bytecode = True
 sys.path.insert(0, HERE)
 sys.path.insert(0, REPO)
+sys.path.insert(0, os.path.join(REPO, 'cmake', 'lifter'))
 import gen_allowlist  # noqa: E402
+import pcrecomp_copy  # noqa: E402
 import pe32  # noqa: E402
 from harness.lib import paths  # noqa: E402
 
@@ -206,13 +210,28 @@ def image_size(dll, base, explicit):
 
 # --- lift -------------------------------------------------------------------------------------
 
+def patched_pcrecomp(args):
+    """The clone (--pcrecomp) with cmake/lifter/patches/series applied, as the game's build lifts
+    with: a copy in <work>/.pcrecomp named by its patch set, made once and kept, so translations
+    from checkouts with different patch sets never share one. A missing clone or a patch that does
+    not apply is a missing tool."""
+    if getattr(args, 'patched', None) is None:
+        try:
+            args.patched = pcrecomp_copy.patched_copy(args.pcrecomp, os.path.join(args.work, '.pcrecomp'),
+                                                      LIFTER)[0]
+        except pcrecomp_copy.CopyError as e:
+            raise Stop(EXIT_TOOL, str(e))
+    return args.patched
+
+
 def lift(work, name, rebased, exports, pcrecomp, log):
     """Lifts the rebased DLL into work/out/gen, unless an identical lift is already there."""
     game = os.path.join(work, 'game', name + '.scr')
     seeds = sorted(set(rebased.code_pointer_seeds()) |
                    {rebased.image_base + rva for rva in exports.values()} |
                    {rebased.image_base + rebased.entry_rva})
-    key_parts = [pe32.sha256(rebased.data), pcrecomp_revision(), str(LIFT_FILES),
+    key_parts = [pe32.sha256(rebased.data), pcrecomp_revision(), pcrecomp_copy.patch_set_key(LIFTER),
+                 str(LIFT_FILES),
                  ','.join('%X' % s for s in seeds)]
     for f in ('run_lift.py', 'eh_frames.py', 'Dockerfile'):
         key_parts.append(hashlib.sha256(open(os.path.join(LIFTER, f), 'rb').read()).hexdigest())
@@ -454,8 +473,9 @@ def translate(args):
     os.makedirs(work, exist_ok=True)
     log = os.path.join(work, 'scr2native.log')
     open(log, 'w').close()
+    pcrecomp = patched_pcrecomp(args)
     lift_started = time.monotonic()
-    gen = lift(work, name, rebased, exports, args.pcrecomp, log)
+    gen = lift(work, name, rebased, exports, pcrecomp, log)
     lift_seconds = time.monotonic() - lift_started
     dispatch = dispatch_entries(gen)
     for export, rva in sorted(exports.items()):
@@ -465,7 +485,7 @@ def translate(args):
         raise Stop(EXIT_REFUSED, '%s: the entry point at 0x%08X was not lifted' % (name, base + dll.entry_rva))
     emit_image(os.path.join(work, 'module_image.c'), rebased, base, size, imports, exports, dispatch)
     compile_started = time.monotonic()
-    lib = compile_module(work, name, gen, imports, args.pcrecomp, args.jobs, log)
+    lib = compile_module(work, name, gen, imports, pcrecomp, args.jobs, log)
     compile_seconds = time.monotonic() - compile_started
     verify(name, lib, allowed, read_list(baseline_path()))
     os.makedirs(args.out, exist_ok=True)
