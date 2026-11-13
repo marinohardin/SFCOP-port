@@ -53,7 +53,7 @@ jobs:
   build:
     name: build (${{ matrix.preset }})
     runs-on: [self-hosted, sfcop-mac]
-    timeout-minutes: 75
+    timeout-minutes: 150
     strategy:
       fail-fast: false
       max-parallel: 1
@@ -97,7 +97,8 @@ jobs:
 
       - name: Configure ${{ matrix.preset }}
         if: steps.want.outputs.build == 'yes'
-        timeout-minutes: 5
+        # 15 minutes: under load on the shared machine the configure step outran 5.
+        timeout-minutes: 15
         shell: bash
         env:
           PRESET: ${{ matrix.preset }}
@@ -122,8 +123,9 @@ jobs:
 
       - name: Build ${{ matrix.preset }}
         if: steps.want.outputs.build == 'yes'
-        # 45 minutes: the runner is a shared machine, and a full lift plus a rebuild outran 15.
-        timeout-minutes: 45
+        # 110 minutes: the runner is a shared machine, and under load a full lift plus a rebuild
+        # outran 45. A rerun continues the build, but each timeout costs a turn in the queue.
+        timeout-minutes: 110
         # nice 5, not 19: on Apple Silicon a niceness of 19 keeps the compiles on the efficiency
         # cores even when the machine is idle, and a full rebuild then outruns the timeout.
         # -j4 still caps the load when agents share the machine.
