@@ -8,7 +8,8 @@
 #      fixes to game code are override units under src/fixes/overrides/, DESIGN §6.9)
 #   4. the progress gate: no function loses exact or functional status (scripts/progress.py)
 #   5. the matched-set gate: no score drops below the base branch's (harness/build-and-verify.sh)
-#   6. the C++ tests (sfcop_tests, CTest), when the native build is configured here
+#   6. the C++ tests (every CTest test, after building the executables they run), when the
+#      native build is configured here
 #   7. the replay oracle, when a recorded trace, the native client and a prepared data folder
 #      exist (src/app/oracle/README.md)
 #
@@ -137,9 +138,25 @@ EOF
 fi
 
 echo "== C++ tests"
+# Every file a registered test runs is built first, asked of the folder itself
+# (scripts/ctest_targets.py): a lift-on folder registers more tests than sfcop_tests, and CTest
+# reports a test whose executable is absent as "Not Run". Nothing a test does not name is built.
 if [ -f build/macos-arm64/CMakeCache.txt ]; then
-    cmake --build --preset macos-arm64 --target sfcop_tests > "$tmp/build-tests.log" 2>&1 \
-        || { tail -n 40 "$tmp/build-tests.log"; exit 1; }
+    # The plan reads the folder's generated files, so they are brought up to date first: after a
+    # change to a CMakeLists.txt they would otherwise name the tests of the configuration before.
+    cmake --build --preset macos-arm64 --target build.ninja > "$tmp/regenerate.log" 2>&1 \
+        || { tail -n 40 "$tmp/regenerate.log"; exit 1; }
+    python3 scripts/ctest_targets.py plan build/macos-arm64 > "$tmp/test-targets" \
+        || { cat "$tmp/test-targets"; exit 1; }
+    targets=$(tr '\n' ' ' < "$tmp/test-targets")
+    if [ -n "$targets" ]; then
+        echo "building what the tests run: $targets(a lift-on folder's guest tests link the" \
+             "lifted game: a first build lifts and compiles it, which takes minutes)"
+        # shellcheck disable=SC2086
+        cmake --build --preset macos-arm64 --target $targets > "$tmp/build-tests.log" 2>&1 \
+            || { tail -n 40 "$tmp/build-tests.log"; exit 1; }
+    fi
+    python3 scripts/ctest_targets.py missing build/macos-arm64 || exit 1
     ctest --preset macos-arm64
 else
     skip "the native build is not configured here (cmake --preset macos-arm64)"
