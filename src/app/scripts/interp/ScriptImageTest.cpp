@@ -96,9 +96,9 @@ TEST_CASE("a file that is not a mission's DLL is refused with what is wrong") {
     tls.directory(9, 0x2300, 0x18);
     CHECK(refusal(tls) == "it has thread-local storage, which a mission never has");
 
-    Pe dir64 = invented();
-    dir64.data32(0x21C8, 0x0000A001);
-    CHECK(refusal(dir64) == "it has a relocation of type 10 at rva 0x1001");
+    Pe relocType10 = invented();
+    relocType10.data32(0x21C8, 0x0000A001);
+    CHECK(refusal(relocType10) == "it has a relocation of type 10 at rva 0x1001");
 
     Pe fixed = invented();
     fixed.directory(5, 0, 0);
@@ -114,7 +114,7 @@ TEST_CASE("a file that is not a mission's DLL is refused with what is wrong") {
     outside.data32(0x2144, 0x20000);
     CHECK(refusal(outside) == "its export ScriptEntry lies outside the image");
 
-    Pe unterminated = invented();
-    unterminated.data32(0x200C, 0x10000);
-    CHECK(refusal(unterminated) == "rva 0x10000 (+1) is outside the image");
+    Pe nameOutside = invented();
+    nameOutside.data32(0x200C, 0x10000);
+    CHECK(refusal(nameOutside) == "rva 0x10000 (+1) is outside the image");
 }

@@ -168,6 +168,10 @@ TEST_CASE("an interpreted script is laid out at its slot, bound, attached and en
     CHECK(provider.Owns(handle));
     CHECK(g.reserved == std::vector<std::pair<std::uint32_t, std::uint32_t>>{{0x60000000u, 0x10000u}});
     CHECK(g.at32(0x60002050u) == kHostRow);    // the import slot, bound
+    CHECK(provider.BindsRow(kHostRow));
+    CHECK_FALSE(provider.BindsRow(kHostRow + 0x10));
+    CHECK(provider.AllowsRow(kHostRow));              // its calls out reach it
+    CHECK_FALSE(provider.AllowsRow(kHostRow + 0x10)); // a row with no name here: not reached
     CHECK(g.at32(0x60002300u) == 1u);          // DllMain saw DLL_PROCESS_ATTACH
     CHECK(g.at32(0x60002304u) == 0x1234u);     // and the host row's answer
     CHECK(g.hostCalls == 1);
@@ -228,6 +232,369 @@ TEST_CASE("an interpreted script is counted, detached at the last FreeLibrary, a
     CHECK(g.regs[kEax] == 0u);
     CHECK(g.regs[kEdx] == 0u);
     CHECK(g.regs[kEbx] == 0x7777u);
+    CHECK(g.regs[kEsp] == kStackTop);
+}
+
+TEST_CASE("when every entry function is held, the dispatch answers nothing for script code until one is given back") {
+    Guest g;
+    InterpretedModuleProvider provider(g.runtime, g.machine, g.reader(), heapAllocOnly());
+    REQUIRE(provider.Load("Scripts\\Invented.scr") == 0x60000000u);
+    REQUIRE(g.hook != nullptr);
+    // Another interpreter holds every free function.
+    Interpreter other{Machine{}};
+    std::uint32_t taken = 0x10000000u;
+    while (entryThunk(other, taken) != nullptr) {
+        ++taken;
+    }
+    CHECK(g.hook(0x60001020u) == nullptr); // said on stderr: the game holds them all
+    releaseEntryThunks(other, 0x10000000u, taken);
+    CHECK(g.hook(0x60001020u) != nullptr);
+}
+
+TEST_CASE("a script's GetProcAddress answers 0 for a name the allow-list leaves out") {
+    Guest g;
+    InterpretedModuleProvider provider(g.runtime, g.machine, g.reader(), heapAllocOnly());
+    CHECK(provider.ScriptMayLoad("KERNEL32.DLL"));      // the list names it (KERNEL32.DLL!HeapAlloc)
+    CHECK_FALSE(provider.ScriptMayLoad("OSSPECIFIC98.DLL"));
+    CHECK_FALSE(provider.ScriptMayLoad("WSOCK32.DLL"));
+    CHECK_FALSE(provider.ScriptMayFind(0x7C800000u, "HeapAlloc")); // a handle no shim gave
+
+    const char name[] = "IsProcessorFeaturePresent";
+    std::memcpy(g.window.data() + 0x80000, name, sizeof name); // at guest 0x60080000
+    g.push(0x60080000u);  // the name
+    g.push(0x7C800000u);  // a module handle that is not a script's
+    g.push(kLiftedReturnAddress);
+    g.regs[kEax] = 0x5555u;
+    provider.FindForScript();
+    CHECK(g.regs[kEax] == 0u);
+    CHECK(g.regs[kEsp] == kStackTop); // stdcall: the return address and both arguments popped
+}
+
+namespace {
+
+// The lock path every shipped script's library runs, on an invented script: ScriptEntry loads the
+// game's OSSpecific98 library, finds OS_InterlockedCompareExchange in it, falls back to a function
+// of its own when that answers 0 (the game's throws; this one marks 0x1000231C and reports the
+// lock held), stores the pointer at 0x10002314 and takes the lock at 0x10002318 through it:
+// compare-exchange(&lock, 1, 0), cdecl. DllMain returns 1; MissionSpecEntry returns.
+constexpr std::uint32_t kLoadRow = 0x7F002000u;   // the client's LoadLibraryA
+constexpr std::uint32_t kFindRow = 0x7F002010u;   // the client's GetProcAddress
+constexpr std::uint32_t kSwapRow = 0x7F002020u;   // the client's OS_InterlockedCompareExchange
+constexpr std::uint32_t kOsSpecific = 0x7FF00000u; // the handle the client gives OSSpecific98
+
+std::vector<std::uint8_t> lockFile() {
+    test::InventedCode c;
+    c.code = {
+        0xB8, 0x01, 0x00, 0x00, 0x00,       // 1000 mov eax, 1
+        0xC2, 0x0C, 0x00,                   // 1005 ret 12
+        0xC3,                               // 1008 ret
+        0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
+        0x68, 0xC0, 0x20, 0x00, 0x10,       // 1010 push 0x100020C0 ("OSSpecific98")
+        0xFF, 0x15, 0x50, 0x20, 0x00, 0x10, // 1015 call [0x10002050] (LoadLibraryA)
+        0xA3, 0x10, 0x23, 0x00, 0x10,       // 101B mov [0x10002310], eax
+        0x68, 0xD0, 0x20, 0x00, 0x10,       // 1020 push 0x100020D0 ("OS_InterlockedCompareExchange")
+        0x50,                               // 1025 push eax
+        0xFF, 0x15, 0x54, 0x20, 0x00, 0x10, // 1026 call [0x10002054] (GetProcAddress)
+        0x85, 0xC0,                         // 102C test eax, eax
+        0x75, 0x05,                         // 102E jnz 1035
+        0xB8, 0x50, 0x10, 0x00, 0x10,       // 1030 mov eax, 0x10001050 (the fallback)
+        0xA3, 0x14, 0x23, 0x00, 0x10,       // 1035 mov [0x10002314], eax
+        0x6A, 0x00,                         // 103A push 0 (comparand)
+        0x6A, 0x01,                         // 103C push 1 (exchange)
+        0x68, 0x18, 0x23, 0x00, 0x10,       // 103E push 0x10002318 (the lock)
+        0xFF, 0x15, 0x14, 0x23, 0x00, 0x10, // 1043 call [0x10002314]
+        0x83, 0xC4, 0x0C,                   // 1049 add esp, 12
+        0xC3,                               // 104C ret
+        0x90, 0x90, 0x90,
+        0xC7, 0x05, 0x1C, 0x23, 0x00, 0x10, 0x01, 0x00, 0x00, 0x00, // 1050 mov [0x1000231C], 1
+        0xB8, 0x01, 0x00, 0x00, 0x00,       // 105A mov eax, 1
+        0xC3,                               // 105F ret
+    };
+    c.entry = 0x1000;
+    c.missionSpecEntry = 0x1008;
+    c.scriptEntry = 0x1010;
+    c.relocations = {0x1011, 0x1017, 0x101C, 0x1021, 0x1028, 0x1031, 0x1036, 0x103F, 0x1045, 0x1052};
+    test::Pe pe = test::invented(c);
+    // Its imports: kernel32.dll's LoadLibraryA (slot 0x2050) and GetProcAddress (slot 0x2054).
+    for (std::uint32_t table : {0x2040u, 0x2050u}) {
+        pe.data32(table, 0x2080);
+        pe.data32(table + 4, 0x20A0);
+        pe.data32(table + 8, 0);
+    }
+    pe.dataText(0x2082, "LoadLibraryA");
+    pe.dataText(0x20A2, "GetProcAddress");
+    pe.dataText(0x20C0, "OSSpecific98");
+    pe.dataText(0x20D0, "OS_InterlockedCompareExchange");
+    return pe.bytes;
+}
+
+struct LockGuest : Guest {
+    int loads = 0, finds = 0, swaps = 0;
+    std::uint32_t loadName = 0, findName = 0; // where the client read the names it was handed
+
+    LockGuest() {
+        file = lockFile();
+        runtime.importAddress = [](const std::string &import) {
+            if (import == "KERNEL32.DLL!LoadLibraryA") {
+                return kLoadRow;
+            }
+            CHECK(import == "KERNEL32.DLL!GetProcAddress");
+            return kFindRow;
+        };
+        machine.lookup = [](std::uint32_t address) -> HostFunction {
+            if (const HostFunction shim = InterpretedModuleProvider::ShimAt(address)) {
+                return shim;
+            }
+            switch (address) {
+            case kLoadRow: return &load;
+            case kFindRow: return &find;
+            case kSwapRow: return &swap;
+            default: return nullptr;
+            }
+        };
+    }
+    static LockGuest &self() { return *static_cast<LockGuest *>(g_guest); }
+    std::string text(std::uint32_t address) const {
+        return reinterpret_cast<const char *>(window.data() + (address - kWindow));
+    }
+    std::uint32_t arg(unsigned n) const { return at32(regs[kEsp] + 4 * n); }
+
+    // LoadLibraryA(name), stdcall: the OSSpecific library, else 0. The shim hands it the name it
+    // checked, normalised, so the script's own spelling never reaches it.
+    static void load() {
+        LockGuest &g = self();
+        ++g.loads;
+        g.loadName = g.arg(1);
+        g.regs[kEax] = g.text(g.arg(1)) == "OSSPECIFIC98.DLL" ? kOsSpecific : 0u;
+        g.regs[kEsp] += 8;
+    }
+    // GetProcAddress(module, name), stdcall: the compare-exchange in the OSSpecific library.
+    static void find() {
+        LockGuest &g = self();
+        ++g.finds;
+        g.findName = g.arg(2);
+        g.regs[kEax] = g.arg(1) == kOsSpecific && g.text(g.arg(2)) == "OS_InterlockedCompareExchange" ? kSwapRow : 0u;
+        g.regs[kEsp] += 12;
+    }
+    // OS_InterlockedCompareExchange(destination, exchange, comparand), cdecl.
+    static void swap() {
+        LockGuest &g = self();
+        ++g.swaps;
+        const std::uint32_t destination = g.arg(1), old = g.at32(destination);
+        if (old == g.arg(3)) {
+            const std::uint32_t exchange = g.arg(2);
+            std::memcpy(g.window.data() + (destination - kWindow), &exchange, 4);
+        }
+        g.regs[kEax] = old;
+        g.regs[kEsp] += 4;
+    }
+};
+
+const AllowList &lockList(bool osSpecific) {
+    static const AllowList with = AllowList::parse("KERNEL32.DLL!GetProcAddress\nKERNEL32.DLL!LoadLibraryA\n"
+                                                   "OSSPECIFIC98.DLL!OS_InterlockedCompareExchange\n");
+    static const AllowList without = AllowList::parse("KERNEL32.DLL!GetProcAddress\nKERNEL32.DLL!LoadLibraryA\n");
+    return osSpecific ? with : without;
+}
+
+} // namespace
+
+TEST_CASE("the lock path finds the game's compare-exchange and takes the lock, rather than throwing") {
+    LockGuest g;
+    InterpretedModuleProvider provider(g.runtime, g.machine, g.reader(), lockList(true));
+    CHECK(provider.ScriptMayLoad("OSSPECIFIC98.DLL"));
+    REQUIRE(provider.Load("Scripts\\Invented.scr") == 0x60000000u);
+    CHECK(g.at32(0x60002050u) == 0x70000000u); // LoadLibraryA bound to its shim
+    CHECK(g.at32(0x60002054u) == 0x70000003u); // GetProcAddress likewise
+
+    CHECK(provider.Call(0x60001010u, 0, nullptr) == 0u); // the lock was free
+    CHECK(g.loads == 1);
+    CHECK(g.finds == 1);
+    CHECK(g.swaps == 1);
+    CHECK(g.at32(0x60002310u) == kOsSpecific);
+    CHECK(g.at32(0x60002314u) == kSwapRow);
+    CHECK(g.at32(0x60002318u) == 1u); // taken
+    CHECK(g.at32(0x6000231Cu) == 0u); // the fallback never ran
+    // The client read copies on the stack, not the script's strings at 0x600020C0 and 0x600020D0.
+    CHECK(g.loadName < kStackTop);
+    CHECK(g.loadName > kStackTop - 0x100u);
+    CHECK(g.findName < kStackTop);
+    CHECK(g.findName > kStackTop - 0x100u);
+    CHECK(provider.AllowsRow(kSwapRow)); // the row it was given, its call out reaches
+    CHECK(provider.ScriptMayFind(kOsSpecific, "OS_InterlockedCompareExchange"));
+    CHECK_FALSE(provider.ScriptMayFind(kOsSpecific, "OS_Other"));
+    CHECK(g.regs[kEsp] == kStackTop);
+}
+
+namespace {
+
+// Calls LoadLibraryA's shim with `name`, written at guest 0x60080000, as the script would.
+std::uint32_t loadAsScript(LockGuest &g, InterpretedModuleProvider &provider, const std::string &name) {
+    std::memcpy(g.window.data() + 0x80000, name.c_str(), name.size() + 1);
+    g.push(0x60080000u);
+    g.push(kLiftedReturnAddress);
+    g.regs[kEax] = 0x5555u;
+    provider.LoadForScript(0, 4);
+    CHECK(g.regs[kEsp] == kStackTop); // stdcall: the return address and the name popped
+    return g.regs[kEax];
+}
+
+} // namespace
+
+TEST_CASE("a module lookup checks the name the client is handed: a long or pathed name is refused") {
+    LockGuest g;
+    InterpretedModuleProvider provider(g.runtime, g.machine, g.reader(), lockList(true));
+    REQUIRE(provider.Load("Scripts\\Invented.scr") == 0x60000000u);
+
+    // A name longer than the shim reads, whose first kLookupNameLimit bytes end in an allowed module.
+    std::string longName(InterpretedModuleProvider::kLookupNameLimit - std::string("\\OSSpecific98").size(), 'x');
+    longName += "\\OSSpecific98";
+    REQUIRE(longName.size() == InterpretedModuleProvider::kLookupNameLimit);
+    CHECK(loadAsScript(g, provider, longName + "x.scr") == 0u);
+    CHECK(loadAsScript(g, provider, std::string(300, 'A')) == 0u);
+    // An allowed module behind a path, after one, or after a drive.
+    CHECK(loadAsScript(g, provider, "C:\\mods\\OSSpecific98.dll") == 0u);
+    CHECK(loadAsScript(g, provider, "mods/OSSpecific98") == 0u);
+    CHECK(loadAsScript(g, provider, "OSSpecific98.dll\\..\\OSSpecific98.dll") == 0u);
+    CHECK(loadAsScript(g, provider, "C:OSSpecific98") == 0u);
+    CHECK(loadAsScript(g, provider, "") == 0u);
+    CHECK(g.loads == 0); // the client was never asked
+
+    // The name the stock scripts pass, and the same module spelled otherwise.
+    CHECK(loadAsScript(g, provider, "OSSpecific98") == kOsSpecific);
+    CHECK(loadAsScript(g, provider, "osspecific98.DLL") == kOsSpecific);
+    CHECK(g.loads == 2);
+    CHECK(g.text(g.loadName) == "OSSPECIFIC98.DLL");
+    std::string limit(InterpretedModuleProvider::kLookupNameLimit, 'y');
+    CHECK(loadAsScript(g, provider, limit) == 0u); // read whole, and not on the list
+    CHECK(g.loads == 2);
+}
+
+TEST_CASE("a function lookup refuses a name longer than the shim reads and hands the client its copy") {
+    LockGuest g;
+    InterpretedModuleProvider provider(g.runtime, g.machine, g.reader(), lockList(true));
+    REQUIRE(provider.Load("Scripts\\Invented.scr") == 0x60000000u);
+    REQUIRE(loadAsScript(g, provider, "OSSpecific98") == kOsSpecific);
+
+    const auto find = [&](const std::string &name) {
+        std::memcpy(g.window.data() + 0x80000, name.c_str(), name.size() + 1);
+        g.push(0x60080000u);
+        g.push(kOsSpecific);
+        g.push(kLiftedReturnAddress);
+        g.regs[kEax] = 0x5555u;
+        provider.FindForScript();
+        CHECK(g.regs[kEsp] == kStackTop);
+        return g.regs[kEax];
+    };
+    CHECK(find("OS_InterlockedCompareExchange" + std::string(300, 'z')) == 0u);
+    CHECK(find("") == 0u);
+    CHECK(g.finds == 0);
+    CHECK(find("OS_InterlockedCompareExchange") == kSwapRow);
+    CHECK(g.finds == 1);
+    CHECK(g.findName != 0x60080000u); // a copy, which the script cannot change under the client
+    CHECK(g.text(g.findName) == "OS_InterlockedCompareExchange");
+}
+
+TEST_CASE("without the OSSpecific entries the lookups answer 0 and the script's own fallback runs") {
+    LockGuest g;
+    InterpretedModuleProvider provider(g.runtime, g.machine, g.reader(), lockList(false));
+    REQUIRE(provider.Load("Scripts\\Invented.scr") == 0x60000000u);
+    CHECK(provider.Call(0x60001010u, 0, nullptr) == 1u);
+    CHECK(g.loads == 0); // the client was never asked
+    CHECK(g.finds == 0);
+    CHECK(g.swaps == 0);
+    CHECK(g.at32(0x60002310u) == 0u);
+    CHECK(g.at32(0x60002314u) == 0x60001050u); // the fallback, relocated
+    CHECK(g.at32(0x60002318u) == 0u);
+    CHECK(g.at32(0x6000231Cu) == 1u);
+    CHECK_FALSE(provider.AllowsRow(kSwapRow));
+    CHECK(g.regs[kEsp] == kStackTop);
+}
+
+namespace {
+
+// An invented script that passes a long text through two calls out, as a mission passes its
+// briefing: ScriptEntry pushes the text's address and calls its HeapAlloc import (an allow-listed
+// row, stdcall), then the game's code at 0x00401000 (cdecl). Each callee reads the text itself.
+constexpr std::uint32_t kGameCode = 0x00401000u;
+constexpr std::uint32_t kLongText = 0x60080000u;
+constexpr std::size_t kLongTextSize = 8192;
+
+std::vector<std::uint8_t> longTextFile() {
+    test::InventedCode c;
+    c.code = {
+        0xB8, 0x01, 0x00, 0x00, 0x00,       // 1000 mov eax, 1
+        0xC2, 0x0C, 0x00,                   // 1005 ret 12
+        0xC3,                               // 1008 ret
+        0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
+        0x68, 0x00, 0x00, 0x08, 0x60,       // 1010 push 0x60080000 (the text)
+        0xFF, 0x15, 0x50, 0x20, 0x00, 0x10, // 1015 call [0x10002050] (its import)
+        0x68, 0x00, 0x00, 0x08, 0x60,       // 101B push 0x60080000
+        0xB8, 0x00, 0x10, 0x40, 0x00,       // 1020 mov eax, 0x00401000 (the game's code)
+        0xFF, 0xD0,                         // 1025 call eax
+        0x83, 0xC4, 0x04,                   // 1027 add esp, 4
+        0xC3,                               // 102A ret
+    };
+    c.entry = 0x1000;
+    c.missionSpecEntry = 0x1008;
+    c.scriptEntry = 0x1010;
+    c.relocations = {0x1017};
+    test::Pe pe = test::invented(c);
+    for (std::uint32_t table : {0x2040u, 0x2050u}) { // HeapAlloc alone, which the list allows
+        pe.data32(table + 4, 0);
+    }
+    return pe.bytes;
+}
+
+struct TextGuest : Guest {
+    std::vector<std::string> seen; // the text each callee read, from the pointer it was passed
+
+    TextGuest() {
+        file = longTextFile();
+        machine.lookup = [](std::uint32_t address) -> HostFunction {
+            switch (address) {
+            case kHostRow: return &importRow;
+            case kGameCode: return &gameCode;
+            default: return nullptr;
+            }
+        };
+    }
+    static TextGuest &self() { return *static_cast<TextGuest *>(g_guest); }
+    void read() {
+        const std::uint32_t text = at32(regs[kEsp] + 4);
+        seen.emplace_back(reinterpret_cast<const char *>(window.data() + (text - kWindow)));
+    }
+    static void importRow() { // stdcall, one argument
+        TextGuest &g = self();
+        g.read();
+        g.regs[kEsp] += 8;
+    }
+    static void gameCode() { // cdecl
+        TextGuest &g = self();
+        g.read();
+        g.regs[kEsp] += 4;
+    }
+};
+
+} // namespace
+
+TEST_CASE("a long text a script passes to the game's code or an import reaches the callee whole") {
+    TextGuest g;
+    std::string text(kLongTextSize, '\0');
+    for (std::size_t i = 0; i < text.size(); ++i) {
+        text[i] = static_cast<char>(1 + i % 255); // every byte value but the terminator
+    }
+    std::memcpy(g.window.data() + (kLongText - kWindow), text.c_str(), text.size() + 1);
+    InterpretedModuleProvider provider(g.runtime, g.machine, g.reader(), heapAllocOnly());
+    REQUIRE(provider.Load("Scripts\\Invented.scr") == 0x60000000u);
+
+    provider.Call(0x60001010u, 0, nullptr);
+    REQUIRE(g.seen.size() == 2);
+    CHECK(g.seen[0].size() == kLongTextSize); // the import row
+    CHECK(g.seen[0] == text);
+    CHECK(g.seen[1].size() == kLongTextSize); // the game's code
+    CHECK(g.seen[1] == text);
+    CHECK(std::memcmp(g.window.data() + (kLongText - kWindow), text.c_str(), text.size() + 1) == 0); // untouched
     CHECK(g.regs[kEsp] == kStackTop);
 }
 

@@ -41,9 +41,25 @@ void Interpreter::removeCode(std::uint32_t start, std::uint32_t end) {
         }
     }
     recent_.fill({0, nullptr});
-    if (depth_ == 0) {
+    if (active_.empty()) {
         retired_.clear();
     }
+}
+
+void Interpreter::leaveEntry(std::uint64_t serial) {
+    active_.erase(std::remove_if(active_.begin(), active_.end(),
+                                 [&](const ActiveEntry &a) { return a.serial == serial; }),
+                  active_.end());
+    if (active_.empty()) {
+        retired_.clear();
+    }
+}
+
+void Interpreter::resumeEntry(std::thread::id thread, std::uint64_t serial) {
+    // The entries this thread made after the resumed one left their host frames without returning.
+    active_.erase(std::remove_if(active_.begin(), active_.end(),
+                                 [&](const ActiveEntry &a) { return a.thread == thread && a.serial > serial; }),
+                  active_.end());
 }
 
 void Interpreter::loadState(Cpu &c) const {
@@ -75,7 +91,8 @@ struct Entry {
     Interpreter *interpreter;
     Cpu *cpu;
     std::uint32_t address;
-    int depth; // the interpreter's depth inside this entry
+    std::thread::id thread; // the guest thread that made it
+    std::uint64_t serial;   // its place in Interpreter::active_
 };
 
 } // namespace
@@ -87,7 +104,7 @@ void Interpreter::runEntry(void *context, std::uint32_t pc) {
     if (pc != 0) {
         // Resumed from a nested entry, which left its frames without returning: the registers are
         // the machine's, the flags undefined, as after a lifted landing pad.
-        self.depth_ = e.depth;
+        self.resumeEntry(e.thread, e.serial);
         self.loadState(c);
         c.kind = kFlagsNone;
         c.leave = false;
@@ -114,8 +131,8 @@ void Interpreter::call(std::uint32_t address) {
         *machine_.currentFunction = address;
     }
     ++stats_.entries;
-    ++depth_;
-    Entry entry{this, &c, address, depth_};
+    Entry entry{this, &c, address, std::this_thread::get_id(), nextSerial_++};
+    active_.push_back(ActiveEntry{entry.thread, entry.serial});
     if (!interprets(address)) {
         // An entry function kept past FreeLibrary: no script owns the address any more.
         char line[160];
@@ -130,10 +147,7 @@ void Interpreter::call(std::uint32_t address) {
     } else {
         runEntry(&entry, 0);
     }
-    --depth_;
-    if (depth_ == 0) {
-        retired_.clear();
-    }
+    leaveEntry(entry.serial);
     storeState(c);
     if (machine_.currentFunction != nullptr) {
         *machine_.currentFunction = saved;
@@ -173,6 +187,9 @@ void Interpreter::run(Cpu &c, std::uint32_t address) {
         c.next = b->fallthrough;
         for (const Insn &insn : b->insns) {
             insn.run(c, insn);
+        }
+        if (c.straySize != 0) {
+            strayAccess(c, b->start);
         }
         if (c.leave) {
             c.leave = false;
@@ -287,6 +304,9 @@ bool Interpreter::callHost(Cpu &c, std::uint32_t target) {
 }
 
 void Interpreter::callOut(Cpu &c, std::uint32_t target) {
+    if (c.straySize != 0) {
+        return; // the block's stray access stops the script before anything is called with its values
+    }
     if (!callHost(c, target)) {
         c.r[kEsp] += 4; // the return address the call pushed, which no host function popped
     }
@@ -295,6 +315,9 @@ void Interpreter::callOut(Cpu &c, std::uint32_t target) {
 void Interpreter::jumpOut(Cpu &c, std::uint32_t target) {
     // The host function returns for whoever called the jump's function: its `ret` pops that
     // caller's return address unread, so it is read here first.
+    if (c.straySize != 0) {
+        return;
+    }
     const std::uint32_t esp = c.r[kEsp];
     const std::uint32_t returnTo = c.load32(esp);
     if (!callHost(c, target)) {
@@ -317,6 +340,30 @@ void Interpreter::backEdge(Cpu &c) {
         (*machine_.yieldHook)();
         loadState(c);
     }
+}
+
+void Interpreter::backEdges(Cpu &c, std::uint32_t count) {
+    if (machine_.backEdges == nullptr) {
+        return;
+    }
+    const std::uint32_t before = *machine_.backEdges;
+    *machine_.backEdges = before + count;
+    // count < kYieldEvery: the edges passed a multiple of it when the bits above it changed.
+    if (((before ^ (before + count)) & ~(kYieldEvery - 1)) != 0 && machine_.yieldHook != nullptr &&
+        *machine_.yieldHook != nullptr) {
+        storeState(c);
+        (*machine_.yieldHook)();
+        loadState(c);
+    }
+}
+
+void Interpreter::strayAccess(Cpu &c, std::uint32_t block) {
+    char reached[160];
+    std::snprintf(reached, sizeof reached,
+                  "an access of %u bytes at 0x%08X, past the end of guest memory, in the block", c.straySize,
+                  c.strayAddress);
+    c.straySize = 0;
+    stopScript(c, block, reached);
 }
 
 void Interpreter::say(const char *line) const {
@@ -419,7 +466,10 @@ std::uint32_t Interpreter::argumentBytes(std::uint32_t function) const {
 void Interpreter::fatal(const Cpu &c, std::uint32_t address, const char *what) {
     (void)c;
     char message[256];
-    const std::uint8_t *p = machine_.memory + address;
+    std::uint8_t p[4] = {}; // left 0 for an address in the guest's last three bytes
+    if (Cpu::fits(address, sizeof p)) {
+        std::memcpy(p, machine_.memory + address, sizeof p);
+    }
     std::snprintf(message, sizeof message,
                   "[scripts] interpreter: %s at 0x%08X (bytes %02X %02X %02X %02X)", what, address,
                   p[0], p[1], p[2], p[3]);
