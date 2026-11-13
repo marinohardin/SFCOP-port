@@ -81,7 +81,8 @@ list(TRANSFORM _sfcop_objlift_files PREPEND "${SFCOP_OBJLIFT_DIR}/" OUTPUT_VARIA
 list(APPEND _sfcop_objlift_out ${_sfcop_unit_code} ${_sfcop_weak_headers})
 
 # What the lift reads: game/ (a header change can change any unit's code), the manifest, the
-# compiler profiles, the symbol evidence, the exe and its lift, and the tools themselves.
+# compiler profiles, the symbol evidence, the exe and its lift, the tools themselves, and the
+# patched pcrecomp (its stamp changes when a patch does: the patches change pcrecomp's lift tools).
 file(GLOB_RECURSE _sfcop_objlift_deps CONFIGURE_DEPENDS
     "${CMAKE_SOURCE_DIR}/game/*.h" "${CMAKE_SOURCE_DIR}/game/*.cpp"
     "${CMAKE_SOURCE_DIR}/tools/objlift/*.py" "${CMAKE_SOURCE_DIR}/harness/lib/*.py"
@@ -89,7 +90,7 @@ file(GLOB_RECURSE _sfcop_objlift_deps CONFIGURE_DEPENDS
 list(APPEND _sfcop_objlift_deps "${_sfcop_manifest}" "${CMAKE_SOURCE_DIR}/harness/units.json"
     "${CMAKE_SOURCE_DIR}/ghidra/exports/functions.csv" "${CMAKE_SOURCE_DIR}/tools/objlift/objlift.sh"
     "${CMAKE_SOURCE_DIR}/cmake/lifter/Dockerfile" "${_sfcop_exe}"
-    "${_sfcop_gen}/recomp_funcs.h" "${_sfcop_gen}/recomp_dispatch.c")
+    "${_sfcop_gen}/recomp_funcs.h" "${_sfcop_gen}/recomp_dispatch.c" "${SFCOP_PCRECOMP_STAMP}")
 
 list(LENGTH _sfcop_units _sfcop_nunits)
 add_custom_command(
@@ -98,7 +99,7 @@ add_custom_command(
     COMMAND "${CMAKE_COMMAND}" -E env "PYTHON=${Python3_EXECUTABLE}"
             sh "${CMAKE_SOURCE_DIR}/tools/objlift/objlift.sh"
             --manifest "${_sfcop_manifest}" --exe "${_sfcop_exe}" --gen "${_sfcop_gen}"
-            --pcrecomp "${SFCOP_PCRECOMP_DIR}" --out "${SFCOP_OBJLIFT_DIR}"
+            --pcrecomp "${SFCOP_PCRECOMP_BUILD_DIR}" --out "${SFCOP_OBJLIFT_DIR}"
     DEPENDS ${_sfcop_objlift_deps}
     COMMENT "Lifting the VC6 objects of ${_sfcop_nunits} claimed unit(s) (${_sfcop_claimed} functions)"
     USES_TERMINAL

@@ -179,7 +179,7 @@ include(SfcopBundle)
 set(SFCOP_EHTEST_DIR "${CMAKE_BINARY_DIR}/ehtest")
 add_custom_target(sfcop_ehtest_lift
     COMMAND sh "${CMAKE_SOURCE_DIR}/src/app/guest/tests/lift_ehtest.sh" "${SFCOP_EHTEST_DIR}"
-            "${SFCOP_PCRECOMP_DIR}"
+            "${SFCOP_PCRECOMP_BUILD_DIR}"
     COMMENT "Compiling and lifting the guest test program"
     USES_TERMINAL
     VERBATIM)
@@ -187,7 +187,7 @@ if(EXISTS "${SFCOP_EHTEST_DIR}/out/gen/recomp_dispatch.c")
     set(_sfcop_ehtest_gen "${SFCOP_EHTEST_DIR}/out/gen")
     file(GLOB _sfcop_ehtest_c CONFIGURE_DEPENDS "${_sfcop_ehtest_gen}/*.c")
     set(_sfcop_ehtest_includes "${_sfcop_ehtest_gen}" "${_sfcop_win32hle}"
-        "${SFCOP_PCRECOMP_DIR}/runtime/recomp32")
+        "${SFCOP_PCRECOMP_BUILD_DIR}/runtime/recomp32")
     add_library(sfcop_ehtest_lifted STATIC ${_sfcop_ehtest_c})
     target_include_directories(sfcop_ehtest_lifted PRIVATE ${_sfcop_ehtest_includes})
     target_compile_definitions(sfcop_ehtest_lifted PRIVATE ${SFCOP_RECOMP_DEFINITIONS})
@@ -221,14 +221,14 @@ endif()
 # sfcop_machine_quantum_tests.
 add_library(sfcop_machine_quantum_host OBJECT "${_sfcop_win32hle}/host_lite.c")
 target_include_directories(sfcop_machine_quantum_host PRIVATE "${_sfcop_win32hle}"
-    "${SFCOP_PCRECOMP_DIR}/runtime/recomp32")
+    "${SFCOP_PCRECOMP_BUILD_DIR}/runtime/recomp32")
 target_compile_definitions(sfcop_machine_quantum_host PRIVATE ${SFCOP_RECOMP_DEFINITIONS})
 target_compile_options(sfcop_machine_quantum_host PRIVATE -w -fno-strict-aliasing -fwrapv)
 sfcop_win32hle_posix(sfcop_machine_quantum_host)
 add_executable(sfcop_machine_quantum_tests
     "${CMAKE_SOURCE_DIR}/src/app/guest/tests/MachineQuantumTest.cpp")
 target_include_directories(sfcop_machine_quantum_tests PRIVATE "${_sfcop_win32hle}"
-    "${SFCOP_PCRECOMP_DIR}/runtime/recomp32")
+    "${SFCOP_PCRECOMP_BUILD_DIR}/runtime/recomp32")
 target_compile_definitions(sfcop_machine_quantum_tests PRIVATE ${SFCOP_RECOMP_DEFINITIONS})
 target_link_libraries(sfcop_machine_quantum_tests PRIVATE sfcop_machine_quantum_host sfcop_doctest
     $<$<NOT:$<PLATFORM_ID:Windows>>:pthread>)

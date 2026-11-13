@@ -4,14 +4,20 @@
 # Inputs, each a cache variable with a default from harness/lib/paths.py (cmake/lifter/locate.py):
 #   SFCOP_INSTALL_DIR    the original game's install folder; its StarFleetOP.exe is hash-checked
 #                        against analysis/results/retail_hashes.sha256 before every lift
-#   SFCOP_PCRECOMP_DIR   a pcrecomp clone at the pinned revision with cmake/lifter/patches applied
-#                        (cmake/lifter/setup.sh makes one)
+#   SFCOP_PCRECOMP_DIR   a pcrecomp clone that holds the pinned revision (cmake/lifter/setup.sh
+#                        makes one); it is only read, and may serve every checkout on the machine
 # When either is missing, configure still succeeds and says what is missing; building `sfcop`
 # then fails with the same message.
 #
 # Provides:
 #   SFCOP_LIFT_READY         ON when both inputs are present
 #   SFCOP_LIFT_MISSING       what is missing, as one sentence per item
+#   SFCOP_PCRECOMP_BUILD_DIR this build folder's own pcrecomp: SFCOP_PCRECOMP_DIR at the pinned
+#                            revision with this checkout's cmake/lifter/patches/series applied, made
+#                            again at configure whenever the revision or a patch changes; everything
+#                            that compiles or lifts against pcrecomp uses it
+#   SFCOP_PCRECOMP_STAMP     its stamp file, rewritten only when the copy is made again: a
+#                            dependency of every step whose output the patches can change
 #   sfcop_lifted             STATIC library of the lifted functions (when ready)
 #   sfcop_win32hle           OBJECT library of pcrecomp's win32hle runtime (when ready)
 #   sfcop_gameroot           target: a writable copy of the install in ${CMAKE_BINARY_DIR}/gameroot,
@@ -32,7 +38,7 @@ get_filename_component(_sfcop_default_install "${SFCOP_FOUND_EXE}" DIRECTORY)
 set(SFCOP_INSTALL_DIR "${_sfcop_default_install}" CACHE PATH
     "The original game's install folder (holds StarFleetOP.exe)")
 set(SFCOP_PCRECOMP_DIR "${SFCOP_FOUND_WORK}/lifter-hle/pcrecomp" CACHE PATH
-    "pcrecomp clone at the pinned revision with cmake/lifter/patches applied")
+    "pcrecomp clone that holds the pinned revision (read only; each build folder patches its own copy)")
 set(SFCOP_EXE_SHA256 "${SFCOP_FOUND_EXE_SHA256}")
 
 # Number of lifted .c files: fixed, so the build knows their names before the lift runs.
@@ -64,32 +70,40 @@ if(SFCOP_EXE_SHA256 STREQUAL "")
     string(APPEND SFCOP_LIFT_MISSING
         "analysis/results/retail_hashes.sha256 has no line for the exe. ")
 endif()
-set(_sfcop_win32hle "${SFCOP_PCRECOMP_DIR}/runtime/win32hle")
-if(NOT EXISTS "${SFCOP_PCRECOMP_DIR}/tools/lift/lift32.py" OR NOT EXISTS "${_sfcop_win32hle}/win32hle.h")
+# The build folder's own pcrecomp (cmake/lifter/setup.sh --copy): a local clone of
+# SFCOP_PCRECOMP_DIR, which is never written, with this checkout's patch series applied. Two
+# checkouts with different series build side by side. The series, every patch and setup.sh are
+# configure dependencies, so a change to any of them makes the copy again before the build.
+set(SFCOP_PCRECOMP_BUILD_DIR "${CMAKE_BINARY_DIR}/pcrecomp")
+set(SFCOP_PCRECOMP_STAMP "${CMAKE_BINARY_DIR}/pcrecomp.stamp")
+set(_sfcop_win32hle "${SFCOP_PCRECOMP_BUILD_DIR}/runtime/win32hle")
+file(GLOB _sfcop_patches CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/cmake/lifter/patches/*.patch")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${_sfcop_patches}
+    "${CMAKE_SOURCE_DIR}/cmake/lifter/patches/series" "${CMAKE_SOURCE_DIR}/cmake/lifter/setup.sh")
+if(NOT EXISTS "${SFCOP_PCRECOMP_DIR}/tools/lift/lift32.py")
     string(APPEND SFCOP_LIFT_MISSING
         "No pcrecomp clone at SFCOP_PCRECOMP_DIR (\"${SFCOP_PCRECOMP_DIR}\"): run "
-        "cmake/lifter/setup.sh <dir> and configure with -DSFCOP_PCRECOMP_DIR=<dir>. ")
+        "cmake/lifter/setup.sh <dir> (or find where it moved) and configure again with "
+        "-DSFCOP_PCRECOMP_DIR=<dir>. ")
 else()
     find_package(Git REQUIRED)
-    foreach(_p IN ITEMS pcrecomp-tib-hook pcrecomp-kernel32-unnamed-objects
-                        pcrecomp-manual-lookup-hook pcrecomp-wsock32-select-accept
-                        pcrecomp-eh-landing-pads pcrecomp-mach-depth pcrecomp-div-fault
-                        pcrecomp-quantum pcrecomp-win32-posix pcrecomp-win32-paths
-                        pcrecomp-win32-kernel32 pcrecomp-win32-cpuid)
-        execute_process(
-            COMMAND "${GIT_EXECUTABLE}" -C "${SFCOP_PCRECOMP_DIR}" apply --reverse --check
-                    "${CMAKE_SOURCE_DIR}/cmake/lifter/patches/${_p}.patch"
-            RESULT_VARIABLE _sfcop_rc OUTPUT_QUIET ERROR_QUIET)
-        if(NOT _sfcop_rc EQUAL 0)
-            string(APPEND SFCOP_LIFT_MISSING
-                "The pcrecomp clone lacks ${_p}.patch: run cmake/lifter/setup.sh \"${SFCOP_PCRECOMP_DIR}\". ")
-        endif()
-    endforeach()
+    execute_process(
+        COMMAND sh "${CMAKE_SOURCE_DIR}/cmake/lifter/setup.sh" --copy "${SFCOP_PCRECOMP_DIR}"
+                "${SFCOP_PCRECOMP_BUILD_DIR}" "${SFCOP_PCRECOMP_STAMP}"
+        RESULT_VARIABLE _sfcop_rc OUTPUT_VARIABLE _sfcop_out ERROR_VARIABLE _sfcop_err
+        OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_STRIP_TRAILING_WHITESPACE)
+    if(_sfcop_rc EQUAL 2)
+        message(FATAL_ERROR "cmake/lifter/patches/series does not match the patches: ${_sfcop_err}")
+    elseif(NOT _sfcop_rc EQUAL 0)
+        string(APPEND SFCOP_LIFT_MISSING "No patched pcrecomp in this build folder: ${_sfcop_err} ")
+    elseif(_sfcop_out)
+        message(STATUS "${_sfcop_out}")
+    endif()
 endif()
 
 if(SFCOP_LIFT_MISSING STREQUAL "")
     set(SFCOP_LIFT_READY ON)
-    message(STATUS "sfcop: lifting ${_sfcop_exe} with pcrecomp at ${SFCOP_PCRECOMP_DIR}")
+    message(STATUS "sfcop: lifting ${_sfcop_exe} with pcrecomp at ${SFCOP_PCRECOMP_BUILD_DIR}")
 else()
     set(SFCOP_LIFT_READY OFF)
     message(WARNING "sfcop cannot be built on this machine: ${SFCOP_LIFT_MISSING}")
@@ -111,17 +125,17 @@ add_custom_command(
     OUTPUT ${_sfcop_lifted_c} "${_sfcop_gen}/recomp_dispatch.c" "${_sfcop_gen}/recomp_funcs.h"
            "${_sfcop_gen}/recomp_eh_table.c"
     COMMAND sh "${CMAKE_SOURCE_DIR}/cmake/lifter/lift.sh"
-            --exe "${_sfcop_exe}" --sha256 "${SFCOP_EXE_SHA256}" --pcrecomp "${SFCOP_PCRECOMP_DIR}"
+            --exe "${_sfcop_exe}" --sha256 "${SFCOP_EXE_SHA256}" --pcrecomp "${SFCOP_PCRECOMP_BUILD_DIR}"
             --out "${SFCOP_LIFTED_DIR}" --files ${SFCOP_LIFT_FILES} --marks "${SFCOP_LIFT_MARKS}"
     DEPENDS "${_sfcop_exe}" "${CMAKE_SOURCE_DIR}/cmake/lifter/lift.sh"
             "${CMAKE_SOURCE_DIR}/cmake/lifter/run_lift.py" "${CMAKE_SOURCE_DIR}/cmake/lifter/eh_frames.py"
-            "${CMAKE_SOURCE_DIR}/cmake/lifter/Dockerfile"
+            "${CMAKE_SOURCE_DIR}/cmake/lifter/Dockerfile" "${SFCOP_PCRECOMP_STAMP}"
     COMMENT "Lifting StarFleetOP.exe (rtti, disasm, lift: about 6 minutes the first time)"
     USES_TERMINAL
     VERBATIM)
 
 set(SFCOP_RECOMP_DEFINITIONS RECOMP_RETADDR=0u RECOMP_LOCAL_REGS RECOMP_MEM_BASE=0x100000000000ull)
-set(SFCOP_RECOMP_INCLUDES "${_sfcop_gen}" "${_sfcop_win32hle}" "${SFCOP_PCRECOMP_DIR}/runtime/recomp32")
+set(SFCOP_RECOMP_INCLUDES "${_sfcop_gen}" "${_sfcop_win32hle}" "${SFCOP_PCRECOMP_BUILD_DIR}/runtime/recomp32")
 
 # recomp_eh_table.c: every catch and __except continuation with the function that owns it, which
 # the guest host checks each resume against (src/app/guest/).
