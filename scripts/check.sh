@@ -116,6 +116,9 @@ base, released = matched.release_listed(base, data, matched.boundary_listed(path
                                          verify.claimed_keys())
 for k in released:
     print('released %s: on the boundary-error list and never exact in %s' % (k, label))
+base, misscored = matched.release_misscored(base, data, verify.claimed_keys())
+for k in misscored:
+    print('released %s: scored against the plain destructor, not its deleting destructor' % k)
 sizes = verify.load_base_sizes(sys.argv[1])
 if sizes is not None and os.path.isfile(paths.FUNCTIONS_CSV):
     index = funcs.FunctionIndex(paths.FUNCTIONS_CSV, paths.SYMBOL_TSVS)
