@@ -12,7 +12,7 @@ calls `WinMain`. The host is built only with the lift and never compiles `game/`
 | `GuestShots.h`, `.cpp` | `--shots DIR --shot-every S`: the back buffer read through `Gpu::ReadTexture` into a 24-bit BMP (the format `framediff.py` reads) |
 | `FaultClass.h`, `.cpp` | Which hardware faults become guest exceptions: the pc must lie in lifted code (or a leaf memory routine it calls) |
 | `GuestExceptions.h`, `.cpp` | The landing pads the lift's code pushes and pops, the two transfers the lift calls (`_JumpToContinuation`, the `__except` call), and hardware faults raised as guest exceptions |
-| `GuestGame.cpp` | What is the original's own: the OSSpecific DLL it loads, the marks, B9's override table |
+| `GuestGame.cpp` | What is the original's own: the OSSpecific DLL it loads, the marks, B9's override table written into the dispatch table (below) |
 | `override.*` | B9's: the table of game functions that run as source instead of as lifted code |
 | `tests/` | The guest tests: a VC6 test program lifted and run on this host (below) |
 
@@ -166,16 +166,52 @@ of `hle/kernel32rt` and of `Clock` and `Threads` run in `sfcop_tests` everywhere
 `SFCOP_GUEST_TRACE=1` to trace a run of the test host.
 
 The machine's hand-over rule (Threads, above, and `cmake/lifter/patches/pcrecomp-quantum.patch`)
-has its own test, `tests/MachineQuantumTest.cpp`. It builds pcrecomp's `host_lite.c` from the clone
-and needs no lifted program. A thread keeps the machine through its quantum of imports while
+has its own test, `tests/MachineQuantumTest.cpp`. It builds pcrecomp's `host_lite.c` from a
+patched copy (`cmake/lifter/patches/series` applied) and needs no lifted program. A thread keeps the machine through its quantum of imports while
 another waits. The import that ends the quantum hands the machine over, and a new quantum starts
 when the thread takes it back. A yield hands it over at once, and so does a back-edge hook with no
 import by its own thread since that thread's last hook. Every build with the lift has it as the
-CTest test `sfcop_machine_quantum_tests`. Without a build, the script below builds it against any
-clone:
+CTest test `sfcop_machine_quantum_tests`, compiled against the build folder's patched copy.
+Without a build, the script below takes the pcrecomp clone, only reads it, and makes its own
+patched copy in the scratch folder (`setup.sh --copy`) to build against:
 
     ctest --test-dir <build> -R sfcop_machine_quantum_tests
     sh src/app/guest/tests/run_machine_quantum.sh <pcrecomp clone> <build>/_deps/doctest-src <scratch dir>
+
+## Indirect calls
+
+Every indirect call of lifted code (a virtual call, a function pointer, an import through its
+IAT slot) asks three lookups: the dispatch table, the host's manual hook and the import shims
+(`cmake/lifter/patches/pcrecomp-dispatch-cache.patch`). The table answers from a direct-mapped
+cache of 16,384 slots in front of its binary search, misses included, so an import's address,
+which is never in the table, is not searched for again. Each slot is one 64-bit word holding the
+address and the table index, read and written whole.
+
+The order depends on whether the host has folded its own functions into the table:
+
+- **Not folded** (any host that never calls `hle_dispatch_fold`): the hook, the table, the
+  imports, as before the patch. A hook that supplies a function in place of a lifted one at the
+  same address must be asked first, or the lifted one would run.
+- **Folded**: the table, the hook, the imports. `hle_dispatch_fold` sets
+  `recomp_dispatch_folded`, which the call macros read.
+
+At start-up `GuestGame.cpp` writes B9's override table into a copy of the dispatch table
+(`hle_dispatch_fold`): an override at an address the table holds replaces that entry, one at a new
+address is added. The manual hook then answers only the missed constructor (0x0059644A, run by the
+lifted 0x004014A9) and, through the mission modules' loader, the modules' own addresses: neither is
+in the table, so asking the table first changes no answer. Before guest code runs, every address of
+the generated table, every override and the missed constructor is asked twice (once from the
+search, once from the cache) and compared with what the old order (override table, hook, table)
+found; a difference ends the run, naming the address. It takes about 10 ms on an M1 Pro.
+
+The fold is for start-up only, before any guest thread runs: a lookup on another thread during a
+fold could pair a cached index with the wrong table. A previous copy of the table is never freed.
+
+The cache, the fold and both orders have their own cases in `tests/MachineQuantumTest.cpp`, in the
+same CTest test: the generated table's one entry, entries folded in and a cached miss found after
+the fold, a replaced entry, 40,000 entries against the 16,384 slots in three orders, two threads
+reading at once, and an indirect call (`RECOMP_ITAIL`) to an address both the table and the hook
+answer, before a fold (the hook's function runs) and after (the folded one).
 
 ## Results (macOS arm64, 2026-11-04, fix round 1)
 

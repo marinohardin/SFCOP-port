@@ -13,3 +13,4 @@ pcrecomp-win32-posix.patch
 pcrecomp-win32-paths.patch
 pcrecomp-win32-kernel32.patch
 pcrecomp-win32-cpuid.patch
+pcrecomp-dispatch-cache.patch
