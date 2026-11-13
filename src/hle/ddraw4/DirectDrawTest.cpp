@@ -109,19 +109,21 @@ TEST_CASE("EnumDisplayModes offers the classic and listed modes up to the deskto
         std::vector<platform::DisplayMode>{{1366, 768, 60}, {1024, 768, 60}, {720, 400, 70}};
     std::vector<SurfaceDesc> modes;
     CHECK(rig.dd->EnumDisplayModes(0, nullptr, modes) == kDdOk);
-    REQUIRE(modes.size() == 12);
+    REQUIRE(modes.size() == 15);
     CHECK(modes[0].width == 640);
     CHECK(modes[0].height == 480);
     CHECK(modes[0].pixelFormat.bitCount == 8);
     CHECK(modes[0].pixelFormat.flags == (kDdpfRgb | kDdpfPaletteIndexed8));
     CHECK(modes[1].width == 720);
     CHECK(modes[1].height == 400);
-    CHECK(modes[3].width == 1024);
-    CHECK(modes[4].pixelFormat.bitCount == 16);
-    CHECK(modes[4].pitch == 1280);
-    CHECK(modes[11].width == 1024);
-    CHECK(modes[11].pixelFormat.bitCount == 32);
-    CHECK(modes[11].pitch == 4096);
+    CHECK(modes[3].width == 960);
+    CHECK(modes[3].height == 720);
+    CHECK(modes[4].width == 1024);
+    CHECK(modes[5].pixelFormat.bitCount == 16);
+    CHECK(modes[5].pitch == 1280);
+    CHECK(modes[14].width == 1024);
+    CHECK(modes[14].pixelFormat.bitCount == 32);
+    CHECK(modes[14].pitch == 4096);
 
     SurfaceDesc filter;
     filter.flags = kDdsdWidth | kDdsdPixelFormat;
@@ -131,6 +133,35 @@ TEST_CASE("EnumDisplayModes offers the classic and listed modes up to the deskto
     REQUIRE(modes.size() == 1);
     CHECK(modes[0].height == 600);
     CHECK(modes[0].mipMapCount == 60);
+}
+
+TEST_CASE("EnumDisplayModes lists every size the game's lowres setting can ask for, smallest first") {
+    Rig rig;
+    rig.window.desktopModeResult = platform::DisplayMode{1600, 1200, 60};
+    rig.window.displayModesResult = std::vector<platform::DisplayMode>{};
+    SurfaceDesc filter;
+    filter.flags = kDdsdPixelFormat;
+    filter.pixelFormat.bitCount = 16;
+    std::vector<SurfaceDesc> modes;
+    CHECK(rig.dd->EnumDisplayModes(0, &filter, modes) == kDdOk);
+    REQUIRE(modes.size() == 8);
+    CHECK(modes[0].width == 640);
+    CHECK(modes[0].height == 480);
+    CHECK(modes[1].width == 800);
+    CHECK(modes[1].height == 600);
+    CHECK(modes[2].width == 960);
+    CHECK(modes[2].height == 720);
+    CHECK(modes[2].pitch == 1920);
+    CHECK(modes[3].width == 1024);
+    CHECK(modes[3].height == 768);
+    CHECK(modes[4].width == 1152);
+    CHECK(modes[4].height == 864);
+    CHECK(modes[5].width == 1280);
+    CHECK(modes[5].height == 960);
+    CHECK(modes[6].width == 1280);
+    CHECK(modes[6].height == 1024);
+    CHECK(modes[7].width == 1600);
+    CHECK(modes[7].height == 1200);
 }
 
 TEST_CASE("GetCaps reports blits, colour keys, 8-bit palettes and 16-bit z-buffers") {
