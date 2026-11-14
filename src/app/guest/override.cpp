@@ -1324,88 +1324,88 @@ extern "C" void sub_0043558A(void) {
     ::sfcop::guest::Entry< ::sfcop::guest::member< void( long ) >( &tDynamicMemoryFreeListViaHandles::vfunction36 ) >::run();
 }
 
-// t3DListenerProfile::fn_004355ce(const t3DListenerProfile_field_08 *), game/unsorted/t3DListenerProfile.cpp
+// t3DListenerProfile::mSet3DPosition(tPoint3 *), game/unsorted/t3DListenerProfile.cpp
 extern "C" void sub_004355CE(void) {
     ::sfcop::guest::entered(207);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< void( const t3DListenerProfile_field_08 * ) >( &t3DListenerProfile::fn_004355ce ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( tPoint3 * ) >( &t3DListenerProfile::mSet3DPosition ) >::run();
 }
 
-// t3DListenerProfile::fn_004355e6(int,int,int), game/unsorted/t3DListenerProfile.cpp
+// t3DListenerProfile::mSet3DPosition(float,float,float), game/unsorted/t3DListenerProfile.cpp
 extern "C" void sub_004355E6(void) {
     ::sfcop::guest::entered(208);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int, int, int ) >( &t3DListenerProfile::fn_004355e6 ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( float, float, float ) >( &t3DListenerProfile::mSet3DPosition ) >::run();
 }
 
-// t3DListenerProfile::fn_004355fe(), game/unsorted/t3DListenerProfile.cpp
+// t3DListenerProfile::mGet3DPosition(), game/unsorted/t3DListenerProfile.cpp
 extern "C" void sub_004355FE(void) {
     ::sfcop::guest::entered(209);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< t3DListenerProfile_field_08 *() >( &t3DListenerProfile::fn_004355fe ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tPoint3 *() >( &t3DListenerProfile::mGet3DPosition ) >::run();
 }
 
-// t3DListenerProfile::fn_00435602(const t3DListenerProfile_field_08 *), game/unsorted/t3DListenerProfile.cpp
+// t3DListenerProfile::mSetForwardDirection(tPoint3 *), game/unsorted/t3DListenerProfile.cpp
 extern "C" void sub_00435602(void) {
     ::sfcop::guest::entered(210);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< void( const t3DListenerProfile_field_08 * ) >( &t3DListenerProfile::fn_00435602 ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( tPoint3 * ) >( &t3DListenerProfile::mSetForwardDirection ) >::run();
 }
 
-// t3DListenerProfile::fn_0043561a(int,int,int), game/unsorted/t3DListenerProfile.cpp
+// t3DListenerProfile::mSetForwardDirection(float,float,float), game/unsorted/t3DListenerProfile.cpp
 extern "C" void sub_0043561A(void) {
     ::sfcop::guest::entered(211);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int, int, int ) >( &t3DListenerProfile::fn_0043561a ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( float, float, float ) >( &t3DListenerProfile::mSetForwardDirection ) >::run();
 }
 
-// t3DListenerProfile::fn_00435632(), game/unsorted/t3DListenerProfile.cpp
+// t3DListenerProfile::mGetForwardDirection(), game/unsorted/t3DListenerProfile.cpp
 extern "C" void sub_00435632(void) {
     ::sfcop::guest::entered(212);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< t3DListenerProfile_field_08 *() >( &t3DListenerProfile::fn_00435632 ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tPoint3 *() >( &t3DListenerProfile::mGetForwardDirection ) >::run();
 }
 
-// t3DListenerProfile::fn_00435636(const t3DListenerProfile_field_08 *), game/unsorted/t3DListenerProfile.cpp
+// t3DListenerProfile::mSetUpDirection(tPoint3 *), game/unsorted/t3DListenerProfile.cpp
 extern "C" void sub_00435636(void) {
     ::sfcop::guest::entered(213);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< void( const t3DListenerProfile_field_08 * ) >( &t3DListenerProfile::fn_00435636 ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( tPoint3 * ) >( &t3DListenerProfile::mSetUpDirection ) >::run();
 }
 
-// t3DListenerProfile::fn_0043564e(int,int,int), game/unsorted/t3DListenerProfile.cpp
+// t3DListenerProfile::mSetUpDirection(float,float,float), game/unsorted/t3DListenerProfile.cpp
 extern "C" void sub_0043564E(void) {
     ::sfcop::guest::entered(214);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int, int, int ) >( &t3DListenerProfile::fn_0043564e ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( float, float, float ) >( &t3DListenerProfile::mSetUpDirection ) >::run();
 }
 
-// t3DListenerProfile::fn_00435666(), game/unsorted/t3DListenerProfile.cpp
+// t3DListenerProfile::mGetUpDirection(), game/unsorted/t3DListenerProfile.cpp
 extern "C" void sub_00435666(void) {
     ::sfcop::guest::entered(215);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< t3DListenerProfile_field_08 *() >( &t3DListenerProfile::fn_00435666 ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tPoint3 *() >( &t3DListenerProfile::mGetUpDirection ) >::run();
 }
 
-// t3DListenerProfile::fn_0043566a(const t3DListenerProfile_field_08 *), game/unsorted/t3DListenerProfile.cpp
+// t3DListenerProfile::mSetVelocity(tPoint3 *), game/unsorted/t3DListenerProfile.cpp
 extern "C" void sub_0043566A(void) {
     ::sfcop::guest::entered(216);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< void( const t3DListenerProfile_field_08 * ) >( &t3DListenerProfile::fn_0043566a ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( tPoint3 * ) >( &t3DListenerProfile::mSetVelocity ) >::run();
 }
 
-// t3DListenerProfile::fn_00435682(int,int,int), game/unsorted/t3DListenerProfile.cpp
+// t3DListenerProfile::mSetVelocity(float,float,float), game/unsorted/t3DListenerProfile.cpp
 extern "C" void sub_00435682(void) {
     ::sfcop::guest::entered(217);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< void( int, int, int ) >( &t3DListenerProfile::fn_00435682 ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( float, float, float ) >( &t3DListenerProfile::mSetVelocity ) >::run();
 }
 
-// t3DListenerProfile::fn_0043569a(), game/unsorted/t3DListenerProfile.cpp
+// t3DListenerProfile::mGetVelocity(), game/unsorted/t3DListenerProfile.cpp
 extern "C" void sub_0043569A(void) {
     ::sfcop::guest::entered(218);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< t3DListenerProfile_field_08 *() >( &t3DListenerProfile::fn_0043569a ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< tPoint3 *() >( &t3DListenerProfile::mGetVelocity ) >::run();
 }
 
-// t3DListenerProfile::fn_0043569e(double), game/unsorted/t3DListenerProfile.cpp
+// t3DListenerProfile::mSetUnitScaleInMeters(double), game/unsorted/t3DListenerProfile.cpp
 extern "C" void sub_0043569E(void) {
     ::sfcop::guest::entered(219);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< void( double ) >( &t3DListenerProfile::fn_0043569e ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< void( double ) >( &t3DListenerProfile::mSetUnitScaleInMeters ) >::run();
 }
 
-// t3DListenerProfile::fn_004356a8(), game/unsorted/t3DListenerProfile.cpp
+// t3DListenerProfile::mGetUnitScaleInMeters(), game/unsorted/t3DListenerProfile.cpp
 extern "C" void sub_004356A8(void) {
     ::sfcop::guest::entered(220);
-    ::sfcop::guest::Entry< ::sfcop::guest::member< double() >( &t3DListenerProfile::fn_004356a8 ) >::run();
+    ::sfcop::guest::Entry< ::sfcop::guest::member< double() >( &t3DListenerProfile::mGetUnitScaleInMeters ) >::run();
 }
 
 // tCloakSystem::vfunction100(int), game/unsorted/tCloakSystem.cpp
@@ -5541,20 +5541,20 @@ const sfcop_guest_override sfcop_guest_overrides[] = {
     {0x00435554u, sub_00435554, "tDynamicMemoryFreeListViaHandles::vfunction32(long)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
     {0x0043556Fu, sub_0043556F, "tDynamicMemoryFreeListViaHandles::vfunction34(long)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
     {0x0043558Au, sub_0043558A, "tDynamicMemoryFreeListViaHandles::vfunction36(long)", "unsorted/tDynamicMemoryFreeListViaHandles.cpp"},
-    {0x004355CEu, sub_004355CE, "t3DListenerProfile::fn_004355ce(const t3DListenerProfile_field_08 *)", "unsorted/t3DListenerProfile.cpp"},
-    {0x004355E6u, sub_004355E6, "t3DListenerProfile::fn_004355e6(int,int,int)", "unsorted/t3DListenerProfile.cpp"},
-    {0x004355FEu, sub_004355FE, "t3DListenerProfile::fn_004355fe()", "unsorted/t3DListenerProfile.cpp"},
-    {0x00435602u, sub_00435602, "t3DListenerProfile::fn_00435602(const t3DListenerProfile_field_08 *)", "unsorted/t3DListenerProfile.cpp"},
-    {0x0043561Au, sub_0043561A, "t3DListenerProfile::fn_0043561a(int,int,int)", "unsorted/t3DListenerProfile.cpp"},
-    {0x00435632u, sub_00435632, "t3DListenerProfile::fn_00435632()", "unsorted/t3DListenerProfile.cpp"},
-    {0x00435636u, sub_00435636, "t3DListenerProfile::fn_00435636(const t3DListenerProfile_field_08 *)", "unsorted/t3DListenerProfile.cpp"},
-    {0x0043564Eu, sub_0043564E, "t3DListenerProfile::fn_0043564e(int,int,int)", "unsorted/t3DListenerProfile.cpp"},
-    {0x00435666u, sub_00435666, "t3DListenerProfile::fn_00435666()", "unsorted/t3DListenerProfile.cpp"},
-    {0x0043566Au, sub_0043566A, "t3DListenerProfile::fn_0043566a(const t3DListenerProfile_field_08 *)", "unsorted/t3DListenerProfile.cpp"},
-    {0x00435682u, sub_00435682, "t3DListenerProfile::fn_00435682(int,int,int)", "unsorted/t3DListenerProfile.cpp"},
-    {0x0043569Au, sub_0043569A, "t3DListenerProfile::fn_0043569a()", "unsorted/t3DListenerProfile.cpp"},
-    {0x0043569Eu, sub_0043569E, "t3DListenerProfile::fn_0043569e(double)", "unsorted/t3DListenerProfile.cpp"},
-    {0x004356A8u, sub_004356A8, "t3DListenerProfile::fn_004356a8()", "unsorted/t3DListenerProfile.cpp"},
+    {0x004355CEu, sub_004355CE, "t3DListenerProfile::mSet3DPosition(tPoint3 *)", "unsorted/t3DListenerProfile.cpp"},
+    {0x004355E6u, sub_004355E6, "t3DListenerProfile::mSet3DPosition(float,float,float)", "unsorted/t3DListenerProfile.cpp"},
+    {0x004355FEu, sub_004355FE, "t3DListenerProfile::mGet3DPosition()", "unsorted/t3DListenerProfile.cpp"},
+    {0x00435602u, sub_00435602, "t3DListenerProfile::mSetForwardDirection(tPoint3 *)", "unsorted/t3DListenerProfile.cpp"},
+    {0x0043561Au, sub_0043561A, "t3DListenerProfile::mSetForwardDirection(float,float,float)", "unsorted/t3DListenerProfile.cpp"},
+    {0x00435632u, sub_00435632, "t3DListenerProfile::mGetForwardDirection()", "unsorted/t3DListenerProfile.cpp"},
+    {0x00435636u, sub_00435636, "t3DListenerProfile::mSetUpDirection(tPoint3 *)", "unsorted/t3DListenerProfile.cpp"},
+    {0x0043564Eu, sub_0043564E, "t3DListenerProfile::mSetUpDirection(float,float,float)", "unsorted/t3DListenerProfile.cpp"},
+    {0x00435666u, sub_00435666, "t3DListenerProfile::mGetUpDirection()", "unsorted/t3DListenerProfile.cpp"},
+    {0x0043566Au, sub_0043566A, "t3DListenerProfile::mSetVelocity(tPoint3 *)", "unsorted/t3DListenerProfile.cpp"},
+    {0x00435682u, sub_00435682, "t3DListenerProfile::mSetVelocity(float,float,float)", "unsorted/t3DListenerProfile.cpp"},
+    {0x0043569Au, sub_0043569A, "t3DListenerProfile::mGetVelocity()", "unsorted/t3DListenerProfile.cpp"},
+    {0x0043569Eu, sub_0043569E, "t3DListenerProfile::mSetUnitScaleInMeters(double)", "unsorted/t3DListenerProfile.cpp"},
+    {0x004356A8u, sub_004356A8, "t3DListenerProfile::mGetUnitScaleInMeters()", "unsorted/t3DListenerProfile.cpp"},
     {0x004382BEu, sub_004382BE, "tCloakSystem::vfunction100(int)", "unsorted/tCloakSystem.cpp"},
     {0x004382CBu, sub_004382CB, "tCloakSystem::fn_004382cb()", "unsorted/tCloakSystem.cpp"},
     {0x004382E3u, sub_004382E3, "tCloakSystem::fn_004382e3()", "unsorted/tCloakSystem.cpp"},
