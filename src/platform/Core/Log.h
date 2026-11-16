@@ -1,8 +1,8 @@
 // The client's log, in two files per run. Everything the client prints goes to stderr, which the
 // app bundle's launcher writes to the full log (logs/launch-<stamp>.log). A line that is
 // IMPORTANT also goes to the important log (logs/important-<same stamp>.log), the few dozen lines a
-// player or the owner needs after a crash: the start line, mission script loads and unloads,
-// refused script imports, low-memory reads, faults and crashes, and the exit with its code.
+// player or the owner needs after a crash: the start line, refused or failed script loads,
+// low-memory reads, faults and crashes, and the exit with its code. A clean run gives a handful.
 //
 // The port's own code gives each line its severity here, at the source; a line printed with plain
 // fprintf (the original's debug text, the override report, the per-function chatter) is full-log

@@ -77,7 +77,7 @@ void say(const char *format, const std::string &a) {
     std::fprintf(stderr, format, a.c_str());
 }
 
-// A load, an unload or a refusal: also in the important log (platform/Core/Log.h).
+// A refusal or a failed load: also in the important log (platform/Core/Log.h).
 void sayImportant(const char *format, const std::string &a) {
     sfcop_logf(SFCOP_LOG_IMPORTANT, format, a.c_str());
 }
@@ -361,7 +361,7 @@ std::uint32_t GuestModuleProvider::Load(std::string_view scriptName) {
     }
     const double entryTime =
         std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
-    sfcop_logf(SFCOP_LOG_IMPORTANT, "[scripts] loaded %s at 0x%08X (%u functions, %u imports, entry point %.3f ms)\n",
+    std::fprintf(stderr, "[scripts] loaded %s at 0x%08X (%u functions, %u imports, entry point %.3f ms)\n",
                  name.c_str(), image->base, image->dispatch_count, image->import_count, entryTime);
     return image->base;
 }
@@ -396,7 +396,7 @@ void GuestModuleProvider::Free(std::uint32_t handle) {
     }
     byBase_.erase(found);
     Unmap(module);
-    sayImportant("[scripts] unloaded %s\n", module.name);
+    say("[scripts] unloaded %s\n", module.name);
 }
 
 sfcop_guest_fn GuestModuleProvider::Lookup(std::uint32_t address) const {

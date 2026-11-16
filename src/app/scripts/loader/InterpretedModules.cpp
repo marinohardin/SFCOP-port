@@ -66,7 +66,7 @@ bool isModuleName(const std::string &name) {
 
 void say(const char *format, const std::string &a) { std::fprintf(stderr, format, a.c_str()); }
 
-// A load, an unload or a refusal: also in the important log (platform/Core/Log.h).
+// A refusal or a failed load: also in the important log (platform/Core/Log.h).
 void sayImportant(const char *format, const std::string &a) {
     sfcop_logf(SFCOP_LOG_IMPORTANT, format, a.c_str());
 }
@@ -424,7 +424,7 @@ std::uint32_t InterpretedModuleProvider::Load(std::string_view scriptName) {
         }
     }
     const double entryTime = millisecondsSince(start);
-    sfcop_logf(SFCOP_LOG_IMPORTANT,
+    std::fprintf(stderr,
                  "[scripts] loaded %s at 0x%08X, interpreted (%zu imports, %llu instructions surveyed in %.3f ms, "
                  "%u instructions of extensions the processor does not report, entry point %.3f ms)\n",
                  name.c_str(), base, loaded.image.imports.size(), static_cast<unsigned long long>(survey.instructions),
@@ -466,7 +466,7 @@ void InterpretedModuleProvider::Free(std::uint32_t handle) {
     const Module module = std::move(found->second);
     byBase_.erase(found);
     Unmap(module);
-    sayImportant("[scripts] unloaded %s\n", module.name);
+    say("[scripts] unloaded %s\n", module.name);
 }
 
 interp::HostFunction InterpretedModuleProvider::ShimAt(std::uint32_t address) {
