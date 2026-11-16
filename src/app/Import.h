@@ -9,12 +9,12 @@
 // renames it to the game folder, replacing an earlier import. A cancelled or failed import leaves
 // no game folder of its own and the earlier one untouched.
 //
-// The install manifest (analysis/results/install_manifest.tsv, tools/install_manifest.py) is one
-// line per file of the import set: path relative to the install, '/' between components, a tab,
-// the size in bytes, a tab, 64 hex digits of SHA-256. A row whose size and hash are both empty is
-// unchecked: the file must be there, but its content is not known, so only the rules that need no
-// reference apply (it is not empty; a BMP is as long as its own header says). Blank lines and
-// lines starting with '#' are skipped. It holds no byte of any file.
+// The install manifest (the decompilation's analysis/results/install_manifest.tsv, written by its
+// tools/install_manifest.py) is one line per file of the import set: path relative to the
+// install, '/' between components, a tab, the size in bytes, a tab, 64 hex digits of SHA-256. A
+// row whose size and hash are both empty is unchecked: the file must be there, but its content is
+// not known, so only the rules that need no reference apply (it is not empty; a BMP is as long as
+// its own header says). Blank lines and lines starting with '#' are skipped. It holds no byte of any file.
 //
 // This is the headless core: the command line (`--import DIR`, ImportCommand.h) and the launcher
 // both call importGame and print or draw its progress and report. verifyImportedGame checks an

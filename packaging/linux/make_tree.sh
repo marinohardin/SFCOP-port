@@ -15,10 +15,12 @@ if [ $# -ne 7 ]; then
     exit 2
 fi
 out=$1 sfcop=$2 sdl2=$3 sdl3=$4 source=$5 version=$6 arch=$7
+# The decompilation holds the hash list and the install manifest (decomp/docs/INTERFACE.md).
+decomp=${SFCOP_DECOMP_DIR:-$source/decomp}
 here=$(cd "$(dirname "$0")" && pwd -P)
 python=${SFCOP_PYTHON:-python3}
-hash_list="$source/analysis/results/retail_hashes.sha256"
-manifest="$source/analysis/results/install_manifest.tsv"
+hash_list="$decomp/analysis/results/retail_hashes.sha256"
+manifest="$decomp/analysis/results/install_manifest.tsv"
 case $arch in
     x64) glibc=2.31 ;;
     arm64) glibc=2.36 ;;

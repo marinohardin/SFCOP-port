@@ -76,10 +76,6 @@ bool waitForEnd(const std::string &logPath, std::uint32_t deadlineMs, std::uint3
     }
 }
 
-std::string sourceDirOfHashList(const std::string &hashListPath) {
-    return fs::path(hashListPath).parent_path().parent_path().parent_path().string();
-}
-
 Tools toolsOf(const std::string &sourceDir,
               const std::function<std::optional<std::string>(const std::string &)> &env) {
     Tools tools;

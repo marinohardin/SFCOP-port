@@ -15,7 +15,6 @@ venv/
 *.lib
 *.pdb
 *.ilk
-!analysis/results/*.tsv
 CLAUDE.local.md
 .agent/
 

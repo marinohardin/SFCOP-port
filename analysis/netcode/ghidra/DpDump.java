@@ -27,7 +27,8 @@ import ghidra.program.model.scalar.Scalar;
 import ghidra.program.model.symbol.*;
 
 public class DpDump extends GhidraScript {
-	// Retail 2.5.5.2 addresses (spike/lifter/results/guids.tsv, ghidra/exports/classes.csv).
+	// Retail 2.5.5.2 addresses (spike/lifter/results/guids.tsv, the decompilation's
+	// ghidra/exports/classes.csv).
 	static final long[][] SEEDS = {
 		{0x007BB118L}, {0x007BB128L}, {0x007BB0B8L}, {0x007BB0C8L}, {0x0087C590L}};
 	static final String[] SEED_NAMES = {

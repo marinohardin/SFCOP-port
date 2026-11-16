@@ -12,8 +12,8 @@ SHARED="${SHARED:-$SFCOP_ROOT/work/ghidra}"
 WORK="${WORK:-$SFCOP_ROOT/work/directplay}"
 mkdir -p "$WORK/projects" "$WORK/logs" "$WORK/cache" "$WORK/tmp" "$WORK/dump" "$RESULTS"
 
-# The arm64 decompiler built by ghidra/scripts/build_decompiler.sh lives in the shared settings dir;
-# copy the extension into our own settings dir so the two never share state.
+# The arm64 decompiler built by the decompilation's ghidra/scripts/build_decompiler.sh lives in the
+# shared settings dir; copy the extension into our own settings dir so the two never share state.
 EXT="ghidra_12.2_PUBLIC/Extensions/SfcNatives"
 if [ ! -x "$WORK/settings/$(whoami)-ghidra/$EXT/os/mac_arm_64/decompile" ]; then
 	mkdir -p "$WORK/settings/$(whoami)-ghidra/$(dirname "$EXT")"

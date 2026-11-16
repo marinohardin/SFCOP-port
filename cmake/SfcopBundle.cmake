@@ -23,6 +23,7 @@ set(_sfcop_packaging "${CMAKE_SOURCE_DIR}/packaging/macos")
 
 add_custom_target(sfcop_app ALL
     COMMAND "${CMAKE_COMMAND}" -E env "SFCOP_PYTHON=${Python3_EXECUTABLE}"
+            "SFCOP_DECOMP_DIR=${SFCOP_DECOMP_DIR}"
             sh "${_sfcop_packaging}/make_bundle.sh" "${SFCOP_APP_DIR}" "$<TARGET_FILE:sfcop>"
             "$<TARGET_FILE:SDL2::SDL2>" "$<TARGET_FILE:SDL3-shared>" "${CMAKE_SOURCE_DIR}"
             "${SFCOP_BUNDLE_ID}" "${PROJECT_VERSION}"
@@ -36,5 +37,5 @@ add_test(NAME sfcop_app_selftest
 add_test(NAME sfcop_app_contents
     COMMAND sh -c "[ -d \"$1\" ] || { echo \"skip: $1 is not built\"; exit 77; }; exec \"$0\" \"$2\" \"$1\" \"$3\""
             "${Python3_EXECUTABLE}" "${SFCOP_APP_DIR}" "${_sfcop_packaging}/check_bundle.py"
-            "${CMAKE_SOURCE_DIR}/analysis/results/retail_hashes.sha256")
+            "${SFCOP_DECOMP_DIR}/analysis/results/retail_hashes.sha256")
 set_tests_properties(sfcop_app_contents PROPERTIES SKIP_RETURN_CODE 77)

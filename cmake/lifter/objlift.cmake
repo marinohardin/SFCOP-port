@@ -1,5 +1,6 @@
-# The object lift (DESIGN §6.3, §7.2): the functions game/manifest.tsv claims for VC6 enter the
-# native build as their own VC6 objects, lifted, in place of the exe lift's bodies for them.
+# The object lift (DESIGN §6.3, §7.2): the functions the decompilation's op/manifest.tsv
+# (${SFCOP_DECOMP_DIR}, cmake/SfcopDecomp.cmake) claims for VC6 enter the native build as their
+# own VC6 objects, lifted, in place of the exe lift's bodies for them.
 # Included from cmake/SfcopLifter.cmake after the exe lift; tools/objlift/README.md has the detail.
 #
 # For every claimed unit, at build time (tools/objlift/objlift.sh):
@@ -24,9 +25,10 @@
 # function stays the exe lift's.
 include_guard(GLOBAL)
 
-option(SFCOP_OBJLIFT "Lift the VC6 objects of the units game/manifest.tsv claims into sfcop" ON)
+option(SFCOP_OBJLIFT
+    "Lift the VC6 objects of the units the decompilation's op/manifest.tsv claims into sfcop" ON)
 
-set(_sfcop_manifest "${CMAKE_SOURCE_DIR}/game/manifest.tsv")
+set(_sfcop_manifest "${SFCOP_DECOMP_SOURCE}/manifest.tsv")
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_sfcop_manifest}")
 file(STRINGS "${_sfcop_manifest}" _sfcop_rows)
 set(_sfcop_claimed 0)
@@ -45,7 +47,7 @@ foreach(_row IN LISTS _sfcop_rows)
         continue()
     endif()
     math(EXPR _sfcop_claimed "${_sfcop_claimed} + 1")
-    list(APPEND _sfcop_units "${CMAKE_SOURCE_DIR}/game/${_unit}")
+    list(APPEND _sfcop_units "${SFCOP_DECOMP_SOURCE}/${_unit}")
     # objlift.py's code_file_name: the unit's path without its extension, as a C identifier.
     string(REGEX REPLACE "\\.[^./]*$" "" _stem "${_unit}")
     string(MAKE_C_IDENTIFIER "${_stem}" _stem)
@@ -80,15 +82,15 @@ list(TRANSFORM _sfcop_objlift_files PREPEND "${SFCOP_OBJLIFT_DIR}/" OUTPUT_VARIA
 # Byproducts: with Ninja the step restats them, so a file objlift.py left untouched rebuilds nothing.
 list(APPEND _sfcop_objlift_out ${_sfcop_unit_code} ${_sfcop_weak_headers})
 
-# What the lift reads: game/ (a header change can change any unit's code), the manifest, the
-# compiler profiles, the symbol evidence, the exe and its lift, the tools themselves, and the
-# patched pcrecomp (its stamp changes when a patch does: the patches change pcrecomp's lift tools).
+# What the lift reads: the decompilation's op/ (a header change can change any unit's code), its
+# manifest, compiler profiles and symbol evidence, the exe and its lift, the tools themselves, and
+# the patched pcrecomp (its stamp changes when a patch does: the patches change pcrecomp's lift tools).
 file(GLOB_RECURSE _sfcop_objlift_deps CONFIGURE_DEPENDS
-    "${CMAKE_SOURCE_DIR}/game/*.h" "${CMAKE_SOURCE_DIR}/game/*.cpp"
-    "${CMAKE_SOURCE_DIR}/tools/objlift/*.py" "${CMAKE_SOURCE_DIR}/harness/lib/*.py"
-    "${CMAKE_SOURCE_DIR}/analysis/results/*.tsv")
-list(APPEND _sfcop_objlift_deps "${_sfcop_manifest}" "${CMAKE_SOURCE_DIR}/harness/units.json"
-    "${CMAKE_SOURCE_DIR}/ghidra/exports/functions.csv" "${CMAKE_SOURCE_DIR}/tools/objlift/objlift.sh"
+    "${SFCOP_DECOMP_SOURCE}/*.h" "${SFCOP_DECOMP_SOURCE}/*.cpp"
+    "${CMAKE_SOURCE_DIR}/tools/objlift/*.py" "${SFCOP_DECOMP_DIR}/harness/lib/*.py"
+    "${SFCOP_DECOMP_DIR}/analysis/results/*.tsv")
+list(APPEND _sfcop_objlift_deps "${_sfcop_manifest}" "${SFCOP_DECOMP_DIR}/harness/units.json"
+    "${SFCOP_DECOMP_DIR}/ghidra/exports/functions.csv" "${CMAKE_SOURCE_DIR}/tools/objlift/objlift.sh"
     "${CMAKE_SOURCE_DIR}/cmake/lifter/Dockerfile" "${_sfcop_exe}"
     "${_sfcop_gen}/recomp_funcs.h" "${_sfcop_gen}/recomp_dispatch.c" "${SFCOP_PCRECOMP_STAMP}")
 
@@ -97,6 +99,7 @@ add_custom_command(
     OUTPUT "${SFCOP_OBJLIFT_DIR}/objlift.stamp"
     BYPRODUCTS ${_sfcop_objlift_out}
     COMMAND "${CMAKE_COMMAND}" -E env "PYTHON=${Python3_EXECUTABLE}"
+            "SFCOP_DECOMP_DIR=${SFCOP_DECOMP_DIR}"
             sh "${CMAKE_SOURCE_DIR}/tools/objlift/objlift.sh"
             --manifest "${_sfcop_manifest}" --exe "${_sfcop_exe}" --gen "${_sfcop_gen}"
             --pcrecomp "${SFCOP_PCRECOMP_BUILD_DIR}" --out "${SFCOP_OBJLIFT_DIR}"

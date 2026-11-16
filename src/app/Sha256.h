@@ -1,5 +1,6 @@
 // SHA-256 (FIPS 180-4), fed in pieces so that a large file is hashed without being held in
-// memory. Used to verify the install against analysis/results/retail_hashes.sha256.
+// memory. Used to verify the install against the decompilation's
+// analysis/results/retail_hashes.sha256.
 #pragma once
 
 #include <array>

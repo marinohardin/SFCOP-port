@@ -144,7 +144,8 @@ if [ "$preset" = macos-arm64 ] &&
     cmake "$build" "-DCMAKE_OSX_DEPLOYMENT_TARGET=$macos_min"
 fi
 
-hash_list="$root/analysis/results/retail_hashes.sha256"
+# The decompilation holds the hash list (decomp/docs/INTERFACE.md).
+hash_list="${SFCOP_DECOMP_DIR:-$root/decomp}/analysis/results/retail_hashes.sha256"
 os=${preset%-*} arch=${preset#*-}
 name="SFCOP-$version-$preset"
 

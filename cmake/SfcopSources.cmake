@@ -69,6 +69,8 @@ endif()
 
 add_executable(sfcop_tests "${CMAKE_SOURCE_DIR}/cmake/TestMain.cpp" ${_sfcop_tests} ${_sfcop_third_party_tests})
 target_include_directories(sfcop_tests PRIVATE "${CMAKE_SOURCE_DIR}/src")
+# The decompilation's folder (cmake/SfcopDecomp.cmake): the tests read its retail hash list.
+target_compile_definitions(sfcop_tests PRIVATE "SFCOP_TEST_DECOMP_DIR=\"${SFCOP_DECOMP_DIR}\"")
 sfcop_strict_warnings(sfcop_tests)
 target_link_libraries(sfcop_tests PRIVATE sfcop_src sfcop_doctest SDL3::SDL3-static sfcop_miniaudio
     sfcop_imgui)
