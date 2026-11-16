@@ -26,6 +26,8 @@ retail = pytest.mark.skipif(not os.path.isfile(LIB), reason='the SDK is not on t
 
 
 HAND_ADDED_NAME = 'KERNEL32.DLL!GetEnvironmentVariableA'
+OSSPECIFIC_NAMES = ('OSSPECIFIC95.DLL!OS_InterlockedCompareExchange',
+                    'OSSPECIFIC98.DLL!OS_InterlockedCompareExchange')
 HAND_ADDED_NOTE = ('# Hand-added (A3) for the mission modules: their C runtime reads its heap-select '
                    'variable through it.')
 
@@ -52,7 +54,7 @@ def test_allowlist_header_names_the_generator_and_the_sdk():
     assert 'the SDK, release R2.1,' in text
     assert re.search(r'^# References the template link left unresolved, dropped: \d+\.$', text, re.M)
     assert re.search(r'ScriptInterfaceR\.lib sha256 [0-9a-f]{64}', text)
-    # The header comes first; the only comment line among the symbols is the note above the one
+    # The header comes first; the only comment line among the symbols is the note above the A3
     # hand-added name (test_allowlist_keeps_the_hand_added_name).
     assert [s for s in lines[len(header):] if s.startswith('#')] == [HAND_ADDED_NOTE]
 
@@ -207,3 +209,15 @@ def test_allowlist_keeps_the_hand_added_name():
     at = lines.index(HAND_ADDED_NAME)
     assert lines[at - 1] == HAND_ADDED_NOTE
     assert f'# Added by hand (A3): {HAND_ADDED_NAME}' in '\n'.join(lines[:12])
+
+
+def test_allowlist_keeps_the_hand_added_osspecific_names():
+    """Every shipped script looks the game's compare-exchange up in its OSSpecific DLL at start-up and
+    its lock throws without it; the generator does not produce these names, so a regeneration that
+    drops them must fail here, not at the first run."""
+    lines = _lines()
+    header = '\n'.join(lines[:next(i for i, s in enumerate(lines) if not s.startswith('#'))])
+    for name in OSSPECIFIC_NAMES:
+        assert name in lines
+    assert ('# Added by hand (I1b): OSSPECIFIC95.DLL!OS_InterlockedCompareExchange and\n'
+            '#   OSSPECIFIC98.DLL!OS_InterlockedCompareExchange,') in header
