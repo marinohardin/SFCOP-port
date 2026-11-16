@@ -2,34 +2,34 @@
 # The one command that is the definition of done. CI runs the same steps, and an agent that
 # says "done" has run this once at the end (DESIGN §7.4). In order:
 #
-#   1. the Python tests (tests/, harness/tests/)
+#   1. the Python tests (tests/)
 #   2. the hotspot list and CODEOWNERS agree
-#   3. the PORT: lines in game/ (listed, never a failure) and the SFCOP_FIX sites there (a failure:
-#      fixes to game code are override units under src/fixes/overrides/, DESIGN §6.9)
-#   4. the progress gate: no function loses exact or functional status (scripts/progress.py)
-#   5. the matched-set gate: no score drops below the base branch's (harness/build-and-verify.sh)
-#   6. the C++ tests (every CTest test, after building the executables they run), when the
+#   3. the override table src/app/guest/override.cpp is what the decompilation's annotations give
+#   4. the C++ tests (every CTest test, after building the executables they run), when the
 #      native build is configured here
-#   7. the replay oracle, when a recorded trace, the native client and a prepared data folder
+#   5. the replay oracle, when a recorded trace, the native client and a prepared data folder
 #      exist (src/app/oracle/README.md)
 #
+# The decompilation is ${SFCOP_DECOMP_DIR:-decomp} (the submodule, decomp/docs/INTERFACE.md); its
+# own gates (the PORT: lines in its source, the progress and matched-set gates) are its
+# repository's check, not this one's.
+#
 # A step whose inputs are absent on this machine prints `skip: <why>` and does not fail; it is
-# never left to pass silently. The base branch's copies are read with `git show <base>:<path>`;
-# the base is $SFCOP_BASE_REF if set, else the base side of CI's merge checkout, else the merge
-# base with origin/develop, else (on develop itself) the commit before.
+# never left to pass silently.
 #
 # Usage: sh scripts/check.sh
 
 set -eu
 
 cd "$(dirname "$0")/.."
+decomp=${SFCOP_DECOMP_DIR:-$(pwd)/decomp}
 
 skip() { echo "skip: $*"; }
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/sfcop-check.XXXXXX")
 trap 'rm -rf "$tmp"' EXIT INT TERM
 
 echo "== tests"
-python3 -m pytest tests harness/tests -q
+python3 -m pytest tests -q
 
 echo "== hotspot list and CODEOWNERS agree"
 python3 - <<'EOF'
@@ -42,102 +42,14 @@ if missing:
 print("ok:", len(pats), "hotspot patterns,", len(owners), "CODEOWNERS lines")
 EOF
 
-echo "== PORT: lines in game/ (SFCOP_FIX sites there fail)"
-if [ -d game ]; then
-    python3 scripts/port_footprint.py --no-fix-sites game
+echo "== override table is current"
+# src/app/guest/override.cpp is generated from the decompilation's annotations
+# (decomp/docs/INTERFACE.md, "The guest table").
+if [ ! -f "$decomp/INTERFACE_VERSION" ]; then
+    skip "no decompilation at $decomp (git submodule update --init)"
 else
-    skip "no game/ tree yet"
-fi
-
-# The commit whose copies of the progress and matched-set files this tree is held to. Locally a
-# branch is held to its merge base with origin/develop, not to origin/develop's tip: a figure
-# develop raised after the branch was cut is not this branch's to keep, and CI (the merge with
-# develop's tip) holds it to the tip anyway.
-base_ref() {
-    if [ -n "${SFCOP_BASE_REF:-}" ]; then
-        echo "$SFCOP_BASE_REF"
-    elif [ "${GITHUB_ACTIONS:-}" = true ] && git rev-parse --verify --quiet HEAD^2 >/dev/null; then
-        git rev-parse HEAD^1                                    # CI: the merge's base side
-    elif git rev-parse --verify --quiet origin/develop >/dev/null \
-            && [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/develop)" ]; then
-        git merge-base HEAD origin/develop                     # a branch: where it left develop
-    elif git rev-parse --verify --quiet HEAD^1 >/dev/null; then
-        git rev-parse HEAD^1                                    # develop itself: the commit before
-    fi
-}
-base=$(base_ref || true)
-
-# The lift the progress figures are computed from: $SFCOP_LIFTED, the native build's, or the
-# shared one progress.py defaults to ($SFCOP_WORK/lifter).
-lift_dir() {
-    work=${SFCOP_WORK:-$(dirname "$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")")/work}
-    for d in ${SFCOP_LIFTED:-} build/macos-arm64/lifted "$work/lifter"; do
-        if [ -f "$d/cat/functions.json" ] && [ -f "$d/out/lift_stats.json" ]; then
-            echo "$d"
-            return
-        fi
-    done
-}
-
-echo "== progress gate"
-lifted=$(lift_dir || true)
-if [ -z "$base" ]; then
-    skip "no base commit to compare with (set SFCOP_BASE_REF)"
-elif [ -z "$lifted" ]; then
-    skip "no lifter output (build the native client, or set SFCOP_LIFTED)"
-elif ! git show "$base:analysis/results/progress/progress.json" > "$tmp/progress-base.json" 2>/dev/null; then
-    skip "$base has no analysis/results/progress/progress.json"
-else
-    echo "held to $base, lift in $lifted"
-    rc=0
-    python3 scripts/progress.py --gate "$tmp/progress-base.json" --lifter "$lifted" \
-        --matched-set analysis/results/matched_set.json > "$tmp/progress.log" 2>&1 || rc=$?
-    grep -E '^(Progress:|REGRESSION|gate:|progress:)' "$tmp/progress.log" || tail -n 20 "$tmp/progress.log"
-    [ "$rc" = 0 ] || exit "$rc"
-fi
-
-echo "== matched set holds the base branch's"
-have_install=$(python3 -c 'import os, sys; sys.path.insert(0, "."); from harness.lib import paths; print(1 if os.path.isfile(paths.EXE) else "")')
-have_image=$(docker image inspect sfcop-msvc6:latest >/dev/null 2>&1 && echo 1 || true)
-if [ -z "$base" ]; then
-    skip "no base commit to compare with (set SFCOP_BASE_REF)"
-elif [ -n "$have_install" ] && [ -n "$have_image" ]; then
-    sh harness/build-and-verify.sh --all --base "$base"
-else
-    skip "no sfcop-msvc6 image or no install: the matched functions are not rebuilt; only their scores are held to $base"
-    python3 - "$base" <<'EOF'
-import os
-import sys
-sys.path.insert(0, '.')
-from harness.lib import funcs, matched, paths, verify
-base, label = verify.load_base(sys.argv[1])
-data = matched.load(paths.MATCHED_SET)
-base, released = matched.release_listed(base, data, matched.boundary_listed(paths.BOUNDARIES),
-                                         verify.claimed_keys())
-for k in released:
-    print('released %s: on the boundary-error list and never exact in %s' % (k, label))
-base, misscored = matched.release_misscored(base, data, verify.claimed_keys())
-for k in misscored:
-    print('released %s: scored against the plain destructor, not its deleting destructor' % k)
-sizes = verify.load_base_sizes(sys.argv[1])
-if sizes is not None and os.path.isfile(paths.FUNCTIONS_CSV):
-    index = funcs.FunctionIndex(paths.FUNCTIONS_CSV, paths.SYMBOL_TSVS)
-    base, reshaped = matched.release_reshaped(base, sizes, verify.function_sizes(index),
-                                              verify.joined_keys(index))
-    for k in reshaped:
-        print('released %s: the analysis joined its prolog and body; never exact in %s' % (k, label))
-bad = 0
-for k, old in sorted(base['functions'].items()):
-    new = data['functions'].get(k)
-    if matched.worse(new, old):
-        what = 'drops' if new is None else 'lowers to %.2f%%' % new['score']
-        print('REGRESSION %s %s: matched_set.json %s the entry in %s (%.2f%%%s)'
-              % (k, old.get('name', ''), what, label, old['score'], ' exact' if old.get('exact') else ''))
-        bad += 1
-if bad:
-    sys.exit(1)
-print('ok: %d entries held to %s' % (len(base['functions']), label))
-EOF
+    python3 "$decomp/tools/manifest.py" --only-override --override src/app/guest/override.cpp --check
+    echo "ok: src/app/guest/override.cpp is what $decomp/tools/manifest.py writes"
 fi
 
 echo "== C++ tests"

@@ -59,6 +59,8 @@ jobs:
       SFCOP_APPIMAGE: optional
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - uses: ./.github/actions/setup
 
@@ -191,7 +193,7 @@ jobs:
           set -eu
           python3 -I packaging/release_notes.py --dist "$SFCOP_DIST_DIR" --version "$SFCOP_VERSION" \
             --lift "$LIFT" --commit "$GITHUB_SHA" --outcomes "$OUTCOMES" \
-            --hash-list analysis/results/retail_hashes.sha256 \
+            --hash-list decomp/analysis/results/retail_hashes.sha256 \
             --notes "$RELEASE_ROOT/notes.md" --assets "$RELEASE_ROOT/assets.txt"
           if [ ! -s "$RELEASE_ROOT/assets.txt" ]; then
             echo "::error::no package was built; see the notes:"
