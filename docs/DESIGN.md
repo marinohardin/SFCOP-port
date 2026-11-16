@@ -272,7 +272,7 @@ Empires at War is the decompilation's second module; the port never reads `decom
 
 | Item | Monthly | Notes |
 | --- | --- | --- |
-| Agents | 0 USD beyond the owner's existing Claude Max plan | Token spend is bounded by the plan, not billed per token; `PROPOSAL.md` §6 has the effort estimate |
+| Agents | 0 USD beyond the owner's existing Claude Max plan | Token spend is bounded by the plan, not billed per token; `docs/history/PROPOSAL.md` §6 has the effort estimate |
 | CI | 0 USD | Self-hosted runner; no Actions minutes |
 | Hosted services | Under 5 USD from Phase 3, the owner's ceiling | Lobby, relay, stand-in directory and, later, the server kit; the cheapest shape (one small VPS, a free tier, or a machine the owner already runs) is chosen in Phase 3; a domain is about 1 USD a month |
 | Signing and notarization | 0 USD until the project is complete | Alpha packages are unsigned (§12.2); the owner's existing developer account signs the launcher if one ships at the end |
