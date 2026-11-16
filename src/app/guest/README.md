@@ -3,7 +3,7 @@
 Runs the lifted game as a component of the client (DESIGN §7.3). `main.cpp` constructs the
 platform components and calls `guest::Run()`; the host attaches the HLE modules to those
 components, maps the original exe, binds its imports, and enters the C runtime's start-up, which
-calls `WinMain`. The host is built only with the lift and never compiles `game/`.
+calls `WinMain`. The host is built only with the lift and never compiles `decomp/op/`.
 
 | File | What it does |
 |---|---|

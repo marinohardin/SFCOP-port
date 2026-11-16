@@ -2,7 +2,7 @@
 
 The game calls Windows and DirectX through a fixed set of entry points: 353 imports from 13 DLLs and
 the methods of 19 COM interfaces it obtains from them. That set is the **surface**, the contract between
-`game/` and `src/` (DESIGN §6.1). The game side never calls outside it. The platform side implements
+the game's code and `src/` (DESIGN §6.1). The game side never calls outside it. The platform side implements
 all of it, in `src/hle/<module>/` on the components of `src/platform/` (Wave 1).
 
 | File | What |
@@ -20,8 +20,8 @@ python3 src/hle/gen_surface.py
 
 `--check` exits 1 if `surface.tsv` is not what the generator would write. `--libs DIR` also checks the
 signature table against a directory of Win32 import libraries (`KERNEL32.LIB` and the others). The
-exe is found the way the harness finds it (`harness/lib/paths.py`; `SFCOP_REFERENCE` or `HARNESS_EXE`
-override it), and its sha256 is checked against `analysis/results/retail_hashes.sha256` first.
+exe is found the way the decompilation's harness finds it (`decomp/harness/lib/paths.py`; `SFCOP_REFERENCE` or `HARNESS_EXE`
+override it), and its sha256 is checked against `decomp/analysis/results/retail_hashes.sha256` first.
 `tests/test_surface.py` runs the same comparison where the exe is present.
 
 ## Columns
