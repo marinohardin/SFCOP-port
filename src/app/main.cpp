@@ -35,6 +35,7 @@
 #include "launcher/LauncherWindow.h"
 #include "oracle/OracleRun.h"
 #include "platform/Clock/FixedStepClock.h"
+#include "platform/Core/LogCategories.h"
 #include "sfcop_build_config.h"
 
 namespace {
@@ -44,6 +45,9 @@ namespace {
 const std::vector<sfcop::app::ExtraFlag> kClientFlags = {
     {"--trace", "", "log every Win32 call and every guest exception on stderr"},
     {"--silent", "", "no sound"},
+    {"--log", "LIST",
+     "also print these kinds of log output, comma separated, or all: guest-debug (the original's "
+     "own debug text), override (which decompiled functions run); SFCOP_LOG does the same"},
     {"--dry-run", "", "map and bind the exe, then stop"},
     {"--shots", "DIR", "write a BMP of the game's display into DIR (needs a window)"},
     {"--shot-every", "S", "seconds between shots (default 5; with --shots)"},
@@ -241,6 +245,10 @@ int main(int argc, char **argv) {
         options.trace = options.trace || flag == "--trace";
         options.silent = options.silent || flag == "--silent";
         options.dryRun = options.dryRun || flag == "--dry-run";
+        if (flag == "--log" && i + 1 < extras.size()) {
+            platform::AddLogCategories(extras[++i]);
+            continue;
+        }
         if (flag == "--record-trace" && i + 1 < extras.size()) {
             recordTrace = extras[++i];
         } else if (flag == "--shots" && i + 1 < extras.size()) {

@@ -18,6 +18,7 @@
 #include "hle/kernel32rt/Kernel32rt.h"
 #include "hle/kernel32rt/Runtime.h"
 #include "hle/kernel32rt/VirtualMemory.h"
+#include "platform/Core/LogCategories.h"
 
 extern "C" {
 #include "win32hle.h"
@@ -357,6 +358,17 @@ void k_WaitForMultipleObjects() { // (count, handles, waitAll, milliseconds)
         return;
     }
     RET(result, 4);
+}
+
+// The game's own debug text (its UI reports every control it cannot connect, among much else):
+// hundreds of lines a run, so it is printed, whole and unchanged, only with the log category
+// guest-debug on (platform/Core/LogCategories.h); off, the call is answered and drops the text.
+void k_OutputDebugStringA() { // (text)
+    if (sfcop_log_enabled("guest-debug")) {
+        const std::string text = guestString(A32(0));
+        std::fprintf(stderr, "[guest] %s", text.c_str());
+    }
+    RET(0, 1);
 }
 
 void k_Sleep() { // (milliseconds)
@@ -1414,6 +1426,7 @@ extern "C" const win32hle_shim sfcop_hle_kernel32rt[] = {
     {"WaitForSingleObject", k::k_WaitForSingleObject},
     {"WaitForMultipleObjects", k::k_WaitForMultipleObjects},
     {"Sleep", k::k_Sleep},
+    {"OutputDebugStringA", k::k_OutputDebugStringA},
     {"InitializeCriticalSection", k::k_InitializeCriticalSection},
     {"DeleteCriticalSection", k::k_DeleteCriticalSection},
     {"EnterCriticalSection", k::k_EnterCriticalSection},
