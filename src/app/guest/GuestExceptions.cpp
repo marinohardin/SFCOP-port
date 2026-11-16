@@ -2,6 +2,9 @@
 
 #include "FaultClass.h"
 #include "GuestHost.h"
+#include "LowMemory.h"
+#include "app/scripts/guest/GuestModuleAbi.h"
+#include "fixes/fixes.h"
 
 extern "C" {
 #include "win32hle.h"
@@ -161,6 +164,84 @@ void onDivideFault(std::uint32_t code) {
 CodeRanges g_liftedCode; // set once by InstallExceptionHooks, read by the handler
 std::uint32_t g_raiseShim = 0; // the RaiseException row, bound by BindRaiseException
 
+// fix_hle_low_memory_reads: the armed region, or null (switch off); the game's image, for naming
+// the code that read it. Set once by InstallLowMemoryReads, before the game runs.
+LowMemoryRegion *g_lowMemory = nullptr;
+std::uint32_t g_exeBase = 0, g_exeEnd = 0;
+
+// The translated mission module whose library holds the host instruction at `pc`: its name (the
+// library's stem) and its guest image, or false when `pc` is in no such library.
+bool moduleOfPc(std::uintptr_t pc, char *stem, std::size_t size, const sfcop_guest_image **image) {
+    *image = nullptr;
+    stem[0] = '\0';
+#if defined(_WIN32)
+    HMODULE library = nullptr;
+    if (GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+                               GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                           reinterpret_cast<LPCSTR>(pc), &library) == 0) {
+        return false;
+    }
+    char path[MAX_PATH];
+    const DWORD length = GetModuleFileNameA(library, path, sizeof path);
+    if (length == 0 || length >= sizeof path) {
+        return false;
+    }
+    ModuleStem(path, stem, size);
+    *image = reinterpret_cast<const sfcop_guest_image *>(GetProcAddress(library, SFCOP_GUEST_IMAGE_SYMBOL));
+#else
+    Dl_info info{};
+    if (dladdr(reinterpret_cast<void *>(pc), &info) == 0 || info.dli_fname == nullptr) {
+        return false;
+    }
+    ModuleStem(info.dli_fname, stem, size);
+    // Already loaded (RTLD_NOLOAD): this only finds its handle, to look its image up.
+    if (void *library = dlopen(info.dli_fname, RTLD_LAZY | RTLD_NOLOAD)) {
+        *image = static_cast<const sfcop_guest_image *>(dlsym(library, SFCOP_GUEST_IMAGE_SYMBOL));
+        dlclose(library);
+    }
+#endif
+    return *image != nullptr;
+}
+
+// Who read low memory, for the report line: a function of the game's image by its address
+// ("STARFLEETOP 0x00412345"), one of a translated mission by its offset in the module
+// ("Met_17Patrol+0xEBB0"), else the current function and the host instruction.
+void describeReader(std::uintptr_t pc, char *out, std::size_t size) {
+    const std::uint32_t function = g_cur_func;
+    if (function >= g_exeBase && function < g_exeEnd) {
+        std::snprintf(out, size, "STARFLEETOP 0x%08X", function);
+        return;
+    }
+    char stem[64];
+    const sfcop_guest_image *image = nullptr;
+    if (moduleOfPc(pc, stem, sizeof stem, &image) && function >= image->base &&
+        function - image->base < image->size) {
+        std::snprintf(out, size, "%s+0x%X", stem, function - image->base);
+    } else if (stem[0] != '\0') {
+        std::snprintf(out, size, "sub_%08X (in %s, pc %p)", function, stem, reinterpret_cast<void *>(pc));
+    } else {
+        std::snprintf(out, size, "sub_%08X (pc %p)", function, reinterpret_cast<void *>(pc));
+    }
+}
+
+// A fault on guest `address` that the low-memory region takes: the first in its page is logged.
+// True when the faulting instruction is to be resumed.
+bool takeLowMemoryRead(std::uint32_t address, FaultAccess access, std::uintptr_t pc) {
+    if (g_lowMemory == nullptr) {
+        return false;
+    }
+    const LowMemoryRegion::Outcome outcome = g_lowMemory->OnFault(address, access);
+    if (outcome == LowMemoryRegion::Outcome::kMapped) {
+        char reader[160];
+        describeReader(pc, reader, sizeof reader);
+        char line[256];
+        const std::size_t length = FormatLowMemoryRead(line, sizeof line, reader, address);
+        std::fwrite(line, 1, length, stderr);
+        std::fflush(stderr);
+    }
+    return outcome != LowMemoryRegion::Outcome::kNotHandled;
+}
+
 #if !defined(_WIN32)
 
 // What the fault context says, where this platform's layout is known; else "unknown" (the
@@ -268,6 +349,11 @@ void onFault(int signal, siginfo_t *info, void *context) {
     const auto base = static_cast<std::uintptr_t>(g_mem_base); // RECOMP_MEM_BASE
     const bool guestMemory = address >= base && address - base < 0x100000000ull;
     const std::uintptr_t pc = faultPc(context);
+    // A read of guest low memory that fix_hle_low_memory_reads answers, from any code: resume.
+    if ((signal == SIGSEGV || signal == SIGBUS) && guestMemory &&
+        takeLowMemoryRead(static_cast<std::uint32_t>(address - base), faultAccess(context), pc)) {
+        return;
+    }
     if ((signal == SIGSEGV || signal == SIGBUS) && guestMemory && hle_mach_depth() > 0 &&
         !t_inFault) {
         if (faultInLiftedCode(pc)) {
@@ -381,6 +467,12 @@ LONG CALLBACK onException(EXCEPTION_POINTERS *pointers) {
     if (!guestMemory) {
         return EXCEPTION_CONTINUE_SEARCH; // host memory: left to host frames and onUnhandled
     }
+    // A read of guest low memory that fix_hle_low_memory_reads answers, from any code: resume.
+    if (takeLowMemoryRead(static_cast<std::uint32_t>(address - base),
+                          AccessOfWindowsFault(record->ExceptionInformation[0]),
+                          faultPc(pointers->ContextRecord))) {
+        return EXCEPTION_CONTINUE_EXECUTION;
+    }
     // Guest memory outside the machine lock, or faulting again while a fault is dispatched, ends
     // the run with the fault line alone, as the signal handler does.
     if (hle_mach_depth() <= 0 || t_inFault) {
@@ -461,6 +553,40 @@ void InstallExceptionHooks() {
     g_liftedCode.Add(SpanOfFunctions(functions.data(), functions.size(), 32u << 10));
     recomp_div_fault_hook = onDivideFault;
     installFaultHandlers();
+}
+
+void InstallLowMemoryReads(std::uint32_t exeBase, std::uint32_t exeSize) {
+    g_exeBase = exeBase;
+    g_exeEnd = exeBase + exeSize;
+    if (!fixes::isEnabled("fix_hle_low_memory_reads")) {
+        return; // the region stays unreserved: a read of it faults as without the fix
+    }
+#if defined(_WIN32)
+    SYSTEM_INFO system{};
+    GetSystemInfo(&system);
+    const std::size_t page = system.dwPageSize;
+#else
+    const auto page = static_cast<std::size_t>(getpagesize());
+#endif
+    // Reserved, so that nothing else is placed there, then made inaccessible until read.
+    constexpr std::uint32_t kSize = kLowMemoryEnd - kLowMemoryBegin;
+    if (hle_vm_reserve(kLowMemoryBegin, kSize) != kLowMemoryBegin) {
+        std::fprintf(stderr, "[guest] fix_hle_low_memory_reads: guest 0x%08X is in use; off for this run\n",
+                     kLowMemoryBegin);
+        return;
+    }
+    static LowMemoryRegion region(reinterpret_cast<std::uint8_t *>(g_mem_base), page);
+    if (!region.Arm()) {
+        hle_vm_release(kLowMemoryBegin, kSize);
+        std::fprintf(stderr, "[guest] fix_hle_low_memory_reads: cannot protect guest 0x%08X (host "
+                             "page %zu bytes); off for this run\n",
+                     kLowMemoryBegin, page);
+        return;
+    }
+    g_lowMemory = &region;
+    std::fprintf(stderr, "[guest] fix_hle_low_memory_reads: guest 0x%08X-0x%08X reserved, %zu pages "
+                         "of %zu bytes, each readable from its first read\n",
+                 kLowMemoryBegin, kLowMemoryEnd - 1, region.PageCount(), page);
 }
 
 void BindRaiseException() {

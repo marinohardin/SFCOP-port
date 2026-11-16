@@ -655,6 +655,7 @@ int Run(const Options &options, Components &components) {
         return 1;
     }
     hle_module_add(guestExe.c_str(), image.base, image.resource_rva, image.resource_size, 1);
+    InstallLowMemoryReads(image.base, image.span);
     const int unresolved = recomp_pe_bind(&image, resolveImport);
     recomp_host_init();
     std::fprintf(stderr, "[guest] %s mapped at 0x%08X; %zu imports no module owns, %zu nothing "

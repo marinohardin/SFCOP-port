@@ -28,6 +28,13 @@ namespace sfcop::guest {
 // host code ends the run.
 void InstallExceptionHooks();
 
+// fix_hle_low_memory_reads (LowMemory.h). With the switch on, reserves guest 0x00010000-0x0001FFFF,
+// leaves it inaccessible, and has the fault handlers make a page of it readable on its first read
+// fault, from any code: lifted, a translated mission module, or the host. `exeBase` and `exeSize`
+// are the game's image, which the report line names by address. Once, after the image is mapped
+// and before the game runs; with the switch off it changes nothing.
+void InstallLowMemoryReads(std::uint32_t exeBase, std::uint32_t exeSize);
+
 // Looks up the RaiseException row that RaiseFromHost() calls. Once, after the modules' tables are
 // registered.
 void BindRaiseException();
