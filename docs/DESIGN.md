@@ -1,6 +1,6 @@
 # SFCOP-port — Design
 
-> **Scope.** This repository is the port: the platform layer, the fixes, the servers, the lifter and the replay oracle. The decompiled game code lives in SFC2-decomp, pinned here as the submodule `decomp/`; its sections below are kept for reference until this document is trimmed, and SFC2-decomp's own copy is the one that governs that code. `decomp/docs/INTERFACE.md` is the contract between the two.
+> **Scope.** This repository is the port: the platform layer, the fixes, the servers, the lifter and the replay oracle. The decompiled game code lives in SFC2-decomp, pinned here as the submodule `decomp/`; what this document says of it is only what the port relies on, and SFC2-decomp's own documents govern that code. `decomp/docs/INTERFACE.md` is the contract between the two.
 
 What the system does and how it behaves. This document defines behavior; `CONVENTIONS.md` defines form; `PLAN.md` defines the order of work. Sections are numbered and stay numbered, because briefs and reviews cite them by number (`DESIGN §4.2`).
 
@@ -10,7 +10,7 @@ How to fill this in: one section at a time, in a design conversation with the ow
 
 ## 1. Purpose
 
-SFCOP-decomp rebuilds Star Trek Starfleet Command II: Orion Pirates 2.5.5.2 as readable source and ships it as a native client for macOS on Apple Silicon first, then Windows and Linux (including a SteamOS AppImage), verified against the original game's behavior. It exists so that the parts of the game that died with their services (online play, the campaign servers) can run again, and so that its networking can be modernized by a project that owns and understands the code. The one hard constraint: the repository holds no retail file or asset and nothing derived from one byte for byte. A player supplies their own installed copy, which the port verifies by hash before it reads anything.
+SFCOP-port ships Star Trek Starfleet Command II: Orion Pirates 2.5.5.2, rebuilt as readable source by the decompilation (SFC2-decomp), as a native client for macOS on Apple Silicon first, then Windows and Linux (including a SteamOS AppImage), verified against the original game's behavior. It exists so that the parts of the game that died with their services (online play, the campaign servers) can run again, and so that its networking can be modernized by a project that owns and understands the code. The one hard constraint: the repository holds no retail file or asset and nothing derived from one byte for byte. A player supplies their own installed copy, which the port verifies by hash before it reads anything.
 
 ## 2. What it does and does not do
 
@@ -23,7 +23,7 @@ It does:
 - Run mission scripts: the 88 stock missions decompiled into source over time (the SDK ships the scripting library's source and templates, not the missions), a bundled translator that turns any compiled script into a native module until then and for binary-only mods, and the 32-bit Windows build loading the originals unchanged.
 - Carry the community patches' behavioral fixes, each reimplemented from its diff in this project's own source and each switchable, and fix the game's own bugs where they block play.
 - Manage mods (final phase): ordered layers over the retail data, conflicts resolved by order, the retail install never touched.
-- Measure itself: `scripts/progress.py` reports exact, functional and lifted code and named functions; no change may regress a function.
+- Measure itself: the decompilation reports exact, functional and lifted code and named functions in its own repository; the port takes only functions it records exact, and the replay oracle here measures behaviour.
 
 It does not:
 
@@ -39,11 +39,11 @@ It does not:
 | Constraint | Value |
 | --- | --- |
 | Platforms | macOS 14 or later on arm64 first; Windows 10 or later x64; Linux x64 (glibc 2.35 or later) as an AppImage for SteamOS. Windows and Linux build in CI from Wave 1 and may lag in features until after the reveal |
-| Languages | `game/` is C++ that compiles both with VC6 SP4 (for the byte check) and with a C++17 compiler; `src/` is C++17; tooling is Python 3 |
-| Verification | A function is **exact** when its VC6 SP4 build matches the original bytes under objdiff; **functional** when it passes the replay oracle in the delinked exe and in the native build; **lifted** otherwise. Neither figure may fall for any function, compared by original address |
+| Languages | `src/`, `server/` and `tools/` are C++17; tooling is Python 3; the decompiled game is the decompilation's VC6 C++ (`decomp/op/`), compiled here only by its pinned VC6 |
+| Verification | Whether a function is **exact** is the decompilation's record (`decomp/op/manifest.tsv` modes, `decomp/docs/INTERFACE.md`); here a function is **functional** when it passes the replay oracle in the native build, and **lifted** otherwise |
 | Fidelity | The replay oracle's fixed skirmish produces the same per-tick trace on the native build as on the original (§5.10). Floating-point differences are a defect, not a tolerance |
 | Performance | 60 frames per second at the display's native resolution on an M1 MacBook Pro, with a frame cap; the original's uncapped loop is not kept. Start to main menu in under 10 s from a warm disk |
-| Data | Every original data file is read unchanged, found in the player's install and verified against `analysis/results/retail_hashes.sha256`. Saves, settings and campaign files are written in formats the original reads |
+| Data | Every original data file is read unchanged, found in the player's install and verified against `decomp/analysis/results/retail_hashes.sha256`. Saves, settings and campaign files are written in formats the original reads |
 | Privacy | No telemetry. No network call without the player's action. The port stores no credential in plain text; the game's own key handling stays as the original did it |
 | Licensing | Undecided (§12.1). Until decided: dependencies are permissive only (SDL3 zlib, miniaudio public domain or MIT-0); nothing derived from the WONAPI or GameSpy sources is included |
 | Machine | Development and CI on one MacBook Pro; builds at `-j4`; everything large on the external drive; at most eight agents at once |
@@ -91,7 +91,7 @@ Each behavior names its test. "Oracle" means the replay oracle of §5.10.
 
 ### 5.1 Install discovery and verification
 
-Input: the path to a retail 2.5.5.2 install (first run asks; later runs remember it per user). The port hashes `StarFleetOP.exe` and every file in `analysis/results/retail_hashes.sha256` and refuses to start on any mismatch, naming the file. It never writes into the install directory. Test: a fixture install with one altered byte is refused with that file named; a correct one is accepted.
+Input: the path to a retail 2.5.5.2 install (first run asks; later runs remember it per user). The port hashes `StarFleetOP.exe` and every file in `decomp/analysis/results/retail_hashes.sha256` and refuses to start on any mismatch, naming the file. It never writes into the install directory. Test: a fixture install with one altered byte is refused with that file named; a correct one is accepted.
 
 ### 5.2 Boot
 
@@ -127,7 +127,7 @@ Three paths. (a) A decompiled mission compiles into the native build as source. 
 
 ### 5.10 Replay oracle
 
-A fixed skirmish mission (`oracle/scr/`) logs per-tick ship state through the scripting API; a driver runs it with scripted input and hashes the log. The trace recorded on the original is the expected value; the delinked exe and the native build must produce the same hash sequence, tick for tick, with no tolerance. Under the oracle the game's tick count and performance counter advance a fixed step per frame (16.667 ms unless `--fixed-step MS` says otherwise), never by the wall clock, its multimedia timers fall due by that clock and fire on the main thread between frames, and the original under Wine is recorded with the same step (`oracle/driver/oracle_launch.exe`). Test: `scripts/check.sh` runs the oracle on every pull request that touches `game/` or `src/`. The original's trace is recorded on Windows or another Wine build until the Mac can record it.
+A fixed skirmish mission (`oracle/scr/`) logs per-tick ship state through the scripting API; a driver runs it with scripted input and hashes the log. The trace recorded on the original is the expected value; the delinked exe and the native build must produce the same hash sequence, tick for tick, with no tolerance. Under the oracle the game's tick count and performance counter advance a fixed step per frame (16.667 ms unless `--fixed-step MS` says otherwise), never by the wall clock, its multimedia timers fall due by that clock and fire on the main thread between frames, and the original under Wine is recorded with the same step (`oracle/driver/oracle_launch.exe`). Test: CI runs the oracle on every pull request that touches the `decomp` pin or `src/`. The original's trace is recorded on Windows or another Wine build until the Mac can record it.
 
 ### 5.11 Multiplayer session
 
@@ -145,7 +145,7 @@ Phase A: the client logs on through stand-in directory and auth servers to a sel
 
 Every change to the original's behavior is a named switch with a default and a line in `docs/FIXES.md`: crash and hang fixes default on; anything a player could call a rules change defaults off. Community fixes are reimplemented from their diff, never copied. Test: each switch has a test for both positions.
 
-No fix is written into `game/`. A fix below the Win32 surface lives in `src/` behind a runtime switch. A fix to the game's own code is an **override unit** under `src/fixes/overrides/`: a copy of the decompiled function with the change made, which the native build links in place of the original's object when the switch is on (§6.9). `game/` stays the original's source, so a reader of the decompilation never meets a switch, and a unit can be re-matched without carrying one (decided 2026-11-07).
+No fix is written into the decompilation (`decomp/op/`). A fix below the Win32 surface lives in `src/` behind a runtime switch. A fix to the game's own code is an **override unit** under `src/fixes/overrides/`: a copy of the decompiled function with the change made, which the native build links in place of the original's object when the switch is on (§6.9). `decomp/op/` stays the original's source, so a reader of the decompilation never meets a switch, and a unit can be re-matched without carrying one (decided 2026-11-07).
 
 ### 5.15 Mod manager (final phase)
 
@@ -169,7 +169,7 @@ Each Windows subsystem is served by one component in `src/platform/` with a plai
 
 ### 6.3 Function replacement
 
-A decompiled function is claimed by the annotation on the line before its definition, `// FUNCTION: STARFLEETOP 0x006FC690`, exactly one per original address in the whole tree (`harness/SRC_LAYOUT.md`); `// STUB:` marks a body that compiles but is not scored. The build derives `game/manifest.tsv` from those annotations (address, size, symbol, source file) and generates the override table from it, so a claimed function's lifted body is made weak in the native build and the function's own object, compiled by VC6 and lifted (§7.2), replaces it for direct calls, the dispatch table and the guest vtables. Only a function `analysis/results/matched_set.json` records byte-exact is taken: one still being matched keeps its annotation and source in `game/` with the mode `partial`, and the native build runs the original's lifted body for it until it is exact. Exact and partial functions may share a unit: `/O1` gives each function its own section, and an exact function's call to a partial one resolves to the address its original bytes use. The native build consults no table for this: the object's strong symbols win at link time over the weak exe-lift bodies, and the object's data lives in a reserved guest range (0x0F000000 to 0x10000000) that refuses writable data the exe does not already hold. In the delinked Windows build the same object replaces the original bytes. Verified status lives in `analysis/results/matched_set.json` (exact, written only by the harness) and the oracle results (functional); `scripts/progress.py` reads both. A function never appears twice in `game/`; a fix's changed copy of it lives in an override unit under `src/fixes/overrides/` (§6.9), which the harness never scores.
+The decompilation claims functions in `decomp/op/manifest.tsv` (address, size, symbol, source, modes; `decomp/docs/INTERFACE.md`). For each row whose modes include `vc6` (byte-exact), the native build compiles the unit with the decompilation's pinned VC6 (`decomp/toolchain/`), lifts the object (`tools/objlift/`) and links it in place of the function's lifted body, for direct calls, the dispatch table and the guest vtables (§7.2); a `partial` or `stub` row keeps the original's lifted body. The guest table `src/app/guest/override.cpp` is generated from the same annotations by the decompilation's `tools/manifest.py`. A fix's changed copy of a function lives in an override unit under `src/fixes/overrides/` (§6.9), never in the decompilation.
 
 ### 6.4 Mission modules
 
@@ -193,19 +193,19 @@ The on-wire format of a game session is the dplay module's session messages, whi
 
 ### 6.9 Fix switches
 
-`docs/FIXES.md` is the list: name, default, origin (community or project), the behaviors it changes, its tests. A switch is one of two kinds. A `build` switch selects an override unit: `src/fixes/overrides/<Dir>/<unit>.cpp` holds the changed copy of one or more functions, each annotated `// OVERRIDE: STARFLEETOP 0x... fix_name` on the line before it, in the same VC6 C++ as `game/` and compiled and lifted the same way (§7.2); when the switch is on, the native build links the override's object in place of the `game/` object (or the lifted body) for those functions, and when it is off the original is linked. The byte check and the 32-bit build never see an override, so a fix never changes a function's status. The switch takes its default or a `-D` value in the native build; `SFCOP_FIX(name)` from `src/fixes/fixes.h` may appear only under `src/fixes/overrides/`, never in `game/`, and `scripts/check.sh` fails on a site there. `tools/manifest.py` lists the override units beside the manifest; that listing and the link choice are built with the first rules change (PLAN §6.6, F2). An override unit is not the guest override table of §6.3 (`src/app/guest/override.*`), which routes every decompiled function to its object whatever the switches say. A `runtime` switch is read in `src/` through `sfcop::fixes::isEnabled`, from the default, then `settings/fixes.gf`, then `--fix name=on|off`, each later source winning. The switches are declared in `src/fixes/switches.def`, in `docs/FIXES.md` order, so adding a fix changes no frozen header.
+`docs/FIXES.md` is the list: name, default, origin (community or project), the behaviors it changes, its tests. A switch is one of two kinds. A `build` switch selects an override unit: `src/fixes/overrides/<Dir>/<unit>.cpp` holds the changed copy of one or more functions, each annotated `// OVERRIDE: STARFLEETOP 0x... fix_name` on the line before it, in the same VC6 C++ as `decomp/op/` and compiled and lifted the same way (§7.2); when the switch is on, the native build links the override's object in place of the decompilation's object (or the lifted body) for those functions, and when it is off the original is linked. The byte check and the 32-bit build never see an override, so a fix never changes a function's status. The switch takes its default or a `-D` value in the native build; `SFCOP_FIX(name)` from `src/fixes/fixes.h` may appear only under `src/fixes/overrides/`, never in `decomp/op/`; the decompilation's own check fails on a site there. Which tool scans `// OVERRIDE:` annotations and lists the override units, now that `tools/manifest.py` belongs to the decompilation, is an open decision to take before F2 builds that listing and the link choice (PLAN §6.6). An override unit is not the guest override table of §6.3 (`src/app/guest/override.*`), which routes every decompiled function to its object whatever the switches say. A `runtime` switch is read in `src/` through `sfcop::fixes::isEnabled`, from the default, then `settings/fixes.gf`, then `--fix name=on|off`, each later source winning. The switches are declared in `src/fixes/switches.def`, in `docs/FIXES.md` order, so adding a fix changes no frozen header.
 
 ### 6.10 Progress and matched-set files
 
-`analysis/results/progress/progress.json` and `PROGRESS.md` (written only by `scripts/progress.py`) and `analysis/results/matched_set.json` (written only by the harness) keep the shapes P1-5 and P1-6 fixed. The gate compares against the base branch's copy.
+The progress and matched-set files belong to the decompilation; the port reads only what `decomp/docs/INTERFACE.md` lists of them.
 
 ## 7. Architecture
 
 ### 7.1 Layers
 
 ```
-game/        the original's code: lifted bodies (generated, never committed) and decompiled source
-             calls only the Win32 surface of §6.1
+decomp/op/   the original's code, decompiled (the submodule); with the lifted bodies (generated,
+             never committed) it calls only the Win32 surface of §6.1
 src/hle/     the Win32 surface implemented on the platform components
 src/platform the components of §6.2 on SDL3, SDL GPU, miniaudio, sockets, the C++ runtime
 src/net/     transport, rendezvous, relay client (Phase 3)
@@ -215,15 +215,15 @@ tools/       scr2native, the lifter driver, build helpers
 server/      lobby, relay and directory stand-ins (Phase 3 and 4)
 ```
 
-**The decompilation and the modernization are kept apart so that the decompilation can be forked on its own.** `game/`, `harness/`, `oracle/`, `toolchain/`, `analysis/`, `ghidra/` and `tools/` are the decompilation: they aim at the original's behavior and nothing else, and a build of `game/` with the HLE surface answered by the original DLLs is the original game: `game/` carries no fix. `src/`, `server/` and the mod manager are the modernization: they live below the Win32 surface or in override units behind fix switches, and nothing in `game/` depends on them. A fork that wants only the faithful decompilation takes the first group and ignores the second; `scripts/check.sh` counts and lists the `PORT:` lines in `game/`, fails on any `SFCOP_FIX` site there, and counts the override units, so the size of the modernization's footprint inside the decompilation is always visible. Splitting into two repositories later is a mechanical move because of this boundary; it is not done now because one repository is one runner, one review pipeline and one set of pull requests (§12.11).
+**The decompilation is its own repository** (SFC2-decomp, split out on 2026-11-16, §12.11), pinned here as `decomp/` and read only through `decomp/docs/INTERFACE.md`. It aims at the original's behavior and nothing else; `src/`, `server/` and the mod manager are the modernization, below the Win32 surface or in override units behind fix switches, and nothing in `decomp/op/` depends on them.
 
-Rules. `game/` includes nothing from `src/` and carries no fix switch (a fix to the game's code is an override unit, §6.9); a port-motivated edit inside `game/` is tagged `PORT:` on its line with the reason, and there are as few as the platform allows (64-bit and endianness hygiene, undefined behavior the original relied on). `src/hle/` includes `game/` headers only for the struct layouts the surface needs. `src/platform/` includes no Win32 header on any platform. `third_party/` is changed only by the integrator.
+Rules. `decomp/op/` includes nothing from `src/` and carries no fix switch (a fix to the game's code is an override unit, §6.9); a port-motivated edit there is a `PORT:` line made in the decompilation's repository, never here. `src/hle/` includes `decomp/op/` headers only for the struct layouts the surface needs. `src/platform/` includes no Win32 header on any platform. `third_party/` is changed only by the integrator.
 
 ### 7.2 Two builds, two compile modes
 
-The **32-bit Windows build** is the delinked original relinked with VC6 SP4 in the toolchain container: decompiled functions replace the original's bytes one by one, checked by objdiff and the oracle. It runs on Windows and under Wine and is the test bed and the Windows deliverable until the native build overtakes it.
+The **32-bit Windows build** is the delinked original relinked with VC6 SP4, with decompiled functions replacing the original's bytes; it is the decompilation's test bed and lives in its repository, not here.
 
-The **native build** is the lifted translation of the exe compiled with clang for arm64 and x64, plus the platform layer, with decompiled functions dropped in from the manifest. Lifted code runs in a 32-bit guest address space inside the 64-bit process: guest pointers are 32-bit offsets from a fixed base, structures keep their original layouts, and virtual calls go through the guest vtables. A decompiled function enters the native build the way the rest of the game does: its unit is compiled by VC6 SP4 in the toolchain container, exactly as the harness compiles it for the byte check, and the resulting COFF object is lifted, its relocations resolved against the exe's symbols, and linked in place of the function's lifted body (§6.3). `game/` is therefore plain VC6 C++ with no guest-mode macros, and the object the native build runs is the one the harness scored (decided 2026-11-04, §12.4). The alternative, a second compile of `game/` by clang in a guest mode through `game/port/types.h`, was proven on three functions by the C3 spike (`spike/guest-mode/REPORT.md`). It is retired: the spike's build no longer compiles against `game/` as written since (plain VC6 types, ordinary pure virtuals), its header stays in `game/port/` only as the spike's record, and nothing in `game/` depends on it.
+The **native build** is the lifted translation of the exe compiled with clang for arm64 and x64, plus the platform layer, with decompiled functions dropped in from the manifest. Lifted code runs in a 32-bit guest address space inside the 64-bit process: guest pointers are 32-bit offsets from a fixed base, structures keep their original layouts, and virtual calls go through the guest vtables. A decompiled function enters the native build the way the rest of the game does: its unit is compiled by VC6 SP4 in the toolchain container, exactly as the decompilation compiles it for its byte check, and the resulting COFF object is lifted, its relocations resolved against the exe's symbols, and linked in place of the function's lifted body (§6.3). The decompiled source is therefore plain VC6 C++ with no guest-mode macros, and the object the native build runs is the one the decompilation scored (decided 2026-11-04, §12.4). The alternative, a second compile by clang in a guest mode through `decomp/op/port/types.h`, was proven on three functions by the C3 spike (`spike/guest-mode/REPORT.md`) and is retired; that header stays only as the spike's record.
 
 When the decompilation is complete the guest mode is retired: the whole game compiles as ordinary 64-bit C++, and the lifter and the VC6 container leave the native build.
 
@@ -233,38 +233,20 @@ One client process. The game's own threads (worker events, the sound service) st
 
 ### 7.4 Build and verification graph
 
-Developer machines and the runner have the retail install; CI generates the lifted bodies from it into the build directory (never into git), compiles the claimed units of `game/` with VC6 in the toolchain container and lifts their objects, and builds both targets. A unit whose source, headers, tools and exe-lift inputs are unchanged recompiles and re-lifts nothing; a machine without the install, pcrecomp or the toolchain container (the CI runner today) builds nothing lifted and runs the rest of `scripts/check.sh`. `scripts/check.sh` runs the Python tests, the hotspot check, the progress gate and the matched-set gate against the base branch, and the oracle for changes under `game/` or `src/`. A release of the native client is built by the release workflow from a tag and published only by the owner (§12.2).
+Developer machines and the runner have the retail install; the build generates the lifted bodies from it into the build directory (never into git), compiles the units of `decomp/op/` that have `vc6` rows with the decompilation's VC6 container and lifts their objects (`tools/objlift/`), and links the native client. Inputs that did not change are not recompiled or re-lifted; a machine without the install, pcrecomp or the container builds nothing lifted. `scripts/check.sh` runs the Python tests, checks that `.github/hotspots.txt` and `CODEOWNERS` agree, checks that `src/app/guest/override.cpp` is what the pinned decompilation generates, runs the C++ tests (CTest) when the native build is configured, and runs the replay oracle when a recorded trace, the client and a prepared data folder exist. A release of the native client is built by the release workflow from a tag and published only by the owner (§12.2).
 
 ### 7.5 Empires at War, a later second module
 
-Orion Pirates expands Star Trek Starfleet Command II: Empires at War (retail exe `StarFleet2.exe`, 2000). Decompiling it is a later project in this repository, as a second module beside `STARFLEETOP`. Until it starts, Orion Pirates 2.5.5.2 is the only target: no build, test, fixture, oracle trace or CI step uses the Empires at War exe, and no annotation names another module (`tools/manifest.py` refuses one).
-
-A comparison of the two exes (2026-11-08, by a script in the grind integrator's task directory `work/eaw-overlap/`, not committed; both exes carry the same compiler build in their Rich headers) measured Orion Pirates' game code, library code excluded, by bytes: 31% identical in Empires at War apart from addresses, 4% identical apart from structure offsets, 17% with small edits, 48% with no counterpart. The overlap is concentrated:
-
-| Area | Identical | Edited or offsets only | No counterpart |
-| --- | --- | --- | --- |
-| `Tiger/` | 81% | 10% | 9% |
-| `dmp3d/` | 42% | 29% | 29% |
-| The game proper (`Source/`, most of `unsorted/`) | 27% | 25% | 49% |
-| `Common/`, `Switch/`, `Meta/`, `Source/MetaClient/` | 0 to 3% | 0 to 8% | 90 to 99% |
-
-The identical figure is a lower bound: the comparison found Empires at War's function starts by heuristic. Both games' assertion paths agree with the split: the two libraries came from a project of their own in both builds, and each game's code from its own project folder.
-
-What follows now:
-
-- The grind decompiles shared code first (PLAN §6.3 row D). Because `game/` holds the original's code and nothing else (§7.1), every function it matches in `Tiger/`, `dmp3d/` and the shared game code is work already done for the second module.
-- Code outside `game/` names decompiled functions by original address (the manifest, the override table, override units), never by a path in `game/`. A pull request that moves files in `game/` updates every `#include` of them in the same pull request.
-- Feature work in `src/` and `server/` is for Orion Pirates; nothing in it waits for or serves the second module.
-
-What happens when the second module starts (§12.12): `Tiger/` and `dmp3d/` move to a tree shared by both modules, with one annotation per binary on each function they share (the harness then reads a stack of annotations above a function, and the manifest and the lifter key functions by module and address); each game's own code gets a tree of its own, because Orion Pirates' project is a fork of Empires at War's with about half its code changed; a function that changed between the two games has one copy per game.
+Empires at War is the decompilation's second module; the port never reads `decomp/eaw/`, and nothing in `src/` or `server/` waits for or serves it.
 
 ## 8. Data and storage
 
 | State | Where | Identified by | Changes | Backup |
 | --- | --- | --- | --- | --- |
-| The retail install | Where the player put it | The hash list `analysis/results/retail_hashes.sha256` | Never by this project | The player's own media |
+| The retail install | Where the player put it | The hash list `decomp/analysis/results/retail_hashes.sha256` | Never by this project | The player's own media |
 | Settings, profiles, registry values, saves, replays, logs, mods | The per-user data directory of §5.3 and §6.6 | The player's OS account | Written atomically (write to a temporary file, rename); formats the original reads | The directory is plain files the player can copy; no cloud |
-| Decompiled source, manifest, matched set, expected traces | The repository | Original address and symbol | Pull requests only; the gates refuse regressions | git |
+| Decompiled source, manifest, matched set | The decompilation (SFC2-decomp), through the `decomp` pin | Original address and symbol | Pull requests there; a bump here moves the pin | git |
+| Expected traces, the generated override table | This repository | Mission and input; original address | Pull requests only | git |
 | Lifted code, Ghidra project, oracle prefixes, Docker images | `work/` on the external drive | Exe hash and tool version in each output's header | Regenerated by scripts; nothing there is a source of truth | None needed; everything regenerates from the install |
 | Lobby and server list | The hosted lobby's store (one SQLite file) | Session id, server name | Registrations expire after 2 minutes without a heartbeat | Nothing worth keeping; a restart starts empty |
 | Relay | None; it forwards | Session id | | |
@@ -280,8 +262,8 @@ What happens when the second module starts (§12.12): `Tiger/` and `dmp3d/` move
 
 ## 10. Operations
 
-- **Development.** One MacBook Pro with the install, Docker (the VC6 container), Ghidra and Wine; everything large under `work/` on the external drive; up to eight agents at once at `-j4`.
-- **CI.** The self-hosted runner `sfcop-mac` on the same machine runs `check`, `hotspots` and the review on every pull request; nothing runs on GitHub-hosted runners. Runbook: if the runner is offline, `cd ~/gitdir/actions-runner-sfcop && ./svc.sh stop && ./svc.sh start`; its logs are in `_diag/` and `~/Library/Logs/actions.runner.*`. The Windows and Linux builds cross-compile on the runner from Wave 1; a real Windows or Linux machine is added when one is available.
+- **Development.** One MacBook Pro with the install, Docker (the VC6 container) and Wine (Ghidra is the decompilation's, not needed for port work); everything large under `work/` on the external drive; up to eight agents at once at `-j4`.
+- **CI.** The self-hosted runner `sfcop-mac` on the same machine runs `check`, the builds and the oracle; `plan`, `hotspots` and the review run on GitHub-hosted `ubuntu-latest`. Runbook: if the runner is offline, `cd ~/gitdir/actions-runner-sfcop && ./svc.sh stop && ./svc.sh start`; its logs are in `_diag/` and `~/Library/Logs/actions.runner.*`. The Windows and Linux builds cross-compile on the runner from Wave 1; a real Windows or Linux machine is added when one is available.
 - **Hosted services (Phase 3 and 4).** One small Linux VPS runs `sfcop-lobby`, `sfcop-relay`, the directory and auth stand-ins and, for Phase 4, the server kit under Wine. Deployed by a script from the repository, with a health endpoint per service checked every minute by the host's own monitor; a failure sends the owner one message. Logs rotate at 7 days.
 - **Releases.** A tag `v<VERSION>` on `main` (the `VERSION` file, with an optional pre-release suffix) runs `.github/workflows/release.yml` on the runner, which builds the five packages (macOS arm64 disk image, Linux x64 and arm64 archives, Windows x64 and arm64 archives) with `SFCOP_PACKAGE_BUILD=ON`, checks each with `packaging/check_package.py` and `packaging/check_paths.py`, and attaches them to a draft release that only the owner publishes (§12.2). The tag is created by the owner, or by an agent only when the owner says so (`AGENTS.md`, "Default autonomy and safety"). The workflow is not part of pull request CI. Unsigned until the project is complete; a signed launcher from the owner's developer account is still the plan for the end.
 - **Recording the oracle.** On a Windows machine or another Wine build, with `oracle/README.md`; the recorded trace is committed under `oracle/expected/` with its header, and re-recorded only when the mission or input script changes.
@@ -305,12 +287,12 @@ Expected total: 0 USD a month until Phase 3, then under 5 USD.
 | 12.1 | The licence of this project's own code, and therefore whether a `LICENSE` file exists | Owner | The reveal; nothing before it | Open |
 | 12.2 | Distribution of the native binary while it still carries translated code | Owner | Release packaging | **Decided 2026-11-09 (supersedes 2026-11-03):** a 0.1-alpha of the native client may be published while it still carries translated code. Each package is the native client; its game code is translated from the original executable when the release is built on the runner (`.github/workflows/release.yml`, `packaging/`), and it carries no file of the original game: `packaging/check_package.py` refuses a package holding any file of the hash list, and `packaging/check_paths.py` refuses one that names a build or install folder. The player's own install is used only at run time, for data and the hash check (§5.1). The lift on is the release default; a release built with the lift off is source only, the fallback. Signing and notarization are out of scope for the alpha. The 2026-11-03 position (no binary until the decompilation is complete) is withdrawn |
 | 12.3 | What the native client does at the key prompt and with the game's online key check once the original services are gone | Owner | Phase 3 lobby design | Open; until decided the native client behaves as the original |
-| 12.4 | Whether `game/` source compiles in both the VC6 mode and the guest mode with `game/port/types.h` alone (§7.2) | The C3 spike, then the owner | Replacing lifted functions in the native build; the "one source tree" claim | **Decided 2026-11-04:** the spike answered yes with constraints (`spike/guest-mode/REPORT.md`); the owner chose the alternative instead: each decompiled unit is compiled by VC6 and its object lifted into the native build (§7.2), so `game/` carries no guest-mode constructs. The object lifter landed as Wave 1 package B9 (#39); the guest-mode route is retired as a build and kept as the spike's record |
+| 12.4 | Whether the decompiled source (then `game/`) compiles in both the VC6 mode and the guest mode with `game/port/types.h` alone (§7.2) | The C3 spike, then the owner | Replacing lifted functions in the native build; the "one source tree" claim | **Decided 2026-11-04:** the spike answered yes with constraints (`spike/guest-mode/REPORT.md`); the owner chose the alternative instead: each decompiled unit is compiled by VC6 and its object lifted into the native build (§7.2), so `game/` carries no guest-mode constructs. The object lifter landed as Wave 1 package B9 (#39); the guest-mode route is retired as a build and kept as the spike's record |
 | 12.5 | Whether the scripting library's source files, which the SDK ships to modders, may be committed, or must be copied from the player's install at build time | Owner | Script packages; the translator | Open; the build copies from the install until decided |
 | 12.6 | Which transport Dynaverse missions use: the DirectPlay wrapper or `nSwitch` | Analysis (`analysis/netcode/`) in Phase 3 | The Phase 4 transport design | **Answered 2026-11-07 (N1, `analysis/netcode/dynaverse.md`):** the DirectPlay wrapper through `tNetControl`. `tState_RunCampaign` hosts or joins over TCP/IP, by connect-by-address to the host address in the server's `tMatchedMission`. nSwitch carries the matching and the results; during the mission the client has it cache Dynaverse messages, and (inferred, from static analysis) carries no combat traffic. A Phase 4 server writes the host's rendezvous name into that field |
 | 12.7 | Whether the lifted build's 53-bit floating point reproduces the original's traces | The oracle, once a trace exists | Any "functional" claim for simulation code in the native build | Open |
 | 12.8 | NAT traversal: libjuice, GameNetworkingSockets, or the project's own punch over Transport | Integrator, in the Phase 3 protocol document | Phase 3 transport package | **Decided 2026-11-07:** the project's own punch over Transport, with its own relay (`src/net/RENDEZVOUS.md`, `NAT_LIBRARY.md`); no library. libjuice (pinned in `NAT_LIBRARY.md`) is the fallback if the punch fails N2's acceptance, taken by a contract change |
 | 12.9 | Which machine records the oracle (a Windows PC, CrossOver, another Wine build) | Owner | Every "functional" figure | Open |
 | 12.10 | Which community fixes default on and which are rules changes | Owner, reviewing `docs/FIXES.md` as it fills | Nothing until the fixes packages | Open |
-| 12.11 | Whether the decompilation and the modernization split into two repositories | Owner, at the reveal | Nothing before it | **Decided 2026-11-03:** one repository with the boundary of §7.1 enforced by the layout and the check; revisit at the reveal |
+| 12.11 | Whether the decompilation and the modernization split into two repositories | Owner, at the reveal | Nothing before it | **Decided 2026-11-16 (supersedes 2026-11-03):** split into SFC2-decomp (the decompilation, to be public) and SFCOP-port (this repository, private), which pins it as `decomp/` |
 | 12.12 | Empires at War as a second module (§7.5): which build is the target (the 2000 retail exe or a later official patch), and when `Tiger/` and `dmp3d/` move to the shared tree | Owner, when that work starts | The second module; nothing before it | Open; Orion Pirates is the only target until then |
