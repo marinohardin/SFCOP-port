@@ -8,14 +8,19 @@
 #   2. lift      tools/objlift/objlift.py in the lifter container (cmake/lifter/Dockerfile: the
 #                exe lift's image, with capstone), against the exe lift in --gen -> DIR/objlift_*
 #
-# The lifter container runs with no network, the repository, the exe, the exe lift and pcrecomp
-# read-only, and only DIR writable. compile.py recompiles a unit only when its source or a header
-# changed, and objlift.py rewrites a file only when its content changed, so an
+# The decompilation (its op/ sources, harness/, toolchain/ and ghidra/exports) is
+# ${SFCOP_DECOMP_DIR:-<repository>/decomp} (decomp/docs/INTERFACE.md).
+#
+# The lifter container runs with no network, the repository, the decompilation, the exe, the exe
+# lift and pcrecomp read-only, and only DIR writable. compile.py recompiles a unit only when its
+# source or a header changed, and objlift.py rewrites a file only when its content changed, so an
 # unchanged unit recompiles nothing downstream. --lift-only skips step 1 (objects already in
 # DIR/obj); OBJLIFT_PYTHON=<python with capstone> runs step 2 without the container.
 set -eu
 HERE=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$HERE/../.." && pwd)
+DECOMP=$(cd "${SFCOP_DECOMP_DIR:-$ROOT/decomp}" && pwd) || { echo "objlift: no decompilation at ${SFCOP_DECOMP_DIR:-$ROOT/decomp} (git submodule update --init)" >&2; exit 1; }
+export SFCOP_DECOMP_DIR="$DECOMP"
 
 die() { echo "objlift: $*" >&2; exit 1; }
 sha256() { if command -v shasum >/dev/null 2>&1; then shasum -a 256 "$@"; else sha256sum "$@"; fi; }
@@ -58,7 +63,7 @@ done < "$out/obj/units.txt"
 
 start=$(date +%s)
 if [ -n "${OBJLIFT_PYTHON:-}" ]; then
-    "$OBJLIFT_PYTHON" "$HERE/objlift.py" "$@" --manifest "$manifest" --symbols "$ROOT/ghidra/exports" \
+    "$OBJLIFT_PYTHON" "$HERE/objlift.py" "$@" --manifest "$manifest" --symbols "$DECOMP/ghidra/exports" \
         --exe "$exe" --lifted "$gen" --pcrecomp "$pcrecomp" --out "$out" \
         || die "the lift failed (above)"
 else
@@ -70,14 +75,16 @@ else
     fi
     mrel=$(cd "$(dirname "$manifest")" && pwd)/$(basename "$manifest")
     case "$mrel" in
+        "$DECOMP"/*) mrel=/d/${mrel#"$DECOMP"/} ;;
         "$ROOT"/*) mrel=/r/${mrel#"$ROOT"/} ;;
-        *) die "the manifest must be inside the repository ($ROOT)" ;;
+        *) die "the manifest must be inside the decompilation ($DECOMP) or the repository ($ROOT)" ;;
     esac
     docker run --rm --network none --cpus 4 --memory 2g \
-        -v "$ROOT":/r:ro -v "$exe":/x/StarFleetOP.exe:ro -v "$gen":/g:ro -v "$pcrecomp":/p:ro \
+        -v "$ROOT":/r:ro -v "$DECOMP":/d:ro -e SFCOP_DECOMP_DIR=/d \
+        -v "$exe":/x/StarFleetOP.exe:ro -v "$gen":/g:ro -v "$pcrecomp":/p:ro \
         -v "$out":/o -w /o "$image" \
-        python -I /r/tools/objlift/objlift.py "$@" --manifest "$mrel" --symbols /r/ghidra/exports \
-        --game /r/game --exe /x/StarFleetOP.exe --lifted /g --pcrecomp /p --out /o \
+        python -I /r/tools/objlift/objlift.py "$@" --manifest "$mrel" --symbols /d/ghidra/exports \
+        --game /d/op --exe /x/StarFleetOP.exe --lifted /g --pcrecomp /p --out /o \
         || die "the lift failed (above)"
 fi
 echo "objlift: lift done in $(( $(date +%s) - start )) s"

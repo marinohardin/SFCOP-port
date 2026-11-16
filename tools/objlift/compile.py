@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """Compile the units the manifest claims with VC6, exactly as the harness compiles them for the
-byte check: harness/lib/source.py's compile_unit with the unit's profile from harness/units.json,
-in the toolchain container (toolchain/bin/cl).
+byte check: the decompilation's harness/lib/source.py compile_unit with the unit's profile from
+its harness/units.json, in its toolchain container (toolchain/bin/cl). The decompilation is
+$SFCOP_DECOMP_DIR, by default decomp/ in this repository (decomp/docs/INTERFACE.md).
 
-    compile.py --manifest game/manifest.tsv --out DIR [--game DIR]
+    compile.py --manifest decomp/op/manifest.tsv --out DIR [--game DIR]
+
+--game is the decompilation's source root (default $SFCOP_DECOMP_DIR/op).
 
 Writes DIR/<unit path without .cpp>/<Unit>.obj and its /FAs listing (<Unit>.asm), which
 objlift.py reads to find the symbol each annotation claims, and prints one `UNIT=OBJ` line per
@@ -26,8 +29,9 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
-if REPO not in sys.path:
-    sys.path.insert(0, REPO)
+DECOMP = os.path.abspath(os.environ.get('SFCOP_DECOMP_DIR') or os.path.join(REPO, 'decomp'))
+if DECOMP not in sys.path:
+    sys.path.insert(0, DECOMP)
 
 from harness.lib import paths, source  # noqa: E402
 
@@ -44,7 +48,7 @@ def claimed_units(manifest):
 def shared_key(game):
     """The part of every unit's key that is not the unit itself."""
     h = hashlib.sha256()
-    for path in (os.path.abspath(__file__), os.path.join(REPO, 'harness', 'lib', 'source.py'),
+    for path in (os.path.abspath(__file__), os.path.join(DECOMP, 'harness', 'lib', 'source.py'),
                  paths.CL):
         h.update(path.encode() + b'\0')
         if os.path.isfile(path):
@@ -82,7 +86,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split('\n\n')[0])
     ap.add_argument('--manifest', required=True)
     ap.add_argument('--out', required=True)
-    ap.add_argument('--game', default=os.path.join(REPO, 'game'))
+    ap.add_argument('--game', default=os.path.join(DECOMP, 'op'))
     a = ap.parse_args(argv)
     cfg = source.load_units()
     failed = 0

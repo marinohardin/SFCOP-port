@@ -24,7 +24,8 @@ import pytest
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOOL = os.path.join(REPO, 'tools', 'objlift')
-for _p in (os.path.join(REPO, 'cmake', 'lifter'), TOOL, os.path.join(TOOL, 'fixtures'), REPO):
+DECOMP = os.path.abspath(os.environ.get('SFCOP_DECOMP_DIR') or os.path.join(REPO, 'decomp'))
+for _p in (os.path.join(REPO, 'cmake', 'lifter'), TOOL, os.path.join(TOOL, 'fixtures'), DECOMP):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
@@ -597,6 +598,7 @@ def run_lift(tmp_path, args):
         skip('neither capstone nor the lifter container image (sfcop-lifter-py:<digest>) is available')
     inner = [a.replace(str(tmp_path), '/t') for a in args]
     p = subprocess.run(['docker', 'run', '--rm', '--network', 'none', '-v', f'{REPO}:/r:ro',
+                        '-v', f'{DECOMP}:/d:ro', '-e', 'SFCOP_DECOMP_DIR=/d',
                         '-v', f'{pcr}:/p:ro', '-v', f'{tmp_path}:/t', image, 'python', '-I',
                         '/r/tools/objlift/objlift.py'] + inner + ['--pcrecomp', '/p'],
                        capture_output=True, text=True)
@@ -905,7 +907,7 @@ def test_the_real_dynamic_allocator_object_lifts_onto_the_exe(tmp_path):
     if shutil.which('docker') is None:
         skip('docker is not installed, and the pinned VC6 runs in its container')
     rows = []
-    with open(os.path.join(REPO, 'game', 'manifest.tsv'), newline='') as f:
+    with open(os.path.join(DECOMP, 'op', 'manifest.tsv'), newline='') as f:
         for r in csv.DictReader(f, delimiter='\t'):
             if r['source'] == 'Common/DynamicAllocator.cpp' and 'vc6' in r['modes'].split():
                 rows.append(r)
@@ -919,7 +921,7 @@ def test_the_real_dynamic_allocator_object_lifts_onto_the_exe(tmp_path):
     built = tmp_path / 'obj'
     assert objcompile.main(['--manifest', str(manifest), '--out', str(built)]) == 0
     args = ['--obj', f'Common/DynamicAllocator.cpp={built / "Common" / "DynamicAllocator.obj"}',
-            '--manifest', str(manifest), '--symbols', os.path.join(REPO, 'ghidra', 'exports'),
+            '--manifest', str(manifest), '--symbols', os.path.join(DECOMP, 'ghidra', 'exports'),
             '--exe', paths.EXE, '--out', str(tmp_path / 'out'), '--no-lift']
     assert objlift.main(args) == 0
     text = (tmp_path / 'out' / 'objlift_report.txt').read_text()

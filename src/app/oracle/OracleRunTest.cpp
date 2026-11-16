@@ -98,7 +98,6 @@ TEST_CASE("waitForEnd returns once END is in the file and false at its deadline"
 }
 
 TEST_CASE("the tools are oracle/trace under the source tree unless the environment says otherwise") {
-    CHECK(sourceDirOfHashList("/src/tree/analysis/results/retail_hashes.sha256") == "/src/tree");
     const Tools plain = toolsOf("/src/tree", [](const std::string &) { return std::nullopt; });
     CHECK(plain.dir == "/src/tree/oracle/trace");
     CHECK(plain.python == "python3");

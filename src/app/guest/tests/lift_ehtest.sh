@@ -3,7 +3,8 @@
 #
 #   lift_ehtest.sh OUT PCRECOMP
 #
-#   OUT/root/ehtest.exe    ehtest.cpp, compiled by VC6 SP4 (toolchain/: /MT /GX /O2)
+#   OUT/root/ehtest.exe    ehtest.cpp, compiled by VC6 SP4 (the decompilation's toolchain/:
+#                          /MT /GX /O2)
 #   OUT/out/gen/           the lifted C, as cmake/lifter/lift.sh lifts the game: pcrecomp's rtti and
 #                          disasm32, then run_lift.py --all, in the same container image
 #
@@ -14,7 +15,10 @@ set -eu
 HERE=$(cd "$(dirname "$0")" && pwd)
 REPO=$(cd "$HERE/../../../.." && pwd)
 LIFTER="$REPO/cmake/lifter"
-# toolchain/bin/msvc-run finds the VC6 libraries under SFCOP_ROOT, the parent of the repository
+# The decompilation (decomp/docs/INTERFACE.md) holds the compiler wrappers.
+DECOMP=${SFCOP_DECOMP_DIR:-$REPO/decomp}
+[ -x "$DECOMP/toolchain/bin/cl" ] || { echo "lift_ehtest: no VC6 wrapper at $DECOMP/toolchain/bin/cl (git submodule update --init)" >&2; exit 1; }
+# $DECOMP/toolchain/bin/msvc-run finds the VC6 libraries under SFCOP_ROOT, the parent of the repository
 # (of the main checkout, from a worktree under .claude/worktrees/).
 if [ -z "${SFCOP_ROOT:-}" ]; then
     root=$REPO
@@ -31,8 +35,8 @@ IMAGE=sfcop-lifter-py:$(sha256 "$LIFTER/Dockerfile" | cut -c1-12)
 mkdir -p "$out/root" "$out/cat" "$out/out"
 out=$(cd "$out" && pwd)
 cp "$HERE/ehtest.cpp" "$out/"
-(cd "$out" && "$REPO/toolchain/bin/cl" /nologo /c /MT /GX /O2 ehtest.cpp \
-    && "$REPO/toolchain/bin/link" /nologo /subsystem:console /out:ehtest.exe ehtest.obj LIBCMT.LIB KERNEL32.LIB)
+(cd "$out" && "$DECOMP/toolchain/bin/cl" /nologo /c /MT /GX /O2 ehtest.cpp \
+    && "$DECOMP/toolchain/bin/link" /nologo /subsystem:console /out:ehtest.exe ehtest.obj LIBCMT.LIB KERNEL32.LIB)
 cp "$out/ehtest.exe" "$out/root/"
 
 if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then

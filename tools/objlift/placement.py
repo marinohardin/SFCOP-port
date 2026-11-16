@@ -35,8 +35,10 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
-if REPO not in sys.path:
-    sys.path.insert(0, REPO)
+# The decompilation (decomp/docs/INTERFACE.md): its harness/ is imported from there.
+DECOMP = os.path.abspath(os.environ.get('SFCOP_DECOMP_DIR') or os.path.join(REPO, 'decomp'))
+if DECOMP not in sys.path:
+    sys.path.insert(0, DECOMP)
 
 from harness.lib import coff  # noqa: E402
 

@@ -23,9 +23,10 @@ if [ ! -f "$WINEPREFIX/system.reg" ]; then
     wineserver -w
 fi
 
-# Verify the source before copying (hashes from analysis/results/retail_hashes.sha256).
+# Verify the source before copying (hashes from the decompilation's
+# analysis/results/retail_hashes.sha256).
 expected=$(grep 'Starfleet Command Orion Pirates/StarFleetOP.exe$' \
-    "$repo/analysis/results/retail_hashes.sha256" | cut -d' ' -f1 | head -1)
+    "${SFCOP_DECOMP_DIR:-$repo/decomp}/analysis/results/retail_hashes.sha256" | cut -d' ' -f1 | head -1)
 actual=$(shasum -a 256 "$game_src/StarFleetOP.exe" | cut -d' ' -f1)
 if [ -n "$expected" ] && [ "$expected" != "$actual" ]; then
     echo "setup_prefix.sh: StarFleetOP.exe hash mismatch ($actual, expected $expected)" >&2

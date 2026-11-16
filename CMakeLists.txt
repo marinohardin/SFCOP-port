@@ -7,7 +7,7 @@
 #   ctest --preset macos-arm64
 #
 # The 32-bit Windows build (the delinked original relinked with VC6) is not built here; it lives
-# in toolchain/ and harness/.
+# in the decompilation (the decomp submodule, SFCOP_DECOMP_DIR: its toolchain/ and harness/).
 cmake_minimum_required(VERSION 3.28)
 
 # No language yet: a preset whose cross toolchain is still a stub configures without a compiler.
@@ -20,6 +20,9 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 # Keep build trees out of `git status` without a .gitignore entry.
 file(WRITE "${CMAKE_BINARY_DIR}/.gitignore" "*\n")
+
+# The decompilation (SFCOP_DECOMP_DIR, the decomp submodule): every path into it goes through here.
+include(SfcopDecomp)
 
 if(SFCOP_TOOLCHAIN_STUB)
     message(STATUS "sfcop: ${SFCOP_PLATFORM} configures only; nothing is built. Missing: "
@@ -81,10 +84,12 @@ if(SFCOP_PACKAGE_BUILD)
     set(SFCOP_CONFIG_INSTALL_DIR "")
     set(SFCOP_CONFIG_GAME_DIR "")
     set(SFCOP_CONFIG_HASH_LIST "")
+    set(SFCOP_CONFIG_SOURCE_DIR "")
 else()
     set(SFCOP_CONFIG_INSTALL_DIR "${SFCOP_INSTALL_DIR}")
     set(SFCOP_CONFIG_GAME_DIR "${SFCOP_GAMEROOT}")
-    set(SFCOP_CONFIG_HASH_LIST "${CMAKE_SOURCE_DIR}/analysis/results/retail_hashes.sha256")
+    set(SFCOP_CONFIG_HASH_LIST "${SFCOP_DECOMP_DIR}/analysis/results/retail_hashes.sha256")
+    set(SFCOP_CONFIG_SOURCE_DIR "${CMAKE_SOURCE_DIR}")
 endif()
 configure_file(cmake/sfcop_build_config.h.in "${CMAKE_BINARY_DIR}/generated/sfcop_build_config.h" @ONLY)
 
@@ -173,7 +178,7 @@ include(SfcopBundle)
 
 # --- The guest tests (src/app/guest/README.md, "Tests") ----------------------------------------------
 # The guest host running a lifted test program, ehtest.exe, instead of the game. The program is
-# compiled by toolchain/'s VC6 and lifted by `cmake --build <dir> --target sfcop_ehtest_lift`
+# compiled by the decompilation's toolchain/ VC6 and lifted by `cmake --build <dir> --target sfcop_ehtest_lift`
 # (src/app/guest/tests/lift_ehtest.sh); once it has been, configuring again adds the test host and
 # the CTest test sfcop_guest_tests. Without it, or without the lift, there is no guest test.
 set(SFCOP_EHTEST_DIR "${CMAKE_BINARY_DIR}/ehtest")

@@ -53,9 +53,6 @@ struct Tools {
     std::string python; // the interpreter
 };
 
-// The source tree the build config names: `hashListPath` is
-// <source>/analysis/results/retail_hashes.sha256.
-std::string sourceDirOfHashList(const std::string &hashListPath);
 // oracle/trace under the source tree, or $SFCOP_ORACLE_TOOLS; python3, or $SFCOP_PYTHON.
 Tools toolsOf(const std::string &sourceDir,
               const std::function<std::optional<std::string>(const std::string &)> &env);

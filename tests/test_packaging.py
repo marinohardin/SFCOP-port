@@ -257,7 +257,9 @@ def test_the_linux_icon_is_the_png_inside_the_icns(tmp_path):
     assert data in (open(os.path.join(ROOT, "packaging", "macos", "SFCOP.icns"), "rb").read())
 
 
-REPO_MANIFEST = os.path.join(ROOT, "analysis", "results", "install_manifest.tsv")
+# The decompilation holds the install manifest and the hash list (decomp/docs/INTERFACE.md).
+DECOMP = os.path.abspath(os.environ.get("SFCOP_DECOMP_DIR") or os.path.join(ROOT, "decomp"))
+REPO_MANIFEST = os.path.join(DECOMP, "analysis", "results", "install_manifest.tsv")
 
 
 def invented(path, text):
@@ -292,7 +294,7 @@ def test_linux_make_tree_lays_out_the_tree_the_check_expects(tmp_path):
     assert run.returncode == 0, run.stderr
     assert "the needed libraries were not checked" in run.stderr
     hashes = check_package.check_bundle.read_hashes(
-        os.path.join(ROOT, "analysis", "results", "retail_hashes.sha256"))
+        os.path.join(DECOMP, "analysis", "results", "retail_hashes.sha256"))
     assert check_package.tree_refusals(str(out), hashes, check_package.LAYOUTS["linux"]) == []
     assert os.access(out / "sfcop", os.X_OK) and os.access(out / "bin" / "sfcop", os.X_OK)
     assert (out / "bin" / "install_manifest.tsv").read_bytes() == open(REPO_MANIFEST, "rb").read()

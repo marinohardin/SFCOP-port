@@ -1,18 +1,20 @@
 // The override table: decompiled functions that run in place of their lifted bodies in the
-// native build (DESIGN §6.3, §7.2), and the guest runtime that game/port/guest.h declares.
+// native build (DESIGN §6.3, §7.2), and the guest runtime that the decompilation's
+// op/port/guest.h declares (decomp/docs/INTERFACE.md).
 //
 // Two builds fill the table:
 //
 // - The object lift (the native build's route, cmake/lifter/objlift.cmake): each claimed unit is
-//   compiled by VC6 as the harness compiles it, and tools/objlift/objlift.py lifts its object
-//   into objlift_table.c and objlift_code.c in the build directory. The lifted bodies carry the
+//   compiled by VC6 as the decompilation's harness compiles it, and tools/objlift/objlift.py lifts
+//   its object into objlift_table.c and objlift_code.c in the build directory. The lifted bodies carry the
 //   exe lift's names (sub_XXXXXXXX), the exe lift's own bodies for those addresses are weak, and
 //   the table here lists the claimed ones. The data image (sections the exe does not hold, in the
 //   reserved guest range) is loaded by sfcop_guest_load_objects(). The build then leaves
 //   override.cpp out.
-// - The guest-mode fallback (spike/guest-mode/REPORT.md): tools/manifest.py writes override.cpp
-//   from the FUNCTION annotations in game/. With SFCOP_GUEST_MODE the build compiles each
-//   claimed unit in guest mode and links override.cpp's entry points under the lifted names.
+// - The guest-mode fallback (spike/guest-mode/REPORT.md): the decompilation's tools/manifest.py
+//   writes override.cpp from the FUNCTION annotations in its op/. With SFCOP_GUEST_MODE the build
+//   compiles each claimed unit in guest mode and links override.cpp's entry points under the
+//   lifted names.
 //
 // Either way the lift's direct calls, its dispatch table, and so every guest vtable slot holding
 // the address, reach the decompiled code. With neither the table is empty.
@@ -21,7 +23,7 @@
 // The C++ part, under the macro SFCOP_GUEST_MODE_SOURCES (which the guest-mode build defines), is
 // what override.cpp is built from: the guest calling conventions (an entry point reads ecx and the
 // guest stack, calls the decompiled function and pops what the original popped) and the runtime
-// game/ calls back into.
+// the decompiled code calls back into.
 #pragma once
 
 #include <stdint.h>
@@ -36,7 +38,7 @@ typedef struct sfcop_guest_override {
     uint32_t va;              // the original function's address
     sfcop_guest_entry entry;  // its guest-ABI entry point, compiled from the source body
     const char *symbol;       // the source's name for it
-    const char *source;       // the unit, from the game/ root
+    const char *source;       // the unit, from the decompilation's op/ root
 } sfcop_guest_override;
 
 // Sorted by address.
@@ -136,7 +138,7 @@ __attribute__((constructor)) static void sfcop_guest_announce(void) {
         return;
     }
     fprintf(stderr,
-            "[override] %u functions from game/ (their VC6 objects, lifted) run in place of their "
+            "[override] %u functions from op/ (their VC6 objects, lifted) run in place of their "
             "lifted bodies\n",
             sfcop_guest_override_count);
 }
@@ -148,7 +150,7 @@ void sfcop_guest_entered(unsigned index) {
         const uint32_t last = (g_icall_trace_idx - 1u) & (ICALL_TRACE_SIZE - 1);
         const int indirect = g_icall_trace_idx != 0 && g_icall_trace[last] == o->va &&
                              g_icall_from[last] == g_cur_func;
-        fprintf(stderr, "[override] 0x%08X %s (game/%s) first run from sub_%08X, %s\n", o->va, o->symbol,
+        fprintf(stderr, "[override] 0x%08X %s (op/%s) first run from sub_%08X, %s\n", o->va, o->symbol,
                 o->source, g_cur_func, indirect ? "an indirect call (vtable or pointer)" : "a direct call");
         if (hle_on_exit != sfcop_guest_report_calls) {
             sfcop_guest_prev_on_exit = hle_on_exit;
@@ -343,7 +345,7 @@ void entered(std::size_t index) {
         const uint32_t last = (g_icall_trace_idx - 1u) & 127u;
         const bool indirect =
             g_icall_trace_idx != 0 && g_icall_trace[last] == o.va && g_icall_from[last] == caller;
-        fprintf(stderr, "[override] 0x%08X %s (game/%s) first run from sub_%08X, %s\n", o.va, o.symbol,
+        fprintf(stderr, "[override] 0x%08X %s (op/%s) first run from sub_%08X, %s\n", o.va, o.symbol,
                 o.source, caller, indirect ? "an indirect call (vtable or pointer)" : "a direct call");
     }
     g_cur_func = o.va;
@@ -363,7 +365,7 @@ static int announce() {
                 kMaxOverrides);
         hle_exit(1);
     }
-    fprintf(stderr, "[override] %u functions compiled from game/ run in place of their lifted bodies\n",
+    fprintf(stderr, "[override] %u functions compiled from op/ run in place of their lifted bodies\n",
             sfcop_guest_override_count);
     hle_on_exit = reportCalls;
     return 0;

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Lift the VC6 COFF objects of decompiled units into the native build's guest (DESIGN §6.3, §7.2).
 
-    objlift.py --obj [UNIT=]UNIT.obj ... --manifest game/manifest.tsv --symbols ghidra/exports
+    objlift.py --obj [UNIT=]UNIT.obj ... --manifest decomp/op/manifest.tsv
+               --symbols decomp/ghidra/exports
                --out DIR [--exe StarFleetOP.exe] [--lifted LIFT/out/gen] [--pcrecomp DIR]
                [--check] [--no-lift]
 
@@ -49,7 +50,9 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
-for _p in (HERE, REPO):
+# The decompilation (decomp/docs/INTERFACE.md): its harness/ is imported from there.
+DECOMP = os.path.abspath(os.environ.get('SFCOP_DECOMP_DIR') or os.path.join(REPO, 'decomp'))
+for _p in (HERE, DECOMP):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
@@ -113,7 +116,7 @@ def claimed_symbol(address, source, obj_path, game, fallback, name='', recorded=
     with the harness's own rule (harness/lib/source.symbol_for_claim, given the evidence: the
     address's matched-set entry `recorded`, functions.csv's mangled name `fallback` and `name`),
     else the mangled name in functions.csv. The annotation is in the unit `source`, or in a
-    header that game/UNITS.tsv places in that unit (harness/lib/claims.py), whose line records
+    header that op/UNITS.tsv places in that unit (harness/lib/claims.py), whose line records
     the unit's listing then holds."""
     from harness.lib import source as hsource
     listing = os.path.splitext(obj_path)[0] + '.asm'
@@ -156,7 +159,8 @@ def claimed_symbol(address, source, obj_path, game, fallback, name='', recorded=
 
 
 def check_exe(path):
-    """A PeImage of the exe after checking its hash against analysis/results/retail_hashes.sha256."""
+    """A PeImage of the exe after checking its hash against the decompilation's
+    analysis/results/retail_hashes.sha256."""
     from harness.lib import coff, paths
     raw = open(path, 'rb').read()
     got = hashlib.sha256(raw).hexdigest()
@@ -525,11 +529,12 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split('\n\n')[0])
     ap.add_argument('--obj', action='append', required=True, metavar='[UNIT=]PATH')
     ap.add_argument('--manifest', required=True)
-    ap.add_argument('--symbols', required=True, help='ghidra/exports, or its functions.csv')
+    ap.add_argument('--symbols', required=True, help='the decompilation\'s ghidra/exports, or its functions.csv')
     ap.add_argument('--sdk-symbols', action='append', metavar='TSV',
                     help='more name evidence (default: the harness\'s SDK match tables)')
-    ap.add_argument('--game', default=os.path.join(REPO, 'game'))
-    ap.add_argument('--matched', help='the matched set (default analysis/results/matched_set.json): '
+    ap.add_argument('--game', default=os.path.join(DECOMP, 'op'))
+    ap.add_argument('--matched', help='the matched set (default the decompilation\'s '
+                    'analysis/results/matched_set.json): '
                     'evidence for what an annotation claims')
     ap.add_argument('--exe', help='the original exe: evidence from exact functions, SECTION/SECREL')
     ap.add_argument('--lifted', metavar='GEN', help='the exe lift\'s out/gen directory')

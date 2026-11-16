@@ -9,7 +9,7 @@
 #   rtti      pcrecomp tools/cpp/rtti.py        -> cat/rtti.json, cat/rtti_seeds.json
 #   disasm    pcrecomp tools/disasm/disasm32.py -> cat/functions.json      (about 4 minutes)
 #   lift      run_lift.py (with eh_frames.py)   -> out/gen/, out/lift_stats.json (about 2 minutes)
-# The layout is the one scripts/progress.py --lifter reads.
+# The layout is the one the decompilation's scripts/progress.py --lifter reads.
 #
 # The lift is keyed by its inputs (the exe's hash, the pcrecomp revision, this directory's files,
 # the patch series applied to pcrecomp with each patch, the marks, the file count). When the key
@@ -42,7 +42,7 @@ done
 
 [ -f "$exe" ] || die "no game executable at $exe (set SFCOP_INSTALL_DIR)"
 got=$(sha256 "$exe" | cut -d' ' -f1)
-[ "$got" = "$want" ] || die "$exe has sha256 $got, not the original's $want (analysis/results/retail_hashes.sha256)"
+[ "$got" = "$want" ] || die "$exe has sha256 $got, not the original's $want (the decompilation's analysis/results/retail_hashes.sha256)"
 
 [ -f "$pcrecomp/tools/lift/lift32.py" ] || die "no patched pcrecomp at $pcrecomp: pass a build folder's copy (<build>/pcrecomp, made at configure) or make one with cmake/lifter/setup.sh --copy CLONE DEST STAMP"
 rev=$(git -C "$pcrecomp" rev-parse HEAD 2>/dev/null) || die "$pcrecomp is not a git clone"

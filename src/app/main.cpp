@@ -293,12 +293,12 @@ int main(int argc, char **argv) {
         // A package build names no source tree (SFCOP_PACKAGE_BUILD): the oracle's tools are then
         // found only through SFCOP_ORACLE_TOOLS.
         const std::optional<std::string> oracleTools = hostEnvironment()("SFCOP_ORACLE_TOOLS");
-        if (std::string(SFCOP_HASH_LIST).empty() && (!oracleTools || oracleTools->empty())) {
+        if (std::string(SFCOP_SOURCE_DIR).empty() && (!oracleTools || oracleTools->empty())) {
             std::fprintf(stderr, "sfcop: a packaged client has no source tree for the oracle's "
                                  "tools; set SFCOP_ORACLE_TOOLS to its oracle/trace folder\n");
             return kExitBadInput;
         }
-        job.sourceDir = app::oracle::sourceDirOfHashList(SFCOP_HASH_LIST);
+        job.sourceDir = SFCOP_SOURCE_DIR;
         job.tools = app::oracle::toolsOf(job.sourceDir, hostEnvironment());
         job.tools.dir = app::oracle::absoluteFrom(startedIn, job.tools.dir);
         job.exePath = joinPath(options.installDir, options.exeName);

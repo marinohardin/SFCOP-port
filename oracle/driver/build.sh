@@ -1,6 +1,6 @@
 #!/bin/sh
 # Build the Wine driver's programs with the P0-2 toolchain wrappers (VC6 SP4 under wibo, VC6 Lib/
-# set from tools/vc6-lib). Output in work/oracle/build/out/:
+# set from tools/vc6-lib), the decompilation's toolchain/bin (${SFCOP_DECOMP_DIR:-<repo>/decomp}). Output in work/oracle/build/out/:
 #   oracle_input.exe        plays a steps file into the game
 #   oracle_launch.exe       starts the game with the fixed-step clock (README.md)
 #   oracle_clock.dll        that clock, loaded into the game by the launcher
@@ -14,7 +14,7 @@ root=${SFCOP_ROOT:-$(cd "$repo/.." && pwd)}
 build=${ORACLE_DRIVER_BUILD:-$root/work/oracle/build}
 work=$build/driver
 out=$build/out
-bin=$repo/toolchain/bin
+bin=${SFCOP_DECOMP_DIR:-$repo/decomp}/toolchain/bin
 
 mkdir -p "$work" "$out"
 cp "$here/oracle_input.c" "$here/oracle_launch.c" "$here/oracle_clock.c" \

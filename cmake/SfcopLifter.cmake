@@ -1,9 +1,11 @@
 # The lifted game (DESIGN §7.2, §7.4): StarFleetOP.exe lifted to C at build time, from the
 # install, into ${CMAKE_BINARY_DIR}/lifted. Nothing generated here is committed.
 #
-# Inputs, each a cache variable with a default from harness/lib/paths.py (cmake/lifter/locate.py):
+# Inputs, each a cache variable with a default from the decompilation's harness/lib/paths.py
+# (cmake/lifter/locate.py, reading ${SFCOP_DECOMP_DIR}, cmake/SfcopDecomp.cmake):
 #   SFCOP_INSTALL_DIR    the original game's install folder; its StarFleetOP.exe is hash-checked
-#                        against analysis/results/retail_hashes.sha256 before every lift
+#                        against ${SFCOP_DECOMP_DIR}/analysis/results/retail_hashes.sha256 before
+#                        every lift
 #   SFCOP_PCRECOMP_DIR   a pcrecomp clone that holds the pinned revision (cmake/lifter/setup.sh
 #                        makes one); it is only read, and may serve every checkout on the machine
 # When either is missing, configure still succeeds and says what is missing; building `sfcop`
@@ -27,7 +29,7 @@ include_guard(GLOBAL)
 
 find_package(Python3 3.11 REQUIRED COMPONENTS Interpreter)
 execute_process(
-    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/cmake/lifter/locate.py" "${CMAKE_SOURCE_DIR}"
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/cmake/lifter/locate.py" "${SFCOP_DECOMP_DIR}"
     OUTPUT_VARIABLE _sfcop_located RESULT_VARIABLE _sfcop_rc ERROR_VARIABLE _sfcop_err)
 if(NOT _sfcop_rc EQUAL 0)
     message(FATAL_ERROR "cmake/lifter/locate.py failed: ${_sfcop_err}")
@@ -68,7 +70,7 @@ if(NOT EXISTS "${_sfcop_exe}")
 endif()
 if(SFCOP_EXE_SHA256 STREQUAL "")
     string(APPEND SFCOP_LIFT_MISSING
-        "analysis/results/retail_hashes.sha256 has no line for the exe. ")
+        "${SFCOP_DECOMP_DIR}/analysis/results/retail_hashes.sha256 has no line for the exe. ")
 endif()
 # The build folder's own pcrecomp (cmake/lifter/setup.sh --copy): a local clone of
 # SFCOP_PCRECOMP_DIR, which is never written, with this checkout's patch series applied. Two
