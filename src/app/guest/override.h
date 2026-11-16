@@ -94,6 +94,10 @@ void sfcop_guest_entered(unsigned index);
 #include <stdlib.h>
 #include <string.h>
 
+// The log category switch (platform/Core/LogCategories.h): the report below is a developer's, off
+// by default, on with --log override or SFCOP_LOG=override.
+int sfcop_log_enabled(const char *category);
+
 extern uint32_t sfcop_guest_calls[];  // one counter per override, beside the table
 int sfcop_guest_objects_loaded;
 
@@ -122,7 +126,7 @@ void sfcop_guest_load_objects(void) {
 static void (*sfcop_guest_prev_on_exit)(int code);
 
 static void sfcop_guest_report_calls(int code) {
-    for (unsigned i = 0; i < sfcop_guest_override_count; i++) {
+    for (unsigned i = 0; sfcop_log_enabled("override") && i < sfcop_guest_override_count; i++) {
         fprintf(stderr, "[override] 0x%08X %s: %u calls\n", sfcop_guest_overrides[i].va,
                 sfcop_guest_overrides[i].symbol, sfcop_guest_calls[i]);
     }
@@ -134,7 +138,7 @@ static void sfcop_guest_report_calls(int code) {
 // Silent unless SFCOP_GUEST_VERBOSE=1 is set in the environment.
 __attribute__((constructor)) static void sfcop_guest_announce(void) {
     const char *verbose = getenv("SFCOP_GUEST_VERBOSE");
-    if (!verbose || strcmp(verbose, "1") != 0) {
+    if (!sfcop_log_enabled("override") && (!verbose || strcmp(verbose, "1") != 0)) {
         return;
     }
     fprintf(stderr,
@@ -150,8 +154,10 @@ void sfcop_guest_entered(unsigned index) {
         const uint32_t last = (g_icall_trace_idx - 1u) & (ICALL_TRACE_SIZE - 1);
         const int indirect = g_icall_trace_idx != 0 && g_icall_trace[last] == o->va &&
                              g_icall_from[last] == g_cur_func;
-        fprintf(stderr, "[override] 0x%08X %s (op/%s) first run from sub_%08X, %s\n", o->va, o->symbol,
-                o->source, g_cur_func, indirect ? "an indirect call (vtable or pointer)" : "a direct call");
+        if (sfcop_log_enabled("override")) {
+            fprintf(stderr, "[override] 0x%08X %s (op/%s) first run from sub_%08X, %s\n", o->va, o->symbol,
+                    o->source, g_cur_func, indirect ? "an indirect call (vtable or pointer)" : "a direct call");
+        }
         if (hle_on_exit != sfcop_guest_report_calls) {
             sfcop_guest_prev_on_exit = hle_on_exit;
             hle_on_exit = sfcop_guest_report_calls;
@@ -325,6 +331,7 @@ void entered(std::size_t index);
 #include <stdio.h>
 
 extern "C" void hle_exit(int code);
+extern "C" int sfcop_log_enabled(const char *category);  // off by default: --log override
 extern "C" void (*hle_on_exit)(int code);
 
 namespace sfcop::guest {
@@ -345,15 +352,17 @@ void entered(std::size_t index) {
         const uint32_t last = (g_icall_trace_idx - 1u) & 127u;
         const bool indirect =
             g_icall_trace_idx != 0 && g_icall_trace[last] == o.va && g_icall_from[last] == caller;
-        fprintf(stderr, "[override] 0x%08X %s (op/%s) first run from sub_%08X, %s\n", o.va, o.symbol,
-                o.source, caller, indirect ? "an indirect call (vtable or pointer)" : "a direct call");
+        if (sfcop_log_enabled("override")) {
+            fprintf(stderr, "[override] 0x%08X %s (op/%s) first run from sub_%08X, %s\n", o.va, o.symbol,
+                    o.source, caller, indirect ? "an indirect call (vtable or pointer)" : "a direct call");
+        }
     }
     g_cur_func = o.va;
 }
 
 static void reportCalls(int code) {
     (void)code;
-    for (unsigned i = 0; i < sfcop_guest_override_count; i++) {
+    for (unsigned i = 0; sfcop_log_enabled("override") && i < sfcop_guest_override_count; i++) {
         fprintf(stderr, "[override] 0x%08X %s: %u calls\n", sfcop_guest_overrides[i].va,
                 sfcop_guest_overrides[i].symbol, g_calls[i]);
     }
@@ -365,8 +374,10 @@ static int announce() {
                 kMaxOverrides);
         hle_exit(1);
     }
-    fprintf(stderr, "[override] %u functions compiled from op/ run in place of their lifted bodies\n",
-            sfcop_guest_override_count);
+    if (sfcop_log_enabled("override")) {
+        fprintf(stderr, "[override] %u functions compiled from op/ run in place of their lifted bodies\n",
+                sfcop_guest_override_count);
+    }
     hle_on_exit = reportCalls;
     return 0;
 }
