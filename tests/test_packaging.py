@@ -602,3 +602,20 @@ def test_a_cross_package_build_needs_the_tools_folder(tmp_path):
     assert run.returncode == 2
     assert "set SFCOP_TOOLS_DIR" in run.stderr
     assert not (tmp_path / "build").exists()
+
+
+@pytest.mark.skipif(not os.path.isfile(os.path.join(ROOT, "decomp", "INTERFACE_VERSION")),
+                    reason="run git submodule update --init: the decompilation is not in decomp/")
+def test_the_source_package_carries_the_pinned_decompilation(tmp_path):
+    # git archive leaves a submodule out; dist.sh adds the pinned commit under decomp/.
+    run = subprocess.run(["sh", os.path.join(ROOT, "scripts", "dist.sh"), "source"],
+                         env={**os.environ, "SFCOP_DIST_DIR": str(tmp_path), "SFCOP_VERSION": "9.9.9",
+                              "TMPDIR": str(tmp_path)},
+                         capture_output=True, text=True)
+    assert run.returncode == 0, run.stderr
+    with tarfile.open(tmp_path / "SFCOP-9.9.9-source.tar.gz") as archive:
+        names = archive.getnames()
+    assert "SFCOP-9.9.9-source/decomp/INTERFACE_VERSION" in names
+    assert any(n.startswith("SFCOP-9.9.9-source/decomp/op/") for n in names)
+    assert "SFCOP-9.9.9-source/src/app/guest/override.cpp" in names
+    assert len(names) == len(set(names))
