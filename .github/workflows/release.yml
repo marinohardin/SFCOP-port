@@ -61,8 +61,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
+          # The decompilation (decomp/) is a private repository, which the workflow's own token
+          # cannot read: DECOMP_READ_TOKEN is a read-only token for it, set by the owner. Once the
+          # decompilation is public, the workflow's token is enough and the secret can go.
+          token: ${{ secrets.DECOMP_READ_TOKEN || github.token }}
 
       - uses: ./.github/actions/setup
+        with:
+          docker: required
 
       # The lift's inputs are masked before anything can print them: their values, their real
       # paths and the install's parent folder. No step prints them; release_step.sh also replaces
