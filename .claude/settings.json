@@ -3,21 +3,11 @@
     "allow": [
       "Bash(sh scripts/check.sh:*)",
       "Bash(python3 -m pytest:*)",
-      "Bash(scripts/progress.py:*)",
-      "Bash(python3 scripts/progress.py:*)",
       "Bash(docker build:*)",
       "Bash(docker run:*)",
       "Bash(docker compose:*)",
       "Bash(docker images:*)",
       "Bash(docker ps:*)",
-      "Bash(toolchain/bin/cl:*)",
-      "Bash(toolchain/bin/link:*)",
-      "Bash(toolchain/bin/lib:*)",
-      "Bash(toolchain/calibrate.sh:*)",
-      "Bash(toolchain/build_scr.sh:*)",
-      "Bash(ghidra/build.sh:*)",
-      "Bash(/opt/homebrew/Cellar/ghidra/*/libexec/support/analyzeHeadless:*)",
-      "Bash(objdiff-cli:*)",
       "Bash(shasum:*)",
       "Bash(strings:*)",
       "Bash(git worktree add:*)",
@@ -99,7 +89,11 @@
       "Read(./.env)",
       "Read(./.env.*)",
       "Read(**/*.pem)",
-      "Read(**/*.key)"
+      "Read(**/*.key)",
+      "Edit(decomp/**)",
+      "Write(decomp/**)",
+      "Edit(./decomp/**)",
+      "Write(./decomp/**)"
     ]
   }
 }

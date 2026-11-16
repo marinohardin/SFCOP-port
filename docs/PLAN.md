@@ -1,4 +1,4 @@
-# SFCOP-decomp — Implementation Plan
+# SFCOP-port — Implementation Plan
 
 How to build what [DESIGN.md](DESIGN.md) describes, following [CONVENTIONS.md](CONVENTIONS.md), with as much of the work as possible done in parallel by separate agents in separate git worktrees.
 
@@ -20,7 +20,7 @@ Work packages are grouped into **waves**. Everything in a wave can run at the sa
 | 4 | Dynaverse (Phase 4) | 3 (V1 to V3) | Partly |
 | 5 | Mod manager, launcher, release | 2 (M1, L1) | Yes |
 
-The decompilation grind (D) is not a wave: it is a standing stream of small pull requests from the harness loop, running beside every wave from Wave 1 on, owning only `game/` units and the matched set.
+The decompilation grind (D) is not a wave: it is a standing stream of pull requests beside every wave from Wave 1 on. Since the split (2026-11-16) the decompilation (SFC2-decomp) owns `op/` and the matched set; this repository takes its work through a bump of the `decomp` pin.
 
 **Critical path:** F1 → C2 (component interfaces) → B1 (window and GPU) → B2 (DirectDraw 4 and Direct3D 3 on it) → A1 (boot to the menu) → A2 (skirmish) → the owner's oracle recording (§2.2) → gate G2. Everything else runs beside it.
 
@@ -57,13 +57,14 @@ The open questions of DESIGN §12, with what each blocks here.
 
 | Task | How | Why only a person | Needed by | Status |
 | --- | --- | --- | --- | --- |
-| Create the private repository and apply its settings | `gh repo create marinohardin/SFCOP-decomp --private --source . --push`, then the settings commands in `references/hosting-github.md` §1 of the workflow skill (default branch `develop`, squash merges, `contract-change` label). The integrator shows the commands; the owner says yes | Changes the remote | Before the first pull request | done (2026-11-03: repo created by the owner, settings applied) |
-| Register the SFCOP runner | Download the runner into `$SFCOP_ROOT/tools/actions-runner`; `./config.sh --url https://github.com/marinohardin/SFCOP-decomp --token <registration token> --name marino-macbook-sfcop --labels sfcop-mac`; `./svc.sh install && ./svc.sh start`. Check with `gh api repos/marinohardin/SFCOP-decomp/actions/runners`. The two existing runners on this Mac belong to another repository and cannot serve this one. Script: `$SFCOP_ROOT/tools/register-sfcop-runner.sh`. The runner must live on the internal disk (`~/gitdir/actions-runner-sfcop`): a launchd service cannot open external volumes under macOS privacy rules | Runs as the owner's user on their machine | Before the first `check` job | done (2026-11-03: `marino-macbook-sfcop` online, first `check` job passed in 9 s) |
+| Create the private repository and apply its settings | `gh repo create marinohardin/SFCOP-port --private --source . --push`, then the settings commands in `references/hosting-github.md` §1 of the workflow skill (default branch `develop`, squash merges, `contract-change` label). The integrator shows the commands; the owner says yes | Changes the remote | Before the first pull request | done (2026-11-03 for the combined repository; SFCOP-port at the split, 2026-11-16) |
+| Register the SFCOP runner | Download the runner into `$SFCOP_ROOT/tools/actions-runner`; `./config.sh --url https://github.com/marinohardin/SFCOP-port --token <registration token> --name marino-macbook-sfcop --labels sfcop-mac`; `./svc.sh install && ./svc.sh start`. Check with `gh api repos/marinohardin/SFCOP-port/actions/runners`. The two existing runners on this Mac belong to another repository and cannot serve this one. Script: `$SFCOP_ROOT/tools/register-sfcop-runner.sh`. The runner must live on the internal disk (`~/gitdir/actions-runner-sfcop`): a launchd service cannot open external volumes under macOS privacy rules | Runs as the owner's user on their machine | Before the first `check` job | done for the combined repository (2026-11-03); for SFCOP-port, check with the `gh api` command |
 | Switch on the git hooks in the main checkout | `sh .githooks/install.sh` from the repo root; then every worktree inherits them | Sets git configuration under the owner's user; agents never run `git config` | Before the next commit | done (2026-11-03: probe commit on `develop` refused) |
 | Install the Claude GitHub app and its token secret | `/install-github-app` in an interactive `claude` terminal; decline the offered workflows (the templates are in place) | Signs in as the owner and grants an app | Before the first automated review | open |
 | Move Docker's disk image to the external drive and cap it | Docker Desktop, Settings, Resources, Advanced: Disk image location on `/Volumes/External`, virtual disk limit 64 GB | GUI-only setting on the owner's machine | Soon; the internal disk is nearly full | open |
 | Record the oracle trace | On a Windows PC or another Wine build, following `oracle/README.md`; commit the trace under `oracle/expected/` (the integrator opens the pull request) | Needs a machine the agents do not have and the owner's own key | Gate G2; every "functional" figure | open (DESIGN §12.9) |
-| Set the review token | `claude setup-token`, then `gh secret set CLAUDE_CODE_OAUTH_TOKEN --repo marinohardin/SFCOP-decomp` | A secret of the owner's account | Automated reviews; until then sub-agents review | open |
+| Set the decompilation's read token | A fine-grained token with read access to the contents of `marinohardin/SFC2-decomp`, then `gh secret set DECOMP_READ_TOKEN --repo marinohardin/SFCOP-port`; removed once the decompilation is public | A secret of the owner's account | Every CI job that checks out `decomp/` | open |
+| Set the review token | `claude setup-token`, then `gh secret set CLAUDE_CODE_OAUTH_TOKEN --repo marinohardin/SFCOP-port` | A secret of the owner's account | Automated reviews; until then sub-agents review | open |
 | Decide DESIGN §12.1, §12.3, §12.5, §12.10 | In conversation with the integrator | Owner's calls | See §2.1 | open |
 | Choose and pay for hosting under 5 USD a month | Phase 3; the integrator proposes the cheapest shape | Money and an account | N3, N4 | open |
 | Enter the game's CD key once | `oracle/launch_game.sh`, type it into the game's prompt, quit; the script saves the game's stored form privately | A licence credential agents must not handle | Before the replay oracle can record | done (2026-11-03) |
@@ -140,27 +141,25 @@ direct commits and pushes, every change arrives through a pull request from a wo
 and the `hotspots` check fails any work-branch pull request that touches a protected path
 without the `contract-change` label.
 
-Every job runs on a self-hosted runner on the owner's MacBook Pro (`runs-on: [self-hosted,
-sfcop-mac]`): the `check` job (`sh scripts/check.sh`), the `hotspots` job, and the automated
-pull-request review. Nothing runs on GitHub-hosted runners, so no Actions minutes are consumed.
-The runner is one process registered to this repository with the label `sfcop-mac`, limited to
-one job at a time, with its work folder on the external drive; the two runners already on the
-machine belong to another repository and are not used. Docker, Python 3, Ghidra and the VC6 SP4
-compiler image are already on the machine, so the setup action only checks for them; nothing is
-installed by CI. There is no deploy: this project ships no service.
+The jobs that build or read the retail install run on a self-hosted runner on the owner's
+MacBook Pro (`runs-on: [self-hosted, sfcop-mac]`): `check` (`sh scripts/check.sh`), `build`, the
+`oracle` and the release. `plan`, `hotspots` and the automated review read only this repository
+and run on GitHub-hosted `ubuntu-latest`. The runner is one process registered to this repository
+with the label `sfcop-mac`, limited to one job at a time, with its work folder on the external
+drive. Docker, Python 3 and the VC6 SP4 compiler image are already on the machine, so the setup
+action only checks for them; nothing is installed by CI. The jobs that check out `decomp/` read
+the private decompilation with the `DECOMP_READ_TOKEN` secret (§2.2). There is no deploy: this
+project ships no service.
 
 The trade-off: a job runs as the owner's user, keeps its work folder between jobs, and can reach
 everything the owner can. That is accepted because the machine already holds the owner's
 credentials, every pull request is the owner's own or an agent's under the owner's account, and
 the repository is private. It stops holding the day the repository is made public or accepts
-outside pull requests; before that, move the jobs to GitHub-hosted runners (change `runs-on` in
-the three workflows) or add a dedicated machine. The runner only works while the Mac is awake; a
+outside pull requests; before that, move the self-hosted jobs to GitHub-hosted runners (change their `runs-on`) or add a dedicated machine. The runner only works while the Mac is awake; a
 job that queues for a day fails and is rerun.
 
-The automated review runs Claude Code on that runner under its own configuration folder in the
-runner's temporary directory, so it does not see the owner's settings, memory or plugins; its
-token is the `CLAUDE_CODE_OAUTH_TOKEN` repository secret on a machine already signed in to the
-same subscription. Review turns are capped at 40.
+The automated review runs Claude Code on a GitHub-hosted runner, so it does not see the owner's
+settings, memory or plugins; its token is the `CLAUDE_CODE_OAUTH_TOKEN` repository secret. Review turns are capped at 40.
 
 ---
 
@@ -178,7 +177,7 @@ same subscription. Review turns are capped at 40.
 | B7 Winsock on Transport | C1, C2 |
 | B8 DirectPlay 4 HLE (LAN) | C1, B7's `Transport` header |
 | B9 Object lifter | C3 (the manifest and the override table), the harness (the VC6 object of a unit), F1's lift step |
-| D grind | C7, the harness; B9 for the native build |
+| D grind | The decompilation (SFC2-decomp) owns `op/` and the matched set; B9 for the native build |
 | A1 Boot to the menu | B1 to B6 |
 | A2 Skirmish | A1, B3, B4, the oracle trace |
 | A3 Mission modules and scr2native | B5, C3, C8 |
@@ -207,11 +206,11 @@ A package consumes a contract through the file that declares it (§6 of DESIGN),
 | --- | --- | --- | --- | --- |
 | C1 | Win32 surface contract | `src/hle/surface.tsv`, `src/hle/com/` | Every import and COM method the game uses, from `spike/lifter/results/imports_vs_win32hle.tsv`, `dx_inventory.md` and `analysis/netcode/`, with convention and status; vtable structs for every COM interface of DESIGN §6.1 with method order from the public SDK headers; a test that the TSV is complete against the exe's import table | The TSV has a row for all 353 imports and every COM method; `tests/test_surface.py` passes; no row says "unknown" |
 | C2 | Platform component interfaces | `src/platform/*/` (headers, mocks, stub backends) | `Window.h`, `Gpu.h`, `Input.h`, `Audio.h`, `Transport.h`, `Store.h`, `Clock.h`, `Threads.h` with a mock each and a stub backend that compiles on all three presets; a doctest per interface exercising the mock | All eight headers build in every preset; each method documented with its contract; mocks used in at least one test |
-| C3 | Guest-mode spike (DESIGN §12.4) | `game/port/`, `game/Common/DynamicAllocator.cpp` (the unit the harness proof used), `tools/manifest.py`, `src/app/guest/override.*`, `spike/guest-mode/REPORT.md` | `types.h` with `ptr32<T>` and fixed-width aliases; three matched functions, one a virtual method, compiled exact under VC6 and compiled in guest mode by clang and linked into the native build through a manifest-generated override table; the report with the verdict | The three functions stay exact in the harness and the native build runs them in place of their lifted bodies with the same guest test output; the report says yes, no, or yes-with-constraints and lists each constraint |
+| C3 | Guest-mode spike (DESIGN §12.4) | `decomp/op/port/`, `decomp/op/Common/DynamicAllocator.cpp` (the unit the harness proof used), `decomp/tools/manifest.py`, `src/app/guest/override.*`, `spike/guest-mode/REPORT.md` | `types.h` with `ptr32<T>` and fixed-width aliases; three matched functions, one a virtual method, compiled exact under VC6 and compiled in guest mode by clang and linked into the native build through a manifest-generated override table; the report with the verdict | The three functions stay exact in the harness and the native build runs them in place of their lifted bodies with the same guest test output; the report says yes, no, or yes-with-constraints and lists each constraint |
 | C4 | Application skeleton: command line, install discovery, exit codes | `src/app/` except `guest/` and `main.cpp`'s build glue | `CommandLine`, `Install` (locate, hash-verify against `analysis/results/retail_hashes.sha256`, refuse with the file named), the per-user data directory per platform, exit codes of DESIGN §6.8; doctests with a fixture install | A one-byte-altered fixture is refused naming the file (exit 3); the data directory resolves on all three platforms in tests; `--help` lists every flag of §6.8 |
 | C5 | Oracle trace contract and comparator | `oracle/expected/README.md`, `oracle/trace/` (format, `compare.py`), `oracle/scr/` additions | The trace format of DESIGN §6.5, a comparator that reports the first differing tick, and a fixture pair; the hook `check.sh` calls when a trace exists | `python3 -m pytest tests/test_trace.py` passes with a matching pair, a mismatch at a known tick, and a header mismatch; the comparator exits 4 on mismatch |
 | C6 | Fix switches contract | `src/fixes/`, `docs/FIXES.md` (contract change), `scripts/port_footprint.py` tests | `fixes.h` with `SFCOP_FIX(name)`, the registry of switches read from the command line and `settings/fixes.gf`, `docs/FIXES.md` with its columns and the first row (the empty-name object fix from P1-2 as a project fix), and the counter's tests | A fix toggles by command line and by file in a doctest; the counter lists every `PORT:` and `SFCOP_FIX` site in a fixture tree with file and line |
-| C7 | Game tree skeleton and unit map | `game/` except `port/` and `Common/DynamicAllocator.cpp`, `game/UNITS.tsv`, `harness/units.json` (contract change) | The directory tree of CONVENTIONS §2 from the 1,658 functions with unit evidence in `functions.csv`, `UNITS.tsv` (unit path, address range, evidence, profile), the `unsorted/` scheme, a `game/README.md`, and `units.json` entries with the `sdk-release` profile | Every function in `functions.csv` maps to exactly one unit path or to `unsorted/`; the harness scores a function from a unit the map names; no two units overlap in address |
+| C7 | Game tree skeleton and unit map | `decomp/op/` except `port/` and `Common/DynamicAllocator.cpp`, `decomp/op/UNITS.tsv`, `decomp/harness/units.json` (contract change) | The directory tree from the 1,658 functions with unit evidence in `functions.csv`, `UNITS.tsv` (unit path, address range, evidence, profile), the `unsorted/` scheme, an `op/README.md`, and `units.json` entries with the `sdk-release` profile | Every function in `functions.csv` maps to exactly one unit path or to `unsorted/`; the harness scores a function from a unit the map names; no two units overlap in address |
 | C8 | Mission module contract | `src/app/scripts/` (loader interface and a mock), `tools/scr2native/README.md` (design only), `tests/test_module_imports.py` | The module interface of DESIGN §6.4: entry points, version tag, the import allow-list derived from the scripting library's exports and the C runtime, and the refusal path with its message | A fixture module with a foreign import is refused naming it; a conforming fixture loads in the mock; the allow-list is generated, not typed |
 
 **Gate G0.** `sh scripts/check.sh` passes on `develop` in a fresh worktree and all three presets configure. The integrator reads C1 to C8 against DESIGN §6 and against each other (C2's `Store` paths against C4's, C1's COM structs against B2's needs, C3's verdict against §7.2) and freezes the contracts: `src/hle/surface.tsv`, `src/hle/com/**`, `src/platform/*/*.h`, `game/port/**`, `src/fixes/fixes.h`, `docs/FIXES.md`, `oracle/trace/**`, `src/app/scripts/*.h`, `game/UNITS.tsv` go on the hotspot list. C3's report sets DESIGN §12.4 and, if the answer is no, strikes "the native build" from the grind's acceptance line in §6.3.
@@ -229,7 +228,7 @@ A package consumes a contract through the file that declares it (§6 of DESIGN),
 | B7 | Winsock on Transport | `src/platform/Transport/` (plain sockets backend), `src/hle/winsock/` | The Winsock rows including `select`, `accept`, `shutdown`, `getpeername`, `__WSAFDIsSet`, on `Transport` | The spike's loopback tests pass; a `select` with a timeout returns on time in a doctest |
 | B9 | Object lifter (DESIGN §7.2, §12.4) | `tools/objlift/`, `cmake/lifter/` additions and the lift step's CMake (contract change), `tests/test_objlift.py`, `spike/guest-mode/` (a closing note only) | A lifter for the VC6 COFF objects the harness builds: relocations resolved against the exe's symbols, lifted C in the form the exe lift emits, the override table fed from it; the build step that compiles claimed units in the container and lifts them | The three functions of the C3 spike, compiled by VC6 from `game/` with no guest-mode constructs, enter the native build through their lifted objects and the guest tests give the same output as with the lifted-exe bodies; the harness still scores them exact; a hand-written COFF fixture with every i386 relocation type VC6 emits lifts to the expected C in a test |
 | B8 | DirectPlay 4 HLE for LAN | `src/hle/dplay/` | `IDirectPlay4A` and `IDirectPlayLobby3A` methods the inventory lists, over `Transport` with LAN broadcast enumeration; the `tNetMsg` framing left untouched | Two native clients on one machine enumerate and join a session and exchange the inventory's first three message kinds in a test harness |
-| D | Grind batches | `game/<units>` as claimed, `analysis/results/matched_set.json`, `analysis/results/difficult_functions.tsv` | One pull request per batch from the harness loop (CONVENTIONS §8); one unit per batch, code shared with Empires at War first (DESIGN §7.5): `Tiger/`, `dmp3d/`, the game proper along the boot path by coverage, then `Common/`, `Switch/` and `Meta/`; inside a unit, functions identical in Empires at War first (owner, 2026-11-08; this replaces the earlier SDK-evidence-first order, so `Common/` waits although its names come easiest) | Each batch: every claimed function exact in the harness; `progress.py --gate` passes; nothing outside the claimed units changed |
+| D | Grind batches | None here: the decompilation (SFC2-decomp) owns `op/` and the matched set | One pull request per batch in the decompilation; one unit per batch, code shared with Empires at War first (DESIGN §7.5): `Tiger/`, `dmp3d/`, the game proper along the boot path by coverage, then `Common/`, `Switch/` and `Meta/`; inside a unit, functions identical in Empires at War first (owner, 2026-11-08; this replaces the earlier SDK-evidence-first order, so `Common/` waits although its names come easiest) | Each batch: every claimed function exact in the harness; `progress.py --gate` passes; nothing outside the claimed units changed |
 
 **Gate G1.** The native build boots to the key prompt on macOS with every component real (no spike path linked); `surface.tsv` has no row in status `stub` without a line in the pull request that justified it; Windows and Linux presets build and run the headless boot to the first frame; the grind has merged at least one batch and the progress figure moved; at least one decompiled function runs in the native build through B9's lifted object; every worktree of the wave removed.
 
@@ -272,7 +271,7 @@ Gate G2 passed with findings: traces differed between two runs of one binary, on
 | V1 | Directory and auth stand-ins | `server/directory/`, `server/auth/`; the client's lookup pointed at them |
 | V2 | The server kit under Wine on the host | Deploy and runbook; a campaign reachable |
 | V3 | Campaign server reimplementation | `server/campaign/`, with the kit as oracle |
-| F2 | Fix override units | `tools/manifest.py` lists the `// OVERRIDE:` annotations under `src/fixes/overrides/`; the lift links an override's object in place of the original's when its build switch is on (DESIGN §6.9); built with the first fix to game code |
+| F2 | Fix override units | A scanner lists the `// OVERRIDE:` annotations under `src/fixes/overrides/` (which tool, now that `tools/manifest.py` is the decompilation's, is decided before F2; DESIGN §6.9); the lift links an override's object in place of the original's when its build switch is on (DESIGN §6.9); built with the first fix to game code |
 | M1 | Mod manager | `tools/modman/` or in the launcher |
 | L1 | Launcher and release | A signed launcher from the owner's account; the one-command build tool; the tag |
 

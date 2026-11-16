@@ -1,5 +1,6 @@
-# The decompilation this build reads (decomp/docs/INTERFACE.md): its op/ sources and manifest,
-# harness/ (the compile profiles), toolchain/ (VC6), ghidra/exports and analysis/results. Every
+# The decompilation this build reads, only as decomp/docs/INTERFACE.md lists it: the op/ sources,
+# op/manifest.tsv, the compile profiles (harness/units.json, harness/lib), toolchain/ (VC6),
+# tools/manifest.py, ghidra/exports and analysis/results. Every
 # reference from the build to it goes through SFCOP_DECOMP_DIR, by default the submodule decomp/.
 #
 # Provides:

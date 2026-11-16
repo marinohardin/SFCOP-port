@@ -136,8 +136,9 @@ on the Mac with the toolchains `sh cmake/toolchains/setup.sh` installs
 places, asks if it cannot find it, and verifies every file it reads against the known hashes. Its
 settings and saves live in the per-user data folder; the retail install is never written to.
 
-`sh scripts/check.sh` is the definition of done: the unit tests, the compile oracle and the replay
-oracle. CI runs the same steps on the three platforms. Releases are made by
+`sh scripts/check.sh` is the definition of done: the Python tests, the override table against the
+pinned decompilation, the C++ tests and the replay oracle. CI runs it on the Mac; pull requests
+build macOS only while the Linux and Windows presets are paused (`oracle/presets/ci.py`). Releases are made by
 `.github/workflows/release.yml` on a `v*` tag or by hand, as a draft the owner publishes.
 
 ## How the work is organized
