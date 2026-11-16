@@ -1,4 +1,6 @@
-# SFCOP-decomp — Conventions
+# SFCOP-port — Conventions
+
+> **Scope.** This repository is the port: the platform layer, the fixes, the servers, the lifter and the replay oracle. The decompiled game code lives in SFC2-decomp, pinned here as the submodule `decomp/`; its sections below are kept for reference until this document is trimmed, and SFC2-decomp's own copy is the one that governs that code. `decomp/docs/INTERFACE.md` is the contract between the two.
 
 The standard every change is held to. `DESIGN.md` says what the system does; this says what the code looks like. The automated review reads this and `AGENTS.md`.
 

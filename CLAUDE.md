@@ -1,4 +1,4 @@
-# SFCOP-decomp
+# SFCOP-port
 
 The instructions for every agent and session are in `AGENTS.md`, imported here:
 
