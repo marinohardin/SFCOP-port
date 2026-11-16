@@ -133,6 +133,14 @@ void Interpreter::call(std::uint32_t address) {
     ++stats_.entries;
     Entry entry{this, &c, address, std::this_thread::get_id(), nextSerial_++};
     active_.push_back(ActiveEntry{entry.thread, entry.serial});
+    // The record goes however the call ends, a C++ exception from a host function included. A
+    // resumePad longjmp that passes over this frame may skip it or run it: resumeEntry removes the
+    // record in the first case, and removing it here in the second is the same change.
+    struct LeaveOnExit {
+        Interpreter &self;
+        std::uint64_t serial;
+        ~LeaveOnExit() { self.leaveEntry(serial); }
+    } leaveOnExit{*this, entry.serial};
     if (!interprets(address)) {
         // An entry function kept past FreeLibrary: no script owns the address any more.
         char line[160];
@@ -147,7 +155,6 @@ void Interpreter::call(std::uint32_t address) {
     } else {
         runEntry(&entry, 0);
     }
-    leaveEntry(entry.serial);
     storeState(c);
     if (machine_.currentFunction != nullptr) {
         *machine_.currentFunction = saved;
@@ -188,6 +195,9 @@ void Interpreter::run(Cpu &c, std::uint32_t address) {
         for (const Insn &insn : b->insns) {
             insn.run(c, insn);
         }
+        // A refused access is reported here, once the block has run: the block's other refused
+        // accesses read 0 and wrote nothing, so the only effects that could leave the script first
+        // are a call out and a jump out, and those check straySize before they go.
         if (c.straySize != 0) {
             strayAccess(c, b->start);
         }
