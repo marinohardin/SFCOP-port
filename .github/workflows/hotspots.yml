@@ -28,7 +28,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: true
           # The comparison needs the commit where the branch left its base.
           fetch-depth: 0
 
