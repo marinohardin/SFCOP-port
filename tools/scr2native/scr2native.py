@@ -53,7 +53,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
 sys.dont_write_bytecode = True
 sys.path.insert(0, HERE)
-sys.path.insert(0, REPO)
+# The decompilation's harness/ (decomp/docs/INTERFACE.md), as gen_allowlist.py imports it.
+sys.path.insert(0, os.path.abspath(os.environ.get('SFCOP_DECOMP_DIR') or os.path.join(REPO, 'decomp')))
 sys.path.insert(0, os.path.join(REPO, 'cmake', 'lifter'))
 import gen_allowlist  # noqa: E402
 import pcrecomp_copy  # noqa: E402

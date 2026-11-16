@@ -46,7 +46,7 @@ enum class LauncherChoice {
 };
 
 struct StartupConfig {
-    // analysis/results/retail_hashes.sha256, or any list in its format.
+    // The decompilation's analysis/results/retail_hashes.sha256, or any list in its format.
     std::string hashListPath;
     // Flags the caller adds to the command line (see ExtraFlag).
     std::vector<ExtraFlag> extraFlags;

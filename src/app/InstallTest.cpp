@@ -320,9 +320,10 @@ std::optional<std::string> retailInstall() {
     return std::string(dir);
 }
 
+// The decompilation's hash list (SFCOP_DECOMP_DIR, cmake/SfcopDecomp.cmake).
 HashList repositoryInstallEntries() {
-    const std::optional<std::string> text =
-        hostFileSystem().readText(fixturesDir() + "/../../analysis/results/retail_hashes.sha256");
+    const std::optional<std::string> text = hostFileSystem().readText(
+        std::string(SFCOP_TEST_DECOMP_DIR) + "/analysis/results/retail_hashes.sha256");
     REQUIRE(text.has_value());
     return installEntries(parseHashList(*text));
 }

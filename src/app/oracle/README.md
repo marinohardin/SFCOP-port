@@ -35,7 +35,7 @@ The process ends as the watchdog and the input script's failure end it, with `_E
 oracle's thread: the game's threads are not unwound.
 
 The trace tools are `oracle/trace/` of the source tree the client was built from (the build config
-names that tree through its hash list), run with `python3` through the shell; `SFCOP_ORACLE_TOOLS`
+names that tree, `SFCOP_SOURCE_DIR`), run with `python3` through the shell; `SFCOP_ORACLE_TOOLS`
 and `SFCOP_PYTHON` override them. The translated missions come from `$SFCOP_MISSION_MODULES`
 (`tools/scr2native/README.md`).
 

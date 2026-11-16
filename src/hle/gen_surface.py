@@ -8,8 +8,9 @@
 
 Inputs:
 
-* the import table of the original exe (located as the harness does, hash-checked against
-  analysis/results/retail_hashes.sha256), and a byte scan of its code for the instructions that
+* the import table of the original exe (located as the decompilation's harness does, hash-checked
+  against its analysis/results/retail_hashes.sha256; the decompilation is $SFCOP_DECOMP_DIR, by
+  default decomp/), and a byte scan of its code for the instructions that
   reach each import slot, for the evidence column;
 * SIGNATURES below: the calling convention and stack purge of every import, taken from the
   decorated names (`_CreateFileA@28`) in the Visual C++ 6 (VC98) Win32 import libraries, and
@@ -29,6 +30,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
+DECOMP = os.path.abspath(os.environ.get('SFCOP_DECOMP_DIR') or os.path.join(REPO, 'decomp'))
 SURFACE = os.path.join(HERE, 'surface.tsv')
 COM_DIR = os.path.join(HERE, 'com')
 COLUMNS = ['module', 'name', 'ordinal_or_slot', 'convention', 'stack_bytes', 'status',
@@ -509,9 +511,9 @@ def import_evidence(pe, imports):
 
 
 def locate_exe():
-    """The exe and its expected hash, found the way the harness finds them."""
-    sys.path.insert(0, os.path.join(REPO, 'harness', 'lib'))
-    import paths  # noqa: E402  harness/lib/paths.py
+    """The exe and its expected hash, found the way the decompilation's harness finds them."""
+    sys.path.insert(0, os.path.join(DECOMP, 'harness', 'lib'))
+    import paths  # noqa: E402  the decompilation's harness/lib/paths.py
     want = None
     with open(paths.HASHES) as f:
         for line in f:

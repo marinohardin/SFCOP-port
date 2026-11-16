@@ -22,8 +22,9 @@ The list is the union of four parts:
 
 Compiler-generated names that are never imported (string literals, floating-point constants,
 dynamic initializers) are left out. The template is the SDK's Single-mission template, built with
-toolchain/build_scr.sh (VC6 SP4 in the sfcop-msvc6 container); --build-dir reuses a build that
-already exists (the staging directory build_scr.py leaves: <name>.map, <name>.scr, obj/*.obj).
+the decompilation's toolchain/build_scr.sh (VC6 SP4 in the sfcop-msvc6 container); --build-dir
+reuses a build that already exists (the staging directory build_scr.py leaves: <name>.map,
+<name>.scr, obj/*.obj).
 
 --check reads an import list (one symbol per line, '#' comments) and refuses it, naming each
 symbol that is not on the allow-list, with the message the native loader gives. It exits 0 when
@@ -39,14 +40,17 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
+# The decompilation (decomp/docs/INTERFACE.md): its harness/ finds the install, its toolchain/
+# builds the template.
+DECOMP = os.path.abspath(os.environ.get('SFCOP_DECOMP_DIR') or os.path.join(REPO, 'decomp'))
 sys.dont_write_bytecode = True
-sys.path.insert(0, REPO)
+sys.path.insert(0, DECOMP)
 from harness.lib import paths  # noqa: E402  (finds the install from the main checkout or a worktree)
 
 ALLOWLIST = os.path.join(REPO, 'src', 'app', 'scripts', 'allowlist.txt')
 # The SDK sits beside the original exe in the install.
 SDK_DIRNAME = 'OP API - R2.1'
-HASHES = os.path.join(REPO, 'analysis', 'results', 'retail_hashes.sha256')
+HASHES = os.path.join(DECOMP, 'analysis', 'results', 'retail_hashes.sha256')
 TEMPLATE = 'Single'
 TEMPLATE_NAME = 'AllowListTemplate'
 GENERATOR = 'tools/scr2native/gen_allowlist.py'
@@ -210,16 +214,16 @@ def verify_hash(path):
 # --- the template build -------------------------------------------------------------------------
 
 def build_template(jobs):
-    """Instantiate the Single template and build it with toolchain/build_scr.sh; return the staging
-    directory build_scr.py leaves (map, .scr, objects)."""
+    """Instantiate the Single template and build it with the decompilation's toolchain/build_scr.sh;
+    return the staging directory build_scr.py leaves (map, .scr, objects)."""
     work = os.path.join(paths.WORK, 'scr2native', 'allowlist')
     src = os.path.join(work, 'src', TEMPLATE_NAME)
     out = os.path.join(work, 'out', TEMPLATE_NAME + '.scr')
-    scr = os.path.join(REPO, 'toolchain', 'scr')
+    scr = os.path.join(DECOMP, 'toolchain', 'scr')
     subprocess.run([sys.executable, '-I', os.path.join(scr, 'new_from_template.py'), TEMPLATE,
                     TEMPLATE_NAME, src], check=True)
     env = dict(os.environ, SFCOP_WORK=work)
-    subprocess.run(['nice', '-n', '19', 'sh', os.path.join(REPO, 'toolchain', 'build_scr.sh'), src,
+    subprocess.run(['nice', '-n', '19', 'sh', os.path.join(DECOMP, 'toolchain', 'build_scr.sh'), src,
                     out, '--jobs', str(jobs)], check=True, env=env)
     return os.path.join(work, 'toolchain', 'scr', TEMPLATE_NAME)
 

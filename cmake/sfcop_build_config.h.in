@@ -10,3 +10,7 @@
 
 // The hash list the install is verified against (src/app/Install.h).
 #define SFCOP_HASH_LIST "@SFCOP_CONFIG_HASH_LIST@"
+
+// The source tree the client was built from: the replay oracle finds its trace tools and the
+// commit it records there (src/app/oracle/OracleRun.h).
+#define SFCOP_SOURCE_DIR "@SFCOP_CONFIG_SOURCE_DIR@"

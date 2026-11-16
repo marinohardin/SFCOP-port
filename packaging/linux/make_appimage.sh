@@ -15,9 +15,11 @@ if [ $# -ne 4 ]; then
     exit 2
 fi
 tree=$1 out=$2 arch=$3 source=$4
+# The decompilation holds the hash list and the install manifest (decomp/docs/INTERFACE.md).
+decomp=${SFCOP_DECOMP_DIR:-$source/decomp}
 here=$(cd "$(dirname "$0")" && pwd -P)
 python=${SFCOP_PYTHON:-python3}
-hash_list="$source/analysis/results/retail_hashes.sha256"
+hash_list="$decomp/analysis/results/retail_hashes.sha256"
 . "$here/appimage.env"
 . "$source/cmake/toolchains/pins.env"
 case $arch in

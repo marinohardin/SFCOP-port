@@ -1,7 +1,7 @@
 // Guest-side exception tests for the guest host (src/app/guest/README.md, "Tests").
 //
-// Built with the VC6 SP4 compiler in toolchain/ (/GX, static CRT), lifted with the same driver
-// as the game and run by the guest test host. Each case prints one PASS or FAIL line; the exit
+// Built with the VC6 SP4 compiler in the decompilation's toolchain/ (/GX, static CRT), lifted with
+// the same driver as the game and run by the guest test host. Each case prints one PASS or FAIL line; the exit
 // code is the number of failures. Expected values are written out.
 // `ehtest uncaught` throws an int nothing catches: as on Windows, the C runtime's top-level filter
 // calls terminate(), which prints "abnormal program termination" and exits with status 3 (the

@@ -10,11 +10,13 @@ if [ $# -ne 3 ]; then
     exit 2
 fi
 tree=$1 out=$2 source=$3
+# The decompilation holds the hash list and the install manifest (decomp/docs/INTERFACE.md).
+decomp=${SFCOP_DECOMP_DIR:-$source/decomp}
 here=$(cd "$(dirname "$0")" && pwd -P)
 python=${SFCOP_PYTHON:-python3}
 rm -f "$out"
 "$python" -I "$here/../pack.py" zip "$tree" "$out"
-if ! "$python" -I "$here/../check_package.py" "$out" "$source/analysis/results/retail_hashes.sha256"; then
+if ! "$python" -I "$here/../check_package.py" "$out" "$decomp/analysis/results/retail_hashes.sha256"; then
     rm -f "$out"
     exit 1
 fi
