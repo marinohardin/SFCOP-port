@@ -15,8 +15,8 @@ LAUNCHER = ROOT / 'packaging/macos/launcher.sh'
 
 CLIENT = '''#!/bin/sh
 echo "[guest] App could not find 'X' to do connection" >&2
-echo "[scripts] loaded m01" >&2
-[ -n "$SFCOP_IMPORTANT_LOG" ] && echo "[scripts] loaded m01" >> "$SFCOP_IMPORTANT_LOG"
+echo "[scripts] refused: m01" >&2
+[ -n "$SFCOP_IMPORTANT_LOG" ] && echo "[scripts] refused: m01" >> "$SFCOP_IMPORTANT_LOG"
 exit 0
 '''
 
@@ -49,8 +49,8 @@ def test_an_important_line_lands_in_both_files_and_a_debug_line_only_in_the_full
     full_text = (data / 'logs' / full).read_text()
     important_text = (data / 'logs' / important).read_text()
     assert "App could not find 'X'" in full_text
-    assert '[scripts] loaded m01' in full_text
-    assert important_text == '[scripts] loaded m01\n'
+    assert '[scripts] refused: m01' in full_text
+    assert important_text == '[scripts] refused: m01\n'
     assert not (data / 'logs/launch.log').exists()
 
 
@@ -77,7 +77,7 @@ def test_two_runs_in_one_second_keep_separate_files(tmp_path):
     run_launcher(tmp_path, data)
     run_launcher(tmp_path, data)
     assert len(names(data, 'launch')) in (1, 2)  # a second boundary may fall between the runs
-    total = sum((data / 'logs' / n).read_text().count('[scripts] loaded m01')
+    total = sum((data / 'logs' / n).read_text().count('[scripts] refused: m01')
                 for n in names(data, 'launch'))
     assert total == 2
 
@@ -90,7 +90,7 @@ def test_a_named_log_file_is_appended_to_and_nothing_rotates(tmp_path):
     chosen = tmp_path / 'chosen.log'
     for _ in range(2):
         run_launcher(tmp_path, data, {'SFCOP_LAUNCH_LOG': str(chosen)})
-    assert chosen.read_text().count('[scripts] loaded m01') == 2
+    assert chosen.read_text().count('[scripts] refused: m01') == 2
     assert len(names(data, 'launch')) == 12
 
 
