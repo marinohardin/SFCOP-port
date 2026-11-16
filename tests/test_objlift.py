@@ -28,6 +28,9 @@ DECOMP = os.path.abspath(os.environ.get('SFCOP_DECOMP_DIR') or os.path.join(REPO
 for _p in (os.path.join(REPO, 'cmake', 'lifter'), TOOL, os.path.join(TOOL, 'fixtures'), DECOMP):
     if _p not in sys.path:
         sys.path.insert(0, _p)
+if not os.path.isdir(os.path.join(DECOMP, 'harness')):
+    pytest.skip('run git submodule update --init: the decompilation is not at ' + DECOMP,
+                allow_module_level=True)
 
 import make_coff as mc  # noqa: E402
 import compile as objcompile  # noqa: E402

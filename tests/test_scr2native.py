@@ -22,6 +22,10 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 TOOL = ROOT / 'tools' / 'scr2native'
 FIXTURES = ROOT / 'oracle' / 'trace' / 'fixtures'
 sys.path.insert(0, str(TOOL))
+DECOMP = pathlib.Path(os.environ.get('SFCOP_DECOMP_DIR') or ROOT / 'decomp').resolve()
+if not (DECOMP / 'harness').is_dir():
+    pytest.skip('run git submodule update --init: the decompilation is not at %s' % DECOMP,
+                allow_module_level=True)
 import pe32  # noqa: E402
 import scr2native  # noqa: E402
 from harness.lib import paths  # noqa: E402
