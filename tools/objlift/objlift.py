@@ -440,7 +440,7 @@ def unit_code(run, unit, bodies, defined, claims):
         used.update(int(x, 16) for x in SUB_RE.findall(b.c))
     own = {b.va for b in bodies}
     decls = sorted(va for va in used if va in own or ('sub_%08X' % va in defined and va not in exe))
-    code = [HEADER, f'/* game/{unit} */\n',
+    code = [HEADER, f'/* op/{unit} */\n',
             '#define RECOMP_GENERATED_CODE\n#include "recomp_types.h"\n',
             '#include "recomp_funcs.h"\n',
             # SFCOP_GUEST_OBJECTS_LOAD and sfcop_guest_entered, which a body calls on entry
@@ -450,7 +450,7 @@ def unit_code(run, unit, bodies, defined, claims):
     code += ['extern const unsigned %s;\n' % index_name(c.address) for c in claims]
     code.append('\n')
     for b in bodies:
-        code.append(f'/* 0x{b.va:08X} {b.section.mode} {b.section.name}, game/{unit} */\n')
+        code.append(f'/* 0x{b.va:08X} {b.section.mode} {b.section.name}, op/{unit} */\n')
         code.append(b.c.rstrip('\n') + '\n\n')
     return ''.join(code)
 
@@ -483,7 +483,7 @@ def report(run, claims, result, bodies, image):
            f'reserved guest range 0x{placement.RESERVED_BASE:08x}-'
            f'0x{placement.RESERVED_BASE + placement.RESERVED_SIZE:08x}, used '
            f'0x{result.reserved_end - placement.RESERVED_BASE:x} bytes', '', 'claimed functions:']
-    out += [f'  0x{c.address:08x} {c.symbol} ({c.name}, game/{c.source})' for c in claims]
+    out += [f'  0x{c.address:08x} {c.symbol} ({c.name}, op/{c.source})' for c in claims]
     cmp = compare_with_exe(run, claims, result)
     if cmp:
         out += ['', 'placed bytes against the exe:'] + ['  ' + x for x in cmp]

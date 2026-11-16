@@ -1,4 +1,4 @@
-/* 0x00401000 claimed .text, game/Test/unit.cpp */
+/* 0x00401000 claimed .text, op/Test/unit.cpp */
 void sub_00401000(void) {
     int _fpu_cmp = 0;
     uint32_t _cf = 0;
