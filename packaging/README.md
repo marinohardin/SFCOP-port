@@ -9,7 +9,7 @@ the packages to a draft GitHub release. Neither is part of pull-request CI.
 | `macos-arm64` | `SFCOP.app` | `SFCOP-<version>-macos-arm64.dmg` | `macos/make_bundle.sh` (the build's `sfcop_app`), `macos/make_dmg.sh` |
 | `linux-x64`, `linux-arm64` | `SFCOP-<version>-linux-<arch>/` | `.tar.gz`, and `.AppImage` when it builds | `linux/make_tree.sh`, `linux/make_tarball.sh`, `linux/make_appimage.sh` |
 | `windows-x64`, `windows-arm64` | `SFCOP-<version>-windows-<arch>/` | `.zip` | `windows/make_tree.sh`, `windows/make_zip.sh` |
-| `source` | | `SFCOP-<version>-source.tar.gz` | `git archive` |
+| `source` | | `SFCOP-<version>-source.tar.gz` | `git archive` of this repository and of the pinned `decomp/` commit |
 
 `<version>` is the `VERSION` file's (`SFCOP_VERSION` overrides it; the release workflow uses the
 tag without its `v`).
