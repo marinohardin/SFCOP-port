@@ -14,3 +14,8 @@
 // The source tree the client was built from: the replay oracle finds its trace tools and the
 // commit it records there (src/app/oracle/OracleRun.h).
 #define SFCOP_SOURCE_DIR "@SFCOP_CONFIG_SOURCE_DIR@"
+
+// The release number (VERSION) and the commit the client was built from, for the start line of the
+// important log (src/platform/Core/Log.h).
+#define SFCOP_VERSION "@SFCOP_CONFIG_VERSION@"
+#define SFCOP_BUILD_COMMIT "@SFCOP_CONFIG_COMMIT@"
