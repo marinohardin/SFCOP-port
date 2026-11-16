@@ -171,7 +171,7 @@ KERNEL32.DLL	MultiByteToWideChar	-	stdcall	24	implemented-spike	0x006AAC4D	win32
 KERNEL32.DLL	OpenFileMappingA	-	stdcall	12	stub-spike	0x00732900	P1-2 misc_stubs.c: fixed result NULL, last error 2 (no other instance is running)
 KERNEL32.DLL	OpenMutexA	-	stdcall	12	implemented	0x007329DE	hle/kernel32rt Sync.cpp
 KERNEL32.DLL	OpenProcess	-	stdcall	12	stub-spike	0x00732DA2	win32hle kernel32_ext.c: fixed result NULL, last error 5 (access denied)
-KERNEL32.DLL	OutputDebugStringA	-	stdcall	4	implemented-spike	0x00634704	win32hle kernel32.c; called on the boot to the CD-key prompt
+KERNEL32.DLL	OutputDebugStringA	-	stdcall	4	implemented	0x00634704	hle/kernel32rt Kernel32rtGuest.cpp: printed only with the log category guest-debug; called on the boot to the CD-key prompt
 KERNEL32.DLL	QueryPerformanceCounter	-	stdcall	4	implemented	0x0054712C	hle/kernel32rt Time.cpp on Clock; called on the boot to the CD-key prompt
 KERNEL32.DLL	QueryPerformanceFrequency	-	stdcall	4	implemented	0x0061431A	hle/kernel32rt Time.cpp on Clock; called on the boot to the CD-key prompt
 KERNEL32.DLL	RaiseException	-	stdcall	16	implemented	0x007374A7	hle/kernel32rt Dispatcher.cpp: walks the guest fs:[0] chain

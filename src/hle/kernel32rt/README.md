@@ -19,7 +19,7 @@ that is not about files.
 | `Modules.*` | DLLs the host provides itself (the game's `OSSpecific95/98.dll`) |
 | `HostMemory*` | Whether a host range is mapped (`IsBadReadPtr`), per platform |
 | `Runtime.*` | The one instance the rows share, attached to `Threads` and `Clock` by the guest host |
-| `Kernel32rtGuest.cpp` | The shims, one per row, exported as `sfcop_hle_kernel32rt[]` |
+| `Kernel32rtGuest.cpp` | The shims, one per row, exported as `sfcop_hle_kernel32rt[]`; `OutputDebugStringA` prints the game's debug text (`[guest] ...`) only with the log category `guest-debug` on (`--log guest-debug`) |
 | `*Test.cpp` | The doctests, through `ThreadsMock`, `ClockMock` and fakes of the guest |
 
 ## How it answers
