@@ -34,6 +34,10 @@ calls `WinMain`. The host is built only with the lift and never compiles `decomp
    enters the exe's entry point.
 5. `ExitProcess` ends the process with the client's exit code: 0 for 0, else 1 (DESIGN §6.8).
 
+The `[override]` report (a line at each override's first run, and the exit summary of call counts) is a
+developer's: off by default, on with `--log override` or `SFCOP_LOG=override`. An `[override] fatal` line is
+always printed.
+
 ## Threads
 
 The game's own threads stay as they are. `CreateThread` starts a `Threads` thread for each, with a
