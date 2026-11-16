@@ -241,7 +241,7 @@ jobs:
           token: ${{ secrets.DECOMP_READ_TOKEN || github.token }}
           fetch-depth: 2
 
-      - name: Does this pull request touch what the oracle judges
+      - name: The changed paths and the oracle's data folder
         id: gate
         shell: bash
         run: |
@@ -249,10 +249,9 @@ jobs:
           git diff --name-only HEAD^1 HEAD > "$RUNNER_TEMP/changed.txt"
           [ -s "$RUNNER_TEMP/changed.txt" ] || { echo "::error::no changed paths between HEAD^1 and HEAD"; exit 1; }
           echo "CHANGED=$RUNNER_TEMP/changed.txt" >> "$GITHUB_ENV"
-          run=$(python3 -I oracle/presets/ci.py gate < "$RUNNER_TEMP/changed.txt")
-          if [ "$run" = no ]; then
-            echo "::notice::skip: the oracle on the presets: nothing under decomp, src/ or the oracle's runner changed"
-          elif [ -z "${SFCOP_ORACLE_DATA:-}" ]; then
+          # The plan job's gate already chose to judge this change, or the job would not run.
+          run=yes
+          if [ -z "${SFCOP_ORACLE_DATA:-}" ]; then
             echo "::warning::skip: the oracle on the presets did not run: SFCOP_ORACLE_DATA is not set on this runner (the owner sets it to the prepared data folder)"
             run=no
           fi
