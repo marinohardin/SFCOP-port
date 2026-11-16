@@ -280,9 +280,11 @@ namespace {
 constexpr std::uint32_t kLoadRow = 0x7F002000u;   // the client's LoadLibraryA
 constexpr std::uint32_t kFindRow = 0x7F002010u;   // the client's GetProcAddress
 constexpr std::uint32_t kSwapRow = 0x7F002020u;   // the client's OS_InterlockedCompareExchange
+constexpr std::uint32_t kFreeRow = 0x7F002030u;   // the client's FreeLibrary
 constexpr std::uint32_t kOsSpecific = 0x7FF00000u; // the handle the client gives OSSpecific98
 
-std::vector<std::uint8_t> lockFile() {
+// With `freeLibrary`, it also imports FreeLibrary (slot 0x2058), which its code does not call.
+std::vector<std::uint8_t> lockFile(bool freeLibrary = false) {
     test::InventedCode c;
     c.code = {
         0xB8, 0x01, 0x00, 0x00, 0x00,       // 1000 mov eax, 1
@@ -325,11 +327,18 @@ std::vector<std::uint8_t> lockFile() {
     pe.dataText(0x20A2, "GetProcAddress");
     pe.dataText(0x20C0, "OSSpecific98");
     pe.dataText(0x20D0, "OS_InterlockedCompareExchange");
+    if (freeLibrary) {
+        for (std::uint32_t table : {0x2040u, 0x2050u}) {
+            pe.data32(table + 8, 0x20F0);
+            pe.data32(table + 12, 0);
+        }
+        pe.dataText(0x20F2, "FreeLibrary");
+    }
     return pe.bytes;
 }
 
 struct LockGuest : Guest {
-    int loads = 0, finds = 0, swaps = 0;
+    int loads = 0, finds = 0, swaps = 0, frees = 0;
     std::uint32_t loadName = 0, findName = 0; // where the client read the names it was handed
 
     LockGuest() {
@@ -337,6 +346,9 @@ struct LockGuest : Guest {
         runtime.importAddress = [](const std::string &import) {
             if (import == "KERNEL32.DLL!LoadLibraryA") {
                 return kLoadRow;
+            }
+            if (import == "KERNEL32.DLL!FreeLibrary") {
+                return kFreeRow;
             }
             CHECK(import == "KERNEL32.DLL!GetProcAddress");
             return kFindRow;
@@ -349,6 +361,7 @@ struct LockGuest : Guest {
             case kLoadRow: return &load;
             case kFindRow: return &find;
             case kSwapRow: return &swap;
+            case kFreeRow: return &freeLibrary;
             default: return nullptr;
             }
         };
@@ -375,6 +388,13 @@ struct LockGuest : Guest {
         g.findName = g.arg(2);
         g.regs[kEax] = g.arg(1) == kOsSpecific && g.text(g.arg(2)) == "OS_InterlockedCompareExchange" ? kSwapRow : 0u;
         g.regs[kEsp] += 12;
+    }
+    // FreeLibrary(module), stdcall: succeeds for the OSSpecific library only.
+    static void freeLibrary() {
+        LockGuest &g = self();
+        ++g.frees;
+        g.regs[kEax] = g.arg(1) == kOsSpecific ? 1u : 0u;
+        g.regs[kEsp] += 8;
     }
     // OS_InterlockedCompareExchange(destination, exchange, comparand), cdecl.
     static void swap() {
@@ -493,6 +513,37 @@ TEST_CASE("a function lookup refuses a name longer than the shim reads and hands
     CHECK(g.finds == 1);
     CHECK(g.findName != 0x60080000u); // a copy, which the script cannot change under the client
     CHECK(g.text(g.findName) == "OS_InterlockedCompareExchange");
+}
+
+TEST_CASE("a handle forgets its names once the script frees every reference it took") {
+    LockGuest g;
+    g.file = lockFile(true);
+    static const AllowList withFree = AllowList::parse("KERNEL32.DLL!FreeLibrary\nKERNEL32.DLL!GetProcAddress\n"
+                                                       "KERNEL32.DLL!LoadLibraryA\n"
+                                                       "OSSPECIFIC98.DLL!OS_InterlockedCompareExchange\n");
+    InterpretedModuleProvider provider(g.runtime, g.machine, g.reader(), withFree);
+    REQUIRE(provider.Load("Scripts\\Invented.scr") == 0x60000000u);
+    CHECK(g.at32(0x60002058u) == 0x70000004u); // FreeLibrary bound to its shim
+
+    const auto freeAsScript = [&](std::uint32_t handle) {
+        g.push(handle);
+        g.push(kLiftedReturnAddress);
+        g.regs[kEax] = 0x5555u;
+        provider.FreeForScript();
+        CHECK(g.regs[kEsp] == kStackTop); // stdcall: the return address and the handle popped
+        return g.regs[kEax];
+    };
+    REQUIRE(loadAsScript(g, provider, "OSSpecific98") == kOsSpecific);
+    REQUIRE(loadAsScript(g, provider, "OSSpecific98") == kOsSpecific);
+    CHECK(provider.ScriptMayFind(kOsSpecific, "OS_InterlockedCompareExchange"));
+
+    CHECK(freeAsScript(0x12340000u) == 0u); // a handle the client does not know: passed on, refused there
+    CHECK(freeAsScript(kOsSpecific) == 1u);
+    CHECK(provider.ScriptMayFind(kOsSpecific, "OS_InterlockedCompareExchange")); // one reference left
+    CHECK(freeAsScript(kOsSpecific) == 1u);
+    CHECK(g.frees == 3); // every call reached the client
+    // The handle is the client's to give to another module now: the names it had allow nothing.
+    CHECK_FALSE(provider.ScriptMayFind(kOsSpecific, "OS_InterlockedCompareExchange"));
 }
 
 TEST_CASE("without the OSSpecific entries the lookups answer 0 and the script's own fallback runs") {
