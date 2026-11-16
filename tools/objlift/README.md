@@ -1,10 +1,10 @@
 # tools/objlift: the claimed units' VC6 objects, lifted into the native build
 
-A function that `game/manifest.tsv` claims for VC6 (mode `vc6`, DESIGN §6.3) is compiled by the
-pinned VC6 exactly as the harness compiles it for the byte check. Its COFF object is placed in the
+A function that `decomp/op/manifest.tsv` claims for VC6 (mode `vc6`, DESIGN §6.3) is compiled by
+the decompilation's pinned VC6 exactly as its harness compiles it for the byte check. Its COFF object is placed in the
 guest as a linker would place it, and lifted with pcrecomp the way the exe is lifted. The lifted
 body replaces the exe lift's body for that address: for direct calls, for the dispatch table and
-for every guest vtable slot. The source in `game/` is the original's form, with no guest-mode
+for every guest vtable slot. The source in `decomp/op/` is the original's form, with no guest-mode
 constructs; the same object the harness scores exact is the one that runs. A function the
 harness has not recorded exact has the mode `partial` and is skipped: the exe lift's body stays.
 
@@ -13,7 +13,7 @@ harness has not recorded exact has the mode `partial` and is skipped: the exe li
 | `objlift.py` | The command line: claims, placement, lift, the generated files |
 | `placement.py` | Sections, COMDAT selection, liveness, where each section goes, every relocation (stdlib only) |
 | `liftcode.py` | The lift of placed code through pcrecomp's linear lifter |
-| `compile.py` | VC6 compiles every claimed unit as the harness does (`harness/lib/source.py`) |
+| `compile.py` | VC6 compiles every claimed unit as the decompilation's harness does (`decomp/harness/lib/source.py`) |
 | `objlift.sh` | The build step: `compile.py` on the host, then `objlift.py` in the lifter container |
 | `proof.cmake`, `proof.sh` | The proof build and its run (below) |
 | `fixtures/make_coff.py` | Writes the test objects (`tests/test_objlift.py`) |
@@ -21,8 +21,8 @@ harness has not recorded exact has the mode `partial` and is skipped: the exe li
 ## Command line
 
 ```sh
-python3 tools/objlift/objlift.py --obj [UNIT=]UNIT.obj ... --manifest game/manifest.tsv \
-    --symbols ghidra/exports --out DIR [--exe StarFleetOP.exe] [--lifted LIFT/out/gen] \
+python3 tools/objlift/objlift.py --obj [UNIT=]UNIT.obj ... --manifest decomp/op/manifest.tsv \
+    --symbols decomp/ghidra/exports --out DIR [--exe StarFleetOP.exe] [--lifted LIFT/out/gen] \
     [--pcrecomp DIR] [--check] [--no-lift]
 ```
 
@@ -78,7 +78,7 @@ largest; each refused case is refused as a linker refuses it).
 | fresh | anything else | the next free address in the reserved range | yes, as `sub_<address>` | yes, into the data image |
 
 The exe's evidence for an address is the name in `functions.csv` or the SDK tables. Failing that,
-it is what an exact claimed function uses: the harness's relocation check (`harness/lib/target.py`)
+it is what an exact claimed function uses: the decompilation's relocation check (`decomp/harness/lib/target.py`)
 reads the address a relocated field holds in the original bytes, and a function that matches
 byte for byte vouches for it. That is how `??_R0PAVtAllocatedClass@@@8`, a type descriptor that no
 table names, resolves to 0x0088C180. A code name with several exe addresses (copies of one
@@ -156,7 +156,7 @@ host change is needed. With no fresh section, the image is empty and the call do
 `cmake/lifter/objlift.cmake`, included from `cmake/SfcopLifter.cmake` after the exe lift, does
 the following when the manifest claims anything for VC6 (option `SFCOP_OBJLIFT`, default ON):
 
-- It runs `objlift.sh`. The step depends on `game/`, the manifest, the compiler profiles, the
+- It runs `objlift.sh`. The step depends on `decomp/op/`, the manifest, the compiler profiles, the
   symbol evidence, the exe, the exe lift's `recomp_funcs.h` and `recomp_dispatch.c`, and these
   tools.
 - It compiles the generated C into the OBJECT library `sfcop_objlift`. The per-unit file names
@@ -172,7 +172,7 @@ With nothing claimed, or `SFCOP_OBJLIFT=OFF`, nothing is added. Guest mode (`SFC
 and the object lift are exclusive, and configure stops if both are on.
 
 `compile.py` keeps a key beside each object (`DIR/obj/<unit>.key`): the SHA-256 of the unit's
-source, its profile, every file under `game/` that is not a `.c`, a `.cpp` or the manifest, and
+source, its profile, every file under `decomp/op/` that is not a `.c`, a `.cpp` or the manifest, and
 the compile scripts. A unit whose key did not change is not compiled again. So a change to one
 unit's `.cpp` compiles that unit, lifts every unit again (the placement is global), and then
 recompiles that unit's code file, the exe-lift files that hold its claimed functions, and, when
@@ -229,12 +229,12 @@ that its real object places byte for byte onto the exe.
 
 ## Proof
 
-The three functions of `game/Common/DynamicAllocator.cpp` are written as VC6 compiles them, with
-no guest-mode `PORT:` lines and no `ptr32`. Reproduce, from the repository root, with the harness
+The three functions of `decomp/op/Common/DynamicAllocator.cpp` are written as VC6 compiles them, with
+no guest-mode `PORT:` lines and no `ptr32`. Reproduce, from the repository root, with the decompilation's harness
 and a build directory under the work drive:
 
 ```sh
-for f in 0x006fc4d0 0x006fc5a0 0x006fc750; do sh harness/build-and-verify.sh $f; done
+for f in 0x006fc4d0 0x006fc5a0 0x006fc750; do sh decomp/harness/build-and-verify.sh $f; done
 sh tools/objlift/proof.sh BUILD_DIR OUT_DIR [-- EXTRA CMAKE ARGS]
 ```
 
