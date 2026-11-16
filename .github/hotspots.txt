@@ -15,15 +15,14 @@ AGENTS.md
 .github/**
 .githooks/**
 scripts/check.sh
-scripts/progress.py
 
 # Shared contracts
 docs/**
 PROPOSAL.md
-analysis/results/retail_hashes.sha256
-toolchain/**
+# The decompilation: the submodule's pinned commit and where it comes from
+decomp
+.gitmodules
 oracle/expected/**
-harness/**
 
 # Every module's public surface and dependencies (frozen at gate G0, docs/PLAN.md §6.2)
 src/hle/surface.tsv
@@ -45,8 +44,6 @@ src/platform/Store/StoreMock.h
 src/platform/Clock/ClockMock.h
 src/platform/Threads/ThreadsMock.h
 src/platform/Core/**
-game/port/**
-game/UNITS.tsv
 src/fixes/fixes.h
 src/app/scripts/*.h
 src/net/PROTOCOL.md

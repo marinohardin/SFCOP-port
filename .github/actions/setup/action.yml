@@ -3,8 +3,8 @@ description: Checks that the self-hosted runner has the tools the jobs need. Not
 
 # This project runs its jobs on the owner's Mac (runs-on: [self-hosted, sfcop-mac]). The
 # toolchain is not installed by CI: Python 3 comes from the machine, the VC6 SP4 compiler lives
-# in a Docker image built from toolchain/, and Ghidra is installed by Homebrew. Keep two rules
-# whatever is added later:
+# in a Docker image built from the decompilation's toolchain/ (decomp/), and Ghidra is installed
+# by Homebrew. Keep two rules whatever is added later:
 # - pin versions from a file in the repository, never "latest";
 # - on a self-hosted runner, keep caches and stores under $RUNNER_TOOL_CACHE or $RUNNER_TEMP,
 #   never in the home directory, because several runners on one machine share a home directory.

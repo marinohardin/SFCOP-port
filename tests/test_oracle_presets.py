@@ -347,7 +347,7 @@ def test_the_cross_presets_are_paused():
 
 
 def test_a_paused_preset_is_not_built_for_a_src_change_and_macos_is():
-    for files in (['src/app/main.cpp'], ['game/unsorted/tSphere.cpp', 'src/app/main.cpp'], []):
+    for files in (['src/app/main.cpp'], ['decomp', 'src/app/main.cpp'], []):
         assert ci.builds('macos-arm64', files), files
         assert not ci.builds('windows-x64', files), files
         assert not ci.builds('linux-x64', files), files
@@ -399,82 +399,74 @@ def test_run_all_without_changed_paths_skips_a_paused_preset(tmp_path, monkeypat
 
 
 def test_a_decompilation_only_change_builds_macos_alone(unpaused):
-    grind = ['game/unsorted/tSphere.cpp', 'game/manifest.tsv', 'analysis/results/matched_set.json',
-             'src/app/guest/override.cpp']
-    assert ci.builds('macos-arm64', grind)
-    assert not ci.builds('linux-x64', grind)
-    assert not ci.builds('windows-x64', grind)
+    # A pin move of the submodule shows as the one path `decomp`.
+    for files in (['decomp'], ['decomp', 'src/app/guest/override.cpp'], ['decomp/op/manifest.tsv']):
+        assert ci.builds('macos-arm64', files), files
+        assert not ci.builds('linux-x64', files), files
+        assert not ci.builds('windows-x64', files), files
 
 
 def test_any_other_change_builds_every_preset(unpaused):
-    for files in (['src/app/main.cpp'], ['game/Tiger/tsay.cpp', 'cmake/SfcopLifter.cmake'],
+    for files in (['src/app/main.cpp'], ['decomp', 'cmake/SfcopLifter.cmake'],
                   ['src/app/guest/override.h'], ['docs/DESIGN.md', 'src/app/main.cpp'], [],
-                  ['game/port/types.h'], ['game/unsorted/tSphere.cpp', 'game/port/guest.h'],
-                  ['game/UNITS.tsv'], ['analysis/results/retail_hashes.sha256'],
-                  ['scripts/dist.sh'], ['harness/lib/paths.py', 'cmake/SfcopLifter.cmake'],
-                  ['analysis/results/matched_set.json', 'src/app/guest/GuestHost.cpp']):
+                  ['.gitmodules'], ['decomp', '.gitmodules'], ['cmake/SfcopDecomp.cmake'],
+                  ['scripts/dist.sh'], ['decomp', 'src/app/guest/GuestHost.cpp'],
+                  ['decompx/a.cpp'], ['game/unsorted/tSphere.cpp']):
         for preset in ('macos-arm64', 'linux-x64', 'windows-x64'):
             assert ci.builds(preset, files), (preset, files)
 
 
 def test_a_change_to_the_lift_inputs_builds_macos_alone(unpaused):
-    for files in (['harness/lib/verify.py', 'harness/tests/test_verify_base.py'],
-                  ['ghidra/exports/functions.csv', 'harness/units.json'],
-                  ['analysis/results/boundary_errors.tsv', 'docs/DESIGN.md'],
-                  ['tools/objlift/placement.py'],
-                  ['game/unsorted/tSphere.cpp', 'ghidra/scripts/join_eh_prologs.py']):
+    for files in (['tools/objlift/placement.py'], ['tools/objlift/objlift.sh', 'docs/DESIGN.md'],
+                  ['decomp', 'tools/objlift/compile.py', 'tests/test_objlift.py']):
         assert ci.builds('macos-arm64', files), files
         assert not ci.builds('linux-x64', files), files
         assert not ci.builds('windows-x64', files), files
 
 
 def test_a_change_no_build_reads_builds_no_preset(unpaused):
-    for files in (['docs/DESIGN.md', 'AGENTS.md'], ['tests/test_units.py'],
-                  ['harness/queue.py', 'harness/README.md', 'harness/tests/test_queue.py'],
-                  ['analysis/results/progress/progress.json', 'scripts/progress.py'],
-                  ['ghidra/scripts/join_eh_prologs.py', 'ghidra/README.md'],
-                  ['analysis/scripts/fuzzymatch.py'], ['scripts/check.sh', 'pytest.ini']):
+    for files in (['docs/DESIGN.md', 'AGENTS.md'], ['tests/test_check_override.py'],
+                  ['analysis/netcode/README.md', 'analysis/netcode/results/eh.tsv'],
+                  ['scripts/check.sh', 'pytest.ini']):
         for preset in ('macos-arm64', 'linux-x64', 'windows-x64'):
             assert not ci.builds(preset, files), (preset, files)
 
 
 def test_the_edges_of_the_no_build_list_still_build(unpaused):
-    # tests/fixtures/ is read by the C++ tests; other analysis/results/ folders and nested Markdown
-    # are not on the list; a library path mixed with a no-build path still builds macOS.
+    # tests/fixtures/ is read by the C++ tests; nested Markdown is not on the list; a lift input
+    # mixed with a no-build path still builds macOS.
     for files in (['tests/fixtures/install/StarFleetOP.exe'], ['tests/fixtures/install.sha256'],
-                  ['analysis/results/other/table.tsv'], ['src/app/README.md']):
+                  ['src/app/README.md'], ['scripts/progress.py']):
         for preset in ('macos-arm64', 'linux-x64', 'windows-x64'):
             assert ci.builds(preset, files), (preset, files)
-    # Every preset's configure reads harness/lib/paths.py.
-    for preset in ('macos-arm64', 'linux-x64', 'windows-x64'):
-        assert ci.builds(preset, ['harness/lib/paths.py']), preset
-    mixed = ['harness/lib/verify.py', 'docs/DESIGN.md', 'tests/test_units.py']
+    mixed = ['decomp', 'docs/DESIGN.md', 'tests/test_objlift.py']
     assert ci.builds('macos-arm64', mixed)
     assert not ci.builds('linux-x64', mixed)
 
 
 def test_builds_reads_paths_on_standard_input(unpaused, monkeypatch, capsys):
     import io
-    monkeypatch.setattr('sys.stdin', io.StringIO('game/unsorted/tSphere.cpp\n'))
+    monkeypatch.setattr('sys.stdin', io.StringIO('decomp\n'))
     assert ci.main(['builds', 'linux-x64']) == 0
     assert capsys.readouterr().out == 'no\n'
 
 
 def test_builds_names_the_reason_for_a_preset_it_does_not_build(unpaused, monkeypatch, capsys):
     import io
-    monkeypatch.setattr('sys.stdin', io.StringIO('game/unsorted/tSphere.cpp\nsrc/app/guest/override.cpp\n'))
+    monkeypatch.setattr('sys.stdin', io.StringIO('decomp\nsrc/app/guest/override.cpp\n'))
     assert ci.main(['builds', 'linux-x64']) == 0
     out = capsys.readouterr()
     assert out.out == 'no\n'
-    assert out.err == ('::notice::skip: linux-x64: this pull request changes only decompiled source and '
-                       'lift inputs, which macos-arm64 alone builds (DECOMP_ONLY in oracle/presets/ci.py)\n')
+    assert out.err == ('::notice::skip: linux-x64: this pull request changes only the decompilation '
+                       'and lift inputs, which macos-arm64 alone builds (DECOMP_ONLY in '
+                       'oracle/presets/ci.py)\n')
     monkeypatch.setattr('sys.stdin', io.StringIO('docs/DESIGN.md\ntests/test_units.py\n'))
     assert ci.main(['builds', 'macos-arm64']) == 0
     out = capsys.readouterr()
     assert out.out == 'no\n'
     assert out.err == ('::notice::skip: macos-arm64: this pull request changes only paths no build reads '
                        '(NO_BUILD in oracle/presets/ci.py)\n')
-    monkeypatch.setattr('sys.stdin', io.StringIO('game/unsorted/tSphere.cpp\n'))
+    monkeypatch.setattr('sys.stdin', io.StringIO('decomp\n'))
     assert ci.main(['builds', 'macos-arm64']) == 0
     out = capsys.readouterr()
     assert out.out == 'yes\n' and out.err == ''
@@ -482,7 +474,7 @@ def test_builds_names_the_reason_for_a_preset_it_does_not_build(unpaused, monkey
 
 def test_a_paused_preset_names_the_pause_even_for_a_decompilation_only_change(monkeypatch, capsys):
     import io
-    monkeypatch.setattr('sys.stdin', io.StringIO('game/unsorted/tSphere.cpp\n'))
+    monkeypatch.setattr('sys.stdin', io.StringIO('decomp\n'))
     assert ci.main(['builds', 'linux-x64']) == 0
     out = capsys.readouterr()
     assert out.out == 'no\n'
@@ -492,11 +484,13 @@ def test_a_paused_preset_names_the_pause_even_for_a_decompilation_only_change(mo
 
 def test_path_gate_on_a_list_of_files():
     assert ci.path_gate(['README.md', 'src/app/main.cpp'])
-    assert ci.path_gate(['game/Tiger/tsay.cpp'])
+    assert ci.path_gate(['decomp'])
+    assert ci.path_gate(['decomp/op/Tiger/tsay.cpp'])
     assert ci.path_gate(['oracle/presets/run_preset.sh'])
     assert ci.path_gate(['.github/workflows/pull-request.yml'])
     assert not ci.path_gate(['docs/DESIGN.md', 'tests/test_x.py', 'oracle/expected/README.md',
-                             '.github/workflows/other.yml', 'srcx/a.cpp'])
+                             '.github/workflows/other.yml', 'srcx/a.cpp', 'decompx/a.cpp',
+                             'game/Tiger/tsay.cpp'])
     assert not ci.path_gate([])
 
 
@@ -531,7 +525,7 @@ def test_run_leaves_out_the_presets_a_decompilation_only_change_did_not_build(un
     monkeypatch.setenv('SFCOP_ORACLE_RUN_PRESET', str(fake_run_preset(tmp_path, {
         p: (0, 'wrote') for p in ci.PRESETS})))
     changed = tmp_path / 'changed.txt'
-    changed.write_text('game/unsorted/tSphere.cpp\nanalysis/results/matched_set.json\n')
+    changed.write_text('decomp\nsrc/app/guest/override.cpp\n')
     env = tmp_path / 'env'
     assert ci.main(['run', 'MenuPath', 'menu', '--build-root', str(tmp_path), '--traces', str(tmp_path),
                     '--env-file', str(env), '--changed', str(changed)]) == 0
@@ -546,7 +540,7 @@ def test_run_runs_every_preset_for_any_other_change(unpaused, tmp_path, monkeypa
     monkeypatch.setenv('SFCOP_ORACLE_RUN_PRESET', str(fake_run_preset(tmp_path, {
         p: (0, 'wrote') for p in ci.PRESETS})))
     changed = tmp_path / 'changed.txt'
-    changed.write_text('game/unsorted/tSphere.cpp\nsrc/app/main.cpp\n')
+    changed.write_text('decomp\nsrc/app/main.cpp\n')
     env = tmp_path / 'env'
     assert ci.main(['run', 'MenuPath', 'menu', '--build-root', str(tmp_path), '--traces', str(tmp_path),
                     '--env-file', str(env), '--changed', str(changed)]) == 0
