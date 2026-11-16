@@ -1,3 +1,4 @@
+#include "platform/Core/Log.h"
 #include "GuestExceptions.h"
 
 #include "FaultClass.h"
@@ -276,7 +277,7 @@ void onFault(int signal, siginfo_t *info, void *context) {
             t_inFault = true;
             const std::uint32_t parameters[2] = {AccessViolationFlag(faultAccess(context)),
                                                  static_cast<std::uint32_t>(address - base)};
-            std::fprintf(stderr, "[eh] access violation: %s of guest 0x%08X in sub_%08X at %.3f s%s\n",
+            sfcop_logf(SFCOP_LOG_IMPORTANT, "[eh] access violation: %s of guest 0x%08X in sub_%08X at %.3f s%s\n",
                          parameters[0] != 0 ? "write" : "read", parameters[1], g_cur_func,
                          Elapsed(), alternateStackNote());
 #if defined(__APPLE__)
@@ -294,17 +295,17 @@ void onFault(int signal, siginfo_t *info, void *context) {
 #else
             RaiseFromHost(kAccessViolation, 2, parameters);
 #endif
-            std::fprintf(stderr, "[eh] a handler continued after an access violation at 0x%08X in "
+            sfcop_logf(SFCOP_LOG_IMPORTANT, "[eh] a handler continued after an access violation at 0x%08X in "
                                  "sub_%08X; lifted code cannot retry the access\n",
                          parameters[1], g_cur_func);
         } else {
-            std::fprintf(stderr, "\n=== host fault: guest address 0x%08X touched by host code at "
+            sfcop_logf(SFCOP_LOG_IMPORTANT, "\n=== host fault: guest address 0x%08X touched by host code at "
                                  "pc %p (a programming error; not a guest exception) ===\n",
                          static_cast<std::uint32_t>(address - base),
                          reinterpret_cast<void *>(pc));
         }
     }
-    std::fprintf(stderr, "\n=== fault: signal %d at %.3f s, in lifted sub_%08X, last import %s ===\n",
+    sfcop_logf(SFCOP_LOG_IMPORTANT, "\n=== fault: signal %d at %.3f s, in lifted sub_%08X, last import %s ===\n",
                  signal, Elapsed(), g_cur_func, g_cur_import != nullptr ? g_cur_import : "(none)");
     std::fflush(stderr);
     _exit(1);
@@ -354,7 +355,7 @@ bool faultInLiftedCode(std::uintptr_t pc) {
 }
 
 [[noreturn]] void endRun(const EXCEPTION_RECORD *record) {
-    std::fprintf(stderr, "\n=== fault: exception 0x%08lX at %.3f s, in lifted sub_%08X, last import %s ===\n",
+    sfcop_logf(SFCOP_LOG_IMPORTANT, "\n=== fault: exception 0x%08lX at %.3f s, in lifted sub_%08X, last import %s ===\n",
                  record->ExceptionCode, Elapsed(), g_cur_func,
                  g_cur_import != nullptr ? g_cur_import : "(none)");
     std::fflush(stderr);
@@ -394,14 +395,14 @@ LONG CALLBACK onException(EXCEPTION_POINTERS *pointers) {
         const std::uint32_t parameters[2] = {
             AccessViolationFlag(AccessOfWindowsFault(record->ExceptionInformation[0])),
             static_cast<std::uint32_t>(address - base)};
-        std::fprintf(stderr, "[eh] access violation: %s of guest 0x%08X in sub_%08X at %.3f s\n",
+        sfcop_logf(SFCOP_LOG_IMPORTANT, "[eh] access violation: %s of guest 0x%08X in sub_%08X at %.3f s\n",
                      parameters[0] != 0 ? "write" : "read", parameters[1], g_cur_func, Elapsed());
         RaiseFromHost(kAccessViolation, 2, parameters);
-        std::fprintf(stderr, "[eh] a handler continued after an access violation at 0x%08X in "
+        sfcop_logf(SFCOP_LOG_IMPORTANT, "[eh] a handler continued after an access violation at 0x%08X in "
                              "sub_%08X; lifted code cannot retry the access\n",
                      parameters[1], g_cur_func);
     } else {
-        std::fprintf(stderr, "\n=== host fault: guest address 0x%08X touched by host code at "
+        sfcop_logf(SFCOP_LOG_IMPORTANT, "\n=== host fault: guest address 0x%08X touched by host code at "
                              "pc %p (a programming error; not a guest exception) ===\n",
                      static_cast<std::uint32_t>(address - base), reinterpret_cast<void *>(pc));
     }

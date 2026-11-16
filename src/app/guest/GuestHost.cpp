@@ -1,3 +1,4 @@
+#include "platform/Core/Log.h"
 #include "GuestHost.h"
 
 #include "GuestExceptions.h"
@@ -523,6 +524,7 @@ void traceTotals() {
 void onExit(int code) {
     g_stopping = true;
     traceTotals();
+    sfcop_logf(SFCOP_LOG_IMPORTANT, "=== SFCOP exit, code %d\n", code == 0 ? 0 : 1);
     std::fflush(stdout);
     std::fflush(stderr);
     std::_Exit(code == 0 ? 0 : 1);

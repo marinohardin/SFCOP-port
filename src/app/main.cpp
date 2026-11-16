@@ -35,6 +35,7 @@
 #include "launcher/LauncherWindow.h"
 #include "oracle/OracleRun.h"
 #include "platform/Clock/FixedStepClock.h"
+#include "platform/Core/Log.h"
 #include "sfcop_build_config.h"
 
 namespace {
@@ -213,10 +214,15 @@ int main(int argc, char **argv) {
     config.launcher = launcher::windowLauncher(launcherStepsPath(argc, argv));
     // A package build compiles in no hash list (SFCOP_PACKAGE_BUILD, sfcop_build_config.h).
     config.packageBuild = std::string(SFCOP_HASH_LIST).empty();
+    sfcop_log_init();
     const Startup start = startClient(argc, argv, config);
     if (start.exitCode) {
         return *start.exitCode;
     }
+    // The start line of the important log: which build, which install and data folder (paths only,
+    // never what is in them).
+    sfcop_logf(SFCOP_LOG_IMPORTANT, "=== SFCOP %s (build %s) started: install %s, data %s\n", SFCOP_VERSION,
+               SFCOP_BUILD_COMMIT, start.installDir.c_str(), start.dataDir.c_str());
 
     guest::Options options;
     options.installDir = start.installDir;
