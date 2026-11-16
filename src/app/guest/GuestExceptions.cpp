@@ -170,7 +170,8 @@ LowMemoryRegion *g_lowMemory = nullptr;
 std::uint32_t g_exeBase = 0, g_exeEnd = 0;
 
 // The translated mission module whose library holds the host instruction at `pc`: its name (the
-// library's stem) and its guest image, or false when `pc` is in no such library.
+// library's stem) and its guest image, or false when `pc` is in no such library (or no longer
+// loaded). Takes the loader's lock: never from a fault handler, only from ReportLowMemoryReads.
 bool moduleOfPc(std::uintptr_t pc, char *stem, std::size_t size, const sfcop_guest_image **image) {
     *image = nullptr;
     stem[0] = '\0';
@@ -205,9 +206,9 @@ bool moduleOfPc(std::uintptr_t pc, char *stem, std::size_t size, const sfcop_gue
 
 // Who read low memory, for the report line: a function of the game's image by its address
 // ("STARFLEETOP 0x00412345"), one of a translated mission by its offset in the module
-// ("Met_17Patrol+0xEBB0"), else the current function and the host instruction.
-void describeReader(std::uintptr_t pc, char *out, std::size_t size) {
-    const std::uint32_t function = g_cur_func;
+// ("Met_17Patrol+0xEBB0"), else the current function and the host instruction. Outside the
+// fault handler only (moduleOfPc).
+void describeReader(std::uint32_t function, std::uintptr_t pc, char *out, std::size_t size) {
     if (function >= g_exeBase && function < g_exeEnd) {
         std::snprintf(out, size, "STARFLEETOP 0x%08X", function);
         return;
@@ -224,22 +225,15 @@ void describeReader(std::uintptr_t pc, char *out, std::size_t size) {
     }
 }
 
-// A fault on guest `address` that the low-memory region takes: the first in its page is logged.
-// True when the faulting instruction is to be resumed.
+// A fault on guest `address` that the low-memory region takes. True when the faulting instruction
+// is to be resumed. Signal-safe: the region maps the page and records the read (the current guest
+// function and `pc`); ReportLowMemoryReads prints it later, outside the handler.
 bool takeLowMemoryRead(std::uint32_t address, FaultAccess access, std::uintptr_t pc) {
     if (g_lowMemory == nullptr) {
         return false;
     }
-    const LowMemoryRegion::Outcome outcome = g_lowMemory->OnFault(address, access);
-    if (outcome == LowMemoryRegion::Outcome::kMapped) {
-        char reader[160];
-        describeReader(pc, reader, sizeof reader);
-        char line[256];
-        const std::size_t length = FormatLowMemoryRead(line, sizeof line, reader, address);
-        std::fwrite(line, 1, length, stderr);
-        std::fflush(stderr);
-    }
-    return outcome != LowMemoryRegion::Outcome::kNotHandled;
+    return g_lowMemory->OnFault(address, access, g_cur_func, pc) !=
+           LowMemoryRegion::Outcome::kNotHandled;
 }
 
 #if !defined(_WIN32)
@@ -587,6 +581,23 @@ void InstallLowMemoryReads(std::uint32_t exeBase, std::uint32_t exeSize) {
     std::fprintf(stderr, "[guest] fix_hle_low_memory_reads: guest 0x%08X-0x%08X reserved, %zu pages "
                          "of %zu bytes, each readable from its first read\n",
                  kLowMemoryBegin, kLowMemoryEnd - 1, region.PageCount(), page);
+}
+
+void ReportLowMemoryReads() {
+    if (g_lowMemory == nullptr) {
+        return;
+    }
+    LowMemoryRegion::Read reads[4];
+    for (std::size_t count; (count = g_lowMemory->TakeReads(reads, 4)) != 0;) {
+        for (std::size_t i = 0; i < count; ++i) {
+            char reader[160];
+            describeReader(reads[i].function, reads[i].pc, reader, sizeof reader);
+            char line[256];
+            const std::size_t length = FormatLowMemoryRead(line, sizeof line, reader, reads[i].address);
+            std::fwrite(line, 1, length, stderr);
+        }
+        std::fflush(stderr);
+    }
 }
 
 void BindRaiseException() {

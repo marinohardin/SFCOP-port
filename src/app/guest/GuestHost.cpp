@@ -436,6 +436,7 @@ std::optional<hle::user32::DisplayTarget> displayTarget() {
 }
 
 void pump() {
+    ReportLowMemoryReads(); // fix_hle_low_memory_reads: the reads the fault handler recorded
     if (g_pump->Pump()) {
         if (g_pump->FrameEnded() && g_options->onFrame) {
             g_options->onFrame();
@@ -522,6 +523,7 @@ void traceTotals() {
 // straight to the operating system), so a file the game wrote is complete when this runs.
 void onExit(int code) {
     g_stopping = true;
+    ReportLowMemoryReads();
     traceTotals();
     std::fflush(stdout);
     std::fflush(stderr);
