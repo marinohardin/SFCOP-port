@@ -13,7 +13,8 @@
 #   linux-<arch>     dist/SFCOP-<version>-linux-<arch>/  dist/SFCOP-<version>-linux-<arch>.tar.gz
 #                                                        dist/SFCOP-<version>-linux-<arch>.AppImage
 #   windows-<arch>   dist/SFCOP-<version>-windows-<arch>/ dist/SFCOP-<version>-windows-<arch>.zip
-#   source           dist/SFCOP-<version>-source.tar.gz (git archive of HEAD; nothing is built)
+#   source           dist/SFCOP-<version>-source.tar.gz (git archive of HEAD and of the pinned
+#                    decomp/ commit; nothing is built)
 #
 # Every package is checked by packaging/check_package.py: nothing from the original game. The
 # version is the VERSION file's, or SFCOP_VERSION. The install and the pcrecomp clone are found as
@@ -47,7 +48,34 @@ mkdir -p "$dist"
 
 if [ "$preset" = source ]; then
     out="$dist/SFCOP-$version-source.tar.gz"
-    git -C "$root" archive --format=tar.gz --prefix="SFCOP-$version-source/" -o "$out" HEAD
+    top="SFCOP-$version-source"
+    # git archive leaves the decomp submodule out, so the decompilation's pinned commit is
+    # archived from its clone under decomp/ into the same package.
+    pin=$(git -C "$root" rev-parse HEAD:decomp)
+    if ! git -C "$root/decomp" cat-file -e "$pin^{commit}" 2>/dev/null; then
+        echo "dist: the decompilation's pinned commit $pin is not in decomp/" \
+             "(git submodule update --init)" >&2
+        exit 2
+    fi
+    parts=$(mktemp -d "${TMPDIR:-/tmp}/sfcop-source.XXXXXX")
+    trap 'rm -rf "$parts"' EXIT INT TERM
+    git -C "$root" archive --format=tar --prefix="$top/" -o "$parts/port.tar" HEAD
+    git -C "$root/decomp" archive --format=tar --prefix="$top/decomp/" -o "$parts/decomp.tar" "$pin"
+    "$python" -I - "$out" "$parts/port.tar" "$parts/decomp.tar" <<'EOF'
+import sys
+import tarfile
+
+out, *parts = sys.argv[1:]
+seen = set()
+with tarfile.open(out, 'w:gz', format=tarfile.PAX_FORMAT) as dst:
+    for part in parts:
+        with tarfile.open(part) as src:
+            for member in src:
+                if member.isdir() and member.name.rstrip('/') in seen:
+                    continue    # the submodule's empty folder, written by both archives
+                seen.add(member.name.rstrip('/'))
+                dst.addfile(member, src.extractfile(member) if member.isfile() else None)
+EOF
     echo "dist: $out"
     exit 0
 fi
