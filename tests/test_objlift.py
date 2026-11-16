@@ -28,6 +28,9 @@ DECOMP = os.path.abspath(os.environ.get('SFCOP_DECOMP_DIR') or os.path.join(REPO
 for _p in (os.path.join(REPO, 'cmake', 'lifter'), TOOL, os.path.join(TOOL, 'fixtures'), DECOMP):
     if _p not in sys.path:
         sys.path.insert(0, _p)
+if not os.path.isdir(os.path.join(DECOMP, 'harness')):
+    pytest.skip('run git submodule update --init: the decompilation is not at ' + DECOMP,
+                allow_module_level=True)
 
 import make_coff as mc  # noqa: E402
 import compile as objcompile  # noqa: E402
@@ -911,7 +914,10 @@ def test_the_real_dynamic_allocator_object_lifts_onto_the_exe(tmp_path):
         for r in csv.DictReader(f, delimiter='\t'):
             if r['source'] == 'Common/DynamicAllocator.cpp' and 'vc6' in r['modes'].split():
                 rows.append(r)
-    assert [r['address'] for r in rows] == ['0x006fc4d0', '0x006fc5a0', '0x006fc750']
+    # The three functions this test lifts, whatever else the decompilation claims in the unit.
+    wanted = ['0x006fc4d0', '0x006fc5a0', '0x006fc750']
+    rows = [r for r in rows if r['address'] in wanted]
+    assert [r['address'] for r in rows] == wanted
     manifest = tmp_path / 'manifest.tsv'
     with open(manifest, 'w', newline='') as f:
         w = csv.DictWriter(f, rows[0].keys(), delimiter='\t', lineterminator='\n')

@@ -234,9 +234,9 @@ def test_health_check_asks_the_url_the_environment_names(tmp_path):
 def test_each_checkout_gets_its_own_build_directory(tmp_path, monkeypatch):
     # A CMake cache belongs to one source directory, so two worktrees must not share one. The
     # slug is the checkout's name and the first 12 hex digits of sha256 over its absolute path;
-    # the literal below was computed once by hand for "/x/SFCOP-decomp".
-    assert checkout_slug(Path("/x/SFCOP-decomp")) == "SFCOP-decomp-341c8c558e6a"
-    assert checkout_slug(Path("/x/.claude/worktrees/wp-X/SFCOP-decomp")) != "SFCOP-decomp-341c8c558e6a"
+    # the literal below was computed once by hand for "/x/ExampleCheckout".
+    assert checkout_slug(Path("/x/ExampleCheckout")) == "ExampleCheckout-57484229bbfb"
+    assert checkout_slug(Path("/x/.claude/worktrees/wp-X/ExampleCheckout")) != "ExampleCheckout-57484229bbfb"
     monkeypatch.delenv("SFCOP_SERVER_BUILD", raising=False)
     monkeypatch.setenv("SFCOP_WORK", str(tmp_path / "work"))
     assert build_dir().parent == tmp_path / "work" / "server-tests"
