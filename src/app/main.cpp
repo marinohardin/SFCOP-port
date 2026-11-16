@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "Bundle.h"
+#include "LogPaths.h"
 #include "ExitCodes.h"
 #include "ServiceHosts.h"
 #include "Startup.h"
@@ -220,9 +221,10 @@ int main(int argc, char **argv) {
         return *start.exitCode;
     }
     // The start line of the important log: which build, which install and data folder (paths only,
-    // never what is in them).
+    // never what is in them), with the home folder written as ~ so the log names no account.
     sfcop_logf(SFCOP_LOG_IMPORTANT, "=== SFCOP %s (build %s) started: install %s, data %s\n", SFCOP_VERSION,
-               SFCOP_BUILD_COMMIT, start.installDir.c_str(), start.dataDir.c_str());
+               SFCOP_BUILD_COMMIT, app::collapseHome(start.installDir).c_str(),
+               app::collapseHome(start.dataDir).c_str());
 
     guest::Options options;
     options.installDir = start.installDir;
