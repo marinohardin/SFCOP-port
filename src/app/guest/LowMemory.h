@@ -9,9 +9,10 @@
 // the mission never creates); the port leaves the region unmapped, so they end the run.
 //
 // With the switch on, the guest host reserves the region at boot and leaves it inaccessible. The
-// first read fault in one of its host pages logs one line naming the code that read it, fills
-// that page with environment-shaped text, makes it read-only, and resumes the instruction, which
-// then reads the text. A write still faults, as does any read with the switch off, so those keep
+// first read fault in one of its host pages fills that page with environment-shaped text, makes
+// it read-only, records who read it, and resumes the instruction, which then reads the text. The
+// fault handler does only that (system calls, a fill and atomics); the record is turned into a
+// log line naming the code that read it later, outside the handler (TakeReads). A write still faults, as does any read with the switch off, so those keep
 // ending the run as before; the oracle and CI run with the switch off so that such reads show up
 // there.
 //
@@ -36,8 +37,10 @@ inline constexpr bool InLowMemory(std::uint32_t guest) {
 
 // The text the region reads as, one UTF-16 code unit per character, repeated over the region from
 // its first byte. Every character is printable ASCII (0x20 to 0x7E) and there is no NUL anywhere,
-// so a 32-bit read at any address in the region, aligned or not, is at least 0x00200020: never 0,
-// never a small id such as a team or an index, and never a pointer into the guest's low memory.
+// so a 32-bit read at any address in the region, aligned or not, is at least 0x00200020 and at
+// most 0x7E007E00: never 0 and never a small id such as a team or an index. It can be the address
+// of something (0x00400000 and up is the game's image), as two characters of a real environment
+// block can; code that took it for a pointer reads whatever is there, as on the original.
 // A real environment block separates its entries with NULs; here a space stands in for each, for
 // that reason. The entries are invented and name no real machine, user or folder; the text is
 // about as long as a typical environment of the time.
@@ -74,23 +77,44 @@ public:
     bool Arm();
     bool Armed() const { return armed_; }
 
-    // A fault at guest address `guest` with `access`. Safe in a signal handler: system calls and
-    // atomics only. A read, or an access the platform cannot tell (read faults are the case this
+    // A read the region answered: the guest address read, the guest function current then
+    // (g_cur_func) and the host instruction that read it.
+    struct Read {
+        std::uint32_t address = 0;
+        std::uint32_t function = 0;
+        std::uintptr_t pc = 0;
+    };
+
+    // A fault at guest address `guest` with `access`, by guest function `function` at host
+    // instruction `pc`. Safe in a signal handler: system calls, the page's fill and atomics only;
+    // nothing is formatted or printed here. A page this call maps records the read for TakeReads. A read, or an access the platform cannot tell (read faults are the case this
     // serves; a write to a page this has already made readable is passed on, so it cannot loop),
     // in an inaccessible page is mapped; everything else is not handled.
-    Outcome OnFault(std::uint32_t guest, FaultAccess access);
+    Outcome OnFault(std::uint32_t guest, FaultAccess access, std::uint32_t function = 0,
+                    std::uintptr_t pc = 0);
+
+    // The reads recorded since the last call, each once, in page order, up to `max` of them into
+    // `out`; how many. Not for a signal handler's use: its caller formats and prints them.
+    std::size_t TakeReads(Read *out, std::size_t max);
+
+    // How long a fault waits for another to finish mapping its page before it gives up and ends
+    // the run (one mapping takes microseconds; a wait this long means it cannot finish).
+    static constexpr std::uint32_t kMappingWaitLimit = 1u << 26;
 
     std::size_t PageCount() const { return pages_; }
 
 private:
     static constexpr std::size_t kMaxPages = 16; // 4 KB pages; 16 KB pages give 4, 64 KB pages 1
     enum : std::uint8_t { kNone, kMapping, kReadable };
+    static constexpr std::size_t kMaxReads = kMaxPages; // at most one per page
 
     std::uint8_t *guestZero_;
     std::size_t hostPage_;
     std::size_t pages_ = 0;
     bool armed_ = false;
     std::atomic<std::uint8_t> state_[kMaxPages] = {};
+    Read reads_[kMaxPages] = {};                     // written before the page is published
+    std::atomic<bool> reported_[kMaxPages] = {};     // its read handed out by TakeReads
 };
 
 } // namespace sfcop::guest

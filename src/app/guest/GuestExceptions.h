@@ -35,6 +35,11 @@ void InstallExceptionHooks();
 // and before the game runs; with the switch off it changes nothing.
 void InstallLowMemoryReads(std::uint32_t exeBase, std::uint32_t exeSize);
 
+// Prints a line for each low-memory read recorded since the last call (LowMemory.h), naming the
+// code that read it. The fault handler only records; this formats, so it runs outside it: at
+// each turn of the pump and when the run ends. Nothing with the switch off.
+void ReportLowMemoryReads();
+
 // Looks up the RaiseException row that RaiseFromHost() calls. Once, after the modules' tables are
 // registered.
 void BindRaiseException();

@@ -1,6 +1,7 @@
 #include "LowMemory.h"
 
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 
 #if defined(_WIN32)
@@ -13,6 +14,7 @@
 #include <windows.h>
 #else
 #include <sys/mman.h>
+#include <unistd.h>
 #endif
 
 namespace sfcop::guest {
@@ -74,6 +76,20 @@ bool protect(std::uint8_t *at, std::size_t bytes, Protection protection) {
                                                             : PROT_READ | PROT_WRITE;
     return mprotect(at, bytes, flags) == 0;
 #endif
+}
+
+// A fault waited kMappingWaitLimit turns for a page another fault was mapping: the run cannot go
+// on. Signal-safe: a fixed message by write(2), then abort.
+[[noreturn]] void mappingStuck() {
+    static const char kMessage[] =
+        "low-memory read: a page of guest 0x00010000-0x0001FFFF never finished mapping; ending the run\n";
+#if defined(_WIN32)
+    DWORD written = 0;
+    WriteFile(GetStdHandle(STD_ERROR_HANDLE), kMessage, sizeof kMessage - 1, &written, nullptr);
+#else
+    static_cast<void>(write(2, kMessage, sizeof kMessage - 1));
+#endif
+    std::abort();
 }
 
 } // namespace
@@ -148,7 +164,14 @@ bool LowMemoryRegion::Arm() {
 
 // The guest runs one thread at a time (the machine lock), so a page is filled while no other
 // guest thread can read it; the states only keep two faults from mapping one page twice.
-LowMemoryRegion::Outcome LowMemoryRegion::OnFault(std::uint32_t guest, FaultAccess access) {
+//
+// The page's owner (the fault that moved it to kMapping) makes it writable, fills it, makes it
+// read-only, records the read and only then publishes kReadable. It touches the page only after
+// it is writable and only through FillLowMemory, so it cannot fault on that page again while it
+// maps it, and so never waits on itself. A fault that finds kMapping is another thread's, or a
+// signal handler interrupting the owner; it waits a bounded time and then ends the run.
+LowMemoryRegion::Outcome LowMemoryRegion::OnFault(std::uint32_t guest, FaultAccess access,
+                                                  std::uint32_t function, std::uintptr_t pc) {
     if (!armed_ || !InLowMemory(guest) || access == FaultAccess::kWrite) {
         return Outcome::kNotHandled;
     }
@@ -169,15 +192,33 @@ LowMemoryRegion::Outcome LowMemoryRegion::OnFault(std::uint32_t guest, FaultAcce
             state.store(kNone, std::memory_order_release);
             return Outcome::kNotHandled;
         }
+        reads_[index] = Read{guest, function, pc};
         state.store(kReadable, std::memory_order_release);
         return Outcome::kMapped;
     }
-    while (seen == kMapping) {
+    for (std::uint32_t waited = 0; seen == kMapping; ++waited) {
+        if (waited == kMappingWaitLimit) {
+            mappingStuck();
+        }
         seen = state.load(std::memory_order_acquire);
     }
     // Readable already: a read that faulted while another fault mapped the page is retried; an
     // access of unknown kind there may be a write, which must not be retried for ever.
     return seen == kReadable && access == FaultAccess::kRead ? Outcome::kRetry : Outcome::kNotHandled;
+}
+
+std::size_t LowMemoryRegion::TakeReads(Read *out, std::size_t max) {
+    std::size_t taken = 0;
+    for (std::size_t index = 0; index < pages_ && taken < max; ++index) {
+        if (state_[index].load(std::memory_order_acquire) != kReadable) {
+            continue;
+        }
+        bool reported = false;
+        if (reported_[index].compare_exchange_strong(reported, true, std::memory_order_acq_rel)) {
+            out[taken++] = reads_[index];
+        }
+    }
+    return taken;
 }
 
 } // namespace sfcop::guest

@@ -147,12 +147,14 @@ struct Stand {
 LowMemoryRegion *g_region = nullptr;
 std::uint8_t *g_guestZero = nullptr;
 volatile int g_mapped = 0;
+constexpr std::uint32_t kReader = 0x6000EBB0u; // the guest function the test's reads stand for
 
 // The fault handler's part that the guest host's own plays: a handled fault resumes the read.
 void onTestFault(int, siginfo_t *info, void *) {
     const auto guest = static_cast<std::uint32_t>(reinterpret_cast<std::uintptr_t>(info->si_addr) -
                                                   reinterpret_cast<std::uintptr_t>(g_guestZero));
-    const LowMemoryRegion::Outcome outcome = g_region->OnFault(guest, FaultAccess::kRead);
+    const LowMemoryRegion::Outcome outcome = g_region->OnFault(
+        guest, FaultAccess::kRead, kReader, reinterpret_cast<std::uintptr_t>(info->si_addr));
     if (outcome == LowMemoryRegion::Outcome::kMapped) {
         g_mapped = g_mapped + 1;
         return;
@@ -205,6 +207,37 @@ TEST_CASE("on: the first read of a page maps it read-only with the text, and the
     // Outside the region: not handled.
     CHECK(region.OnFault(0x00020000u, FaultAccess::kRead) == LowMemoryRegion::Outcome::kNotHandled);
     CHECK(region.OnFault(0x0000FFFCu, FaultAccess::kRead) == LowMemoryRegion::Outcome::kNotHandled);
+}
+
+TEST_CASE("on: the fault path only records the read; each record is taken once, outside it") {
+    Stand stand;
+    LowMemoryRegion region(stand.guestZero(), stand.page);
+    REQUIRE(region.Arm());
+    LowMemoryRegion::Read reads[16];
+    CHECK(region.TakeReads(reads, 16) == 0);
+    {
+        Handler handler(region, stand.guestZero());
+        CHECK(stand.read(0x0001038Cu) == 0x0054005Cu);
+        CHECK(stand.read(0x00010390u) != 0u); // the same page: nothing more recorded
+    }
+    // Stand::read takes its bytes from the highest, so the faulting byte is the dword's last; the
+    // test's handler passes the faulting address as the pc.
+    REQUIRE(region.TakeReads(reads, 16) == 1);
+    CHECK(reads[0].address == 0x0001038Fu);
+    CHECK(reads[0].function == kReader);
+    CHECK(reads[0].pc == reinterpret_cast<std::uintptr_t>(stand.guestZero() + 0x0001038Fu));
+    CHECK(region.TakeReads(reads, 16) == 0); // taken once
+
+    {
+        Handler handler(region, stand.guestZero());
+        static_cast<void>(stand.read(0x0001FFF0u));
+    }
+    if (stand.page < 0x10000) {
+        REQUIRE(region.TakeReads(reads, 16) == 1);
+        CHECK(reads[0].address == 0x0001FFF3u);
+    }
+    // A record taken with no room is left for the next call.
+    CHECK(region.TakeReads(reads, 0) == 0);
 }
 
 TEST_CASE("on: a write to the region still faults") {
