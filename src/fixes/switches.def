@@ -25,6 +25,11 @@ SFCOP_FIX_SWITCH(fix_hle_named_objects, Runtime, 1, Project,
     "A kernel object created with an empty name is unnamed, so each such event, mutex and "
     "semaphore is its own object instead of one shared by all")
 
+SFCOP_FIX_SWITCH(fix_hle_low_memory_reads, Runtime, 1, Project,
+    "A read of guest 0x00010000-0x0001FFFF, which a null pointer to a large object reaches, gets "
+    "environment-shaped text, as on the original's Windows NT target, instead of ending the run; "
+    "the first read in each page is logged. Off, such a read ends the run")
+
 SFCOP_FIX_SWITCH(fix_smooth_scaled_frame, Runtime, 1, Project,
     "The game's frame, shown scaled into a window of another size, is filtered sharp-bilinear "
     "(nearest to the whole-number part of the scale, linear for the rest); off, every scale "
