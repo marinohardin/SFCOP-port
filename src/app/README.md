@@ -196,7 +196,7 @@ file to change it.
 
 Started from Finder, the app finds the install as a terminal run does (remembered in
 `install.txt`, else the install the build was made from, else the usual places) but cannot ask
-for one, and it writes what the client prints to `logs/launch.log` in the data folder. The mission
+for one, and it writes what the client prints to `logs/launch-YYYYmmdd-HHMMSS.log` (one file per run, the newest 10 kept) in the data folder. The mission
 list needs the translated modules: a double click has no environment, so name their folder once
 in the data folder,
 
