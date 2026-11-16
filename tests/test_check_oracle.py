@@ -1,14 +1,12 @@
 """scripts/check.sh plays every recorded trace on the native client and compares (the "replay
 oracle" block).
 
-Each test builds a throwaway repository with this checkout's check.sh, harness/, scripts/ and the
-trace tools, one recorded trace (C5's fixture pair under oracle/trace/fixtures/, invented), a steps
-file for it, and a stand-in client at build/macos-arm64/sfcop: a shell script that records the
+Each test builds a throwaway repository with this checkout's check.sh and the trace tools, one
+recorded trace (C5's fixture pair under oracle/trace/fixtures/, invented), a steps file for it, and a stand-in client at build/macos-arm64/sfcop: a shell script that records the
 arguments it was given, writes the trace named by $STANDIN_TRACE where the real client would
 (<logs>/<mission>/<input>.trace) and exits $STANDIN_EXIT. The prepared data folder is an empty
 directory named by SFCOP_ORACLE_DATA.
 """
-import json
 import os
 import shutil
 import stat
@@ -18,9 +16,6 @@ import pytest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FIXTURES = os.path.join(ROOT, 'oracle', 'trace', 'fixtures')
-
-ENTRY = {'name': 'tAllocator::Get', 'score': 100.0, 'exact': True, 'unit': 'Common/Allocator.cpp',
-         'recorded': '2026-01-02'}
 
 STANDIN = '''#!/bin/sh
 # A stand-in for the native client (tests/test_check_oracle.py).
@@ -63,18 +58,11 @@ def repo(tmp_path):
     """A repository on wp/test with one recorded trace, its steps file and the stand-in client."""
     repo = str(tmp_path / 'repo')
     os.makedirs(repo)
-    ignore = shutil.ignore_patterns('__pycache__', '*.pyc', 'tests')
-    shutil.copytree(os.path.join(ROOT, 'harness'), os.path.join(repo, 'harness'), ignore=ignore)
-    write(os.path.join(repo, 'harness', 'tests', 'test_harness_placeholder.py'),
-          'def test_harness_placeholder():\n    pass\n')
-    for rel in ('scripts/check.sh', 'scripts/port_footprint.py', 'scripts/progress.py',
-                '.github/hotspots.txt', '.github/CODEOWNERS', 'oracle/trace/compare.py',
-                'oracle/trace/mklog.py'):
+    for rel in ('scripts/check.sh', '.github/hotspots.txt', '.github/CODEOWNERS',
+                'oracle/trace/compare.py', 'oracle/trace/mklog.py'):
         os.makedirs(os.path.dirname(os.path.join(repo, rel)), exist_ok=True)
         shutil.copy(os.path.join(ROOT, rel), os.path.join(repo, rel))
     write(os.path.join(repo, 'tests', 'test_nothing.py'), 'def test_nothing():\n    pass\n')
-    write(os.path.join(repo, 'analysis', 'results', 'matched_set.json'),
-          json.dumps({'version': 1, 'functions': {'0x006fc690': ENTRY}}, indent=1) + '\n')
     shutil.copy(os.path.join(FIXTURES, 'expected.trace'),
                 os.path.join(_mkdir(repo, 'oracle/expected/OracleSkirmish'), 'skirmish.trace'))
     write(os.path.join(repo, 'oracle', 'driver', 'skirmish.steps'),

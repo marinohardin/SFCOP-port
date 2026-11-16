@@ -26,39 +26,30 @@ import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
 PRESETS = ('macos-arm64', 'linux-x64', 'windows-x64')
-# What the oracle judges: the game's source, the native platform layer, and the oracle's own
-# runner, driver, trace tools and this workflow.
-GATE = re.compile(r'^(game/|src/|oracle/presets/|oracle/driver/|oracle/trace/|'
+# What the oracle judges: the decompiled game (the decomp submodule: a change of its pinned commit
+# is the path `decomp`), the native platform layer, and the oracle's own runner, driver, trace
+# tools and this workflow.
+GATE = re.compile(r'^(decomp(/|$)|src/|oracle/presets/|oracle/driver/|oracle/trace/|'
                   r'\.github/workflows/pull-request\.yml$)')
 
 
-# A change made only of decompiled source and its records (a grind pull request) builds and
-# judges macOS alone: the cross presets compile the same game/ code with the same lifter, and the
-# platform layer they exercise did not change. The same holds for the lift's own inputs outside
-# game/ (cmake/lifter/objlift.cmake lists them): the harness library, the unit profiles, the
-# analysis exports and tables, and the object lift. harness/lib/paths.py is not among them: every
-# preset's configure reads it (cmake/lifter/locate.py). analysis/results/*.tsv is the lift's own
-# glob; a .tsv put there that is not a lift table belongs elsewhere. game/port/ (the platform-forced shims) and
-# game/UNITS.tsv are not decompiled source, and of analysis/results/ only the harness's records
-# and the lift's tables are.
-DECOMP_ONLY = re.compile(r'^(game/(?!port/|UNITS\.tsv$)|analysis/results/(matched_set\.json|difficult_functions\.tsv)$|'
-                         r'src/app/guest/override\.cpp$|'
-                         r'harness/lib/(?!paths\.py$)|harness/units\.json$|ghidra/exports/|analysis/results/[^/]+\.tsv$|'
-                         r'tools/objlift/)')
+# A change made only of the decompilation and what it generates here (a pull request that moves
+# the decomp submodule's pin, with the regenerated override table) builds and judges macOS alone:
+# the cross presets compile the same decompiled code with the same lifter, and the platform layer
+# they exercise did not change. The object lift (tools/objlift/), which only the lift-on macOS
+# build runs, counts with it. The submodule shows as one path, so a pin move that also changes
+# the decompilation's op/port/ shims or its harness/lib/paths.py (which every preset's configure
+# reads) is still judged on macOS alone.
+DECOMP_ONLY = re.compile(r'^(decomp(/|$)|src/app/guest/override\.cpp$|tools/objlift/)')
 DECOMP_PRESET = 'macos-arm64'
 
-# What no build reads: documentation, the Python tests and the harness's own tools outside the
-# library the lift uses, the analysis scripts and notes, the Ghidra pipeline outside its exports,
-# and the check and progress scripts. A change made only of these builds no preset; the check
-# job still runs the tests. cmake/, CMakeLists.txt and the sources the build globs are never here,
-# nor tests/fixtures/, which the C++ tests read. This is a deny-list: a path that a build step or a
-# compiled test starts reading must be taken out of it in the same change.
-NO_BUILD = re.compile(r'^(docs/|tests/(?!fixtures/)|harness/(tests|hooks|prompts|proof)/|'
-                      r'harness/(README\.md|SRC_LAYOUT\.md|queue\.py|loop\.sh|build-and-verify\.sh|'
-                      r'update-matched-set\.sh)$|'
-                      r'ghidra/(scripts|results)/|ghidra/(README\.md|REPORT\.md|build\.sh)$|'
-                      r'analysis/(?!results/)|analysis/results/progress/|'
-                      r'scripts/(check\.sh|progress\.py)$|[^/]+\.md$|pytest\.ini$)')
+# What no build reads: documentation, the Python tests, the analysis notes and the check script.
+# A change made only of these builds no preset; the check job still runs the tests. cmake/,
+# CMakeLists.txt and the sources the build globs are never here, nor tests/fixtures/, which the
+# C++ tests read. This is a deny-list: a path that a build step or a compiled test starts reading
+# must be taken out of it in the same change.
+NO_BUILD = re.compile(r'^(docs/|tests/(?!fixtures/)|analysis/|scripts/check\.sh$|[^/]+\.md$|'
+                      r'pytest\.ini$)')
 
 # Presets not built or run on pull requests, whatever the change. Paused by the owner on 2026-11-11
 # while iterating: the runner does one job at a time and the cross builds dominated its queue.
@@ -90,7 +81,7 @@ def skip_reason(preset, files):
     files = [f.strip() for f in files if f.strip()]
     if all(NO_BUILD.match(f) for f in files):
         return 'this pull request changes only paths no build reads (NO_BUILD in oracle/presets/ci.py)'
-    return (f'this pull request changes only decompiled source and lift inputs, which {DECOMP_PRESET} '
+    return (f'this pull request changes only the decompilation and lift inputs, which {DECOMP_PRESET} '
             'alone builds (DECOMP_ONLY in oracle/presets/ci.py)')
 
 
