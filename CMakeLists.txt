@@ -91,6 +91,12 @@ else()
     set(SFCOP_CONFIG_HASH_LIST "${SFCOP_DECOMP_DIR}/analysis/results/retail_hashes.sha256")
     set(SFCOP_CONFIG_SOURCE_DIR "${CMAKE_SOURCE_DIR}")
 endif()
+file(STRINGS "${CMAKE_SOURCE_DIR}/VERSION" SFCOP_CONFIG_VERSION LIMIT_COUNT 1)
+execute_process(COMMAND git -C "${CMAKE_SOURCE_DIR}" rev-parse --short=12 HEAD
+                OUTPUT_VARIABLE SFCOP_CONFIG_COMMIT OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+if(NOT SFCOP_CONFIG_COMMIT)
+    set(SFCOP_CONFIG_COMMIT "unknown")
+endif()
 configure_file(cmake/sfcop_build_config.h.in "${CMAKE_BINARY_DIR}/generated/sfcop_build_config.h" @ONLY)
 
 # The registration of the HLE module tables, generated from the shim files the build found
