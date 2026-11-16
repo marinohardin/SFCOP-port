@@ -5,7 +5,7 @@
  *
  *   build    selects an override unit under src/fixes/overrides/: a copy of the fixed game
  *            function, `// OVERRIDE:` annotated, linked in place of the original when the switch
- *            is on. game/ is never edited for a fix. `#if SFCOP_FIX(fix_name)` may appear inside an
+ *            is on. decomp/op/ is never edited for a fix. `#if SFCOP_FIX(fix_name)` may appear inside an
  *            override unit only. The position is fixed when the build is configured: under VC6 it
  *            is 0 for every switch, because the byte check and the 32-bit build compile the
  *            original; in the native build it is the switch's default, or the value of
@@ -22,7 +22,7 @@
  * (C4067) and compiles the original, as it does for every switch.
  *
  * The part above the C++ section is plain C and VC6 C++, so that an override unit, compiled by
- * VC6 like game/, and C code can include it.
+ * VC6 like decomp/op/, and C code can include it.
  */
 #ifndef SFCOP_FIXES_FIXES_H
 #define SFCOP_FIXES_FIXES_H

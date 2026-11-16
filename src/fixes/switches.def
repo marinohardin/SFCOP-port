@@ -5,7 +5,7 @@
  *   SFCOP_FIX_SWITCH(name, kind, default, origin, "description")
  *
  *   name         fix_ and a lower_snake_case verb phrase
- *   kind         Runtime (read in src/ by sfcop::fixes::isEnabled) or Build (read in game/ by #if)
+ *   kind         Runtime (read in src/ by sfcop::fixes::isEnabled) or Build (read in an override unit by #if)
  *   default      1 on, 0 off: crash and hang fixes on, rules changes off (DESIGN §5.14)
  *   origin       Project or Community
  *   description  one sentence on the behavior the switch changes

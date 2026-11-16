@@ -18,7 +18,6 @@ scripts/check.sh
 
 # Shared contracts
 docs/**
-PROPOSAL.md
 # The decompilation: the submodule's pinned commit and where it comes from
 decomp
 .gitmodules
