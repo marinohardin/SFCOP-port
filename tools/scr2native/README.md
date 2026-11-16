@@ -375,8 +375,14 @@ rule, and says which.
 `<private>/` is absent) the template build has to be made from the main checkout
 (`toolchain/scr/test_template.sh` or `toolchain/build_scr.sh`) and passed with `--build-dir`.
 
-One name in the committed list is not the generator's: `KERNEL32.DLL!GetEnvironmentVariableA`, which
-87 of the 88 shipped scripts import, was added by hand with a note above it (the generator has no
-input for extra names, and the Lib set its template links lacks the function). A regeneration drops
-it, and `tests/test_module_imports.py::test_allowlist_keeps_the_hand_added_name` fails until it is
-put back.
+Three names in the committed list are not the generator's, and the generator has no input for extra
+names:
+
+- `KERNEL32.DLL!GetEnvironmentVariableA`, which 87 of the 88 shipped scripts import, was added by
+  hand with a note above it (the Lib set the template links lacks the function).
+- `OSSPECIFIC95.DLL!OS_InterlockedCompareExchange` and `OSSPECIFIC98.DLL!OS_InterlockedCompareExchange`,
+  which every shipped script looks up at start-up for its lock, were added by hand with a note in
+  the header.
+
+A regeneration drops them, and `tests/test_module_imports.py::test_allowlist_keeps_the_hand_added_name`
+or `::test_allowlist_keeps_the_hand_added_osspecific_names` fails until they are put back.
