@@ -76,7 +76,7 @@ Anyway next to SFCOP (on macOS 14 and older, right-click the app, choose Open, t
 If your install
 is on an external disk, macOS asks once whether SFCOP may read removable volumes; allow it, or the
 client cannot read the install. A double-click cannot ask where the install is: started from
-Finder before it knows one, the client stops and writes why to `logs/launch.log` in the data
+Finder before it knows one, the client stops and writes why to `logs/launch-YYYYmmdd-HHMMSS.log` (one file per run, the newest 10 kept) in the data
 folder. So start it once from Terminal with the path:
 
 ```bash
