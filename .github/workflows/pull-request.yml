@@ -25,9 +25,10 @@ jobs:
       any: ${{ steps.plan.outputs.any }}
       oracle: ${{ steps.plan.outputs.oracle }}
     steps:
+      # Only the changed paths are read (the submodule shows as the one path `decomp`), so the
+      # decompilation is not checked out here.
       - uses: actions/checkout@v4
         with:
-          submodules: true
           fetch-depth: 2
 
       - name: Which presets build and whether the oracle runs
@@ -67,6 +68,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
+          # The decompilation (decomp/) is a private repository, which the workflow's own token
+          # cannot read: DECOMP_READ_TOKEN is a read-only token for it, set by the owner. Once the
+          # decompilation is public, the workflow's token is enough and the secret can go.
+          token: ${{ secrets.DECOMP_READ_TOKEN || github.token }}
           # The checkout is the merge of the pull request into its base. Its first parent is
           # the base, so two commits are enough to list what the pull request changes.
           fetch-depth: 2
@@ -113,6 +118,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
+          # The private decompilation needs DECOMP_READ_TOKEN (see the check job).
+          token: ${{ secrets.DECOMP_READ_TOKEN || github.token }}
           fetch-depth: 2
 
       # Every preset in the matrix is built; the step stays so the steps below read as before.
@@ -230,6 +237,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
+          # The private decompilation needs DECOMP_READ_TOKEN (see the check job).
+          token: ${{ secrets.DECOMP_READ_TOKEN || github.token }}
           fetch-depth: 2
 
       - name: Does this pull request touch what the oracle judges
