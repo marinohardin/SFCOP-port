@@ -1,6 +1,6 @@
-# SFCOP-decomp — instructions for coding agents
+# SFCOP-port — instructions for coding agents
 
-A functional decompilation and native Apple Silicon, Windows and Linux port of Star Trek Starfleet Command II: Orion Pirates 2.5.5.2, verified against the original. No retail file or asset is included; bring your own game.
+The native Apple Silicon, Windows and Linux port of Star Trek Starfleet Command II: Orion Pirates 2.5.5.2, verified against the original. It builds on the decompilation, which lives in its own repository (SFC2-decomp) and is pinned here as the submodule `decomp/`. No retail file or asset is included; bring your own game.
 
 ## Read before writing code
 
@@ -9,6 +9,7 @@ A functional decompilation and native Apple Silicon, Windows and Linux port of S
 | `.agent/CONTINUITY.md` | At the start of every turn (see "CONTINUITY.md") |
 | `docs/CONVENTIONS.md` | All of it. It is the standard your code is held to |
 | `docs/DESIGN.md` | The sections for the area you are working on. It defines behavior |
+| `decomp/docs/INTERFACE.md` | Before touching anything that reads the decompilation: it is the only contract with it |
 | Your brief | All of it, if you were given a work package. It carries the goal, the paths you own, the DESIGN sections to read and the acceptance line |
 
 If the documents and your task disagree, stop and say so. Do not pick one silently.
@@ -64,9 +65,9 @@ Run from the repository root.
 | Command | Use |
 | --- | --- |
 | `sh .githooks/install.sh` | Switch on the git hooks, once per clone (it covers every worktree) |
-| `sh scripts/check.sh` | The definition of done: tests, the compile oracle and the replay oracle. CI runs the same steps |
+| `git submodule update --init` | Once per clone and per worktree: check out the pinned decompilation at `decomp/` |
+| `sh scripts/check.sh` | The definition of done: tests, the override table, the C++ tests and the replay oracle. CI runs the same steps |
 | `python3 -m pytest tests` | Run tests, or a subset |
-| `python3 scripts/progress.py` | Progress metrics (once P1-6 lands): percent of code bytes exact, functional, lifted; percent named |
 
 There is no install, build, lint or format command yet; the plan phase adds them as the toolchain grows.
 
@@ -93,7 +94,7 @@ There is no install, build, lint or format command yet; the plan phase adds them
 ## Tests and coverage
 
 - New features and bug fixes come with tests. A bug fix includes a test that fails without the fix.
-- There is no line-coverage threshold. Progress is measured by `scripts/progress.py` as percent of original code bytes that are byte-exact, functionally verified, or still lifted, plus percent of functions named; no pull request may lower the exact or functional figure for any function, compared by original address.
+- There is no line-coverage threshold. Decompilation progress is measured in SFC2-decomp, not here.
 - Tests sit beside the code, or where `docs/CONVENTIONS.md` says.
 - No network, no real external services and no real clock in unit tests. No real personal or confidential data in fixtures.
 - Write expected values out by hand. Do not compute them with the code under test.
@@ -118,14 +119,15 @@ There is no install, build, lint or format command yet; the plan phase adds them
 
 - The game is `<install>/StarFleetOP.exe` (4.8 MB, 2.5.5.2, linked 2003-10-17, MSVC 6 SP4, DirectX 6 interfaces, Winsock plus DirectPlay 4 via COM). `SFCOP.exe` next to it is a boot stub, not the game.
 - The modding SDK (`OP API - R2.1`) holds static libs with about 60k mangled symbols, headers and sources; the server kit is `<server kit>/`. Hashes of every retail file: `analysis/results/retail_hashes.sha256`; verify before use.
-- Orion Pirates 2.5.5.2 is the only target. The game it expands, Star Trek Starfleet Command II: Empires at War (`StarFleet2.exe`), is a later second module of this repository and not started: no build, test, fixture, trace, CI step or annotation uses its exe, and no work package reads it unless its brief says so (`docs/DESIGN.md` §7.5).
-- `<private>/` is read-only input, git-ignored, reached by absolute path from every worktree. Never modify, move or delete anything in it. Never commit retail executables, libraries, assets or anything derived from them byte for byte.
+- Orion Pirates 2.5.5.2 is the only target. Empires at War is a later second module of SFC2-decomp; no build, test, fixture, trace or CI step here uses its exe, and no work package reads it unless its brief says so.
+- The install and SDK are read-only input, git-ignored, reached by absolute path from every worktree. Never modify, move or delete anything in it. Never commit retail executables, libraries, assets or anything derived from them byte for byte.
 
-### Layers: what is the original and what is ours
+### The decompilation is a submodule
 
-- `game/` is the original game's code and nothing else: no feature, no fix, no fix switch, and a `PORT:` line only where the platform forces one (`docs/DESIGN.md` §7.1). It is also the part of the work that a decompilation of Empires at War will reuse (§7.5), so a change to it that is not the original's code costs twice.
-- Features and the platform live in `src/` and `server/`. A fix to game code is an override unit under `src/fixes/overrides/`, linked in place of the original function when its switch is on.
-- Code outside `game/` names a decompiled function by its original address (`STARFLEETOP 0x...`) in annotations, manifests and override units, never by its file in `game/`: files under `game/` move as evidence appears, and `game/Tiger/` and `game/dmp3d/` will move to a tree shared with Empires at War. Including a `game/` header for a layout is allowed; a pull request that moves a file in `game/` updates every include of it and regenerates `game/manifest.tsv` and `src/app/guest/override.cpp` (`python3 tools/manifest.py`).
+- `decomp/` is SFC2-decomp, pinned at one commit. Never edit anything under `decomp/` in this repository: a change to the decompilation is a pull request in SFC2-decomp.
+- The pin moves only in a bump pull request (`chore(decomp): bump to <sha>`), which regenerates `src/app/guest/override.cpp` (`python3 decomp/tools/manifest.py --only-override --override src/app/guest/override.cpp`) and carries the evidence the merge rule below names for decompilation pull requests.
+- The port builds `decomp/op/` only and never reads `decomp/eaw/`. Port code reaches the decompilation only through `SFCOP_DECOMP_DIR` (CMake cache and environment, default `decomp/`) and only through what `decomp/docs/INTERFACE.md` lists. A change that needs more is first a change to that file in SFC2-decomp.
+- Features and the platform live in `src/` and `server/`. A fix to game code is an override unit under `src/fixes/overrides/`, linked in place of the original function when its switch is on, and named by its original address (`STARFLEETOP 0x...`), never by a file under `decomp/`.
 
 ### Storage
 
@@ -150,14 +152,11 @@ Up to eight agents run at once on one MacBook Pro that also hosts Docker, Ghidra
 
 This section is the project's memory. It starts short. Every time an agent breaks a rule that the documents state, or a rule the documents should have stated, the integrator adds one line here, concrete enough to test against, with the reason.
 
-- **A contract pull request that renames or removes a symbol, file or table checks every open package branch for that name before it is merged** (`git grep` across `origin/wp/*`), and the merge order is written down. Reason: #25 renamed the spike's `sfcop_hle_*` tables while B2 was coding against them; the merged develop did not link until #34, and the CI build job did not catch it because it does not run the lift.
-- **Merging a pull request that adds `// FUNCTION:` annotations regenerates `game/manifest.tsv` and `src/app/guest/override.cpp` in the same merge window** (`python3 tools/manifest.py`), or the next check on develop fails at `tests/test_manifest.py`. Reason: #27 merged after #23 without regenerating; #33 repaired it.
-- **A pull request that changes `analysis/results/matched_set.json` runs `python3 tools/manifest.py` and commits what it changes.** A function enters the native build once the matched set records it exact, so a newly exact function changes its manifest mode, and `tests/test_manifest.py` fails until the manifest is regenerated. Reason: #86 made the manifest read the matched set.
+- **A contract pull request that renames or removes a symbol, file or table checks every open package branch for that name before it is merged** (`git grep` across `origin/wp/*`), and the merge order is written down. Reason: SFCOP-decomp#25 renamed the spike's `sfcop_hle_*` tables while B2 was coding against them; the merged develop did not link until SFCOP-decomp#34, and the CI build job did not catch it because it does not run the lift.
+- **A bump pull request regenerates `src/app/guest/override.cpp` from the new pin**, or the check fails at the override-table step. Reason: SFCOP-decomp#27 merged after SFCOP-decomp#23 without regenerating; SFCOP-decomp#33 repaired it.
 - **A scan that must not find a folder names no folder.** A check for paths that must not appear in a package or a binary reads the folders it looks for at run time (from the CMake cache, the environment or a file outside the repository) and prints counts, never the strings it found. Reason: a committed literal would itself be the leak the scan exists to catch, and the first draft of `packaging/check_paths.py` carried one.
 - **A shared data folder is taken on the integrator's go-ahead, not on an announcement, and every run passes `--install` explicitly.** Two clients on one folder corrupt its state, and a folder remembers the last `--install` it was given, so a run without one silently uses another package's build. Reason: in Wave 4, two packages ran on one folder minutes apart after each had "told the integrator", and a shared folder was left pointing at two packages' build gamerooms in turn.
-- **A pull request that changes code under `src/hle/`, `src/app/` or `src/platform/` is merged only after a windowed boot of its branch has been shown reaching the stage `develop` reached before it, named in the pull request** (the key prompt, or the main menu with a first click acting when the integrator's test data directory is passed), with the evidence in the description: the owner's run, or a screen capture or `--shots` image. Headless boots alone are not the standard; documentation and test-only changes are exempt. A decompilation pull request, whose only changes outside `game/`, `analysis/results/` and `tests/` are the regenerated `src/app/guest/override.cpp` and `game/manifest.tsv`, is exempt too, on two pieces of evidence read from the logs, not from the check marks: the `build (macos-arm64)` job built the lifted `sfcop` (its log does not say "skip: the lift"; the other presets do not count), and the `oracle` job's step "The menu path on each preset" ran (it was not skipped) and its log shows `oracle: macos-arm64: MenuPath/menu: exit 0 (ran)`, meaning the lifted client went through the whole menu path. A green `oracle` job is not that evidence by itself: it is also green when the gate skipped it or `SFCOP_ORACLE_DATA` was unset. Until `oracle/expected/` holds a recorded menu trace, and while only macOS builds, nothing is compared, so this checks that the path runs, not that its trace matches. Reason: B2's module merged with a menu that froze and B6's host with a key prompt that never drew, because gate G1 and the merge standard checked headless boots only; the owner found both. The exemption is safe because only functions recorded byte-exact enter the native build (#86).
-- **A grind batch is closed lane by lane, and no next batch or wave is proposed until it is.** Every lane branch ends in a merged pull request or a written disposition (where the function's unclaimed state is explained in `game/`, or a line in the continuity file's grind state naming the branch and why it stays), and the grind state line carries each open lane forward by name until then. Before proposing the next batch or wave, `git fetch` and then `python3 tools/unlanded.py`, with `--disposed <branch>` for each branch that has such a disposition, exits 0. Reason: six of batch 1's eight lanes (364 exact functions) sat unpushed on local branches for three days after a rewrite of the state line dropped them, while the next wave was being offered.
-- **No claim sits on a body that is not the original's code.** A `// FUNCTION:` annotation is never placed on an empty body, a stub, or a placeholder kept only to hold an address: write the function from the exe, or leave it unclaimed so the lift keeps the original's bytes (an address that only separates its neighbours for the harness goes on `analysis/results/boundary_errors.tsv` instead). An honest partial, a real attempt at the original's code, is fine at any score; this is not a demand that functions be exact. A function that scores 100% but is not exact is checked for a wrong symbol or relocation before its pull request. Such a body blocks the lane's pull request; it is not a follow-up. Reason: Wave 2 merged 24 placeholders and 10 empty definitions; they counted as claimed and named, held four deleting destructors at 6-25%, bound one destructor symbol to two exe addresses, and took a correctness pass of three pull requests (#177-#179) to remove.
+- **A pull request that changes code under `src/hle/`, `src/app/` or `src/platform/` is merged only after a windowed boot of its branch has been shown reaching the stage `develop` reached before it, named in the pull request** (the key prompt, or the main menu with a first click acting when the integrator's test data directory is passed), with the evidence in the description: the owner's run, or a screen capture or `--shots` image. Headless boots alone are not the standard; documentation and test-only changes are exempt. A bump pull request, whose only changes are the `decomp` pointer and the regenerated `src/app/guest/override.cpp`, is exempt too, on two pieces of evidence read from the logs, not from the check marks: the `build (macos-arm64)` job built the lifted `sfcop` (its log does not say "skip: the lift"; the other presets do not count), and the `oracle` job's step "The menu path on each preset" ran (it was not skipped) and its log shows `oracle: macos-arm64: MenuPath/menu: exit 0 (ran)`, meaning the lifted client went through the whole menu path. A green `oracle` job is not that evidence by itself: it is also green when the gate skipped it or `SFCOP_ORACLE_DATA` was unset. Until `oracle/expected/` holds a recorded menu trace, and while only macOS builds, nothing is compared, so this checks that the path runs, not that its trace matches. Reason: B2's module merged with a menu that froze and B6's host with a key prompt that never drew, because gate G1 and the merge standard checked headless boots only; the owner found both. The exemption is safe because only functions recorded byte-exact enter the native build (SFCOP-decomp#86).
 
 ## Original work
 

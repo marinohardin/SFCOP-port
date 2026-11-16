@@ -1,8 +1,6 @@
-# SFCOP-decomp
+# SFCOP-port
 
-![Exact](analysis/results/progress/badge-exact.svg) ![Functional](analysis/results/progress/badge-functional.svg) ![Named](analysis/results/progress/badge-named.svg)
-
-A functional decompilation and native port of **Star Trek: Starfleet Command II — Orion Pirates**
+The native port of **Star Trek: Starfleet Command II — Orion Pirates**
 (version 2.5.5.2) for Apple Silicon Macs, Windows and Linux, verified against the original game.
 
 No game file ships with this project. You bring your own retail install; the port reads it in
@@ -18,17 +16,17 @@ switched off years ago. This project rebuilds the game as readable C++ and gives
 layer of its own, so the whole game runs again on current machines and its online parts run against
 servers the project hosts.
 
-- `game/` is the original game's code, recovered function by function and kept as the original
-  wrote it. Every function is checked against the original binary: byte-exact where the pinned
-  compiler reproduces it, behaviour-exact otherwise through a replay oracle that compares the
-  native build's per-tick simulation trace with the original's.
+- `decomp/` is the decompilation, the original game's code recovered function by function in its
+  own repository (SFC2-decomp) and pinned here as a git submodule. Every function there is checked
+  byte for byte against the original binary; here a replay oracle compares the native build's
+  per-tick simulation trace with the original's.
 - `src/` is the platform layer: DirectDraw, Direct3D, DirectInput, DirectPlay, Winsock, the
   registry and the sound library replaced over SDL3, the SDL GPU API, miniaudio and sockets, plus
   the fixes to the game's own bugs, each behind a switch whose default is the original behaviour.
 - `server/` holds the services the online game needs: a lobby and relay for internet play between
   native clients, and the directory and authentication services the Dynaverse client logs on to.
-- `oracle/`, `tools/` and `harness/` are the verification machinery: the replay oracle, the lifter
-  that runs the original's code natively until it is decompiled, and the build-and-verify loop.
+- `oracle/` and `tools/` are the verification machinery: the replay oracle and the lifter that runs
+  the original's code natively until it is decompiled.
 
 Until a function is decompiled, the lifter translates it from the original executable at build
 time, so the native client has run the complete game from the first day while the decompiled
@@ -113,6 +111,7 @@ that runs the tool.
 
 ## Building and running
 
+Clone with `git clone --recurse-submodules` (or run `git submodule update --init` in a clone).
 Requirements: a retail Orion Pirates install patched to 2.5.5.2, CMake and Ninja, a C++17
 compiler, Python 3, and Docker for the lifter's toolchain.
 
@@ -145,18 +144,12 @@ oracle. CI runs the same steps on the three platforms. Releases are made by
 
 `AGENTS.md` is the contract for everyone and everything that commits here, `docs/DESIGN.md`
 defines the behaviour, `docs/CONVENTIONS.md` the code, and `docs/PLAN.md` the work packages.
-`scripts/progress.py` reports how much of the original's code is exact, functional or still
-lifted, and how many functions are named; no change may lower those figures for any function.
+The decompilation's own rules and progress report are in `decomp/` (SFC2-decomp).
 
 ## Progress
 
-![Progress treemap](analysis/results/progress/treemap.svg)
-
-Each rectangle is one translation unit of the original game, sized by its code. Bright green: every function in it is rebuilt byte-exact. Dark grey shading toward green: the share of its bytes matched so far. Library code (C runtime, STL and the like) is left out. The figures are the game-only ones in [PROGRESS.md](analysis/results/progress/PROGRESS.md):
-
-- **Exact:** game code rebuilt byte-for-byte with the original compiler, as a share of game code bytes.
-- **Functional:** exact, plus code verified to behave the same by the replay oracle.
-- **Named:** game functions with a real symbol, as a share of game functions.
+The decompilation's progress, per game, is tracked in SFC2-decomp's README. A function enters this
+build once it is byte-exact there and the pin here has moved past it (a bump pull request).
 
 ## Status and legal
 

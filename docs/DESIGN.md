@@ -1,4 +1,6 @@
-# SFCOP-decomp — Design
+# SFCOP-port — Design
+
+> **Scope.** This repository is the port: the platform layer, the fixes, the servers, the lifter and the replay oracle. The decompiled game code lives in SFC2-decomp, pinned here as the submodule `decomp/`; its sections below are kept for reference until this document is trimmed, and SFC2-decomp's own copy is the one that governs that code. `decomp/docs/INTERFACE.md` is the contract between the two.
 
 What the system does and how it behaves. This document defines behavior; `CONVENTIONS.md` defines form; `PLAN.md` defines the order of work. Sections are numbered and stay numbered, because briefs and reviews cite them by number (`DESIGN §4.2`).
 
