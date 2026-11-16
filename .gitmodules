@@ -1,4 +1,4 @@
 [submodule "decomp"]
 	path = decomp
-	url = ../decomp
-	branch = split-setup
+	url = https://github.com/marinohardin/SFC2-decomp.git
+	branch = develop
