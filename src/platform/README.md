@@ -16,7 +16,7 @@ and they know nothing of Win32.
 | `Threads` | threads, events, mutexes, semaphores, waits, thread-local slots | `Threads/Threads.h` |
 
 `Core/` holds what they share: `Result.h` (the one `Error` enum and `Result<T>`), `Handle.h`
-(typed handles) and `MockLog.h` (the call recorder the mocks use; tests only).
+(typed handles) `MockLog.h` (the call recorder the mocks use; tests only) and `Log.h` (the client's log in two files, routed by severity at the source: `sfcop_logf`).
 
 ## Backends
 
