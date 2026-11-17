@@ -27,7 +27,8 @@
 //   imports, and those its GetProcAddress finds. Its LoadLibraryA, LoadLibraryExA and
 //   GetModuleHandleA reach only the modules the list names, and its GetProcAddress finds only
 //   DLL!Name on the list in a module so reached, or its own exports; anything else answers 0, as
-//   the native modules' binding shims do (ModuleContract.md §3). The client is handed the name
+//   the native modules' binding shims do (ModuleContract.md §3). A handle the script has freed
+//   every reference to forgets its modules, so a handle the client reuses allows nothing stale. The client is handed the name
 //   that was checked, copied out of the script's reach: a module as its bare normalised name, a
 //   function as read. A name longer than kLookupNameLimit, empty, or a module name with a path
 //   (\, / or :) is refused, never cut. Those two names are the only strings the interpreter or
@@ -38,7 +39,8 @@
 //   an unresolved call: said, eax 0, nothing called.
 // - Long loops, recursion and rep scans count back edges and hand the machine to other guest
 //   threads as the lift does, so a script that never ends does not keep the game's other threads
-//   from running.
+//   from running; except forward rep movs and rep stosb, each run as one copy or fill, however
+//   long, with no back edge counted.
 // What it cannot prevent: a script can write anywhere in the guest, and so corrupt the game's own
 // data or code paths; it can call any of the game's functions with any arguments, and through them
 // do whatever the game can; and it can run for ever: the thread that called it waits for ever, and
@@ -134,10 +136,13 @@ public:
     // The longest name a lookup shim reads; a longer one is refused.
     static constexpr std::size_t kLookupNameLimit = 255;
     // The shims: the client's own call for a lookup the rule allows, else 0 (said once each), as
-    // the native modules' binding shims answer. `shim` is the import's place among the four;
+    // the native modules' binding shims answer. `shim` is the import's place among the shims;
     // `argumentBytes` the stdcall arguments it pops.
     void LoadForScript(std::uint32_t shim, std::uint32_t argumentBytes);
     void FindForScript();
+    // The FreeLibrary shim: the client's own call, after which a handle the script holds no more
+    // references to forgets the names its lookups were given for.
+    void FreeForScript();
 
 private:
     struct Module {
@@ -168,6 +173,7 @@ private:
     std::set<std::uint32_t> foundRows_;      // rows a script's GetProcAddress was given
     std::set<std::uint32_t> unresolvedRows_; // other rows asked about, said once each
     std::map<std::uint32_t, std::set<std::string>> handleNames_; // module handles the shims gave, by name
+    std::map<std::uint32_t, unsigned> handleLoads_; // references the scripts' loads took, by handle
     std::set<std::string> refusedLookups_;   // lookups refused, said once each
 };
 
