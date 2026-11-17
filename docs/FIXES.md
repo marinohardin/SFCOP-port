@@ -35,14 +35,17 @@ from its diff and never copied. A community row names no one.
 | Kind | `runtime` or `build` |
 | Behaviors | The DESIGN §5 behaviors it changes (§9 where it closes a hole in untrusted input), and what the fix does in one clause |
 | Tests | The tests that hold each position |
-| Pull request | Where the fix and its switch landed |
+| Pull request | Where the fix and its switch landed: a bare number is a pull request in this repository, `SFCOP-decomp#N` one in the repository this was split from before 2026-11-16 |
 
 ## The fixes
 
 | Name | Default | Origin | Kind | Behaviors | Tests | Pull request |
 | --- | --- | --- | --- | --- | --- | --- |
-| `fix_hle_named_objects` | on | project | runtime | §5.2: a kernel object the game creates with an empty name during boot is its own object, not one shared by every such object | `spike/lifter/hle/tests/hle_selftest.c` (`test_unnamed_events`); `src/fixes/FixesTest.cpp` ("the installed set answers isEnabled for the empty-name object fix in both positions") | #8 (the fix); #19 (the switch) |
-| `fix_smooth_scaled_frame` | on | project | runtime | §5.6: the game's frame, shown scaled into a window of another size, is filtered linearly (nearest at a whole-number scale); off, nearest at every scale | `src/hle/ddraw4/SurfaceTest.cpp` ("the frame is presented with the filter fix_smooth_scaled_frame names, sent once"); `src/platform/Gpu/GpuSdlTest.cpp` ("the scaled frame is sampled linearly or by nearest pixel as the present filter says") | #64 |
+| `fix_hle_named_objects` | on | project | runtime | §5.2: a kernel object the game creates with an empty name during boot is its own object, not one shared by every such object | `spike/lifter/hle/tests/hle_selftest.c` (`test_unnamed_events`); `src/fixes/FixesTest.cpp` ("the installed set answers isEnabled for the empty-name object fix in both positions") | SFCOP-decomp#8 (the fix); SFCOP-decomp#19 (the switch) |
+| `fix_hle_low_memory_reads` | on | project | runtime | §5.9, §5.16: a read of guest 0x00010000-0x0001FFFF (a null pointer to an object over 64 KB, as in the Met_17Patrol and Met_24Anomaly victory states) gets environment-shaped text, as on the original's NT target, and the first read in each page is logged; off, the read ends the run. The oracle and CI run it off | `src/app/guest/LowMemoryTest.cpp` ("on: the first read of a page maps it read-only with the text, and the read resumes"; "off: the region is not armed and a read of it ends the run"; "off: the set-up reserves nothing and arms nothing"; "on: a write to the region still faults"); `src/fixes/FixesTest.cpp` ("the registry declares the low-memory read fix as a runtime project fix, default on"); `tests/test_oracle_presets.py`, `tests/test_run_native.py` (the oracle passes it off) | #13, #17 |
+| `fix_smooth_scaled_frame` | on | project | runtime | §5.6: the game's frame, shown scaled into a window of another size, is filtered sharp-bilinear (nearest to the whole-number part of the scale, linear for the rest); off, every scale uses the nearest pixel | `src/hle/ddraw4/SurfaceTest.cpp` ("the frame is presented with the filter fix_smooth_scaled_frame names, sent once"); `src/platform/Gpu/GpuSdlTest.cpp` ("sharp-bilinear enlarges by the whole part of the scale before the linear step") | SFCOP-decomp#64, SFCOP-decomp#136 |
+| `fix_integer_scaled_frame` | off | project | runtime | §5.6: the frame is shown at the largest whole-number scale that fits the window, with bars beyond; off, it fills the window at any scale | `src/hle/ddraw4/SurfaceTest.cpp` ("each present gives the window the whole-number scale fix_integer_scaled_frame names"); `src/platform/Gpu/GpuTest.cpp` ("the whole-number placement takes the largest whole scale that fits, centred") | SFCOP-decomp#136 |
+| `fix_render_scale` | on | project | runtime | §5.6: Direct3D targets are rendered at the window's pixel density; off, at the game's own size | `src/hle/ddraw4/DirectDrawTest.cpp` ("the render scale is 1 with fix_render_scale off, at 8 bits, or with no window state"); `src/platform/Gpu/GpuSdlTest.cpp` ("a triangle drawn at render scale 3 is the same triangle rasterised 3 times larger") | SFCOP-decomp#146 |
 | `fix_example_rules_change` | off | community | build | §5.4: an example of a rules change | none | example, no code |
 
 ### `fix_hle_named_objects`
@@ -57,15 +60,50 @@ The fix is in the HLE kernel objects, below the Win32 surface; the game's code i
 the Wave 1 kernel32 module reads this switch, the lifter runtime applies the fix in every position
 (`cmake/lifter/patches/pcrecomp-kernel32-unnamed-objects.patch`).
 
+### `fix_hle_low_memory_reads`
+
+Some of the game's mission code reads through a null pointer to a large object, at an offset past
+64 KB: the victory states of Met_17Patrol and Met_24Anomaly do. On the original's Windows NT
+target that address held the process's environment block, so the read returned text and the
+mission went on. On, the port reserves guest 0x00010000-0x0001FFFF without access; the first read
+of each host page fills that page, read-only, with text shaped like an environment block, and the
+read resumes. The read is recorded in the signal handler and logged later, outside it, as an
+important line, at most once per page. A write to the region still ends the run. Off, nothing is
+reserved and the read ends the run, as an unfixed port would.
+
+The replay oracle and CI run it off (`scripts/check.sh`, `oracle/driver/run_native.sh`,
+`oracle/presets/run_preset.sh`), so a recorded trace shows the original's code path and a new
+read of the region fails the run instead of being covered over. The game's code is unchanged.
+
 ### `fix_smooth_scaled_frame`
 
 The original drew at its display mode on a display of that size. The port shows the game's frame
 in a window of any size, centred with its aspect kept, so the frame is scaled whenever the window
-is not its size. On, the scaling is linear, smooth at any size, and nearest-pixel at a
-whole-number scale, where it is exact. Off, every scale uses the nearest pixel: sharp, with uneven
+is not its size. On, the scaling is sharp-bilinear: the frame is enlarged by the nearest pixel to
+the whole-number part of the scale, and the rest is linear, so pixels stay crisp with no uneven
+widths, and at a whole-number scale it is exact. Off, every scale uses the nearest pixel: sharp, with uneven
 pixel widths at sizes that are not whole multiples. At the frame's own size both positions show
 its pixels as they are. The game's code is unchanged: `src/hle/ddraw4/` hands the position to the
 Gpu (`Gpu::SetPresentFilter`).
+
+### `fix_integer_scaled_frame`
+
+On, the frame is shown at the largest whole-number scale that fits the window, centred, with bars
+around it, so every pixel of the game is the same size on screen. Off, the frame fills the window
+at any scale, its aspect kept. It defaults off because it changes how the game looks, not how it
+runs. The same placement decides where mouse positions land and the render scale
+`fix_render_scale` picks. The game's code is unchanged: `src/hle/ddraw4/` hands the placement to
+the Gpu.
+
+### `fix_render_scale`
+
+The original rendered its Direct3D scenes at its display mode's size. On a high-density display
+the port's window has more pixels than that, so a scene rendered at the game's size is enlarged
+and blurs. On, Direct3D render targets are made at a whole-number scale: the frame's scale in
+the window's pixels, rounded up, and limited by the Gpu's largest texture and the render scale
+option. 8-bit modes, and a Gpu that refuses a scaled back buffer, stay at the game's own size.
+Off, every scene renders at the game's own size. The game's code is unchanged:
+`src/hle/ddraw4/DirectDraw.h` (`WantedRenderScale`) chooses the scale.
 
 ### `fix_example_rules_change`
 
