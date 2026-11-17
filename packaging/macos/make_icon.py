@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Writes packaging/macos/SFCOP.icns, the bundle's placeholder icon: a ringed planet on a dark
-rounded square, drawn here so that no image from anywhere else is used. Replace SFCOP.icns with
-an icon of your own (any .icns); the bundle takes whatever file is there.
+"""Writes a placeholder icon: a ringed planet on a dark rounded square, drawn here so that no image
+from anywhere else is used. The committed SFCOP.icns is the application icon from
+packaging/icon/ instead; this placeholder remains the Linux fallback when an .icns has no 512 px
+entry. Running it with no argument overwrites SFCOP.icns.
 
     python3 packaging/macos/make_icon.py [OUT.icns]
 """
