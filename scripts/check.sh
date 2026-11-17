@@ -112,8 +112,11 @@ else
         fi
         echo "oracle: $mission/$input on build/macos-arm64/sfcop, headless, up to $oracle_watchdog s"
         rc=0
+        # fix_hle_low_memory_reads is off here: a guest read of 0x00010000-0x0001FFFF ends the
+        # run, so the oracle shows such reads instead of continuing past them (docs/FIXES.md).
         nice -n 19 build/macos-arm64/sfcop --data "$oracle_data" --logs "$actual" --headless \
             --oracle "$expected" --input "$steps" --watchdog "$oracle_watchdog" \
+            --fix=fix_hle_low_memory_reads=off \
             > "$tmp/oracle-$mission-$input.log" 2>&1 || rc=$?
         grep -E '^\[oracle\]|^\[mark\]|^sfcop:' "$tmp/oracle-$mission-$input.log" | sed 's/^/  /'
         case $rc in

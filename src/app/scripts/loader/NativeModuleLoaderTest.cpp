@@ -76,7 +76,7 @@ struct Spec {
 };
 
 std::filesystem::path root() {
-    return std::filesystem::current_path() / "native-module-tests";
+    return std::filesystem::temp_directory_path() / "sfcop-native-module-tests";
 }
 
 // Compiles the module to <root>/<name>/<name><suffix> beside its module.json; the library's path.
