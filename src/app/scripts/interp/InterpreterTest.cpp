@@ -976,8 +976,10 @@ void throwingHost() {
 
 } // namespace
 
-TEST_CASE("an exception through a call removes its entry, and the blocks retired under it are freed") {
+TEST_CASE("an exception through a call removes its entry, frees the blocks retired under it and puts the current function back") {
     TestMachine t;
+    std::uint32_t currentFunction = 0x00401234; // the lifted caller's
+    t.machine.currentFunction = &currentFunction;
     t.machine.lookup = [](std::uint32_t address) -> HostFunction {
         return address == kThrowingHost ? &throwingHost : nullptr;
     };
@@ -994,6 +996,7 @@ TEST_CASE("an exception through a call removes its entry, and the blocks retired
     CHECK(g_retiredInHost != 0u);  // so its blocks were kept
     CHECK(interpreter.activeEntries() == 0u);
     CHECK(interpreter.retiredBlocks() == 0u);
+    CHECK(currentFunction == 0x00401234u);
 }
 
 TEST_CASE("rcl and rcr rotate through CF, one bit or several") {
