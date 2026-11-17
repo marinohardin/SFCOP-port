@@ -603,10 +603,9 @@ void ReportLowMemoryReads() {
             char reader[160];
             describeReader(reads[i].function, reads[i].pc, reader, sizeof reader);
             char line[256];
-            const std::size_t length = FormatLowMemoryRead(line, sizeof line, reader, reads[i].address);
-            std::fwrite(line, 1, length, stderr);
+            FormatLowMemoryRead(line, sizeof line, reader, reads[i].address);
+            sfcop_logf(SFCOP_LOG_IMPORTANT, "%s", line); // the line carries its own newline
         }
-        std::fflush(stderr);
     }
 }
 
