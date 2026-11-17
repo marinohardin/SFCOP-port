@@ -91,6 +91,34 @@ else()
     set(SFCOP_CONFIG_HASH_LIST "${SFCOP_DECOMP_DIR}/analysis/results/retail_hashes.sha256")
     set(SFCOP_CONFIG_SOURCE_DIR "${CMAKE_SOURCE_DIR}")
 endif()
+file(STRINGS "${CMAKE_SOURCE_DIR}/VERSION" SFCOP_CONFIG_VERSION LIMIT_COUNT 1)
+execute_process(COMMAND git -C "${CMAKE_SOURCE_DIR}" rev-parse --short=12 HEAD
+                OUTPUT_VARIABLE SFCOP_CONFIG_COMMIT OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+if(NOT SFCOP_CONFIG_COMMIT)
+    set(SFCOP_CONFIG_COMMIT "unknown")
+endif()
+# Configure again when HEAD moves (a commit, a pull, a branch switch), so an incremental build
+# never reports an old commit: depend on HEAD, the branch's ref file and packed-refs.
+foreach(_sfcop_git_file HEAD packed-refs)
+    execute_process(COMMAND git -C "${CMAKE_SOURCE_DIR}" rev-parse --git-path "${_sfcop_git_file}"
+                    OUTPUT_VARIABLE _sfcop_git_path OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+    list(APPEND _sfcop_git_paths "${_sfcop_git_path}")
+endforeach()
+execute_process(COMMAND git -C "${CMAKE_SOURCE_DIR}" symbolic-ref -q HEAD
+                OUTPUT_VARIABLE _sfcop_git_ref OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+if(_sfcop_git_ref)
+    execute_process(COMMAND git -C "${CMAKE_SOURCE_DIR}" rev-parse --git-path "${_sfcop_git_ref}"
+                    OUTPUT_VARIABLE _sfcop_git_path OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+    list(APPEND _sfcop_git_paths "${_sfcop_git_path}")
+endif()
+foreach(_sfcop_git_path IN LISTS _sfcop_git_paths)
+    if(_sfcop_git_path)
+        get_filename_component(_sfcop_git_path "${_sfcop_git_path}" ABSOLUTE BASE_DIR "${CMAKE_SOURCE_DIR}")
+        if(EXISTS "${_sfcop_git_path}")
+            set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_sfcop_git_path}")
+        endif()
+    endif()
+endforeach()
 configure_file(cmake/sfcop_build_config.h.in "${CMAKE_BINARY_DIR}/generated/sfcop_build_config.h" @ONLY)
 
 # The registration of the HLE module tables, generated from the shim files the build found
