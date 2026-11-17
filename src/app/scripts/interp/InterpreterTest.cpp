@@ -960,6 +960,45 @@ TEST_CASE("a resume on one guest thread keeps the entries another thread is stil
     CHECK(interpreter.retiredBlocks() == 0u);
 }
 
+namespace {
+
+constexpr std::uint32_t kThrowingHost = 0x00500040; // a host function that unloads the script and throws
+std::size_t g_entriesInHost = 0;
+std::size_t g_retiredInHost = 0;
+
+// A host function that fails with a C++ exception after its script's code was removed under it.
+void throwingHost() {
+    g_interpreter->removeCode(kCode, kCode + 0x1000);
+    g_entriesInHost = g_interpreter->activeEntries();
+    g_retiredInHost = g_interpreter->retiredBlocks();
+    throw std::runtime_error("the host failed");
+}
+
+} // namespace
+
+TEST_CASE("an exception through a call removes its entry, frees the blocks retired under it and puts the current function back") {
+    TestMachine t;
+    std::uint32_t currentFunction = 0x00401234; // the lifted caller's
+    t.machine.currentFunction = &currentFunction;
+    t.machine.lookup = [](std::uint32_t address) -> HostFunction {
+        return address == kThrowingHost ? &throwingHost : nullptr;
+    };
+    t.store32(0x2000, kThrowingHost);
+    t.put(kCode, {0xFF, 0x15, 0x00, 0x20, 0x00, 0x00, // call [0x2000]
+                  0xC3});
+    Interpreter interpreter(t.machine);
+    interpreter.addCode(kCode, kCode + 0x1000);
+    g_interpreter = &interpreter;
+    t.regs[kEsp] = kStackTop - 4;
+    t.store32(kStackTop - 4, kLiftedReturnAddress);
+    CHECK_THROWS_WITH_AS(interpreter.call(kCode), "the host failed", std::runtime_error);
+    CHECK(g_entriesInHost == 1u);  // the call was running when its code went
+    CHECK(g_retiredInHost != 0u);  // so its blocks were kept
+    CHECK(interpreter.activeEntries() == 0u);
+    CHECK(interpreter.retiredBlocks() == 0u);
+    CHECK(currentFunction == 0x00401234u);
+}
+
 TEST_CASE("rcl and rcr rotate through CF, one bit or several") {
     TestMachine t;
     t.run({0xF9,             // stc

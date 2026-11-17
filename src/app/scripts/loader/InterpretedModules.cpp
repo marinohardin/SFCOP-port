@@ -91,10 +91,12 @@ RowName g_rowName = nullptr;
 // (Interpreter::callOut).
 // A script's dynamic-lookup imports (LoadLibraryA, LoadLibraryExA, GetModuleHandleA,
 // GetProcAddress) are bound to the provider's shims, at addresses just past the last script slot,
-// where nothing is code; each shim passes an allowed lookup on to the client's own row.
+// where nothing is code; each shim passes an allowed lookup on to the client's own row. FreeLibrary
+// has one too, which passes every call on and forgets the names of a handle the script let go.
 constexpr std::uint32_t kShimBase = 0x70000000u;
 constexpr const char *kShimImports[] = {"KERNEL32.DLL!LoadLibraryA", "KERNEL32.DLL!LoadLibraryExA",
-                                        "KERNEL32.DLL!GetModuleHandleA", "KERNEL32.DLL!GetProcAddress"};
+                                        "KERNEL32.DLL!GetModuleHandleA", "KERNEL32.DLL!GetProcAddress",
+                                        "KERNEL32.DLL!FreeLibrary"};
 constexpr std::uint32_t kShims = sizeof kShimImports / sizeof kShimImports[0];
 std::uint32_t g_clientRows[kShims] = {}; // the client's own row for each, which the shims pass on to
 
@@ -102,8 +104,9 @@ void loadLibraryA() { g_active->LoadForScript(0, 4); }
 void loadLibraryExA() { g_active->LoadForScript(1, 12); }
 void getModuleHandleA() { g_active->LoadForScript(2, 4); }
 void getProcAddress() { g_active->FindForScript(); }
+void freeLibrary() { g_active->FreeForScript(); }
 constexpr interp::HostFunction kShimFunctions[kShims] = {loadLibraryA, loadLibraryExA, getModuleHandleA,
-                                                         getProcAddress};
+                                                         getProcAddress, freeLibrary};
 
 interp::HostFunction clientLookup(std::uint32_t address) {
     if (const interp::HostFunction shim = InterpretedModuleProvider::ShimAt(address)) {
@@ -615,7 +618,39 @@ void InterpretedModuleProvider::LoadForScript(std::uint32_t shim, std::uint32_t 
     }
     if (const std::uint32_t handle = *m.regs[interp::kEax]; handle != 0) {
         handleNames_[handle].insert(module);
+        if (shim != 2) { // GetModuleHandleA takes no reference
+            ++handleLoads_[handle];
+        }
     }
+}
+
+void InterpretedModuleProvider::FreeForScript() {
+    // FreeLibrary(module), stdcall: the client's own call, whatever the handle. Once the script has
+    // given back every reference it took, or one it never took, the handle's names go: the client
+    // may give the same handle to another module later, whose functions the old names do not allow.
+    const interp::Machine &m = *machine_;
+    const std::uint32_t esp = *m.regs[interp::kEsp];
+    if (!interp::Cpu::fits(esp, 8)) {
+        Refuse(kShimImports[4], 4); // its argument is not in the guest
+        return;
+    }
+    std::uint32_t handle = 0;
+    std::memcpy(&handle, m.memory + esp + 4, 4);
+    if (!PassOn(4)) {
+        Refuse(kShimImports[4], 4);
+        return;
+    }
+    if (*m.regs[interp::kEax] == 0) {
+        return; // the client kept it
+    }
+    const auto loads = handleLoads_.find(handle);
+    if (loads != handleLoads_.end() && --loads->second != 0) {
+        return;
+    }
+    if (loads != handleLoads_.end()) {
+        handleLoads_.erase(loads);
+    }
+    handleNames_.erase(handle);
 }
 
 void InterpretedModuleProvider::FindForScript() {
