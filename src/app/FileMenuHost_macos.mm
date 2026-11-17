@@ -107,9 +107,14 @@ void installFileMenu(const std::vector<FileMenuEntry> &entries) {
 void pumpFileMenu() {
     if (gLogged || gEntries.empty()) {
         // In place: a replaced main menu is still put right, silently, with one comparison.
-        bool now = false;
-        if (!gEntries.empty() && ensureFileMenu(now) && now) {
-            NSLog(@"sfcop: File menu put back; menu bar: %s", menuBarTitles().c_str());
+        if (gEntries.empty()) {
+            return;
+        }
+        @autoreleasepool {
+            bool now = false;
+            if (ensureFileMenu(now) && now) {
+                NSLog(@"sfcop: File menu put back; menu bar: %s", menuBarTitles().c_str());
+            }
         }
         return;
     }

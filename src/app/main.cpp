@@ -14,10 +14,10 @@
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
+#include <functional>
 #include <fstream>
 #include <memory>
 #include <optional>
-#include <functional>
 #include <sstream>
 #include <string>
 #include <thread>
