@@ -1,6 +1,6 @@
 // The pool of entry functions: one per address while it is held; none when every one is held; one
 // given back is handed out again, the longest given back first, and then enters its new address.
-// The pool is the process's, so each case gives back everything it took.
+// The pool is the process's, so each case gives back everything it took, even when a check stops it.
 #include "app/scripts/interp/EntryThunks.h"
 
 #include "app/scripts/interp/Interpreter.h"
@@ -17,10 +17,18 @@ namespace {
 constexpr std::uint32_t kFirst = 0x10000000; // invented script addresses, one per function
 constexpr std::uint32_t kAfter = 0x20000000; // past every one this test takes
 
+// Gives back every function the case took when the case ends, however it ends, so a failed
+// REQUIRE or an exception does not leave the pool spent for the cases after it.
+struct GiveBack {
+    const Interpreter &interpreter;
+    ~GiveBack() { releaseEntryThunks(interpreter, kFirst, kAfter + 3); }
+};
+
 } // namespace
 
 TEST_CASE("an address keeps its function until it is given back, and the pool runs out") {
     Interpreter interpreter{Machine{}};
+    const GiveBack giveBack{interpreter};
     const std::size_t heldBefore = entryThunksInUse();
     const HostFunction first = entryThunk(interpreter, kFirst);
     REQUIRE(first != nullptr);
@@ -44,6 +52,7 @@ TEST_CASE("an address keeps its function until it is given back, and the pool ru
 
 TEST_CASE("a function given back is handed out again, the longest given back first") {
     Interpreter interpreter{Machine{}};
+    const GiveBack giveBack{interpreter};
     // Hold every free function, so the next ones handed out are the two given back below.
     std::vector<std::uint32_t> held;
     for (std::uint32_t address = kFirst; entryThunk(interpreter, address) != nullptr; ++address) {
@@ -58,6 +67,4 @@ TEST_CASE("a function given back is handed out again, the longest given back fir
     CHECK(entryThunk(interpreter, kAfter) == b);
     CHECK(entryThunk(interpreter, kAfter + 1) == a);
     CHECK(entryThunk(interpreter, kAfter + 2) == nullptr);
-
-    releaseEntryThunks(interpreter, kFirst, kAfter + 3);
 }
