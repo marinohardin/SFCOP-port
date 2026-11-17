@@ -12,9 +12,11 @@
 // first read fault in one of its host pages fills that page with environment-shaped text, makes
 // it read-only, records who read it, and resumes the instruction, which then reads the text. The
 // fault handler does only that (system calls, a fill and atomics); the record is turned into a
-// log line naming the code that read it later, outside the handler (TakeReads). A write still faults, as does any read with the switch off, so those keep
-// ending the run as before; the oracle and CI run with the switch off so that such reads show up
-// there.
+// log line naming the code that read it later, outside the handler (TakeReads).
+//
+// A write to the region still faults, as does any read of it with the switch off, so those keep
+// ending the run as before. The oracle and CI are to run with the switch off, so that such reads
+// show up there.
 //
 // The region is described by the host address of guest 0 and the host page size, so the tests
 // can stand in a block of their own for the guest's memory.
@@ -67,15 +69,19 @@ public:
         kRetry,      // another fault made the page readable; resume
     };
 
-    // `guestZero` is the host address of guest 0. A host page larger than the region, or one that
-    // does not divide it, leaves the region disabled.
+    // `guestZero` is the host address of guest 0. A host page larger than the region, one that
+    // does not divide it, or a guest 0x00010000 that does not start a host page (Aligned) leaves
+    // the region disabled.
     LowMemoryRegion(std::uint8_t *guestZero, std::size_t hostPage);
 
     // Makes the region inaccessible and enables the region. The region's memory must already be
     // mapped (committed), readable and writable. False, and the region stays disabled, when the
-    // host refuses or the page size does not fit.
+    // host refuses, the page size does not fit or the region does not start a host page.
     bool Arm();
     bool Armed() const { return armed_; }
+
+    // Whether guest 0x00010000 starts a host page; the region protects whole host pages only.
+    bool Aligned() const { return aligned_; }
 
     // A read the region answered: the guest address read, the guest function current then
     // (g_cur_func) and the host instruction that read it.
@@ -87,9 +93,11 @@ public:
 
     // A fault at guest address `guest` with `access`, by guest function `function` at host
     // instruction `pc`. Safe in a signal handler: system calls, the page's fill and atomics only;
-    // nothing is formatted or printed here. A page this call maps records the read for TakeReads. A read, or an access the platform cannot tell (read faults are the case this
-    // serves; a write to a page this has already made readable is passed on, so it cannot loop),
-    // in an inaccessible page is mapped; everything else is not handled.
+    // nothing is formatted or printed here. A page this call maps records the read for TakeReads.
+    //
+    // A read, or an access the platform cannot tell (read faults are the case this serves; a
+    // write to a page this has already made readable is passed on, so it cannot loop), in an
+    // inaccessible page is mapped; everything else is not handled.
     Outcome OnFault(std::uint32_t guest, FaultAccess access, std::uint32_t function = 0,
                     std::uintptr_t pc = 0);
 
@@ -106,15 +114,33 @@ public:
 private:
     static constexpr std::size_t kMaxPages = 16; // 4 KB pages; 16 KB pages give 4, 64 KB pages 1
     enum : std::uint8_t { kNone, kMapping, kReadable };
-    static constexpr std::size_t kMaxReads = kMaxPages; // at most one per page
 
     std::uint8_t *guestZero_;
     std::size_t hostPage_;
     std::size_t pages_ = 0;
+    bool aligned_ = false;
     bool armed_ = false;
     std::atomic<std::uint8_t> state_[kMaxPages] = {};
-    Read reads_[kMaxPages] = {};                     // written before the page is published
-    std::atomic<bool> reported_[kMaxPages] = {};     // its read handed out by TakeReads
+    Read reads_[kMaxPages] = {};                 // at most one per page, written before it is published
+    std::atomic<bool> reported_[kMaxPages] = {}; // its read handed out by TakeReads
 };
+
+// How SetUpLowMemory left the region.
+enum class LowMemorySetUp {
+    kOff,           // the switch is off: nothing reserved, nothing armed
+    kArmed,         // reserved and armed
+    kMisaligned,    // guest 0x00010000 does not start a host page: nothing reserved; off
+    kInUse,         // the range could not be reserved: off
+    kCannotProtect, // reserved, but the host refused to protect it: released again; off
+};
+
+// The guest host's set-up of the region for fix_hle_low_memory_reads at boot. With `on`, reserves
+// guest 0x00010000-0x0001FFFF with `reserve` (the guest memory's own, which maps the range
+// committed, readable and writable on every host) so that nothing else is placed there, then
+// arms `region` over it; `release` gives it back when arming fails. With `on` false it calls
+// neither and arms nothing, so a read of the range faults as without the fix.
+LowMemorySetUp SetUpLowMemory(bool on, LowMemoryRegion &region,
+                              std::uint32_t (*reserve)(std::uint32_t va, std::uint32_t size),
+                              void (*release)(std::uint32_t va, std::uint32_t size));
 
 } // namespace sfcop::guest

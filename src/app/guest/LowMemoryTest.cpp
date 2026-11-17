@@ -103,17 +103,80 @@ TEST_CASE("a module's stem drops its folders and extension") {
     CHECK(std::string(ModuleStem("a/very_long_module_name.dylib", stem, 5)) == "very");
 }
 
+// Host addresses for guest 0 that are never dereferenced: one 64 KB-aligned, one not.
+std::uint8_t *const kAlignedZero = reinterpret_cast<std::uint8_t *>(std::uintptr_t{0x200000000});
+std::uint8_t *const kMisalignedZero = reinterpret_cast<std::uint8_t *>(std::uintptr_t{0x200000800});
+
 TEST_CASE("a page size that does not divide the region leaves it disabled") {
-    std::uint8_t unused = 0;
-    CHECK(LowMemoryRegion(&unused, 0x4000).PageCount() == 4);
-    CHECK(LowMemoryRegion(&unused, 0x1000).PageCount() == 16);
-    CHECK(LowMemoryRegion(&unused, 0x10000).PageCount() == 1);
-    LowMemoryRegion odd(&unused, 3000);
+    std::uint8_t *const unused = kAlignedZero;
+    CHECK(LowMemoryRegion(unused, 0x4000).PageCount() == 4);
+    CHECK(LowMemoryRegion(unused, 0x1000).PageCount() == 16);
+    CHECK(LowMemoryRegion(unused, 0x10000).PageCount() == 1);
+    LowMemoryRegion odd(unused, 3000);
     CHECK(odd.PageCount() == 0);
     CHECK_FALSE(odd.Arm());
-    CHECK(LowMemoryRegion(&unused, 0x20000).PageCount() == 0);
+    CHECK(LowMemoryRegion(unused, 0x20000).PageCount() == 0);
     // Not armed: nothing is handled.
     CHECK(odd.OnFault(0x0001038Cu, FaultAccess::kRead) == LowMemoryRegion::Outcome::kNotHandled);
+}
+
+TEST_CASE("a guest 0x00010000 that does not start a host page leaves the region disabled") {
+    LowMemoryRegion aligned(kAlignedZero, 0x4000);
+    CHECK(aligned.Aligned());
+    LowMemoryRegion misaligned(kMisalignedZero, 0x4000); // 0x800 into a 16 KB page
+    CHECK_FALSE(misaligned.Aligned());
+    CHECK(misaligned.PageCount() == 0);
+    CHECK_FALSE(misaligned.Arm());
+    CHECK(misaligned.OnFault(0x0001038Cu, FaultAccess::kRead) == LowMemoryRegion::Outcome::kNotHandled);
+    CHECK_FALSE(LowMemoryRegion(kMisalignedZero, 0x1000).Aligned()); // 0x800 into a 4 KB page too
+}
+
+namespace {
+
+// The guest memory's reserve and release, as SetUpLowMemory sees them: what was asked, and what
+// the reserve answers.
+struct FakeVm {
+    int reserves = 0, releases = 0;
+    std::uint32_t va = 0, size = 0;
+    std::uint32_t answer = kLowMemoryBegin;
+};
+FakeVm g_vm;
+std::uint32_t fakeReserve(std::uint32_t va, std::uint32_t size) {
+    ++g_vm.reserves;
+    g_vm.va = va;
+    g_vm.size = size;
+    return g_vm.answer;
+}
+void fakeRelease(std::uint32_t va, std::uint32_t size) {
+    ++g_vm.releases;
+    g_vm.va = va;
+    g_vm.size = size;
+}
+
+} // namespace
+
+TEST_CASE("off: the set-up reserves nothing and arms nothing") {
+    g_vm = FakeVm{};
+    LowMemoryRegion region(kAlignedZero, 0x4000);
+    CHECK(SetUpLowMemory(false, region, fakeReserve, fakeRelease) == LowMemorySetUp::kOff);
+    CHECK(g_vm.reserves == 0);
+    CHECK(g_vm.releases == 0);
+    CHECK_FALSE(region.Armed());
+}
+
+TEST_CASE("on: a misaligned region or a range in use is left off, unreserved") {
+    g_vm = FakeVm{};
+    LowMemoryRegion misaligned(kMisalignedZero, 0x4000);
+    CHECK(SetUpLowMemory(true, misaligned, fakeReserve, fakeRelease) == LowMemorySetUp::kMisaligned);
+    CHECK(g_vm.reserves == 0);
+
+    g_vm = FakeVm{};
+    g_vm.answer = 0; // the guest memory refuses: something is there
+    LowMemoryRegion region(kAlignedZero, 0x4000);
+    CHECK(SetUpLowMemory(true, region, fakeReserve, fakeRelease) == LowMemorySetUp::kInUse);
+    CHECK(g_vm.reserves == 1);
+    CHECK(g_vm.releases == 0);
+    CHECK_FALSE(region.Armed());
 }
 
 #if !defined(_WIN32)
@@ -238,6 +301,32 @@ TEST_CASE("on: the fault path only records the read; each record is taken once, 
     }
     // A record taken with no room is left for the next call.
     CHECK(region.TakeReads(reads, 0) == 0);
+}
+
+TEST_CASE("on: the set-up reserves guest 0x00010000-0x0001FFFF and arms the region over it") {
+    Stand stand;
+    g_vm = FakeVm{};
+    LowMemoryRegion region(stand.guestZero(), stand.page);
+    CHECK(SetUpLowMemory(true, region, fakeReserve, fakeRelease) == LowMemorySetUp::kArmed);
+    CHECK(g_vm.reserves == 1);
+    CHECK(g_vm.va == 0x00010000u);
+    CHECK(g_vm.size == 0x00010000u);
+    CHECK(g_vm.releases == 0);
+    CHECK(region.Armed());
+    Handler handler(region, stand.guestZero());
+    CHECK(stand.read(0x0001038Cu) == 0x0054005Cu);
+}
+
+TEST_CASE("on: when the host will not protect the range, it is released and left off") {
+    g_vm = FakeVm{};
+    // Aligned, but not a mapping of this process's: the protect fails.
+    LowMemoryRegion region(reinterpret_cast<std::uint8_t *>(std::uintptr_t{0x7FF000000000}),
+                           static_cast<std::size_t>(getpagesize()));
+    CHECK(SetUpLowMemory(true, region, fakeReserve, fakeRelease) == LowMemorySetUp::kCannotProtect);
+    CHECK(g_vm.reserves == 1);
+    CHECK(g_vm.releases == 1);
+    CHECK(g_vm.va == 0x00010000u);
+    CHECK_FALSE(region.Armed());
 }
 
 TEST_CASE("on: a write to the region still faults") {
