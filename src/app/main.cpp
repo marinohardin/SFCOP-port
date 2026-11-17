@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "Bundle.h"
+#include "LogPaths.h"
 #include "ExitCodes.h"
 #include "ServiceHosts.h"
 #include "Startup.h"
@@ -35,6 +36,7 @@
 #include "launcher/LauncherWindow.h"
 #include "oracle/OracleRun.h"
 #include "platform/Clock/FixedStepClock.h"
+#include "platform/Core/Log.h"
 #include "sfcop_build_config.h"
 
 namespace {
@@ -213,10 +215,19 @@ int main(int argc, char **argv) {
     config.launcher = launcher::windowLauncher(launcherStepsPath(argc, argv));
     // A package build compiles in no hash list (SFCOP_PACKAGE_BUILD, sfcop_build_config.h).
     config.packageBuild = std::string(SFCOP_HASH_LIST).empty();
+    sfcop_log_init();
     const Startup start = startClient(argc, argv, config);
     if (start.exitCode) {
+        // The run ends before the game starts (no install found, a bad flag, --help): the full log
+        // has the reason startClient printed; this one line tells the important log it ended.
+        sfcop_logf(SFCOP_LOG_IMPORTANT, "=== SFCOP exit before the game started, code %d\n", *start.exitCode);
         return *start.exitCode;
     }
+    // The start line of the important log: which build, which install and data folder (paths only,
+    // never what is in them), with the home folder written as ~ so the log names no account.
+    sfcop_logf(SFCOP_LOG_IMPORTANT, "=== SFCOP %s (build %s) started: install %s, data %s\n", SFCOP_VERSION,
+               SFCOP_BUILD_COMMIT, app::collapseHome(start.installDir).c_str(),
+               app::collapseHome(start.dataDir).c_str());
 
     guest::Options options;
     options.installDir = start.installDir;
