@@ -437,6 +437,7 @@ std::optional<hle::user32::DisplayTarget> displayTarget() {
 }
 
 void pump() {
+    ReportLowMemoryReads(); // fix_hle_low_memory_reads: the reads the fault handler recorded
     if (g_pump->Pump()) {
         if (g_pump->FrameEnded() && g_options->onFrame) {
             g_options->onFrame();
@@ -521,8 +522,14 @@ void traceTotals() {
 //
 // Nothing of the Store needs flushing here: it never buffers in user space (every Write goes
 // straight to the operating system), so a file the game wrote is complete when this runs.
+//
+// It is reached only through hle_exit: the game's ExitProcess, the watchdog thread and Run's
+// fallback. The fault handlers never call it (they end the run with _exit, or leave by longjmp
+// before guest code goes on), so ReportLowMemoryReads, which takes the loader's lock, never runs
+// inside a handler from here.
 void onExit(int code) {
     g_stopping = true;
+    ReportLowMemoryReads();
     traceTotals();
     sfcop_logf(SFCOP_LOG_IMPORTANT, "=== SFCOP exit, code %d\n", code == 0 ? 0 : 1);
     std::fflush(stdout);
@@ -657,6 +664,7 @@ int Run(const Options &options, Components &components) {
         return 1;
     }
     hle_module_add(guestExe.c_str(), image.base, image.resource_rva, image.resource_size, 1);
+    InstallLowMemoryReads(image.base, image.span);
     const int unresolved = recomp_pe_bind(&image, resolveImport);
     recomp_host_init();
     std::fprintf(stderr, "[guest] %s mapped at 0x%08X; %zu imports no module owns, %zu nothing "
