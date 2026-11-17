@@ -38,26 +38,21 @@ bool revealInFileManager(const std::string &path) {
     }
 }
 
-void installFileMenu(const std::vector<FileMenuEntry> &entries) {
-    if (entries.empty()) {
+// Puts the File menu into the main menu when it is not there. SDL builds (and can replace) the
+// main menu while the application finishes launching, which depends on timing, so this runs now
+// and again after every event the application handles until the File menu is in place; once it
+// is, each call is one pointer comparison. Logs the menu bar's titles whenever it installs.
+static void ensureFileMenu() {
+    static SfcopFileMenuTarget *target = [[SfcopFileMenuTarget alloc] init];
+    static NSMenuItem *fileItem = nil;
+    NSMenu *bar = [NSApp mainMenu];
+    if (bar == nil || gEntries.empty() || (fileItem != nil && fileItem.menu == bar)) {
         return;
     }
-    @autoreleasepool {
-        static SfcopFileMenuTarget *target = [[SfcopFileMenuTarget alloc] init];
-        NSMenu *bar = [NSApp mainMenu];
-        if (bar == nil) {
-            bar = [[NSMenu alloc] init];
-            [NSApp setMainMenu:bar];
-        }
-        for (NSMenuItem *existing in bar.itemArray) {
-            if ([existing.title isEqualToString:@"File"]) {
-                return; // installed already
-            }
-        }
-        gEntries = entries;
+    if (fileItem == nil) {
         NSMenu *menu = [[NSMenu alloc] initWithTitle:@"File"];
-        for (std::size_t i = 0; i < entries.size(); ++i) {
-            NSString *title = [NSString stringWithUTF8String:entries[i].title.c_str()];
+        for (std::size_t i = 0; i < gEntries.size(); ++i) {
+            NSString *title = [NSString stringWithUTF8String:gEntries[i].title.c_str()];
             NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:title
                                                           action:@selector(reveal:)
                                                    keyEquivalent:@""];
@@ -65,10 +60,38 @@ void installFileMenu(const std::vector<FileMenuEntry> &entries) {
             item.tag = static_cast<NSInteger>(i);
             [menu addItem:item];
         }
-        NSMenuItem *fileItem = [[NSMenuItem alloc] initWithTitle:@"File" action:nil keyEquivalent:@""];
+        fileItem = [[NSMenuItem alloc] initWithTitle:@"File" action:nil keyEquivalent:@""];
         fileItem.submenu = menu;
-        // After the application menu, before the rest (SDL adds Window and others).
-        [bar insertItem:fileItem atIndex:bar.numberOfItems > 0 ? 1 : 0];
+    } else if (fileItem.menu != nil) {
+        [fileItem.menu removeItem:fileItem];
+    }
+    // After the application menu, before the rest (SDL adds Window and others).
+    [bar insertItem:fileItem atIndex:bar.numberOfItems > 0 ? 1 : 0];
+    NSMutableArray<NSString *> *titles = [NSMutableArray array];
+    for (NSMenuItem *entry in bar.itemArray) {
+        [titles addObject:entry.title.length > 0 ? entry.title : @"(app)"];
+    }
+    NSLog(@"sfcop: menu bar now: %@", [titles componentsJoinedByString:@" | "]);
+}
+
+void installFileMenu(const std::vector<FileMenuEntry> &entries) {
+    if (entries.empty()) {
+        return;
+    }
+    @autoreleasepool {
+        gEntries = entries;
+        static bool observing = false;
+        if (!observing && NSApp != nil) {
+            observing = true;
+            [[NSNotificationCenter defaultCenter]
+                addObserverForName:NSApplicationDidUpdateNotification
+                            object:NSApp
+                             queue:nil
+                        usingBlock:^(NSNotification *) {
+                          ensureFileMenu();
+                        }];
+        }
+        ensureFileMenu();
     }
 }
 
