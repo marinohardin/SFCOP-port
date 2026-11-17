@@ -82,7 +82,7 @@ Branches follow §7.1. Commit scopes are the top-level directory or the componen
 
 - C++17, `-Wall -Wextra -Werror`, clang-format. RAII everywhere; no raw `new` outside the HLE objects that mirror COM lifetimes, and those are commented as such.
 - No C++ exception crosses the Win32 surface in either direction: HLE entry points catch, log and return the Win32 error the game expects. Exceptions inside `src/` are for programming errors only; expected failures return a value.
-- Logging through one facility (`sfcop::log`), with a component tag and a level; nothing identifying is logged (DESIGN §9). A log line is a sentence, not a dump.
+- Logging through one facility, `sfcop_logf(severity, format, ...)` (`src/platform/Core/Log.h`), C-linked so lifted and HLE code can call it: a component tag opens the line (`[scripts]`, `[eh]`), and the severity is `SFCOP_LOG_DETAIL` (the full log only) or `SFCOP_LOG_IMPORTANT` (also the run's important log: start, failures, faults, exit). Nothing identifying is logged (DESIGN §9); a path under the home folder is written from `~`. A log line is a sentence, not a dump.
 - A function longer than about 60 lines, or a file longer than about 600, is a sign to split; say so in review rather than enforce a number.
 - Every HLE entry point states its calling convention and purges its stack as the original import did; `surface.tsv` is updated in the same commit.
 - Platform-specific code lives in a file named for the platform (`Window_macos.mm`, `Store_windows.cpp`) behind the component's one header; no `#ifdef` forests in shared files.
