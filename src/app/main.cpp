@@ -218,6 +218,9 @@ int main(int argc, char **argv) {
     sfcop_log_init();
     const Startup start = startClient(argc, argv, config);
     if (start.exitCode) {
+        // The run ends before the game starts (no install found, a bad flag, --help): the full log
+        // has the reason startClient printed; this one line tells the important log it ended.
+        sfcop_logf(SFCOP_LOG_IMPORTANT, "=== SFCOP exit before the game started, code %d\n", *start.exitCode);
         return *start.exitCode;
     }
     // The start line of the important log: which build, which install and data folder (paths only,

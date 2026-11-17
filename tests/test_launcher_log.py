@@ -73,13 +73,20 @@ def test_eleven_runs_leave_ten_with_both_files_of_each_together(tmp_path):
 
 
 def test_two_runs_in_one_second_keep_separate_files(tmp_path):
+    # A stand-in `date` makes both runs land in the same second, whatever the clock says.
+    fake = tmp_path / 'bin'
+    fake.mkdir()
+    (fake / 'date').write_text('#!/bin/sh\necho 20260101-120000\n')
+    (fake / 'date').chmod(0o755)
+    env = {'PATH': str(fake) + os.pathsep + os.environ['PATH']}
     data = tmp_path / 'data'
-    run_launcher(tmp_path, data)
-    run_launcher(tmp_path, data)
-    assert len(names(data, 'launch')) in (1, 2)  # a second boundary may fall between the runs
-    total = sum((data / 'logs' / n).read_text().count('[scripts] refused: m01')
-                for n in names(data, 'launch'))
-    assert total == 2
+    run_launcher(tmp_path, data, env)
+    run_launcher(tmp_path, data, env)
+    assert len(names(data, 'launch')) == 2
+    assert len(names(data, 'important')) == 2
+    assert 'launch-20260101-120000.log' in names(data, 'launch')
+    for n in names(data, 'launch') + names(data, 'important'):
+        assert (data / 'logs' / n).read_text().count('[scripts] refused: m01') == 1
 
 
 def test_a_named_log_file_is_appended_to_and_nothing_rotates(tmp_path):
