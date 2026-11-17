@@ -1,7 +1,8 @@
 # The application icon
 
 A gold hexagon badge with "SFC2" and an "ORION PIRATES" band over a green hex grid, drawn from
-code in `draw_icon.py`. It contains no image, logo or lettering from the original game.
+code in `draw_icon.py`. It contains no image or logo from the original game; the lettering is the
+game's title set in Avenir Next.
 
 ![The icon](preview-256.png)
 
