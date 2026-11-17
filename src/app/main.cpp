@@ -25,6 +25,7 @@
 #include "Bundle.h"
 #include "LogPaths.h"
 #include "ExitCodes.h"
+#include "FileMenu.h"
 #include "ServiceHosts.h"
 #include "Startup.h"
 #include "guest/GuestHost.h"
@@ -329,6 +330,10 @@ int main(int argc, char **argv) {
 
     std::unique_ptr<platform::Window> window =
         options.headless ? platform::makeWindowStub() : platform::makeWindow();
+    if (!options.headless) {
+        // SDL's video system is up with the Window: add the File menu to the menu bar (macOS).
+        app::installFileMenu(app::fileMenuEntries(options.dataDir, logsDir));
+    }
     std::unique_ptr<platform::Gpu> gpu =
         options.headless ? platform::makeGpuStub() : platform::makeGpu();
     std::unique_ptr<platform::Input> input = platform::makeInput();
