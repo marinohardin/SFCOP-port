@@ -132,6 +132,15 @@ TEST_CASE("the registry declares the scaled frame's filter as a runtime project 
     CHECK(!fix->description.empty());
 }
 
+TEST_CASE("the registry declares the low-memory read fix as a runtime project fix, default on") {
+    const Switch *fix = declared("fix_hle_low_memory_reads");
+    REQUIRE(fix != nullptr);
+    CHECK(fix->defaultOn);
+    CHECK(fix->origin == Origin::Project);
+    CHECK(fix->kind == Kind::Runtime);
+    CHECK(!fix->description.empty());
+}
+
 TEST_CASE("every declared switch has a unique lower_snake_case name starting fix_") {
     std::set<std::string> seen;
     for (const Switch &s : sfcop::fixes::registry()) {
