@@ -99,7 +99,7 @@ From the install to the main menu in under 10 s on an M1 with a warm disk, witho
 
 ### 5.3 Settings and profiles
 
-`.gf` files and profiles are read from the install and written to a per-user data directory (`~/Library/Application Support/SFCOP` on macOS, `%APPDATA%\\SFCOP` on Windows, `$XDG_DATA_HOME/SFCOP` on Linux), in the original format. On macOS the running game's File menu opens that directory and its logs in Finder; deleting the directory is a fresh install. Registry keys are a file-backed store in that directory with the same names and types. Test: a `.gf` round trip is byte-identical; a registry value written by the port is read back by the game's own code path.
+`.gf` files and profiles are read from the install and written to a per-user data directory (`~/Library/Application Support/SFCOP` on macOS, `%APPDATA%\\SFCOP` on Windows, `$XDG_DATA_HOME/SFCOP` on Linux), in the original format. On macOS the running game's File menu opens that directory and its logs in Finder; deleting the directory, with the game closed, is a fresh install (logs that `--logs` placed elsewhere stay; `src/app/README.md`). Registry keys are a file-backed store in that directory with the same names and types. Test: a `.gf` round trip is byte-identical; a registry value written by the port is read back by the game's own code path.
 
 ### 5.4 Skirmish
 

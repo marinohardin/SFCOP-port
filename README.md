@@ -98,8 +98,8 @@ later runs need no argument. Then the game asks for its CD key as the original d
 saves and logs live in the per-user data folder (`~/Library/Application Support/SFCOP`,
 `~/.local/share/SFCOP`, `%APPDATA%\SFCOP`). On macOS, while the game runs, File > Show Game Files
 in Finder opens that folder and File > Show Logs in Finder its logs. Deleting the folder (with the
-game closed) starts over as a fresh install: the imported copy, the remembered install path,
-settings, saves and logs all go with it.
+game closed) starts over as a fresh install: any imported copy, the remembered install path,
+settings, saves and logs (unless `--logs` put them elsewhere) all go with it.
 
 **Missions** need translated mission modules, which no release carries, because they are made
 from your install's own mission scripts. Without them the menus run and the missions are missing.
