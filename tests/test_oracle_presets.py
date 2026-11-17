@@ -312,6 +312,15 @@ def test_the_client_gets_the_presets_module_root(world):
     assert run_preset(world, 'macos-arm64', env=env).returncode == 0
 
 
+def test_the_client_runs_with_the_low_memory_fix_off(world):
+    _, build, _, env = world
+    stand_in(build / 'sfcop',
+             'echo "[mark] reached 0x00401000 (WinMain) at 1.0 s" >&2\n'
+             'for a in "$@"; do [ "$a" = --fix=fix_hle_low_memory_reads=off ] && exit 0; done\n'
+             'exit 7\n')
+    assert run_preset(world, 'macos-arm64', env=env).returncode == 0
+
+
 def test_the_linux_container_runs_the_client_through_a_nice_wrapper(world):
     tmp, _, _, env = world
     build = tmp / 'builds' / 'linux-x64'
