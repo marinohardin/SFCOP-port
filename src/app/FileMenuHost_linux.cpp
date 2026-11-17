@@ -7,4 +7,6 @@ bool revealInFileManager(const std::string &) { return false; }
 
 void installFileMenu(const std::vector<FileMenuEntry> &) {}
 
+void pumpFileMenu() {}
+
 } // namespace sfcop::app

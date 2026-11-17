@@ -38,16 +38,18 @@ bool revealInFileManager(const std::string &path) {
     }
 }
 
-// Puts the File menu into the main menu when it is not there. SDL builds (and can replace) the
-// main menu while the application finishes launching, which depends on timing, so this runs now
-// and again after every event the application handles until the File menu is in place; once it
-// is, each call is one pointer comparison. Logs the menu bar's titles whenever it installs.
-static void ensureFileMenu() {
+// Puts the File menu into the main menu when it is not there; false while it cannot (no NSApp or
+// no main menu yet). Once it is in, each call is one pointer comparison.
+static bool ensureFileMenu(bool &installedNow) {
     static SfcopFileMenuTarget *target = [[SfcopFileMenuTarget alloc] init];
     static NSMenuItem *fileItem = nil;
-    NSMenu *bar = [NSApp mainMenu];
-    if (bar == nil || gEntries.empty() || (fileItem != nil && fileItem.menu == bar)) {
-        return;
+    installedNow = false;
+    NSMenu *bar = NSApp != nil ? [NSApp mainMenu] : nil;
+    if (bar == nil || gEntries.empty()) {
+        return false;
+    }
+    if (fileItem != nil && fileItem.menu == bar) {
+        return true;
     }
     if (fileItem == nil) {
         NSMenu *menu = [[NSMenu alloc] initWithTitle:@"File"];
@@ -67,12 +69,20 @@ static void ensureFileMenu() {
     }
     // After the application menu, before the rest (SDL adds Window and others).
     [bar insertItem:fileItem atIndex:bar.numberOfItems > 0 ? 1 : 0];
+    installedNow = true;
+    return true;
+}
+
+static std::string menuBarTitles() {
     NSMutableArray<NSString *> *titles = [NSMutableArray array];
-    for (NSMenuItem *entry in bar.itemArray) {
+    for (NSMenuItem *entry in [NSApp mainMenu].itemArray) {
         [titles addObject:entry.title.length > 0 ? entry.title : @"(app)"];
     }
-    NSLog(@"sfcop: menu bar now: %@", [titles componentsJoinedByString:@" | "]);
+    return std::string([[titles componentsJoinedByString:@" | "] UTF8String]);
 }
+
+static unsigned gCalls = 0; // installFileMenu's call is call 0, then one per pump
+static bool gLogged = false;
 
 void installFileMenu(const std::vector<FileMenuEntry> &entries) {
     if (entries.empty()) {
@@ -80,18 +90,37 @@ void installFileMenu(const std::vector<FileMenuEntry> &entries) {
     }
     @autoreleasepool {
         gEntries = entries;
-        static bool observing = false;
-        if (!observing && NSApp != nil) {
-            observing = true;
-            [[NSNotificationCenter defaultCenter]
-                addObserverForName:NSApplicationDidUpdateNotification
-                            object:NSApp
-                             queue:nil
-                        usingBlock:^(NSNotification *) {
-                          ensureFileMenu();
-                        }];
+        gCalls = 0;
+        gLogged = false;
+        bool now = false;
+        const bool ready = ensureFileMenu(now);
+        NSLog(@"sfcop: File menu install: NSApp %s, menu %s", NSApp != nil ? "set" : "nil",
+              ready ? "in place" : "not yet");
+        if (ready) {
+            gLogged = true;
+            NSLog(@"sfcop: File menu in place at the install call; menu bar: %s",
+                  menuBarTitles().c_str());
         }
-        ensureFileMenu();
+    }
+}
+
+void pumpFileMenu() {
+    if (gLogged || gEntries.empty()) {
+        // In place: a replaced main menu is still put right, silently, with one comparison.
+        bool now = false;
+        if (!gEntries.empty() && ensureFileMenu(now) && now) {
+            NSLog(@"sfcop: File menu put back; menu bar: %s", menuBarTitles().c_str());
+        }
+        return;
+    }
+    @autoreleasepool {
+        ++gCalls;
+        bool now = false;
+        if (ensureFileMenu(now)) {
+            gLogged = true;
+            NSLog(@"sfcop: File menu in place after %u pumps; menu bar: %s", gCalls,
+                  menuBarTitles().c_str());
+        }
     }
 }
 
