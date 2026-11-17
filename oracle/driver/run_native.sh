@@ -51,8 +51,11 @@ if [ ! -x "$bin" ]; then
     exit 2
 fi
 
+# fix_hle_low_memory_reads is off here: a guest read of 0x00010000-0x0001FFFF ends the run, so the
+# oracle shows such reads instead of continuing past them (docs/FIXES.md).
 if [ -n "${SFCOP_INSTALL:-}" ]; then
     exec "$bin" --install "$SFCOP_INSTALL" --data "$data" "$mode" --input "$steps" \
-        --watchdog "$watchdog" "$@"
+        --watchdog "$watchdog" --fix=fix_hle_low_memory_reads=off "$@"
 fi
-exec "$bin" --data "$data" "$mode" --input "$steps" --watchdog "$watchdog" "$@"
+exec "$bin" --data "$data" "$mode" --input "$steps" --watchdog "$watchdog" \
+    --fix=fix_hle_low_memory_reads=off "$@"
