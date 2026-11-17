@@ -17,6 +17,7 @@
 #include <fstream>
 #include <memory>
 #include <optional>
+#include <functional>
 #include <sstream>
 #include <string>
 #include <thread>
@@ -381,6 +382,17 @@ int main(int argc, char **argv) {
         if (oracleJob) {
             oracleJob->fixedStep = fixedStep;
         }
+    }
+    if (!options.headless) {
+        // The File menu is finished (or put back) on the main thread's pumps, whenever SDL's menus
+        // came up (app/FileMenu.h).
+        std::function<void()> previous = std::move(options.onFrame);
+        options.onFrame = [previous = std::move(previous)] {
+            if (previous) {
+                previous();
+            }
+            app::pumpFileMenu();
+        };
     }
     std::unique_ptr<platform::Threads> threads = platform::makeThreads();
     if (!window || !gpu || !input || !audio || !store || !transport || !clock || !threads) {

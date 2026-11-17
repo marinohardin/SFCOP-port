@@ -36,5 +36,10 @@ bool revealInFileManager(const std::string &path);
 // Adds a File menu with `entries` to the application's menu bar, after SDL's default menus. Call
 // after the window system is up (the Window's creation). A no-op off macOS.
 void installFileMenu(const std::vector<FileMenuEntry> &entries);
+// Call once per pump of the main thread's events, after installFileMenu: finishes the install when
+// the window system was not up at that call, and puts the File menu back if the main menu was
+// replaced. Cheap once the menu is in place; logs once, with the number of pumps it took. A no-op
+// off macOS.
+void pumpFileMenu();
 
 } // namespace sfcop::app
