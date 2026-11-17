@@ -1,3 +1,5 @@
+<img width="1280" height="640" alt="sfcop-port-card" src="https://github.com/user-attachments/assets/0d567e45-268b-4b8e-b80e-115c61212ca3" />
+
 # SFCOP-port
 
 The native port of **Star Trek: Starfleet Command II — Orion Pirates**
