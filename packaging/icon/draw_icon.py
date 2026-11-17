@@ -74,4 +74,4 @@ html = f'''<!doctype html><html><head><meta charset="utf-8"><style>html,body{{ma
   <text x="512" y="658" text-anchor="middle" font-family="'Avenir Next',sans-serif" font-weight="800" font-size="{T['band_size']}" letter-spacing="5" fill="url(#gold)" stroke="#2a1503" stroke-width="2">{T['band']}</text>
 </g>
 </svg></body></html>'''
-open(out, "w").write(html)
+open(out, "w", encoding="utf-8").write(html)

@@ -257,6 +257,37 @@ def test_the_linux_icon_is_the_png_inside_the_icns(tmp_path):
     assert data in (open(os.path.join(ROOT, "packaging", "macos", "SFCOP.icns"), "rb").read())
 
 
+def icns_entries(data):
+    """The (kind, body) entries of an .icns file, in order."""
+    assert data[:4] == b"icns"
+    assert int.from_bytes(data[4:8], "big") == len(data)
+    entries, offset = [], 8
+    while offset < len(data):
+        length = int.from_bytes(data[offset + 4:offset + 8], "big")
+        assert length >= 8 and offset + length <= len(data)
+        entries.append((data[offset:offset + 4], data[offset + 8:offset + length]))
+        offset += length
+    return entries
+
+
+def test_the_macos_icon_holds_every_size_up_to_1024_px():
+    with open(os.path.join(ROOT, "packaging", "macos", "SFCOP.icns"), "rb") as stream:
+        kinds = {kind for kind, _ in icns_entries(stream.read())}
+    # 16, 32, 64, 128, 256, 512 and 1024 px, and the @2x forms of 16 and 32.
+    for kind in (b"ic04", b"ic05", b"ic07", b"ic08", b"ic09", b"ic10", b"ic11", b"ic12", b"ic13",
+                 b"ic14"):
+        assert kind in kinds
+
+
+def test_the_windows_icon_holds_16_to_256_px():
+    with open(os.path.join(ROOT, "packaging", "windows", "SFCOP.ico"), "rb") as stream:
+        data = stream.read()
+    assert data[:4] == b"\x00\x00\x01\x00"
+    count = int.from_bytes(data[4:6], "little")
+    sizes = sorted(data[6 + 16 * i] or 256 for i in range(count))
+    assert sizes == [16, 24, 32, 48, 64, 128, 256]
+
+
 # The decompilation holds the install manifest and the hash list (decomp/docs/INTERFACE.md).
 DECOMP = os.path.abspath(os.environ.get("SFCOP_DECOMP_DIR") or os.path.join(ROOT, "decomp"))
 REPO_MANIFEST = os.path.join(DECOMP, "analysis", "results", "install_manifest.tsv")
