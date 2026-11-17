@@ -19,6 +19,7 @@ verifying it. DESIGN §5.1, §5.3, §6.6, §6.8 and §8 define the behavior.
 | `HostPlatform.h` | The platform, its environment and the running program's own path, one file per platform, passed in so every platform's rules are tested everywhere |
 | `LogPaths.h` | `collapseHome`: a path for a log with the home folder written as `~` (a whole leading folder only), so the start line of the important log names no account |
 | `Bundle.h` | Run from `SFCOP.app`, the hash list is the bundle's copy in `Contents/Resources`; a build run in place reads the source tree's list it was compiled with (`SFCOP_HASH_LIST`) |
+| `FileMenu.h` | The File menu of the running game's menu bar on macOS: "Show Game Files in Finder" (the resolved data folder, so `--data` is honoured) and "Show Logs in Finder" (`--logs`, else `logs/` in the data folder). The entries and what choosing one does are plain and tested; `FileMenuHost_macos.mm` makes the AppKit menu, installed after the Window is made and checked again on each frame of the pump, so it is in place whatever the order of SDL's start-up and comes back if the main menu is replaced. Elsewhere a no-op. Windowed runs only |
 | `Files.h` | **Temporary.** The few file operations these need, until the Store component has a real backend (B5); the integrator then replaces it with Store's in its own pull request. `FilesMock.h` holds the in-memory test double |
 
 The install is only ever read. Nothing here writes outside the data folder.
