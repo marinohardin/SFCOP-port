@@ -65,6 +65,10 @@ endif()
 # for Audio, Dear ImGui for the launcher's window. PUBLIC so that the client and the tests see the same include paths.
 if(_sfcop_src)
     target_link_libraries(sfcop_src PUBLIC SDL3::SDL3-static sfcop_miniaudio sfcop_imgui)
+    if(APPLE)
+        # The File menu (src/app/FileMenuHost_macos.mm).
+        target_link_libraries(sfcop_src PUBLIC "-framework AppKit")
+    endif()
 endif()
 
 add_executable(sfcop_tests "${CMAKE_SOURCE_DIR}/cmake/TestMain.cpp" ${_sfcop_tests} ${_sfcop_third_party_tests})
