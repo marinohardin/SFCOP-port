@@ -17,8 +17,11 @@ std::vector<sfcop::app::FileMenuEntry> gEntries;
 
 @implementation SfcopFileMenuTarget
 - (void)reveal:(NSMenuItem *)item {
-    (void)sfcop::app::activateFileMenuEntry(gEntries, static_cast<std::size_t>(item.tag),
-                                            sfcop::app::revealInFileManager);
+    const std::size_t index = static_cast<std::size_t>(item.tag);
+    if (!sfcop::app::activateFileMenuEntry(gEntries, index, sfcop::app::revealInFileManager)) {
+        // A folder that does not exist yet (logs before the first log) cannot be shown.
+        NSLog(@"sfcop: could not show \"%@\" in Finder", item.title);
+    }
 }
 @end
 
