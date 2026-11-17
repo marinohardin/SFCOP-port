@@ -17,6 +17,7 @@ verifying it. DESIGN §5.1, §5.3, §6.6, §6.8 and §8 define the behavior.
 | `Sha256.h` | SHA-256, fed in pieces |
 | `ServiceHosts.h` | The hosts of the Dynaverse stand-ins, from the `services` object of `servers.json` in the data folder, as the alias map the winsock module resolves the original's service host names by (`src/net/DIRECTORY_API.md`, "Pointing the client at the stand-ins"). With no `servers.json`, or a service it does not name, the host is a reserved name that resolves nowhere: the client fails closed and reaches no one's server until the file names the services (the integrator's decision; the original hosts are gone). A malformed file is reported on stderr and has the same effect |
 | `HostPlatform.h` | The platform, its environment and the running program's own path, one file per platform, passed in so every platform's rules are tested everywhere |
+| `LogPaths.h` | `collapseHome`: a path for a log with the home folder written as `~` (a whole leading folder only), so the start line of the important log names no account |
 | `Bundle.h` | Run from `SFCOP.app`, the hash list is the bundle's copy in `Contents/Resources`; a build run in place reads the source tree's list it was compiled with (`SFCOP_HASH_LIST`) |
 | `Files.h` | **Temporary.** The few file operations these need, until the Store component has a real backend (B5); the integrator then replaces it with Store's in its own pull request. `FilesMock.h` holds the in-memory test double |
 
@@ -196,7 +197,7 @@ file to change it.
 
 Started from Finder, the app finds the install as a terminal run does (remembered in
 `install.txt`, else the install the build was made from, else the usual places) but cannot ask
-for one, and it writes what the client prints to `logs/launch.log` in the data folder. The mission
+for one, and it writes what the client prints to `logs/launch-<stamp>.log` (everything) and `logs/important-<stamp>.log` (the start line, refused script loads, faults, the exit; `platform/Core/Log.h`) in the data folder. The mission
 list needs the translated modules: a double click has no environment, so name their folder once
 in the data folder,
 

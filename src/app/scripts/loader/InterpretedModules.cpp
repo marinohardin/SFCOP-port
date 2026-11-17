@@ -1,4 +1,5 @@
 // The provider that runs mission scripts from their .scr files (InterpretedModules.h).
+#include "platform/Core/Log.h"
 #include "app/scripts/loader/InterpretedModules.h"
 
 #include "app/scripts/interp/CodeSurvey.h"
@@ -64,6 +65,11 @@ bool isModuleName(const std::string &name) {
 }
 
 void say(const char *format, const std::string &a) { std::fprintf(stderr, format, a.c_str()); }
+
+// A refusal or a failed load: also in the important log (platform/Core/Log.h).
+void sayImportant(const char *format, const std::string &a) {
+    sfcop_logf(SFCOP_LOG_IMPORTANT, format, a.c_str());
+}
 
 double millisecondsSince(std::chrono::steady_clock::time_point start) {
     return std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
@@ -309,26 +315,26 @@ std::uint32_t InterpretedModuleProvider::Load(std::string_view scriptName) {
         }
     }
     if (!isModuleName(name)) {
-        say("[scripts] refused: %s: not a module name\n", name);
+        sayImportant("[scripts] refused: %s: not a module name\n", name);
         return 0;
     }
     if (!runtime_ || !interpreter_) {
-        say("[scripts] %s: not loaded: this program has no guest machine\n", name);
+        sayImportant("[scripts] %s: not loaded: this program has no guest machine\n", name);
         return 0;
     }
     std::string why;
     std::optional<ScriptFile> file = reader_(scriptName, why);
     if (!file) {
-        say("[scripts] refused: %s\n", name + ": " + why);
+        sayImportant("[scripts] refused: %s\n", name + ": " + why);
         return 0;
     }
     interp::ScriptImageResult laid = interp::readScriptImage(file->bytes, file->base);
     if (!laid.ok) {
-        say("[scripts] refused: %s\n", name + ": " + laid.error);
+        sayImportant("[scripts] refused: %s\n", name + ": " + laid.error);
         return 0;
     }
     if (laid.image.size > kSlotSize) {
-        say("[scripts] refused: %s: its image is larger than a slot\n", name);
+        sayImportant("[scripts] refused: %s: its image is larger than a slot\n", name);
         return 0;
     }
     std::vector<std::string> imports;
@@ -336,13 +342,13 @@ std::uint32_t InterpretedModuleProvider::Load(std::string_view scriptName) {
         imports.push_back(import.name);
     }
     if (const std::optional<LoadError> foreign = checkImports(name, imports, allowList_)) {
-        say("[scripts] %s\n", describe(*foreign));
+        sayImportant("[scripts] %s\n", describe(*foreign));
         return 0;
     }
     for (const auto &loaded : byBase_) {
         const interp::ScriptImage &other = loaded.second.image;
         if (laid.image.base < other.base + other.size && other.base < laid.image.base + laid.image.size) {
-            say("[scripts] refused: %s\n", name + ": its slot overlaps " + loaded.second.name + "'s");
+            sayImportant("[scripts] refused: %s\n", name + ": its slot overlaps " + loaded.second.name + "'s");
             return 0;
         }
     }
@@ -378,12 +384,12 @@ std::uint32_t InterpretedModuleProvider::Load(std::string_view scriptName) {
         char where[64];
         std::snprintf(where, sizeof where, " at 0x%08X (", laid.image.linkedBase + rva);
         const std::string reason = ": it has an instruction the interpreter does not know" + std::string(where) + bytes + ")";
-        say("[scripts] refused: %s\n", name + reason);
+        sayImportant("[scripts] refused: %s\n", name + reason);
         return 0;
     }
     if (!runtime_->reserve(laid.image.base, laid.image.size)) {
         removeCode(laid.image);
-        say("[scripts] refused: %s: its guest range is already in use\n", name);
+        sayImportant("[scripts] refused: %s: its guest range is already in use\n", name);
         return 0;
     }
     Module module{name, std::move(laid.image), 1};
@@ -413,7 +419,7 @@ std::uint32_t InterpretedModuleProvider::Load(std::string_view scriptName) {
     if (loaded.image.entry != 0) {
         const std::uint32_t attach[3] = {base, 1u /* DLL_PROCESS_ATTACH */, 0u};
         if (Call(loaded.image.entry, 3, attach) == 0) {
-            say("[scripts] %s: its DLL entry point refused to attach\n", name);
+            sayImportant("[scripts] %s: its DLL entry point refused to attach\n", name);
             const Module gone = std::move(byBase_[base]);
             byBase_.erase(base);
             Unmap(gone);
@@ -750,7 +756,7 @@ std::uint32_t MissionModuleProvider::Load(std::string_view name) {
         if (const std::uint32_t handle = native_.Load(name)) {
             return handle;
         }
-        say("[scripts] %s: its native module was refused; the script is interpreted\n", scriptStem(name));
+        sayImportant("[scripts] %s: its native module was refused; the script is interpreted\n", scriptStem(name));
     }
     return interpreted_.Load(name);
 }

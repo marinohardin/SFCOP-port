@@ -78,8 +78,8 @@ Anyway next to SFCOP (on macOS 14 and older, right-click the app, choose Open, t
 If your install
 is on an external disk, macOS asks once whether SFCOP may read removable volumes; allow it, or the
 client cannot read the install. A double-click cannot ask where the install is: started from
-Finder before it knows one, the client stops and writes why to `logs/launch.log` in the data
-folder. So start it once from Terminal with the path:
+Finder before it knows one, the client stops and writes why to `logs/launch-<stamp>.log` (everything) in the data folder, and a line saying it ended to
+`logs/important-<stamp>.log` (the start line, refused script loads, faults, the exit; `platform/Core/Log.h`). So start it once from Terminal with the path:
 
 ```bash
 /Applications/SFCOP.app/Contents/MacOS/sfcop-launch --install "/path/to/Starfleet Command Orion Pirates"

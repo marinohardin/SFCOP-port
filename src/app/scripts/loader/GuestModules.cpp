@@ -1,5 +1,6 @@
 // The provider behind LoadLibraryA, GetProcAddress and FreeLibrary for the game's mission scripts
 // (GuestModules.h).
+#include "platform/Core/Log.h"
 #include "app/scripts/loader/GuestModules.h"
 #include "app/DataDir.h"
 
@@ -74,6 +75,11 @@ bool isModuleName(const std::string &name) {
 
 void say(const char *format, const std::string &a) {
     std::fprintf(stderr, format, a.c_str());
+}
+
+// A refusal or a failed load: also in the important log (platform/Core/Log.h).
+void sayImportant(const char *format, const std::string &a) {
+    sfcop_logf(SFCOP_LOG_IMPORTANT, format, a.c_str());
 }
 
 // The data folder the guest host named (setMissionModulesDataDir), or empty.
@@ -300,16 +306,16 @@ std::uint32_t GuestModuleProvider::Load(std::string_view scriptName) {
         }
     }
     if (!isModuleName(name)) {
-        say("[scripts] refused: %s: not a module name\n", name);
+        sayImportant("[scripts] refused: %s: not a module name\n", name);
         return 0;
     }
     if (!runtime_) {
-        say("[scripts] %s: not loaded: this program has no guest machine\n", name);
+        sayImportant("[scripts] %s: not loaded: this program has no guest machine\n", name);
         return 0;
     }
     const LoadResult result = loader_.load(LibraryFor(name));
     if (!result.ok()) {
-        say("[scripts] %s\n", describe(*result.error));
+        sayImportant("[scripts] %s\n", describe(*result.error));
         return 0;
     }
     const sfcop_guest_image *image = result.module.guest;
@@ -319,7 +325,7 @@ std::uint32_t GuestModuleProvider::Load(std::string_view scriptName) {
         why = "refused: " + name + ": its guest range is already in use";
     }
     if (!why.empty()) {
-        say("[scripts] %s\n", why);
+        sayImportant("[scripts] %s\n", why);
         loader_.unload(result.module.id);
         return 0;
     }
@@ -347,7 +353,7 @@ std::uint32_t GuestModuleProvider::Load(std::string_view scriptName) {
     if (image->entry != 0) {
         const std::uint32_t attach[3] = {image->base, 1u /* DLL_PROCESS_ATTACH */, 0u};
         if (image->call(image->entry, 3, attach) == 0) {
-            say("[scripts] %s: its DLL entry point refused to attach\n", name);
+            sayImportant("[scripts] %s: its DLL entry point refused to attach\n", name);
             byBase_.erase(image->base);
             Unmap(module);
             return 0;
