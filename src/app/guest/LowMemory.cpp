@@ -147,7 +147,10 @@ LowMemoryRegion::LowMemoryRegion(std::uint8_t *guestZero, std::size_t hostPage)
     : guestZero_(guestZero), hostPage_(hostPage) {
     const std::size_t region = kLowMemoryEnd - kLowMemoryBegin;
     if (hostPage != 0 && hostPage <= region && region % hostPage == 0 && region / hostPage <= kMaxPages) {
-        pages_ = region / hostPage;
+        aligned_ = reinterpret_cast<std::uintptr_t>(guestZero + kLowMemoryBegin) % hostPage == 0;
+        if (aligned_) {
+            pages_ = region / hostPage;
+        }
     }
 }
 
@@ -219,6 +222,26 @@ std::size_t LowMemoryRegion::TakeReads(Read *out, std::size_t max) {
         }
     }
     return taken;
+}
+
+LowMemorySetUp SetUpLowMemory(bool on, LowMemoryRegion &region,
+                              std::uint32_t (*reserve)(std::uint32_t va, std::uint32_t size),
+                              void (*release)(std::uint32_t va, std::uint32_t size)) {
+    if (!on) {
+        return LowMemorySetUp::kOff;
+    }
+    if (!region.Aligned()) {
+        return LowMemorySetUp::kMisaligned;
+    }
+    constexpr std::uint32_t kSize = kLowMemoryEnd - kLowMemoryBegin;
+    if (reserve(kLowMemoryBegin, kSize) != kLowMemoryBegin) {
+        return LowMemorySetUp::kInUse;
+    }
+    if (!region.Arm()) {
+        release(kLowMemoryBegin, kSize);
+        return LowMemorySetUp::kCannotProtect;
+    }
+    return LowMemorySetUp::kArmed;
 }
 
 } // namespace sfcop::guest

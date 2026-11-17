@@ -344,6 +344,9 @@ void onFault(int signal, siginfo_t *info, void *context) {
     const bool guestMemory = address >= base && address - base < 0x100000000ull;
     const std::uintptr_t pc = faultPc(context);
     // A read of guest low memory that fix_hle_low_memory_reads answers, from any code: resume.
+    // It comes before the machine-depth and t_inFault guards on purpose: it touches only the
+    // region (mprotect, the fill, atomics) and resumes the instruction, so it is safe however
+    // deeply faults nest, including a fault taken while another fault is being dispatched.
     if ((signal == SIGSEGV || signal == SIGBUS) && guestMemory &&
         takeLowMemoryRead(static_cast<std::uint32_t>(address - base), faultAccess(context), pc)) {
         return;
@@ -552,9 +555,6 @@ void InstallExceptionHooks() {
 void InstallLowMemoryReads(std::uint32_t exeBase, std::uint32_t exeSize) {
     g_exeBase = exeBase;
     g_exeEnd = exeBase + exeSize;
-    if (!fixes::isEnabled("fix_hle_low_memory_reads")) {
-        return; // the region stays unreserved: a read of it faults as without the fix
-    }
 #if defined(_WIN32)
     SYSTEM_INFO system{};
     GetSystemInfo(&system);
@@ -562,20 +562,29 @@ void InstallLowMemoryReads(std::uint32_t exeBase, std::uint32_t exeSize) {
 #else
     const auto page = static_cast<std::size_t>(getpagesize());
 #endif
-    // Reserved, so that nothing else is placed there, then made inaccessible until read.
-    constexpr std::uint32_t kSize = kLowMemoryEnd - kLowMemoryBegin;
-    if (hle_vm_reserve(kLowMemoryBegin, kSize) != kLowMemoryBegin) {
+    static LowMemoryRegion region(reinterpret_cast<std::uint8_t *>(g_mem_base), page);
+    // hle_vm_reserve maps the range committed, readable and writable on every host (on Windows
+    // through VirtualAlloc with MEM_COMMIT), which is what Arm() protects.
+    switch (SetUpLowMemory(fixes::isEnabled("fix_hle_low_memory_reads"), region, hle_vm_reserve,
+                           hle_vm_release)) {
+    case LowMemorySetUp::kOff:
+        return; // the region stays unreserved: a read of it faults as without the fix
+    case LowMemorySetUp::kMisaligned:
+        std::fprintf(stderr, "[guest] fix_hle_low_memory_reads: guest 0x%08X is not at the start of a "
+                             "host page of %zu bytes; off for this run\n",
+                     kLowMemoryBegin, page);
+        return;
+    case LowMemorySetUp::kInUse:
         std::fprintf(stderr, "[guest] fix_hle_low_memory_reads: guest 0x%08X is in use; off for this run\n",
                      kLowMemoryBegin);
         return;
-    }
-    static LowMemoryRegion region(reinterpret_cast<std::uint8_t *>(g_mem_base), page);
-    if (!region.Arm()) {
-        hle_vm_release(kLowMemoryBegin, kSize);
+    case LowMemorySetUp::kCannotProtect:
         std::fprintf(stderr, "[guest] fix_hle_low_memory_reads: cannot protect guest 0x%08X (host "
                              "page %zu bytes); off for this run\n",
                      kLowMemoryBegin, page);
         return;
+    case LowMemorySetUp::kArmed:
+        break;
     }
     g_lowMemory = &region;
     std::fprintf(stderr, "[guest] fix_hle_low_memory_reads: guest 0x%08X-0x%08X reserved, %zu pages "
