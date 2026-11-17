@@ -120,6 +120,10 @@ private:
         std::uint32_t nextLoad = 0;
         bool ended = false;
         bool started = false;
+        // What the detail log last saw, so it prints changes and not every poll.
+        std::int32_t seenReady = -2;
+        std::uint32_t seenStatus = 0;
+        std::uint32_t loads = 0;
     };
 
     Sample *find(std::uint32_t sample);
