@@ -10,6 +10,8 @@
 // SFCOP_IMPORTANT_LOG, set by the launcher; with it unset (a terminal run) there is one stream.
 #pragma once
 
+#include <stdarg.h>
+#include <stddef.h>
 #include <stdio.h>
 
 #ifdef __cplusplus
@@ -25,13 +27,21 @@ enum {
 // start; a line logged earlier or with no file open goes to the full log only.
 void sfcop_log_init(void);
 
-// printf to stderr; at IMPORTANT also appended to the important log, flushed per line.
+// printf to stderr; at IMPORTANT also appended to the important log, flushed per line (flushed
+// to the operating system, not synced to disk: a crash of the client loses nothing, a crash of the
+// machine may lose the last lines). Each call is one whole line, newline included, cut to 2047
+// bytes. Each stream keeps its lines whole; with several threads the two files may order them
+// differently.
 void sfcop_logf(int severity, const char *format, ...) __attribute__((format(printf, 2, 3)));
 
 #ifdef __cplusplus
 }
 
 namespace sfcop::platform {
+
+// The formatting sfcop_logf does, into `out`: a line too long for `size` is cut and ends "...\n";
+// one that cannot be formatted becomes a line saying so.
+void FormatLogLine(char *out, size_t size, const char *format, va_list args);
 
 // The routing itself, on explicit streams: `text` goes to `full`, and at IMPORTANT to `important`
 // when it is not null.
