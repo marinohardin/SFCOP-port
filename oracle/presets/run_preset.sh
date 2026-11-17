@@ -172,9 +172,11 @@ fi
 echo "run_preset: $preset: $mission/$input"
 rc=0
 # cwd is the scratch folder: the Linux container mounts it writable and the data copy is in it.
+# fix_hle_low_memory_reads is off here: a guest read of 0x00010000-0x0001FFFF ends the run, so the
+# oracle shows such reads instead of continuing past them (docs/FIXES.md).
 # shellcheck disable=SC2086
 (cd "$scratch" && nice -n 19 $emulator $prog --install "$install" --data "$scratch/data" \
-    --headless --input "$steps" --watchdog "$watchdog" $logs_arg) \
+    --headless --input "$steps" --watchdog "$watchdog" --fix=fix_hle_low_memory_reads=off $logs_arg) \
     > "$scratch/stdout.log" 2> "$scratch/stderr.log" || rc=$?
 if [ "$rc" -ne 0 ]; then
     echo "run_preset: $preset: the client exited $rc; last lines of its error output:" >&2
