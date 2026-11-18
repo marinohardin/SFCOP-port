@@ -241,6 +241,9 @@ if(EXISTS "${SFCOP_EHTEST_DIR}/out/gen/recomp_dispatch.c")
     target_link_libraries(sfcop_guest_tests PRIVATE sfcop_spike_unowned sfcop_src sfcop_win32hle
         sfcop_ehtest_lifted $<$<PLATFORM_ID:Windows>:SDL3::SDL3-static> SDL2::SDL2
         $<$<NOT:$<PLATFORM_ID:Windows>>:pthread> $<$<NOT:$<PLATFORM_ID:Windows>>:m>)
+    if(APPLE)
+        target_link_options(sfcop_guest_tests BEFORE PRIVATE "$<TARGET_FILE:SDL3-shared>")
+    endif()
     if(TARGET sfcop_hle_guest)
         target_link_libraries(sfcop_guest_tests PRIVATE sfcop_hle_guest)
     endif()

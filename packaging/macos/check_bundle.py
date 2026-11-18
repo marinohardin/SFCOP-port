@@ -68,14 +68,14 @@ def is_macho(path):
 
 def linked_libraries(path):
     """The install names a Mach-O loads (otool -L)."""
-    out = subprocess.run(["otool", "-L", path], capture_output=True, text=True, check=True).stdout
-    return [line.split()[0] for line in out.splitlines()[1:] if line.strip()]
+    out = subprocess.run(["otool", "-L", path], capture_output=True, text=True).stdout
+    return [line.split()[0] for line in out.splitlines()[1:] if line.startswith("\t")]
 
 
 def defines_sdl3(path):
     """Whether the Mach-O defines SDL3 itself. sdl2-compat also defines SDL_* names (the SDL2 API),
     so the test is a function only SDL3 has: the GPU API."""
-    out = subprocess.run(["nm", "-gU", path], capture_output=True, text=True, check=True).stdout
+    out = subprocess.run(["nm", "-gU", path], capture_output=True, text=True).stdout
     return any(line.split()[-1:] == ["_SDL_CreateGPUDevice"] for line in out.splitlines())
 
 
