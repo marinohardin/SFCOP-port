@@ -188,10 +188,16 @@ sfcop_strict_warnings(sfcop)
 # pcrecomp's win32hle (the rows no module owns yet) reaches SDL3 only through sdl2-compat, which
 # loads libSDL3.dylib from beside sfcop; both libraries are written there (third_party/CMakeLists.txt).
 # On Windows SDL3-static comes before sdl2-compat's import library, or lld-link binds the platform
-# layer's SDL3 calls that share an SDL2 name (SDL_GetWindowFlags...) to sdl2-compat.
+# layer's SDL3 calls that share an SDL2 name (SDL_GetWindowFlags...) to sdl2-compat. On macOS the
+# shared SDL3 (sfcop_sdl3, third_party/CMakeLists.txt) comes first for the same reason: ld64 binds
+# each name to the first dylib that exports it.
 target_link_libraries(sfcop PRIVATE sfcop_guest sfcop_spike_unowned sfcop_src sfcop_win32hle
     sfcop_lifted $<$<PLATFORM_ID:Windows>:SDL3::SDL3-static> SDL2::SDL2
     $<$<NOT:$<PLATFORM_ID:Windows>>:pthread> $<$<NOT:$<PLATFORM_ID:Windows>>:m>)
+if(APPLE)
+    # CMake emits a shared library after the libraries that need it, so name it first by hand.
+    target_link_options(sfcop BEFORE PRIVATE "$<TARGET_FILE:SDL3-shared>")
+endif()
 if(WIN32)
     # 8 MB, not Windows' 1 MB default: guest fault handlers run inside the vectored handler on this stack.
     target_link_options(sfcop PRIVATE "LINKER:/STACK:8388608")
@@ -235,6 +241,9 @@ if(EXISTS "${SFCOP_EHTEST_DIR}/out/gen/recomp_dispatch.c")
     target_link_libraries(sfcop_guest_tests PRIVATE sfcop_spike_unowned sfcop_src sfcop_win32hle
         sfcop_ehtest_lifted $<$<PLATFORM_ID:Windows>:SDL3::SDL3-static> SDL2::SDL2
         $<$<NOT:$<PLATFORM_ID:Windows>>:pthread> $<$<NOT:$<PLATFORM_ID:Windows>>:m>)
+    if(APPLE)
+        target_link_options(sfcop_guest_tests BEFORE PRIVATE "$<TARGET_FILE:SDL3-shared>")
+    endif()
     if(TARGET sfcop_hle_guest)
         target_link_libraries(sfcop_guest_tests PRIVATE sfcop_hle_guest)
     endif()

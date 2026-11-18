@@ -64,7 +64,7 @@ endif()
 # The backends' libraries (third_party/CMakeLists.txt): SDL3 for Window, Gpu and Input, miniaudio
 # for Audio, Dear ImGui for the launcher's window. PUBLIC so that the client and the tests see the same include paths.
 if(_sfcop_src)
-    target_link_libraries(sfcop_src PUBLIC SDL3::SDL3-static sfcop_miniaudio sfcop_imgui)
+    target_link_libraries(sfcop_src PUBLIC sfcop_sdl3 sfcop_miniaudio sfcop_imgui)
     if(APPLE)
         # The File menu (src/app/FileMenuHost_macos.mm).
         target_link_libraries(sfcop_src PUBLIC "-framework AppKit")
@@ -76,6 +76,6 @@ target_include_directories(sfcop_tests PRIVATE "${CMAKE_SOURCE_DIR}/src")
 # The decompilation's folder (cmake/SfcopDecomp.cmake): the tests read its retail hash list.
 target_compile_definitions(sfcop_tests PRIVATE "SFCOP_TEST_DECOMP_DIR=\"${SFCOP_DECOMP_DIR}\"")
 sfcop_strict_warnings(sfcop_tests)
-target_link_libraries(sfcop_tests PRIVATE sfcop_src sfcop_doctest SDL3::SDL3-static sfcop_miniaudio
+target_link_libraries(sfcop_tests PRIVATE sfcop_src sfcop_doctest sfcop_sdl3 sfcop_miniaudio
     sfcop_imgui)
 add_test(NAME sfcop_tests COMMAND sfcop_tests --no-version)
