@@ -14,6 +14,7 @@ the bundle is clean, 1 with one line per refused file otherwise, 2 on bad argume
 
 import hashlib
 import os
+import subprocess
 import sys
 
 # Paths relative to the bundle; each must be there, except the signature, which appears once the
@@ -56,6 +57,50 @@ def sha256_of(path):
     return digest.hexdigest()
 
 
+SDL3_LIBRARY = "Contents/Frameworks/libSDL3.dylib"
+MACHO_MAGICS = (b"\xcf\xfa\xed\xfe", b"\xca\xfe\xba\xbe")
+
+
+def is_macho(path):
+    with open(path, "rb") as stream:
+        return stream.read(4) in MACHO_MAGICS
+
+
+def linked_libraries(path):
+    """The install names a Mach-O loads (otool -L)."""
+    out = subprocess.run(["otool", "-L", path], capture_output=True, text=True).stdout
+    return [line.split()[0] for line in out.splitlines()[1:] if line.startswith("\t")]
+
+
+def defines_sdl3(path):
+    """Whether the Mach-O defines SDL3 itself. sdl2-compat also defines SDL_* names (the SDL2 API),
+    so the test is a function only SDL3 has: the GPU API."""
+    out = subprocess.run(["nm", "-gU", path], capture_output=True, text=True).stdout
+    return any(line.split()[-1:] == ["_SDL_CreateGPUDevice"] for line in out.splitlines())
+
+
+def sdl_refusals(bundle):
+    """One copy of SDL3 per bundle: the dylib is linked by something, and nothing else carries SDL."""
+    found = []
+    if not os.path.isfile(os.path.join(bundle, SDL3_LIBRARY)):
+        return found
+    linked = seen = False
+    for root, _, files in os.walk(bundle):
+        for name in sorted(files):
+            path = os.path.join(root, name)
+            relative = os.path.relpath(path, bundle).replace(os.sep, "/")
+            if relative == SDL3_LIBRARY or os.path.islink(path) or not is_macho(path):
+                continue
+            seen = True
+            if any(os.path.basename(dep).startswith("libSDL3") for dep in linked_libraries(path)):
+                linked = True
+            if defines_sdl3(path):
+                found.append(f"{relative}: carries SDL3 itself while the bundle ships libSDL3.dylib (two copies)")
+    if seen and not linked:
+        found.append(f"{SDL3_LIBRARY}: nothing in the bundle links it")
+    return found
+
+
 def refusals(bundle, hashes):
     """One line per refused file, in path order; empty when the bundle is clean."""
     found = []
@@ -80,7 +125,7 @@ def refusals(bundle, hashes):
     for relative in sorted(EXPECTED - {SIGNATURE}):
         if not os.path.isfile(os.path.join(bundle, relative)):
             found.append(f"{relative}: missing")
-    return found
+    return found + sdl_refusals(bundle)
 
 
 def self_test(work):
@@ -141,6 +186,27 @@ def self_test(work):
         stream.write(retail)
     expect("a retail file under a client name",
            ["Contents/Resources/SFCOP.icns: a file of the original game (its hash is in the list)"])
+    with open(renamed, "w", encoding="utf-8") as stream:
+        stream.write("invented contents of Contents/Resources/SFCOP.icns\n")
+    # The SDL check, with stand-ins for the Mach-O readers (the invented files are not Mach-O).
+    global is_macho, linked_libraries, defines_sdl3
+    saved = (is_macho, linked_libraries, defines_sdl3)
+    try:
+        is_macho = lambda path: True
+        links = {"sfcop": ["@rpath/libSDL2-2.0.0.dylib"], "libSDL2-2.0.0.dylib": ["@rpath/libSDL3.dylib"]}
+        syms = {}
+        linked_libraries = lambda path: links.get(os.path.basename(path), [])
+        defines_sdl3 = lambda path: syms.get(os.path.basename(path), False)
+        expect("one SDL3, linked once", [])
+        links["libSDL2-2.0.0.dylib"] = []
+        expect("a libSDL3.dylib nothing links",
+               ["Contents/Frameworks/libSDL3.dylib: nothing in the bundle links it"])
+        links["libSDL2-2.0.0.dylib"] = ["@rpath/libSDL3.dylib"]
+        syms["sfcop"] = True
+        expect("a static SDL3 in the client beside the dylib",
+               ["Contents/MacOS/sfcop: carries SDL3 itself while the bundle ships libSDL3.dylib (two copies)"])
+    finally:
+        is_macho, linked_libraries, defines_sdl3 = saved
     shutil.rmtree(work, ignore_errors=True)
     print("self-test: ok" if ok else "self-test: FAILED")
     return 0 if ok else 1

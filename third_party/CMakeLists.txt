@@ -5,6 +5,8 @@
 #
 # Targets:
 #   SDL3::SDL3-static   SDL3, static (window, GPU, input, events)
+#   sfcop_sdl3          the SDL3 the client's own code links: the static library, except on macOS with
+#                       SFCOP_LIFT, where it is the shared one (see below)
 #   sfcop_miniaudio     miniaudio, static (audio engine)
 #   sfcop_doctest       doctest headers (C++ tests)
 #   sfcop_imgui         Dear ImGui with its SDL3 and SDL_Renderer backends, static (the launcher)
@@ -63,6 +65,18 @@ if(SFCOP_LIFT)
     FetchContent_MakeAvailable(sdl2_compat)
 endif()
 
+# One copy of SDL3 per process on macOS. sdl2-compat loads libSDL3.dylib, so the bundle ships it;
+# linking the client's own code to a static SDL3 as well would put SDL's Objective-C classes and
+# globals in the process twice (the runtime warns "implemented in both"). So there the client
+# links the shared library too. Linux and Windows keep the static library (no shared Objective-C
+# class registry to clash, and on Windows the link order in the root CMakeLists.txt matters).
+add_library(sfcop_sdl3 INTERFACE)
+if(APPLE AND SFCOP_LIFT)
+    target_link_libraries(sfcop_sdl3 INTERFACE SDL3::SDL3-shared)
+else()
+    target_link_libraries(sfcop_sdl3 INTERFACE SDL3::SDL3-static)
+endif()
+
 add_library(sfcop_miniaudio STATIC "${miniaudio_SOURCE_DIR}/miniaudio.c")
 target_include_directories(sfcop_miniaudio SYSTEM PUBLIC "${miniaudio_SOURCE_DIR}")
 target_compile_options(sfcop_miniaudio PRIVATE -w)
@@ -87,4 +101,4 @@ target_include_directories(sfcop_imgui SYSTEM PUBLIC
     "${imgui_SOURCE_DIR}" "${imgui_SOURCE_DIR}/backends")
 target_compile_definitions(sfcop_imgui PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
 target_compile_options(sfcop_imgui PRIVATE -w)
-target_link_libraries(sfcop_imgui PUBLIC SDL3::SDL3-static)
+target_link_libraries(sfcop_imgui PUBLIC sfcop_sdl3)
