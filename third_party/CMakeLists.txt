@@ -69,7 +69,7 @@ endif()
 # linking the client's own code to a static SDL3 as well would put SDL's Objective-C classes and
 # globals in the process twice (the runtime warns "implemented in both"). So there the client
 # links the shared library too. Linux and Windows keep the static library (no shared Objective-C
-# class registry to clash, and on Windows the link order below matters).
+# class registry to clash, and on Windows the link order in the root CMakeLists.txt matters).
 add_library(sfcop_sdl3 INTERFACE)
 if(APPLE AND SFCOP_LIFT)
     target_link_libraries(sfcop_sdl3 INTERFACE SDL3::SDL3-shared)

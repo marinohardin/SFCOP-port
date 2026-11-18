@@ -650,3 +650,16 @@ def test_the_source_package_carries_the_pinned_decompilation(tmp_path):
     assert any(n.startswith("SFCOP-9.9.9-source/decomp/op/") for n in names)
     assert "SFCOP-9.9.9-source/src/app/guest/override.cpp" in names
     assert len(names) == len(set(names))
+
+
+def test_the_bundle_checker_self_test_passes(tmp_path):
+    """Covers the one-SDL3 rules: a libSDL3.dylib nothing links, and a second SDL3 in the client."""
+    assert check_package.check_bundle.self_test(str(tmp_path / "selftest")) == 0
+
+
+@pytest.mark.skipif(sys.platform != "darwin", reason="reads Mach-O files with otool and nm")
+def test_the_bundle_checker_reads_a_real_mach_o():
+    bundle = check_package.check_bundle
+    assert bundle.is_macho("/bin/ls")
+    assert "/usr/lib/libSystem.B.dylib" in bundle.linked_libraries("/bin/ls")
+    assert not bundle.defines_sdl3("/bin/ls")
