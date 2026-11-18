@@ -2,7 +2,10 @@
 
 #include "platform/Audio/ImaAdpcm.h"
 
+#include "platform/Core/Log.h"
+
 #include <algorithm>
+#include <chrono>
 
 namespace sfcop::hle::miles {
 namespace {
@@ -16,6 +19,12 @@ void put16(std::vector<std::uint8_t> &out, std::int32_t value) {
     auto u = static_cast<std::uint16_t>(static_cast<std::int16_t>(value));
     out.push_back(static_cast<std::uint8_t>(u & 0xFFu));
     out.push_back(static_cast<std::uint8_t>(u >> 8));
+}
+
+// Seconds since the first Miles call, for the detail log.
+double logSeconds() {
+    static const auto start = std::chrono::steady_clock::now();
+    return std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
 }
 
 } // namespace
@@ -107,9 +116,12 @@ std::uint32_t Miles::AllocateSampleHandle() {
         if (!s.used) {
             s = Sample{};
             s.used = true;
+            sfcop_logf(SFCOP_LOG_DETAIL, "[mss] %.3f allocate sample handle %u\n", logSeconds(),
+                       i + 1);
             return i + 1;
         }
     }
+    sfcop_logf(SFCOP_LOG_DETAIL, "[mss] %.3f allocate sample handle: none free\n", logSeconds());
     lastError_ = "out of sample handles";
     return 0;
 }
@@ -123,6 +135,12 @@ Miles::Sample *Miles::find(std::uint32_t sample) {
 
 // Stops playback and drops what is queued; the stream stays open for the next load.
 void Miles::stop(Sample &s) {
+    sfcop_logf(SFCOP_LOG_DETAIL, "[mss] %.3f stop sample %ld: started %d, ended %d, %u loads\n",
+               logSeconds(), static_cast<long>(&s - samples_.data()) + 1, s.started, s.ended,
+               s.loads);
+    s.seenReady = -2;
+    s.seenStatus = 0;
+    s.loads = 0;
     if (s.stream.Valid()) {
         (void)audio_.StopStream(s.stream);
         (void)audio_.FlushStream(s.stream);
@@ -242,7 +260,15 @@ std::uint32_t Miles::SampleStatus(std::uint32_t sample) {
     if (s == nullptr) {
         return kSmpFree;
     }
-    return s->started && queued(*s) > 0 ? kSmpPlaying : kSmpDone;
+    // One read of the queue, for the status and for the log line that explains it.
+    const std::size_t waiting = s->started ? queued(*s) : 0;
+    std::uint32_t status = waiting > 0 ? kSmpPlaying : kSmpDone;
+    if (status != s->seenStatus) {
+        sfcop_logf(SFCOP_LOG_DETAIL, "[mss] %.3f sample %u status %u -> %u (started %d, ended %d, queued %zu)\n",
+                   logSeconds(), sample, s->seenStatus, status, s->started, s->ended, waiting);
+        s->seenStatus = status;
+    }
+    return status;
 }
 
 std::uint32_t Miles::MinimumSampleBufferSize(std::int32_t hz, std::int32_t format) const {
@@ -259,10 +285,18 @@ std::uint32_t Miles::MinimumSampleBufferSize(std::int32_t hz, std::int32_t forma
 std::int32_t Miles::SampleBufferReady(std::uint32_t sample) {
     Serve();
     Sample *s = find(sample);
-    if (s == nullptr || s->ended || (s->started && queued(*s) >= 2)) {
+    if (s == nullptr) {
         return -1;
     }
-    return static_cast<std::int32_t>(s->nextLoad);
+    std::int32_t ready = s->ended || (s->started && queued(*s) >= 2)
+                             ? -1
+                             : static_cast<std::int32_t>(s->nextLoad);
+    if (ready != s->seenReady) {
+        sfcop_logf(SFCOP_LOG_DETAIL, "[mss] %.3f sample %u buffer ready %d -> %d (started %d, ended %d, queued %zu)\n",
+                   logSeconds(), sample, s->seenReady, ready, s->started, s->ended, queued(*s));
+        s->seenReady = ready;
+    }
+    return ready;
 }
 
 bool Miles::ensureStream(Sample &s, const ClipFormat &format) {
@@ -292,6 +326,9 @@ void Miles::LoadSampleBuffer(std::uint32_t sample, std::uint32_t buffer,
     if (s == nullptr || buffer > 1) {
         return;
     }
+    sfcop_logf(SFCOP_LOG_DETAIL, "[mss] %.3f load sample %u buffer %u: %u bytes, format %d, %d Hz, load %u\n",
+               logSeconds(), sample, buffer, bytes, s->format, s->rate, s->loads);
+    ++s->loads;
     if (data == nullptr || bytes == 0) {
         s->ended = true; // no more data: the sample is done once the rest is heard
         return;
@@ -308,6 +345,8 @@ void Miles::LoadSampleBuffer(std::uint32_t sample, std::uint32_t buffer,
         return;
     }
     if (!audio_.QueueBuffer(s->stream, pcm.data(), pcm.size()).Ok()) {
+        sfcop_logf(SFCOP_LOG_DETAIL, "[mss] %.3f sample %u: the buffer was not queued\n", logSeconds(),
+                   sample);
         return;
     }
     if (!s->started) {
