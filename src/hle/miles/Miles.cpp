@@ -111,15 +111,17 @@ void Miles::WaveOutClose() {
 }
 
 std::uint32_t Miles::AllocateSampleHandle() {
-    sfcop_logf(SFCOP_LOG_DETAIL, "[mss] %.3f allocate sample handle\n", logSeconds());
     for (std::uint32_t i = 0; i < kMaxSamples; ++i) {
         Sample &s = samples_[i];
         if (!s.used) {
             s = Sample{};
             s.used = true;
+            sfcop_logf(SFCOP_LOG_DETAIL, "[mss] %.3f allocate sample handle %u\n", logSeconds(),
+                       i + 1);
             return i + 1;
         }
     }
+    sfcop_logf(SFCOP_LOG_DETAIL, "[mss] %.3f allocate sample handle: none free\n", logSeconds());
     lastError_ = "out of sample handles";
     return 0;
 }
@@ -258,10 +260,12 @@ std::uint32_t Miles::SampleStatus(std::uint32_t sample) {
     if (s == nullptr) {
         return kSmpFree;
     }
-    std::uint32_t status = s->started && queued(*s) > 0 ? kSmpPlaying : kSmpDone;
+    // One read of the queue, for the status and for the log line that explains it.
+    const std::size_t waiting = s->started ? queued(*s) : 0;
+    std::uint32_t status = waiting > 0 ? kSmpPlaying : kSmpDone;
     if (status != s->seenStatus) {
         sfcop_logf(SFCOP_LOG_DETAIL, "[mss] %.3f sample %u status %u -> %u (started %d, ended %d, queued %zu)\n",
-                   logSeconds(), sample, s->seenStatus, status, s->started, s->ended, queued(*s));
+                   logSeconds(), sample, s->seenStatus, status, s->started, s->ended, waiting);
         s->seenStatus = status;
     }
     return status;
