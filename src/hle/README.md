@@ -52,7 +52,9 @@ override it), and its sha256 is checked against `decomp/analysis/results/retail_
 by hand. The generator keeps them; it rewrites only what the exe and the headers determine. A new
 import or method appears as `todo`.
 
-The `-spike` statuses and their notes were seeded once, on 2026-11-03, and are not regenerated. A
+The `-spike` statuses and their notes were seeded once, on 2026-11-03, and are not regenerated.
+The spike (`spike/lifter/`) has since been removed from the repository; the files named below
+are the spike's, as they were. A
 scratch script outside the repository matched each row to the spike's shim for it
 (`spike/lifter/results/imports_vs_win32hle.tsv`, `spike/lifter/hle/results/imports_previously_missing.tsv`
 and the shims' source). Every row the spike's stubs table in `spike/lifter/hle/README.md` names, and

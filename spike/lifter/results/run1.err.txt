@@ -1,9 +1,0 @@
-[pe] $SFCOP_ROOT/work/lifter/gameroot/StarFleetOP.exe mapped at 0x00400000, span 0x886000
-[pe] bound 353 imports, 0 unresolved
-[module] GetProcAddress(kernel32.dll, SetCriticalSectionSpinCount): not answered
-[module] LoadLibraryA("OSSpecific98"): not found
-[win32hle] RaiseException(0xE06D7363) from guest 0x00737479: guest exceptions are not handled
-StarFleetOP spike host (win32hle, arm64)
-  lifted functions in dispatch: 55623
-  mapped $SFCOP_ROOT/work/lifter/gameroot/StarFleetOP.exe: 0x00400000-0x00C86000, 0 imports bound to not-implemented stubs
-  entering 0x0073A2A0

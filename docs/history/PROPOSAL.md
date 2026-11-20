@@ -254,7 +254,7 @@ named functions and recovered classes, and a replay oracle recorded against the 
    FID database from the five SDK libs; apply the exact-match table in `analysis/results/`;
    propagate names through callers and vtables; map functions to translation units via the 229
    assertion paths; export `functions.csv` (address, size, name, TU, library/game flag). Pin the
-   Crypto++ version against `History.txt` and verify the WONAPI SDK source provenance.
+   Crypto++ version against `History.txt` and record the WONAPI version the exe's strings name.
 4. **Replay oracle.** A custom mission script (`.scr`, built with the same SDK) logs per-tick
    ship state through the scripting API against the untouched exe; a scripted skirmish with fixed
    inputs gives a checksum trace that never changes. This is the behavioural judge for everything
@@ -322,7 +322,7 @@ readable source.
 - Decompile the 12 `Switch\*.cpp` units (nSwitch: addresses, connections, directories, async
   procedures) and the GameSpy glue as readable source if Phase 2 has not reached them.
 - Server list read from config with a chooser UI; a transport option in nSwitch that goes through
-  a community relay or ICE (libjuice or GameNetworkingSockets, both researched in `reference/`);
+  a community relay or ICE (libjuice or GameNetworkingSockets, both researched outside the repository);
   the known crash fixes from the community patches.
 
 ### Phase 4: Dynaverse II (1 to 3 months)

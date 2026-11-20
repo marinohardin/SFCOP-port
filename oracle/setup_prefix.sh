@@ -1,16 +1,21 @@
 #!/bin/sh
 # One-time (idempotent) setup of the oracle's Wine prefix:
 #   1. initialise a wow64 prefix under work/wine/prefix (Gcenx Wine 11.0_1, see wine-env.sh)
-#   2. copy the untouched 2.5.5.2 game from reference/ into C:\Games\SFCOP (never run it in place)
+#   2. copy the untouched 2.5.5.2 game from $SFCOP_INSTALL into C:\Games\SFCOP (never run it in place)
 #   3. apply the settings recorded in BASELINE.md: fullscreen game inside a Wine virtual desktop, renderer
 #
+# Required (environment): SFCOP_INSTALL, the folder of the original game's 2.5.5.2 install.
 # Options (environment): ORACLE_DESKTOP=800x600 (empty to disable), ORACLE_RENDERER=gl|vulkan|no3d|"" (default: Wine's own)
 set -eu
 
 here=$(cd "$(dirname "$0")" && pwd)
 repo=$(cd "$here/.." && pwd)
 . "$here/wine-env.sh"
-game_src="$repo/reference/installed game/Starfleet Command Orion Pirates"
+game_src=${SFCOP_INSTALL:-}
+[ -n "$game_src" ] && [ -f "$game_src/StarFleetOP.exe" ] || {
+    echo "setup_prefix.sh: set SFCOP_INSTALL to the folder that holds the 2.5.5.2 StarFleetOP.exe" >&2
+    exit 2
+}
 
 [ -x "$WINE_BIN/wine" ] || {
     echo "setup_prefix.sh: Wine not found in $WINE_BIN; see README.md (Install Wine)" >&2
@@ -25,7 +30,7 @@ fi
 
 # Verify the source before copying (hashes from the decompilation's
 # analysis/results/retail_hashes.sha256).
-expected=$(grep 'installed game/Starfleet Command Orion Pirates/StarFleetOP.exe$' \
+expected=$(grep 'Orion Pirates/StarFleetOP.exe$' \
     "${SFCOP_DECOMP_DIR:-$repo/decomp}/analysis/results/retail_hashes.sha256" | cut -d' ' -f1 | head -1)
 actual=$(shasum -a 256 "$game_src/StarFleetOP.exe" | cut -d' ' -f1)
 if [ -n "$expected" ] && [ "$expected" != "$actual" ]; then

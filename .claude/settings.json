@@ -47,10 +47,6 @@
     "deny": [
       "Read($SFCOP_ROOT/work/private/**)",
       "Read($SFCOP_ROOT/work/wine/prefix/*.reg)",
-      "Edit(reference/**)",
-      "Write(reference/**)",
-      "Edit(./reference/**)",
-      "Write(./reference/**)",
       "Bash(git push origin main:*)",
       "Bash(git push -u origin main:*)",
       "Bash(git push origin HEAD:main:*)",

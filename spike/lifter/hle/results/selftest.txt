@@ -1,4 +1,0 @@
-[dinput] CreateDevice({6F1D2B60-D5A0-11CF-BFC7-444553540000}): only the system keyboard is served
-[kernel32] WinExec("notepad"): no programs are run
-[hle-todo] GetOpenFileName/GetSaveFileName: answered as cancelled
-hle_selftest: 210 checks, 0 failed

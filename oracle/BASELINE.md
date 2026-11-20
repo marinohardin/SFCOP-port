@@ -26,7 +26,7 @@ registry and later runs pass without input. The agent did not enter the key and 
 |---|---|
 | Wine | Gcenx `macOS_Wine_builds` release `11.0_1`, `wine-stable-11.0_1-osx64.tar.xz` (sha256 `b50dc50ec7f41d58b115a6b685d4d1315ba3c797bd3aa0f49213f2703cb82388`), reports `wine-11.0`; x86_64 host binaries under Rosetta 2, wow64 with `i386-windows` PE DLLs, so no separate 32-bit prefix is needed |
 | Location | `tools/wine/stable-11.0_1/Wine Stable.app` (681 MB), prefix `work/wine/prefix` |
-| Game copy | `C:\Games\SFCOP` in the prefix, rsync of `reference/installed game/...`; `StarFleetOP.exe` sha256 `264da726…c883` checked against `analysis/results/retail_hashes.sha256` |
+| Game copy | `C:\Games\SFCOP` in the prefix, rsync of the original install (`SFCOP_INSTALL`); `StarFleetOP.exe` sha256 `264da726…c883` checked against `analysis/results/retail_hashes.sha256` |
 | Executable | `StarFleetOP.exe` directly (`SFCOP.exe` is the boot stub) |
 | `sfc.ini` `[3D] windowed` | `0` (fullscreen). `1` renders but presents only black |
 | Wine virtual desktop | on, `800x600` (`HKCU\Software\Wine\Explorer` `Desktop=Default`, `...\Desktops` `Default=800x600`) |

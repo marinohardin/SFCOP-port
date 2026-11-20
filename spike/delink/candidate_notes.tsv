@@ -1,3 +1,0 @@
-# Verdicts from a review by hand, for candidates tools/candidates.py has no rule for.
-address	note
-0088f4b4	a table of 16-bit codes 0xa2cf, 0xa2e4, 0x001a, 0xa2e5, 0xa2e8, 0x005b, then zeros; the dword straddles two of them

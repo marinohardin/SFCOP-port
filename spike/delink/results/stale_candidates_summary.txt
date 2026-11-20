@@ -1,5 +1,0 @@
-aligned data dwords with an image-address value and no relocation: 2313, text-like: 2241
-.rdata text_like=True: 126
-.data/.tls text_like=False: 68
-.data/.tls text_like=True: 2115
-.rdata text_like=False: 4

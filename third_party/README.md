@@ -11,7 +11,6 @@ Each vendored tree has a `PROVENANCE.md`.
 | `DependencyPinsTest.cpp` | Checks that the linked libraries are the pinned releases |
 | `cryptopp/src/` | Crypto++ 3.1 library sources (vendored). It is in the SDK lib but **not** in the exe. |
 | `cryptopp/evidence/` | Version markers and object list for `cryptlibR.lib` |
-| `wonapi/evidence/` | Exe vs archive comparison of classes and `WS_*` statuses |
 | `gamespy/` | Component detection from the exe's strings; no source vendored |
 | `evidence/` | RTTI namespace counts across binaries; middleware imports |
 | `scripts/` | Everything that produced the above |
@@ -22,7 +21,8 @@ Run from the repo root. Large downloads go to `$SFCOP_ROOT/work/`; override
 with `SFCOP_WORK`.
 
 ```sh
-G="reference/installed game/Starfleet Command Orion Pirates"
+G="$SFCOP_INSTALL"            # the original game's install
+K="$SFCOP_SERVER_KIT"         # the server kit's folder
 L="$G/OP API - R2.1/Scripts/Libraries"
 W=$SFCOP_ROOT/work
 
@@ -35,7 +35,7 @@ python3 -I third_party/scripts/cryptopp_inventory.py "$L/cryptlibR.lib" third_pa
 
 # 3. which namespaces / libraries are actually linked
 python3 -I third_party/scripts/rtti_namespaces.py third_party/evidence/rtti_namespaces.md \
-  "$G/StarFleetOP.exe" reference/SFCOPServer/Assets/StarFleetOP.exe reference/SFCOPServer/ServerPlatform.exe \
+  "$G/StarFleetOP.exe" "$K/Assets/StarFleetOP.exe" "$K/ServerPlatform.exe" \
   "$G/Assets/Scripts/Bon_Heater.scr" "$G/BugslayerUtil.dll" "$L/cryptlibR.lib"
 
 
@@ -53,4 +53,4 @@ Rerunning steps 1 and 2 on 2026-11-02 produced byte-identical vendored trees.
 - Vendor only code with a usable licence. Code without a usable licence is not vendored.
 - No test suites, binaries, Microsoft headers or Dinkumware headers. Reference those by path:
   - the toolchain tarball at `work/toolchain/dl/msvc6.4.tar.gz`
-  - the SDK's `reference/.../OP API - R2.1/STL/Include`
+  - the SDK's `OP API - R2.1/STL/Include` in the install

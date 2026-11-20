@@ -1,8 +1,0 @@
-moved 00401000-00795000 by +0xfc00000
-moved 007955b8-00835218 by +0xfc00008
-moved 00838000-00c83000 by +0xfc00000
-moved 00c83000-00c84000 by +0xfc00000
-absolute relocations checked: 157081, PC-relative: 227655
-relocations wrong: 0
-bytes changed outside relocations: 0
-aligned data dwords that look like image addresses but have no relocation: 2313 (2241 of them text-like)

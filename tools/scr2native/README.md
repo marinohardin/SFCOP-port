@@ -372,7 +372,7 @@ same file byte for byte; a change to the list in a pull request is a change of S
 rule, and says which.
 
 `toolchain/scr/` finds the install relative to its own checkout, so in a git worktree (where
-`reference/` is absent) the template build has to be made from the main checkout
+the link to the install is absent) the template build has to be made from the main checkout
 (`toolchain/scr/test_template.sh` or `toolchain/build_scr.sh`) and passed with `--build-dir`.
 
 Three names in the committed list are not the generator's, and the generator has no input for extra
