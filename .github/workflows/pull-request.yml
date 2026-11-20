@@ -61,7 +61,10 @@ jobs:
           echo "oracle=$oracle" >> "$GITHUB_OUTPUT"
 
   # One job, because every job is billed in whole minutes and pays for its own install.
+  # The jobs on the self-hosted Mac run only for a branch of this repository: a pull request from
+  # a fork never runs its code on that machine (it holds the install and the owner's files).
   check:
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, sfcop-mac]
     timeout-minutes: 15
     steps:
@@ -106,7 +109,9 @@ jobs:
     # Only the presets the plan job chose are in the matrix; one it did not choose takes no
     # runner slot. ci.py printed its reason as a notice in the plan job.
     needs: plan
-    if: needs.plan.outputs.any == 'yes'
+    if: >-
+      needs.plan.outputs.any == 'yes' &&
+      github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, sfcop-mac]
     timeout-minutes: 150
     strategy:
@@ -230,7 +235,8 @@ jobs:
     needs: [plan, build]
     if: >-
       !cancelled() && needs.plan.outputs.oracle == 'yes' &&
-      (needs.build.result == 'success' || needs.build.result == 'skipped')
+      (needs.build.result == 'success' || needs.build.result == 'skipped') &&
+      github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, sfcop-mac]
     timeout-minutes: 90
     steps:

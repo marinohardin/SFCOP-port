@@ -50,7 +50,7 @@ SLOTS = {
 
 # Slots the game is seen calling, with the method the binary's own evidence gives them: error
 # strings next to the DirectPlay calls (analysis/netcode/directplay.md) and the call census of
-# the lifter spike (spike/lifter/results/dx_inventory.md).
+# the lifter spike (since removed).
 KNOWN_SLOTS = [
     ('IDirectDraw4', 4, 'CreateClipper'), ('IDirectDraw4', 5, 'CreatePalette'),
     ('IDirectDraw4', 6, 'CreateSurface'), ('IDirectDraw4', 10, 'FlipToGDISurface'),
