@@ -41,7 +41,7 @@ The version was pinned from `OP API - R2.1/Scripts/Libraries/cryptlibR.lib`, the
 - The lib itself does have such descriptors (18). The game binaries are built with `/GR` (2,096 type descriptors
   in the exe), so a linked polymorphic Crypto++ class would leave a type descriptor behind.
 - The game does its own CRC (`tCRC32` in `Common/Crypto/CRC32.cpp`, polynomial 0x04C11DB7). WONAPI has its own
-  crypto (`WONAPI::BigInteger`, Blowfish, ElGamal, MD5; see `../wonapi/`).
+  crypto (`WONAPI::BigInteger`, Blowfish, ElGamal, MD5).
 - The 32 exe addresses that `analysis/scripts/libmatch.py` attributes to `cryptlibR.lib` are relocation-masked
   look-alikes. Examples are `std::vector<Integer>::insert` and 16-byte accessors. They should not be treated as
   Crypto++ code. (Reported to P0-3 and P0-7.)
