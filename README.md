@@ -176,4 +176,7 @@ under `decomp/` is its own repository, SFC2-decomp, under its own terms.
 
 The licence covers this repository's own source. It does not cover the game: a release package
 also carries game code translated from the original executable when the package is built, and the
-client reads your own copy of the game's files. Neither is offered under the GPL.
+client reads your own copy of the game's files. Neither is offered under the GPL. An additional
+permission under section 7 of the GPL (`LICENSE-EXCEPTION`) allows SFCOP to be combined with that
+game code and those files and the result conveyed, with the game's own parts left out of the
+Corresponding Source.

@@ -1,0 +1,32 @@
+SFCOP: additional permission under GNU GPL version 3 section 7
+
+SFCOP is licensed under the GNU General Public License, version 3 or (at your
+option) any later version (LICENSE). As an additional permission under section 7
+of that licence, the copyright holders of SFCOP grant the following.
+
+"Game Material" means:
+
+  a) code translated, recompiled, lifted or decompiled from the original
+     executable of Star Trek: Starfleet Command II: Orion Pirates, version
+     2.5.5.2 (StarFleetOP.exe), including such code as produced by this
+     project's build from a copy of that executable, and including the
+     decompilation that this project uses as its decomp/ submodule, which is
+     licensed under its own terms; and
+
+  b) the data files, scripts and other assets of that game, as installed from
+     a copy of it,
+
+or a modified version of either.
+
+If you modify SFCOP, or any covered work, by linking or combining it with Game
+Material, the licensors of SFCOP grant you additional permission to convey the
+resulting work. Corresponding Source for a non-source form of such a combination
+need not include the source code of the Game Material, but must include the
+source code of the parts of SFCOP that are in it, together with the build
+scripts SFCOP uses to produce the translated code from a copy of the original
+executable.
+
+This permission does not grant any right in the Game Material itself, which
+remains the property of its owners and is not licensed under the GPL by this
+project. You may remove this additional permission from your copy of SFCOP, or
+from any part of it, as section 7 of the GPL allows.
