@@ -43,7 +43,7 @@ override it), and its sha256 is checked against `decomp/analysis/results/retail_
 |---|---|
 | `implemented` | Implemented in `src/hle/<module>/` with its doctests (CONVENTIONS §8) |
 | `stub` | Answered in `src/hle/<module>/` with a fixed result, because the game's use needs no more; the notes say which |
-| `implemented-spike` | Not yet in `src/hle/`, but the lifter spike's module (pcrecomp's win32hle or the P1-2 modules in `spike/lifter/hle/`) performs the call's documented effect |
+| `implemented-spike` | Not yet in `src/hle/`, but the lifter spike's module (pcrecomp's win32hle or the P1-2 modules in the spike's `spike/lifter/hle/`, since removed) performs the call's documented effect |
 | `stub-spike` | The spike's module returns a fixed result instead of performing the effect; the notes give the result |
 | `unused` | Present in the interface or import table, but no call site reaches it |
 | `todo` | Called, and nothing answers it yet |
