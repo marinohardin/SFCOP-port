@@ -23,8 +23,8 @@ point that was not checked by building. No library was built for this memo.
   no network and no real clock (`docs/CONVENTIONS.md` §6).
 - **Three presets:** macOS arm64; Windows with clang-cl and lld-link against the MSVC CRT; Linux in
   the container.
-- **Licence:** zlib, MIT, BSD or public domain until DESIGN §12.1 is decided
-  (`docs/CONVENTIONS.md` §5).
+- **Licence:** zlib, MIT, BSD or public domain (`docs/CONVENTIONS.md` §5; DESIGN §12.1 has
+  since been decided as GPL-3.0-or-later, and dependencies stay permissive).
 - **A relay that forwards envelopes unchanged** (DESIGN §6.7), and a server side that fits one
   small VPS under 5 USD a month (DESIGN §11).
 
@@ -58,9 +58,9 @@ versions.
 not yet allowed.** It passes datagrams through untouched, it is small, and it ships its own server.
 Against it:
 
-- **Licence.** MPL-2.0 is outside the permitted set until the owner decides DESIGN §12.1. MPL's
-  copyleft is per file, so using it unmodified is easy to comply with, but it is still the owner's
-  call.
+- **Licence.** MPL-2.0 is outside the permitted set (`docs/CONVENTIONS.md` §5). It is
+  compatible with the project's GPL, and its copyleft is per file, so using it unmodified is easy
+  to comply with, but it is still the owner's call.
 - **Contract fit.** It owns its sockets and threads, so it does not fit the Transport contract
   without a bridge. That bridge also takes the traversal out of reach of the deterministic tests.
 - **Relay.** Its relay is TURN, so our relay would have to speak TURN, which DESIGN §6.7 does not
@@ -108,7 +108,7 @@ recommendation is that the project does not need ICE, only the subset above. The
 change are in the pull request description.
 
 If the integrator chooses a library instead, it should be libjuice. That needs the owner to accept
-MPL-2.0 first (DESIGN §12.1), and either a Transport backend that wraps it or a change to the
+MPL-2.0 first (`docs/CONVENTIONS.md` §5), and either a Transport backend that wraps it or a change to the
 Rendezvous contract. The row would be:
 
 | Name | Version | Pin | Licence | Where used | Why |
