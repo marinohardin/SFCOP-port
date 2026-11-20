@@ -159,7 +159,15 @@ build once it is byte-exact there and the pin here has moved past it (a bump pul
 
 ## Status and legal
 
-The project is private and under active development. It contains no retail executable, library or
-asset, nothing derived from one byte for byte, and nothing from any third party's source. The
-licence is not yet decided; every dependency is permissively licensed. Star Trek and Starfleet
-Command are trademarks of their respective owners; this is an unaffiliated preservation project.
+The project is under active development. It contains no retail executable, library or asset,
+nothing derived from one byte for byte, and nothing from any third party's source. Star Trek and
+Starfleet Command are trademarks of their respective owners; this is an unaffiliated preservation
+project.
+
+SFCOP is free software: you can redistribute it and/or modify it under the terms of the GNU General
+Public License as published by the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version. It is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See `LICENSE` for the full text. The code under `third_party/` keeps its own
+licence, listed in `third_party/INVENTORY.md`; each is compatible with the GPL. The decompilation
+under `decomp/` is its own repository, SFC2-decomp, under its own terms.
