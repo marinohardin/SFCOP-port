@@ -30,6 +30,8 @@ EXPECTED = {
     "Contents/Resources/retail_hashes.sha256",
     "Contents/Resources/install_manifest.tsv",
     "Contents/Resources/SFCOP.icns",
+    "Contents/Resources/LICENSE.txt",
+    "Contents/Resources/LICENSE-EXCEPTION.txt",
     "Contents/_CodeSignature/CodeResources",
 }
 

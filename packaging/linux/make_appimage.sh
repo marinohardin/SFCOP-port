@@ -33,11 +33,12 @@ command -v docker >/dev/null 2>&1 || { echo "make_appimage: Docker is needed" >&
 work="$out.work"
 rm -rf "$work" "$out"
 appdir="$work/SFCOP.AppDir"
-mkdir -p "$appdir/usr/bin" "$appdir/usr/lib"
+mkdir -p "$appdir/usr/bin" "$appdir/usr/lib" "$appdir/usr/share/doc/sfcop"
 cp "$here/AppRun" "$appdir/AppRun"
 cp "$tree/bin/sfcop" "$tree/bin/retail_hashes.sha256" "$tree/bin/install_manifest.tsv" \
     "$appdir/usr/bin/"
 cp "$tree/lib/libSDL2-2.0.so.0" "$tree/lib/libSDL3.so.0" "$appdir/usr/lib/"
+cp "$tree/LICENSE.txt" "$tree/LICENSE-EXCEPTION.txt" "$appdir/usr/share/doc/sfcop/"
 cp "$tree/share/applications/sfcop.desktop" "$appdir/sfcop.desktop"
 cp "$tree/share/icons/hicolor/512x512/apps/sfcop.png" "$appdir/sfcop.png"
 cp "$appdir/sfcop.png" "$appdir/.DirIcon"

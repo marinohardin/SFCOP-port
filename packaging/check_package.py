@@ -48,6 +48,8 @@ LAYOUTS = {
         "share/applications/sfcop.desktop",
         "share/icons/hicolor/512x512/apps/sfcop.png",
         "README.txt",
+        "LICENSE.txt",
+        "LICENSE-EXCEPTION.txt",
     },
     "appdir": {
         "AppRun",
@@ -59,6 +61,8 @@ LAYOUTS = {
         "usr/bin/install_manifest.tsv",
         "usr/lib/libSDL2-2.0.so.0",
         "usr/lib/libSDL3.so.0",
+        "usr/share/doc/sfcop/LICENSE.txt",
+        "usr/share/doc/sfcop/LICENSE-EXCEPTION.txt",
     },
     "windows": {
         "sfcop.exe",
@@ -67,6 +71,8 @@ LAYOUTS = {
         "retail_hashes.sha256",
         "install_manifest.tsv",
         "README.txt",
+        "LICENSE.txt",
+        "LICENSE-EXCEPTION.txt",
     },
 }
 

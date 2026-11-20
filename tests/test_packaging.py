@@ -663,3 +663,49 @@ def test_the_bundle_checker_reads_a_real_mach_o():
     assert bundle.is_macho("/bin/ls")
     assert "/usr/lib/libSystem.B.dylib" in bundle.linked_libraries("/bin/ls")
     assert not bundle.defines_sdl3("/bin/ls")
+
+
+# Every package carries the licence and its section 7 permission beside the binary.
+LICENCE_FILES = {
+    "linux": {"LICENSE.txt", "LICENSE-EXCEPTION.txt"},
+    "appdir": {"usr/share/doc/sfcop/LICENSE.txt", "usr/share/doc/sfcop/LICENSE-EXCEPTION.txt"},
+    "windows": {"LICENSE.txt", "LICENSE-EXCEPTION.txt"},
+}
+
+
+@pytest.mark.parametrize("kind", ["linux", "appdir", "windows"])
+def test_every_tree_must_carry_the_licence(tmp_path, hashes, kind):
+    assert LICENCE_FILES[kind] <= check_package.LAYOUTS[kind]
+    tree = tmp_path / "pkg"
+    make_tree(tree, check_package.LAYOUTS[kind])
+    for relative in sorted(LICENCE_FILES[kind]):
+        (tree / relative).unlink()
+    assert refusals(tree, hashes, kind) == [f"{r}: missing" for r in sorted(LICENCE_FILES[kind])]
+
+
+def test_the_bundle_must_carry_the_licence():
+    expected = check_package.check_bundle.EXPECTED
+    assert "Contents/Resources/LICENSE.txt" in expected
+    assert "Contents/Resources/LICENSE-EXCEPTION.txt" in expected
+
+
+@pytest.mark.skipif(not os.path.isfile(os.path.join(ROOT, "decomp", "analysis", "results",
+                                                    "retail_hashes.sha256")),
+                    reason="needs the decomp submodule (git submodule update --init)")
+def test_the_windows_tree_copies_the_licence_with_crlf_line_ends(tmp_path):
+    parts = tmp_path / "parts"
+    parts.mkdir()
+    for name in ("sfcop.exe", "SDL2.dll", "SDL3.dll"):
+        (parts / name).write_bytes(b"invented build output\n")
+    out = tmp_path / "SFCOP-0.0.0-windows-x64"
+    run = subprocess.run(
+        ["sh", os.path.join(ROOT, "packaging", "windows", "make_tree.sh"), str(out),
+         str(parts / "sfcop.exe"), str(parts / "SDL2.dll"), str(parts / "SDL3.dll"), ROOT,
+         "0.0.0", "x64"],
+        capture_output=True, text=True, env={**os.environ, "SFCOP_PYTHON": sys.executable})
+    assert run.returncode == 0, run.stderr
+    with open(os.path.join(ROOT, "LICENSE"), "rb") as stream:
+        licence = stream.read()
+    assert (out / "LICENSE.txt").read_bytes() == licence.replace(b"\n", b"\r\n")
+    assert (out / "LICENSE-EXCEPTION.txt").read_bytes().startswith(
+        b"SFCOP: additional permission under GNU GPL version 3 section 7\r\n")

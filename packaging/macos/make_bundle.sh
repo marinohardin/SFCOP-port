@@ -24,7 +24,8 @@ here=$(cd "$(dirname "$0")" && pwd -P)
 hash_list="$decomp/analysis/results/retail_hashes.sha256"
 manifest="$decomp/analysis/results/install_manifest.tsv"
 
-for file in "$sfcop" "$sdl2" "$sdl3" "$hash_list" "$manifest" "$here/SFCOP.icns"; do
+for file in "$sfcop" "$sdl2" "$sdl3" "$hash_list" "$manifest" "$here/SFCOP.icns" \
+    "$source/LICENSE" "$source/LICENSE-EXCEPTION"; do
     if [ ! -f "$file" ]; then
         echo "make_bundle: missing $file" >&2
         exit 1
@@ -57,6 +58,9 @@ cp "$hash_list" "$contents/Resources/retail_hashes.sha256"
 # The import's manifest, beside the hash list, where the client looks for it.
 cp "$manifest" "$contents/Resources/install_manifest.tsv"
 cp "$here/SFCOP.icns" "$contents/Resources/SFCOP.icns"
+# The licence and its section 7 permission travel with every binary (README.md, "Status and legal").
+cp "$source/LICENSE" "$contents/Resources/LICENSE.txt"
+cp "$source/LICENSE-EXCEPTION" "$contents/Resources/LICENSE-EXCEPTION.txt"
 sed -e "s|@BUNDLE_ID@|$bundle_id|" -e "s|@VERSION@|$version|" \
     -e "s|@BUILD_NUMBER@|$build_number|" -e "s|@MIN_MACOS@|$min_macos|" \
     "$here/Info.plist.in" >"$contents/Info.plist"

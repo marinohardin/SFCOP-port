@@ -4,7 +4,7 @@
 #   sh packaging/linux/make_tree.sh OUT_DIR SFCOP SDL2_SO SDL3_SO SOURCE_DIR VERSION ARCH
 #
 # OUT_DIR is rewritten: sfcop (the launcher), bin/sfcop and the hash list beside it,
-# lib/libSDL2-2.0.so.0 and lib/libSDL3.so.0, the desktop entry and icon under share/, README.txt.
+# lib/libSDL2-2.0.so.0 and lib/libSDL3.so.0, the desktop entry and icon under share/, README.txt, LICENSE.txt, LICENSE-EXCEPTION.txt.
 # Nothing from the original game: packaging/check_package.py refuses the tree otherwise. ARCH is
 # x64 or arm64. With SFCOP_LLVM_DIR (or the pinned LLVM under SFCOP_TOOLS_DIR) the client's
 # needed libraries are checked: only glibc's and the two SDL libraries.
@@ -26,7 +26,8 @@ case $arch in
     arm64) glibc=2.36 ;;
     *) echo "make_tree: ARCH is x64 or arm64, not $arch" >&2; exit 2 ;;
 esac
-for file in "$sfcop" "$sdl2" "$sdl3" "$hash_list" "$manifest"; do
+for file in "$sfcop" "$sdl2" "$sdl3" "$hash_list" "$manifest" "$source/LICENSE" \
+    "$source/LICENSE-EXCEPTION"; do
     [ -f "$file" ] || { echo "make_tree: missing $file" >&2; exit 1; }
 done
 
@@ -46,8 +47,12 @@ cp "$here/sfcop.desktop" "$staging/share/applications/sfcop.desktop"
 "$python" -I "$here/write_icon.py" "$staging/share/icons/hicolor/512x512/apps/sfcop.png"
 sed -e "s|@VERSION@|$version|" -e "s|@ARCH@|$arch|" -e "s|@GLIBC@|$glibc|" \
     "$here/README.txt.in" >"$staging/README.txt"
+# The licence and its section 7 permission travel with every binary (README.md, "Status and legal").
+cp "$source/LICENSE" "$staging/LICENSE.txt"
+cp "$source/LICENSE-EXCEPTION" "$staging/LICENSE-EXCEPTION.txt"
 chmod 755 "$staging/sfcop" "$staging/bin/sfcop" "$staging/lib/"*.so.0
 chmod 644 "$staging/bin/retail_hashes.sha256" "$staging/bin/install_manifest.tsv" "$staging/README.txt" \
+    "$staging/LICENSE.txt" "$staging/LICENSE-EXCEPTION.txt" \
     "$staging/share/applications/sfcop.desktop" "$staging/share/icons/hicolor/512x512/apps/sfcop.png"
 
 llvm=${SFCOP_LLVM_DIR:-}

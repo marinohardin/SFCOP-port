@@ -20,3 +20,6 @@ Missions: the mission list needs translated mission modules, which this package 
 README for the one-time step; without them the menus run and missions are missing.
 
 `./sfcop --help` lists the options.
+
+SFCOP is free software under the GNU GPL, version 3 or later, with an additional permission
+for the game code and data it is combined with: see LICENSE.txt and LICENSE-EXCEPTION.txt.

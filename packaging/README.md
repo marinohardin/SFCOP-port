@@ -20,8 +20,10 @@ Only the client's own files, listed in `check_package.py` (`LAYOUTS`) and in
 `macos/check_bundle.py` (`EXPECTED`): the client, its two SDL libraries (SDL3 and sdl2-compat,
 which the lifted runtime still uses), the hash list `retail_hashes.sha256` the client verifies
 the player's install against, the install manifest `install_manifest.tsv` beside it, which
-`--import` copies the install by (`src/app/Import.h`), and on Linux and Windows a `README.txt`,
-on Linux a launcher, a desktop entry and the icon.
+`--import` copies the install by (`src/app/Import.h`), the licence and its section 7 permission
+(`LICENSE.txt`, `LICENSE-EXCEPTION.txt`: in `Contents/Resources` on macOS, `usr/share/doc/sfcop`
+in the AppImage, at the top elsewhere), and on Linux and Windows a `README.txt`, on Linux a
+launcher, a desktop entry and the icon.
 
 - **macOS.** `SFCOP.app` as `macos/make_bundle.sh` builds it, signed ad hoc and not notarized,
   in a compressed HFS+ image beside a link to `/Applications`.
