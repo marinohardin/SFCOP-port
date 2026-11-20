@@ -24,7 +24,8 @@ resulting work. Corresponding Source for a non-source form of such a combination
 need not include the source code of the Game Material, but must include the
 source code of the parts of SFCOP that are in it, together with the build
 scripts SFCOP uses to produce the translated code from a copy of the original
-executable.
+executable (cmake/lifter/, cmake/SfcopLifter.cmake, scripts/dist.sh and
+packaging/).
 
 This permission does not grant any right in the Game Material itself, which
 remains the property of its owners and is not licensed under the GPL by this
