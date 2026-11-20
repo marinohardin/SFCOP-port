@@ -48,7 +48,7 @@ oracle elsewhere", covers CrossOver, another Wine build, or a Windows PC.
 ## How to reproduce
 
 ```sh
-oracle/setup_prefix.sh                      # needs tools/wine/stable-11.0_1 (see BASELINE.md)
+SFCOP_INSTALL=<install> oracle/setup_prefix.sh   # needs tools/wine/stable-11.0_1 (see BASELINE.md)
 oracle/launch_game.sh                       # once: a human enters the CD key, then quits (key saved privately)
 # calibrate driver/skirmish.steps (below)
 oracle/oracle.sh ref                        # build, install, run twice, compare

@@ -1,5 +1,3 @@
-# retail game files, disc images, server kit: never committed
-<private>/
 # large generated data lives in $SFCOP_ROOT/work (outside the repo)
 work/
 *.gpr

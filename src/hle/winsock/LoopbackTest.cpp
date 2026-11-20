@@ -1,7 +1,7 @@
 // The Winsock module on the real host Transport, over the loopback interface only.
 //
 // The first test case carries over, check for check and with the same expected values, the
-// Winsock part of the Phase 1 spike's self-test (spike/lifter/hle/tests/hle_selftest.c,
+// Winsock part of the Phase 1 spike's self-test (hle_selftest.c, since removed,
 // test_winsock): a listener, a client that connects, select before and after, __WSAFDIsSet,
 // accept, getpeername, a writable client, a half-close the peer sees. The spike checked a
 // sockaddr's address as the guest's little-endian word 0x0100007F; here it is the host-order

@@ -8,7 +8,7 @@ export WINE_BIN="${WINE_BIN:-$WINE_APP/Contents/Resources/wine/bin}"
 export PATH="$WINE_BIN:$PATH"
 export WINEPREFIX="${WINEPREFIX:-$SFCOP_ROOT/work/wine/prefix}"
 export WINEDEBUG="${WINEDEBUG:--all}"
-# Game folder inside the prefix: a copy of <install>, never the reference itself.
+# Game folder inside the prefix: a copy of the install setup_prefix.sh is given, never the install itself.
 export GAME_WIN='C:\Games\SFCOP'
 export GAME_DIR="$WINEPREFIX/drive_c/Games/SFCOP"
 # Quiet MoltenVK startup logging.

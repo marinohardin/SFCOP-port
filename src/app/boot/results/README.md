@@ -64,7 +64,7 @@ prompt, 1 otherwise.
 ## Reproduce
 
 From the repository root, with `GAME` set to the install directory. Each run gets a fresh clone
-of `GAME`. The spike's binary is built by `spike/lifter/hle/scripts/run_all.sh` (`STEPS="setup build"`)
+of `GAME`. The spike's binary is built by the Phase 1 spike's `run_all.sh` (since removed)
 into `$SFCOP_WORK/lifter-hle/build/sfcop`. Epoch 1793746800 is 15:00 on the day the probes ran.
 
 ```sh
