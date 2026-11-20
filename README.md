@@ -159,7 +159,26 @@ build once it is byte-exact there and the pin here has moved past it (a bump pul
 
 ## Status and legal
 
-The project is private and under active development. It contains no retail executable, library or
-asset, nothing derived from one byte for byte, and nothing from any third party's source. The
-licence is not yet decided; every dependency is permissively licensed. Star Trek and Starfleet
-Command are trademarks of their respective owners; this is an unaffiliated preservation project.
+The project is under active development. It contains no retail executable, library or asset,
+nothing derived from one byte for byte, and no vendored third-party code outside `third_party/`. Star Trek and
+Starfleet Command are trademarks of their respective owners; this is an unaffiliated preservation
+project.
+
+Copyright (C) 2026 Marino Hardin.
+
+SFCOP is free software: you can redistribute it and/or modify it under the terms of the GNU General
+Public License as published by the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version. It is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See `LICENSE` for the full text. The code under `third_party/` keeps its own
+licence, listed in `third_party/INVENTORY.md`: the libraries the client links (zlib, MIT, public
+domain or MIT-0) are compatible with the GPL, and the vendored Crypto++ 3.1 sources are kept as
+evidence and are neither built nor linked. The decompilation
+under `decomp/` is its own repository, SFC2-decomp, under its own terms.
+
+The licence covers this repository's own source. It does not cover the game: a release package
+also carries game code translated from the original executable when the package is built, and the
+client reads your own copy of the game's files. Neither is offered under the GPL. An additional
+permission under section 7 of the GPL (`LICENSE-EXCEPTION`) allows SFCOP to be combined with that
+game code and those files and the result conveyed, with the game's own parts left out of the
+Corresponding Source.

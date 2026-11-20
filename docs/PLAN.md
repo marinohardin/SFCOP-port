@@ -41,7 +41,7 @@ The open questions of DESIGN §12, with what each blocks here.
 
 | # | Decision | Status | Blocks |
 | --- | --- | --- | --- |
-| 12.1 | Licence | Open (owner) | Wave 5 release |
+| 12.1 | Licence: GPL-3.0-or-later (`LICENSE`), section 7 permission in `LICENSE-EXCEPTION` | Decided 2026-11-20 | Wave 5 release |
 | 12.2 | Native client packages may be published as alpha releases while they carry translated code; unsigned until complete, a signed launcher at the end | Decided 2026-11-09 (supersedes 2026-11-03) | L1, release packaging |
 | 12.3 | The key prompt and online key check in the native client | Open (owner) | N6, V1 |
 | 12.4 | Guest mode or lift the VC6 object | Decided 2026-11-04: lift the object (DESIGN §12.4); B9 builds the lifter | D in the native build |
