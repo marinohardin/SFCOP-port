@@ -45,7 +45,7 @@ It does not:
 | Performance | 60 frames per second at the display's native resolution on an M1 MacBook Pro, with a frame cap; the original's uncapped loop is not kept. Start to main menu in under 10 s from a warm disk |
 | Data | Every original data file is read unchanged, found in the player's install and verified against `decomp/analysis/results/retail_hashes.sha256`. Saves, settings and campaign files are written in formats the original reads |
 | Privacy | No telemetry. No network call without the player's action. The port stores no credential in plain text; the game's own key handling stays as the original did it |
-| Licensing | Undecided (§12.1). Until decided: dependencies are permissive only (SDL3 zlib, miniaudio public domain or MIT-0); nothing derived from the WONAPI or GameSpy sources is included |
+| Licensing | GPL-3.0-or-later for this repository's own source (§12.1, `LICENSE`). Dependencies stay permissive and GPL-compatible (SDL3 zlib, miniaudio public domain or MIT-0); nothing derived from the WONAPI or GameSpy sources is included. The game code a package carries, translated from the original at build time (§12.2), and the game's data are not covered by it |
 | Machine | Development and CI on one MacBook Pro; builds at `-j4`; everything large on the external drive; at most eight agents at once |
 | Hosting cost | Lobby, relay and directory hosted for under 5 USD a month in total; how is decided in Phase 3 (§11) |
 

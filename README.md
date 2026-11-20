@@ -160,7 +160,7 @@ build once it is byte-exact there and the pin here has moved past it (a bump pul
 ## Status and legal
 
 The project is under active development. It contains no retail executable, library or asset,
-nothing derived from one byte for byte, and nothing from any third party's source. Star Trek and
+nothing derived from one byte for byte, and no third-party code outside `third_party/`. Star Trek and
 Starfleet Command are trademarks of their respective owners; this is an unaffiliated preservation
 project.
 
@@ -171,3 +171,7 @@ WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FI
 PARTICULAR PURPOSE. See `LICENSE` for the full text. The code under `third_party/` keeps its own
 licence, listed in `third_party/INVENTORY.md`; each is compatible with the GPL. The decompilation
 under `decomp/` is its own repository, SFC2-decomp, under its own terms.
+
+The licence covers this repository's own source. It does not cover the game: a release package
+also carries game code translated from the original executable when the package is built, and the
+client reads your own copy of the game's files. Neither is offered under the GPL.
