@@ -532,6 +532,20 @@ def test_the_command_line_places_and_reports_without_lifting(tmp_path, capsys):
     assert objlift.main(args + ['--out', str(out), '--no-lift', '--check']) == 0
 
 
+def test_a_claim_is_placed_by_its_decorated_symbol_alone(tmp_path):
+    # functions.csv has no mangled name for 0x00401000 and no listing sits beside the object, so
+    # only the manifest's `decorated` column says which symbol the claim compiles to.
+    args = cli_inputs(tmp_path, two_instruction_object(), [(0x00401000, 6, 'Value()')],
+                      [(0x00401000, 6, 'FUN_00401000', ''), TWO_FUNCTIONS[1]])
+    out = tmp_path / 'out'
+    assert objlift.main(args + ['--out', str(out), '--no-lift']) == 2
+    manifest = tmp_path / 'manifest.tsv'
+    manifest.write_text('address\tsize\tsymbol\tsource\tmodes\tdecorated\n'
+                        '0x00401000\t6\tValue()\tTest/unit.cpp\tvc6\t?Value@@YAHXZ\n')
+    assert objlift.main(args + ['--out', str(out), '--no-lift']) == 0
+    assert '  0x00401000 ?Value@@YAHXZ (Value(), op/Test/unit.cpp)\n' in \
+        (out / 'objlift_report.txt').read_text()
+
 def test_the_command_line_names_an_unresolved_external(tmp_path, capsys):
     args = cli_inputs(tmp_path, two_instruction_object(), [(0x00401000, 6, 'Value()')],
                       TWO_FUNCTIONS[:1])
@@ -949,9 +963,23 @@ def test_partial_and_stub_rows_are_neither_compiled_nor_lifted(tmp_path):
                  '0x00401200\t40\tC()\tTest/Waiting.cpp\tpartial\n'
                  '0x00401300\t8\tD()\tTest/Stubbed.cpp\tstub\n'
                  '0x00401400\t20\tE::E()\tTest/Ctor.cpp\tvc6\n')
-    assert objlift.read_manifest(str(m)) == [(0x00401000, 24, 'A()', 'Test/Exact.cpp'),
-                                             (0x00401400, 20, 'E::E()', 'Test/Ctor.cpp')]
+    assert objlift.read_manifest(str(m)) == [(0x00401000, 24, 'A()', 'Test/Exact.cpp', ''),
+                                             (0x00401400, 20, 'E::E()', 'Test/Ctor.cpp', '')]
     assert objcompile.claimed_units(str(m)) == ['Test/Exact.cpp', 'Test/Ctor.cpp']
+
+
+def test_the_decorated_column_names_each_claim_s_symbol(tmp_path):
+    # Interface version 2: the last column is the decorated symbol the claim compiles to; an
+    # empty cell, or a version 1 manifest without the column, leaves the symbol to be derived.
+    m = tmp_path / 'manifest.tsv'
+    m.write_text('address\tsize\tsymbol\tsource\tmodes\tdecorated\n'
+                 '0x00401000\t14\t~tQuery()\tTest/Query.cpp\tvc6 guest\t'
+                 '??1?$tQuery@VtServCharacter@@@nDatabase@@UAE@XZ\n'
+                 '0x00401100\t5\tg_obj (dynamic initializer)\tTest/Query.cpp\tvc6\t\n')
+    assert objlift.read_manifest(str(m)) == [
+        (0x00401000, 14, '~tQuery()', 'Test/Query.cpp',
+         '??1?$tQuery@VtServCharacter@@@nDatabase@@UAE@XZ'),
+        (0x00401100, 5, 'g_obj (dynamic initializer)', 'Test/Query.cpp', '')]
 
 
 def test_the_compile_key_follows_the_unit_and_every_header(tmp_path):
