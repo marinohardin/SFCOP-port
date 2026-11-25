@@ -1176,3 +1176,28 @@ def test_a_body_whose_walk_runs_into_its_switch_table_lifts_without_it():
                            '/* 0x00401000: jmp */\n/* 0x00401007: ret */\n/* 0x00401008: ret */\n'
                            '/* 0x00401009: call */\n/* 0x0040100E: nop */\n'
                            '/* 0x0040100F: nop */\n}\n')
+def test_a_claim_placed_from_another_unit_s_copy_is_declared_where_its_body_is(tmp_path):
+    # Test/B.cpp claims _s, an inline function both units compile (COMDAT, selection any). A's
+    # object comes first, so the claim is placed from A's copy and its body goes to A's file,
+    # which must then declare the claim's index constant too.
+    two_unit_inputs(tmp_path, [(0x00402000, '_a', 'A'), (0x00403000, '_s', 'B')])
+    for name, own in (('A.obj', '_a'), ('B.obj', '_b')):
+        o = mc.Obj()
+        t = o.section('.text', XOR_RET, mc.CODE | mc.COMDAT | mc.ALIGN_16, selection=mc.NODUPLICATES)
+        o.define(own, t, 0, function=True)
+        s = o.section('.text', XOR_RET, mc.CODE | mc.COMDAT | mc.ALIGN_16, selection=mc.ANY)
+        o.define('_s', s, 0, function=True)
+        write(tmp_path, name, o)
+    gen = fake_exe_lift(tmp_path / 'gen', [[0x00401000, 0x00402000, 0x00403000]])
+    out = tmp_path / 'out'
+    emit_by_hand(tmp_path, out, gen)
+    assert (out / 'objlift_code_Test_A.c').read_text() == unit_file(
+        'A',
+        'void sub_00402000(void);\nvoid sub_00403000(void);\n'
+        'extern const unsigned sfcop_objlift_index_00402000;\n'
+        'extern const unsigned sfcop_objlift_index_00403000;\n',
+        '/* 0x00402000 claimed .text, op/Test/A.cpp */\n'
+        'void sub_00402000(void) { sfcop_guest_entered(sfcop_objlift_index_00402000); }\n\n'
+        '/* 0x00403000 claimed .text, op/Test/A.cpp */\n'
+        'void sub_00403000(void) { sfcop_guest_entered(sfcop_objlift_index_00403000); }\n\n')
+    assert (out / 'objlift_code_Test_B.c').read_text() == unit_file('B', '', '')
