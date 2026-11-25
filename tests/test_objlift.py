@@ -1089,3 +1089,90 @@ def test_the_lift_refuses_a_header_claim_the_unit_map_places_in_another_unit(tmp
                        'Test/other.cpp, not in Test/ship.cpp'):
         objlift.claimed_symbol(0x00401500, 'Test/ship.cpp', str(tmp_path / 'ship.obj'), str(game),
                                '', 'FUN_00401500', recorded)
+
+
+# -- switch tables after a call that does not return (liftcode.switch_tables) ----------------------
+# A body at 0x00401000 laid out the way VC6 lays out twVolume::mGetVolType (0x00631320): a switch
+# through a table at 0x00401010, a default arm that ends in a call that never returns, then the
+# table. pcrecomp's extent walk runs past the call into the table and decodes its dwords; a stand-in
+# for pcrecomp returns those instructions, so these run without capstone.
+
+class _Insn:
+    def __init__(self, address, size, mnemonic, op_str=''):
+        self.address, self.size, self.mnemonic, self.op_str = address, size, mnemonic, op_str
+
+
+SWITCH_CODE = bytes.fromhex(
+    'ff248510104000'    # 0x00401000 jmp dword ptr [eax*4 + 0x401010]
+    'c3'                # 0x00401007 ret          (arm 0)
+    'c3'                # 0x00401008 ret          (arm 1)
+    'e8f3ffffff'        # 0x00401009 call 0x401001: never returns
+    '90'                # 0x0040100e nop
+    '90'                # 0x0040100f nop
+    '07104000'          # 0x00401010 table[0] = 0x00401007
+    '08104000')         # 0x00401014 table[1] = 0x00401008
+SWITCH_DECODED = [
+    _Insn(0x00401000, 7, 'jmp', 'dword ptr [eax*4 + 0x401010]'),
+    _Insn(0x00401007, 1, 'ret'),
+    _Insn(0x00401008, 1, 'ret'),
+    _Insn(0x00401009, 5, 'call', '0x401001'),
+    _Insn(0x0040100e, 1, 'nop'),
+    _Insn(0x0040100f, 1, 'nop'),
+    _Insn(0x00401010, 1, 'pop', 'es'),                # the table, read as code
+    _Insn(0x00401011, 2, 'adc', 'byte ptr [eax], al'),
+    _Insn(0x00401013, 2, 'arpl', 'word ptr [eax], ax'),
+    _Insn(0x00401015, 3, 'adc', 'byte ptr [eax], al'),
+]
+
+
+def _stand_in_pcrecomp():
+    """pcrecomp's interface as liftcode.lift_sections uses it: the walk reaches every decoded
+    instruction above, and the 'lifter' writes one line per instruction it is given, marking
+    arpl UNIMPLEMENTED as pcrecomp does."""
+    import types
+    ns = types.SimpleNamespace()
+    ns.CS_ARCH_X86 = ns.CS_MODE_32 = 0
+    ns.Cs = lambda *_: types.SimpleNamespace(detail=False)
+    ns.Lifter = lambda **_: None
+    ns.eh32 = types.SimpleNamespace(PROLOGUE_WINDOW=8, resume_points=lambda *_: None)
+
+    def true_extent(md, code, start, addr, end, entries, reached):
+        reached.update(i.address for i in SWITCH_DECODED)
+        return end, True
+    ns.true_extent = true_extent
+    ns.linear = lambda md, code, start, lo, end, reached: (list(SWITCH_DECODED), set())
+
+    def lift(lifter, name, insns, leaders, addr, eh_resume):
+        lines = ''.join(('; /* UNIMPLEMENTED: %s */\n' % i.mnemonic) if i.mnemonic == 'arpl'
+                        else '/* 0x%08X: %s */\n' % (i.address, i.mnemonic) for i in insns)
+        return 'void %s(void) {\nRECOMP_ENTER(0x%08Xu);\n%s}\n' % (name, addr, lines)
+    ns.lift_function_linear = lift
+    return ns
+
+
+def test_switch_tables_finds_the_table_a_body_jumps_through():
+    import liftcode
+    assert liftcode.switch_tables(SWITCH_DECODED, SWITCH_CODE, 0x00401000) == [
+        (0x00401010, 0x00401018)]
+
+
+def test_a_table_outside_the_section_is_not_the_body_s():
+    import liftcode
+    far = [_Insn(0x00401000, 7, 'jmp', 'dword ptr [eax*4 + 0x500000]')]
+    assert liftcode.switch_tables(far, SWITCH_CODE, 0x00401000) == []
+
+
+def test_a_body_whose_walk_runs_into_its_switch_table_lifts_without_it():
+    import liftcode
+
+    class Section:
+        va, label, mode = 0x00401000, 'A.obj:.text#1', 'claimed'
+    sec = Section()
+    bodies = liftcode.lift_sections(
+        _stand_in_pcrecomp(), [sec], {sec: SWITCH_CODE}, {sec: [0x00401000]},
+        read=lambda va, n: None, lifted=None, iat_map={}, enter_hook=lambda va: '')
+    assert [b.name for b in bodies] == ['sub_00401000']
+    assert bodies[0].c == ('void sub_00401000(void) {\nRECOMP_ENTER(0x00401000u);\n'
+                           '/* 0x00401000: jmp */\n/* 0x00401007: ret */\n/* 0x00401008: ret */\n'
+                           '/* 0x00401009: call */\n/* 0x0040100E: nop */\n'
+                           '/* 0x0040100F: nop */\n}\n')

@@ -12,6 +12,8 @@ import re
 import sys
 
 NOT_LIFTED_RE = re.compile(r'RECOMP_ICALL\(0x([0-9A-F]{8})u\);[^\n]*/\* not lifted \*/')
+# capstone's text for an MSVC switch: jmp dword ptr [eax*4 + 0x6313b8]
+SWITCH_RE = re.compile(r'^dword ptr \[\w+\*4 \+ 0x([0-9a-f]+)\]$')
 
 
 class LiftError(Exception):
@@ -52,6 +54,29 @@ class Body:
         self.va, self.name, self.c, self.section, self.claimed = va, name, c, section, claimed
 
 
+def switch_tables(insns, code, start):
+    """[(lo, hi)]: the jump tables the body's own switches (`jmp [reg*4 + table]`) index, where
+    they lie in its section: each runs while its dwords point into the section.
+
+    VC6 puts a switch's table straight after the function's code. When the code before it ends in
+    a call that does not return (_CxxThrowException), pcrecomp's extent walk carries on into the
+    table and decodes its addresses as instructions (twVolume::mGetVolType, 0x00631320: `arpl`).
+    The exe lift keeps those as unreachable UNIMPLEMENTED lines; here they are data, and dropped."""
+    end = start + len(code)
+    out = []
+    for i in insns:
+        m = SWITCH_RE.match(i.op_str) if i.mnemonic == 'jmp' else None
+        if m is None:
+            continue
+        lo = at = int(m.group(1), 16)
+        while start <= at <= end - 4 and \
+                start <= int.from_bytes(code[at - start:at - start + 4], 'little') < end:
+            at += 4
+        if at > lo:
+            out.append((lo, at))
+    return out
+
+
 def lift_sections(pcr, sections, images, entries_of, read, lifted, iat_map, enter_hook):
     """Lift every entry of every placed code section.
 
@@ -81,6 +106,10 @@ def lift_sections(pcr, sections, images, entries_of, read, lifted, iat_map, ente
                               if body_end > addr else ([], None))
             if leaders is not None:
                 leaders.add(addr)
+            tables = switch_tables(insns, code, start)
+            if tables:
+                insns = [i for i in insns
+                         if not any(i.address < hi and i.address + i.size > lo for lo, hi in tables)]
             resume = None
             if insns:
                 head = [i for i in insns if i.address >= addr][:pcr.eh32.PROLOGUE_WINDOW]
