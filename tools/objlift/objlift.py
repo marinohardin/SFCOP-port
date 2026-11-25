@@ -355,9 +355,13 @@ def emit(run, claims, result, bodies):
             raise PlacementError(f'{b.name} ({b.section.label}) is in an object no claim names')
         by_unit[u].append(b)
     defined = {n for _, n in names}
+    # A claim's body is where its section is: an inline function several units compile is placed
+    # from whichever copy COMDAT selection kept, which can be another unit's object. That file
+    # declares the claim's index constant.
     for u in units:
+        here = [c for b in by_unit[u] for c in b.section.claims if c.address == b.va]
         files[code_file_name(u)] = unit_code(run, u, by_unit[u], defined,
-                                             [c for c in claims if c.source == u])
+                                             sorted(here, key=lambda c: c.address))
 
     table = [HEADER, '#include "recomp_types.h"\n#include "win32hle.h"\n',
              '#include "objlift_funcs.h"\n\n#define SFCOP_GUEST_OBJECTS_IMPLEMENTATION\n',
