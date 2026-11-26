@@ -90,6 +90,24 @@ def read_manifest(path):
     return rows
 
 
+def claimed_addresses(path):
+    """Every address the manifest claims, in any mode: the source's FUNCTION annotations, which
+    the harness credits (harness/lib/funcs.FunctionIndex.add_claims) whatever their score."""
+    with open(path, newline='') as f:
+        return {int(r['address'], 16) for r in csv.DictReader(f, delimiter='\t')}
+
+
+def credit_claims(index, manifest, table):
+    """Interface version 3: let a relocation to an address the source claims under the same
+    symbol count, as the harness's own scoring does (harness/lib/verify.py). Without it the
+    relocation check calls such a function inexact, its relocations give no evidence, and the
+    data only it reaches has no address (a `__FILE__` string the exe holds). `index` is the
+    harness's FunctionIndex, `table` symtab.load_table()'s result. Returns how many it credited;
+    0 with a decompilation older than version 3, whose index has no such rule."""
+    add = getattr(index, 'add_claims', None)
+    return add(claimed_addresses(manifest), table) if add else 0
+
+
 def parse_obj_args(specs):
     """--obj [UNIT=]PATH -> [(unit or None, path)]"""
     out = []
@@ -283,6 +301,8 @@ class Run:
         placement._claimed_sections(objects, claims)
         evidence, notes = {}, []
         if self.exe is not None:
+            from harness.lib import symtab
+            credit_claims(self.index.harness_index, self.args.manifest, symtab.load_table())
             evidence, notes = placement.exact_function_evidence(claims, objects, self.exe,
                                                                 self.index.harness_index)
         exe_sections = None
