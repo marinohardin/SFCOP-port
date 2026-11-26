@@ -968,6 +968,29 @@ def test_partial_and_stub_rows_are_neither_compiled_nor_lifted(tmp_path):
     assert objcompile.claimed_units(str(m)) == ['Test/Exact.cpp', 'Test/Ctor.cpp']
 
 
+def test_every_claimed_address_is_credited_whatever_its_mode(tmp_path):
+    # Interface version 3: the harness lets a relocation to an address the source claims count
+    # for the symbol the table gives it. ~tOptex is known at the SDK copy 0x0070f100; the game's
+    # own copy, 0x004296c8, is claimed (partial), so an exact function calling it is exact.
+    from harness.lib import funcs
+    if not hasattr(funcs.FunctionIndex, 'add_claims'):
+        pytest.skip('the decompilation is older than interface version 3 (no add_claims)')
+    optex = '??1tOptex@@QAE@XZ'
+    csv_path = tmp_path / 'functions.csv'
+    csv_path.write_text('address,size,name,mangled,demangled,name_source,translation_unit,'
+                        'is_library,kind\n'
+                        f'0070f100,16,tOptex::~tOptex,{optex},,sdk,,1,function\n')
+    index = funcs.FunctionIndex(str(csv_path))
+    m = tmp_path / 'manifest.tsv'
+    m.write_text('address\tsize\tsymbol\tsource\tmodes\n'
+                 '0x004296c8\t20\ttOptex::~tOptex()\tTest/Optex.cpp\tpartial\n'
+                 '0x00401000\t24\tA()\tTest/Exact.cpp\tvc6 guest\n')
+    table = {'0x004296c8': (optex, 'claim'), '0x00401000': ('?A@@YAXXZ', 'claim')}
+    assert objlift.claimed_addresses(str(m)) == {0x004296c8, 0x00401000}
+    assert objlift.credit_claims(index, str(m), table) == 1
+    assert index.claimed == {optex: {0x004296c8}}
+
+
 def test_the_decorated_column_names_each_claim_s_symbol(tmp_path):
     # Interface version 2: the last column is the decorated symbol the claim compiles to; an
     # empty cell, or a version 1 manifest without the column, leaves the symbol to be derived.
