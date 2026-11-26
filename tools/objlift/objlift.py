@@ -301,8 +301,9 @@ class Run:
         placement._claimed_sections(objects, claims)
         evidence, notes = {}, []
         if self.exe is not None:
-            from harness.lib import symtab
-            credit_claims(self.index.harness_index, self.args.manifest, symtab.load_table())
+            if hasattr(self.index.harness_index, 'add_claims'):   # interface version 3 on
+                from harness.lib import symtab
+                credit_claims(self.index.harness_index, self.args.manifest, symtab.load_table())
             evidence, notes = placement.exact_function_evidence(claims, objects, self.exe,
                                                                 self.index.harness_index)
         exe_sections = None
