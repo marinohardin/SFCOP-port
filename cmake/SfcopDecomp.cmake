@@ -12,7 +12,7 @@ include_guard(GLOBAL)
 
 set(SFCOP_DECOMP_DIR "${CMAKE_SOURCE_DIR}/decomp" CACHE PATH
     "The decompilation (the decomp submodule): its op/, harness/, toolchain/, ghidra/ and analysis/")
-set(SFCOP_DECOMP_INTERFACE_KNOWN 1)
+set(SFCOP_DECOMP_INTERFACE_KNOWN 5)
 
 set(_sfcop_decomp_version_file "${SFCOP_DECOMP_DIR}/INTERFACE_VERSION")
 if(NOT EXISTS "${_sfcop_decomp_version_file}")
